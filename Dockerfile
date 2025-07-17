@@ -1,16 +1,23 @@
-# Etapa 1 - Build da aplicação
-FROM node:20 AS builder
+# Etapa 1: build
+FROM node:18 AS builder
 
 WORKDIR /app
+
 COPY . .
-RUN npm install
-RUN npm run build
 
-# Etapa 2 - Servidor NGINX para servir os arquivos do Vite
-FROM nginx:stable-alpine
+RUN npm install && npm run build
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+# Etapa 2: servir com serve
+FROM node:18
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+WORKDIR /app
+
+# Copia apenas o build
+COPY --from=builder /app/dist /app/dist
+
+# Instala o `serve`
+RUN npm install -g serve
+
+EXPOSE 3000
+
+CMD ["serve", "-s", "dist", "--listen", "tcp://0.0.0.0:3000", "--no-clipboard"]
