@@ -126,7 +126,7 @@ docker-compose up --build -d
 ```
 
 Acesse em:  
-📍 http://http://10.0.77.1:3000
+📍 http://10.0.77.1:3000
 
 ### Desenvolvimento (com Docker):
 
