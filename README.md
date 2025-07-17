@@ -36,7 +36,7 @@ Requisitos:
 Rodando com Docker Compose:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 Acesse no navegador:  
@@ -90,8 +90,8 @@ Acesse no navegador:
 
 ```
 dashboard-soc/
-├── docker-compose.yml
-├── docker-compose.dev.yml       # (opcional)
+├──  .yml
+├──  .dev.yml       # (opcional)
 └── frontend/
     ├── Dockerfile
     ├── Dockerfile.dev           # (opcional)
@@ -122,7 +122,7 @@ dashboard-soc/
 ### Produção:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 Acesse em:  
@@ -131,7 +131,7 @@ Acesse em:
 ### Desenvolvimento (com Docker):
 
 ```bash
-docker-compose -f docker-compose.dev.yml up --build
+docker compose -f  .dev.yml up --build
 ```
 
 Acesse em:  
@@ -151,9 +151,3 @@ Acesse em:
 | ApexCharts     | ^5.2.0         |
 | Docker         | >= 24.0        |
 | Docker Compose | >= v2.20       |
-
----
-
-## 📝 Licença
-
-Este projeto está sob a licença MIT.
