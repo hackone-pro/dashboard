@@ -1,12 +1,24 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { login } from '../utils/auth'
+import { toastSuccess, toastError } from '../utils/toast'
 
 export default function Login() {
     const [email, setEmail] = useState('')
     const [senha, setSenha] = useState('')
+    const [erro, setErro] = useState('')
+    const navigate = useNavigate()
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault()
-        console.log({ email, senha })
+       
+        if(email ==='user@teste.com' && senha === '123'){
+            login()
+            toastSuccess('Login realizado com sucesso!')
+            navigate('/dashboard')
+        }else{
+            toastError('Credenciais inválidas. Tente novamente.')
+        }
     }
 
     return (
@@ -21,7 +33,8 @@ export default function Login() {
                     <img
                         src="/assets/img/logo.png"
                         alt="Hackone Logo"
-                        className="h-15"
+                        className="h-15
+                        "
                     />
                 </div>
 
@@ -31,7 +44,6 @@ export default function Login() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="seu@email.com"
                         className="w-full px-4 py-2 bg-[#2a1d5a] text-white border border-[#3d2a7d] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
                         required
                     />
@@ -43,7 +55,6 @@ export default function Login() {
                         type="password"
                         value={senha}
                         onChange={(e) => setSenha(e.target.value)}
-                        placeholder="••••••••"
                         className="w-full px-4 py-2 bg-[#2a1d5a] text-white border border-[#3d2a7d] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
                         required
                     />
