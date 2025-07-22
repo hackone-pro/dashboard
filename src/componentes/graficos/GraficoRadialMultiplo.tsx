@@ -33,12 +33,12 @@ export default function GraficoRadialMultiplo({
                     name: {
                         show: true,
                         fontSize: "16px",
-                        color: "#fff",
+                        color: "#ccc",
                         offsetY: -10,
                     },
                     value: {
                         fontSize: "20px",
-                        color: "#fff",
+                        color: "#ccc",
                         offsetY: 10,
                         formatter: (val) => `${Math.round(val)}`, // remove o "%"
                     },
@@ -46,7 +46,7 @@ export default function GraficoRadialMultiplo({
                         show: true,
                         label: "Total",
                         fontSize: "16px",
-                        color: "#fff",
+                        color: "#ccc",
                         formatter: () => total.toString(),
                     },
                 },

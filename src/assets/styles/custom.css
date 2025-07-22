@@ -1,3 +1,86 @@
+/* Padrão para escuro */
+.fundo-dashboard {
+  background: linear-gradient(to bottom right, #4C009A, #34025d);
+  transition: background-color 0.3s ease, color 0.3s ease, background 0.3s ease;
+}
+
+.cards {
+  background-color: #132337b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.cards:hover {
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
+}
+
+.h2 {
+  color: white;
+  transition: color 0.3s ease;
+}
+
+header button{
+  background-color: #540093;
+}
+
+header button:hover{
+  background-color: #6a01bb;
+}
+
+.logout{
+  color: #fff;
+}
+
+/* ----------------Quando estiver em modo claro -----------*/
+
+.tema-claro .fundo-dashboard {
+  background: #f0f0f8; /* um cinza claro bonito */
+}
+
+.tema-claro .texto-dashboard {
+  color: #1a1a1a;
+}
+
+.tema-claro .cards {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.tema-claro .cards:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tema-claro .text-white{
+  color: #ccc;
+}
+
+.tema-claro h2, .tema-claro h3 {
+  color: #1a1a1a !important;
+  transition: color 0.3s ease;
+}
+
+.tema-claro p, .tema-claro .cards .text-gray-300{
+  color:#79818c;
+}
+
+.tema-claro button.text-white{
+  color: #fff;
+}
+
+.tema-claro header button{
+  background-color: #fff;
+}
+
+.tema-claro header button:hover{
+  background-color: #e1ceff;
+}
+
+.tema-claro .logout{
+  color: #6a01bb;
+}
+
+/*----------------------------------------------------------*/
+
 button{
   cursor: pointer;
 }

@@ -1,5 +1,6 @@
 // src/pages/Dashboard.tsx
 
+import { useState, useEffect } from 'react'
 import { logout } from "../utils/auth"
 import { useNavigate } from "react-router-dom"
 import { toastSuccess } from "../utils/toast"
@@ -9,6 +10,8 @@ import GraficoBarrasEmpilhadas from "../componentes/graficos/GraficoBarrasEmpila
 import GraficoDonut from "../componentes/graficos/GraficoDonut"
 import GraficoRadialMultiplo from "../componentes/graficos/GraficoRadialMultiplo"
 import Contador from "../componentes/Contador"
+import { FiSun, FiMoon } from 'react-icons/fi'
+
 
 //Tendência de Alertas
 const seriesTendencia = [
@@ -75,16 +78,55 @@ export default function Dashboard() {
         navigate('/login')
     }
 
+    const [temaClaro, setTemaClaro] = useState<boolean | undefined>(undefined);
+
+    // Quando o componente montar, verificar tema salvo no localStorage
+    useEffect(() => {
+        const temaSalvo = localStorage.getItem('tema') === 'claro';
+        setTemaClaro(temaSalvo);
+        document.body.classList.remove('tema-claro', 'tema-escuro');
+        document.body.classList.add(temaSalvo ? 'tema-claro' : 'tema-escuro');
+    }, []);
+
+    // Alternar entre claro e escuro
+    const alternarTema = () => {
+        const novoTemaClaro = !temaClaro;
+        setTemaClaro(novoTemaClaro);
+        localStorage.setItem('tema', novoTemaClaro ? 'claro' : 'escuro');
+        document.body.classList.remove('tema-claro', 'tema-escuro');
+        document.body.classList.add(novoTemaClaro ? 'tema-claro' : 'tema-escuro');
+    };
+
+    // Evita renderizar antes de saber o tema
+    if (temaClaro === undefined) return null;
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#4C009A] to-[#34025d] text-white px-6 py-4">
+        <div className="min-h-screen px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300">
             {/* Header */}
             <header className="flex items-center py-4 px-6 rounded-xl justify-between mb-8">
                 <div className="flex items-center gap-2">
-                    <img src="/assets/img/logo.png" alt="Hackone" className="h-15" />
+                    <img
+                        src={temaClaro ? '/assets/img/logo_dark.png' : '/assets/img/logo.png'}
+                        alt="Hackone"
+                        className="h-15 transition-all duration-300"
+                    />
                 </div>
-                <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-md transition-all">
-                    Sair
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={alternarTema}
+                        className="p-2 rounded-full transition"
+                        title={temaClaro ? 'Modo Escuro' : 'Modo Claro'}
+                    >
+                        {temaClaro ? (
+                            <FiMoon className="text-purple-600 w-5 h-5" />
+                        ) : (
+                            <FiSun className="text-white w-5 h-5" />
+                        )}
+                    </button>
+                    <button onClick={handleLogout} className="logout font-semibold px-4 py-2 rounded-md transition-all">
+                        Sair
+                    </button>
+                </div>
             </header>
 
             {/* Bloco: Bem-vindo + Gráfico + Cards */}
@@ -93,7 +135,7 @@ export default function Dashboard() {
                 {/* COLUNA ESQUERDA: Bem-vindo + Cards */}
                 <div className="md:col-span-2 flex flex-col gap-6">
                     {/* Bem-vindo */}
-                    <div className="cards p-6 md:p-8 rounded-2xl shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
+                    <div className="cards p-6 md:p-8 rounded-2xl shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg card-dashboard">
                         <h2 className="text-xl md:text-2xl font-semibold text-white mb-2">
                             Bem-vindo, Usuário 🎉
                         </h2>
@@ -101,10 +143,10 @@ export default function Dashboard() {
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent sodales nulla ut ultricies fringilla. Ut facilisis orci pretium velit vulputate, vitae egestas nisi mattis. Morbi vulputate purus justo, vitae ornare dui aliquam in.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-5 py-2 rounded-lg transition-all">
+                            <button className="bg-purple-500 hover:bg-purple-400 text-white font-bold px-5 py-2 rounded-lg transition-all">
                                 Acessar Wazuh
                             </button>
-                            <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 rounded-lg transition-all">
+                            <button className="bg-purple-700 hover:bg-purple-500 text-white font-bold px-5 py-2 rounded-lg transition-all">
                                 Acessar Iris
                             </button>
                         </div>
@@ -266,7 +308,7 @@ export default function Dashboard() {
                             <p className="text-xs text-white">Medium - Severity</p>
                         </div>
                         <div className="bg-transparent text-center p-3 border border-[#3B2A70] rounded-lg">
-                            <Contador valor={5} />
+                            <Contador valor={5} color="text-gray-500" />
                             <p className="text-xs text-white">Low - Severity</p>
                         </div>
                     </div>
