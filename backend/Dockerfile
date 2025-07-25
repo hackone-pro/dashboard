@@ -7,15 +7,16 @@ COPY tsconfig.json ./
 RUN npm install
 
 COPY . .
-RUN npm run build
+RUN npm run build  # <--- compila para dist/
 
-# Etapa 2 – Execução leve
+# Etapa 2 – Execução
 FROM node:18
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm install --omit=dev
 
+# COPIA os arquivos compilados para a imagem final
 COPY --from=build /app/dist ./dist
 
 EXPOSE 3001
