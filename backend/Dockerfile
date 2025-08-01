@@ -1,23 +1,19 @@
-# Etapa 1 – Compilar o TypeScript
-FROM node:18 AS build
+# Dockerfile.prod
+FROM node:20 AS builder
+
 WORKDIR /app
-
 COPY package*.json ./
-COPY tsconfig.json ./
 RUN npm install
-
 COPY . .
 RUN npm run build
 
-# Etapa 2 – Executar a aplicação
-FROM node:18
+FROM node:18-alpine
+
 WORKDIR /app
+COPY --from=builder /app ./
+RUN npm install --production
 
-COPY package*.json ./
-RUN npm install --omit=dev
+ENV NODE_ENV=production
+EXPOSE 1337
 
-# Aqui está o ponto crítico: copie a pasta dist do build
-COPY --from=build /app/dist /app/dist
-
-EXPOSE 3001
-CMD ["node", "dist/server.js"]
+CMD ["npm", "start"]

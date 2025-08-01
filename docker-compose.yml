@@ -1,24 +1,64 @@
-version: "3.9"
-
 services:
-  dashboard:
+  strapi:
+    build: ./backend
+    container_name: dashboard-api
+    image: dashboard-strapi:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      APP_KEYS: ${APP_KEYS}
+      NODE_ENV: ${NODE_ENV}
+    volumes:
+      - ./backend/config:/opt/app/config
+      - ./backend/src:/opt/app/src
+      - ./backend/public/uploads:/opt/app/public/uploads
+      - ./backend/package.json:/opt/package.json
+      - ./backend/package-lock.json:/opt/package-lock.json
+      - ./backend/.env:/opt/app/.env
+      - ./backend/.cache:/opt/app/.cache
+    ports:
+      - "1337:1337"
+    depends_on:
+      - mysql
+    networks:
+      - dashboard-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: dashboard-mysql
+    platform: linux/amd64
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_USER: ${DATABASE_USERNAME}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - dashboard-network
+
+  frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    container_name: dashboard
+      dockerfile: Dockerfile # ← Usa seu Dockerfile com build e serve
+    container_name: dashboard-frontend
     ports:
       - "3000:3000"
-    restart: unless-stopped
-    working_dir: /app
+    networks:
+      - dashboard-network
 
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: hackone-api
-    ports:
-      - "3001:3001"
-    restart: unless-stopped
-    working_dir: /app
-    volumes:
-      - ./backend:/app
+volumes:
+  mysql-data:
+
+networks:
+  dashboard-network:
+    driver: bridge
