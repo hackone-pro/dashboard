@@ -31,7 +31,7 @@ export default function Login() {
 
                 <div className="flex justify-center mb-6">
                     <img
-                        src="/assets/img/logo.png"
+                        src="/assets/img/SecurityOne.png"
                         alt="Hackone Logo"
                         className="h-15
                         "

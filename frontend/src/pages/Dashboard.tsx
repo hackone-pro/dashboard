@@ -106,7 +106,7 @@ export default function Dashboard() {
             <header className="flex items-center py-4 px-6 rounded-xl justify-between mb-8">
                 <div className="flex items-center gap-2">
                     <img
-                        src={temaClaro ? '/assets/img/logo_dark.png' : '/assets/img/logo.png'}
+                        src={temaClaro ? '/assets/img/SecurityOne_dark.png' : '/assets/img/SecurityOne.png'}
                         alt="Hackone"
                         className="h-15 transition-all duration-300"
                     />
