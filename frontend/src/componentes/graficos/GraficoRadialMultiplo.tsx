@@ -13,7 +13,7 @@ export default function GraficoRadialMultiplo({
     labels,
     total,
     cores = ["#EF4444", "#F59E0B", "#0EA5E9"], // Alto, Médio, Baixo
-    height = 260,
+    height = 300,
 }: GraficoRadialMultiploProps) {
     const options: ApexCharts.ApexOptions = {
         chart: {

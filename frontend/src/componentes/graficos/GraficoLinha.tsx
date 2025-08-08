@@ -1,64 +1,53 @@
-// src/components/GraficoLinha.tsx
-import Chart from "react-apexcharts"
+import Chart from 'react-apexcharts';
 
-type GraficoLinhaProps = {
-  titulo?: string
-  series: ApexAxisChartSeries
-  categories: string[]
-  cores?: string[]
-  height?: number
+interface Props {
+  series: ApexAxisChartSeries;
+  categories: string[];
 }
 
-export default function GraficoLinha({
-  titulo,
-  series,
-  categories,
-  cores = ["#8E6FFF", "#00BFFF"],
-  height = 200,
-}: GraficoLinhaProps) {
+export default function GraficoLinha24h({ series, categories }: Props) {
   const options: ApexCharts.ApexOptions = {
     chart: {
-      type: "line",
-      toolbar: { show: false },
+      type: 'line',
+      height: 350,
       zoom: { enabled: false },
-      foreColor: "#ccc",
+      toolbar: { show: false }
     },
-    colors: cores,
     stroke: {
-      curve: "smooth",
-      width: 3,
-    },
-    grid: {
-      borderColor: "#2a1d5a",
-      strokeDashArray: 4,
+      curve: 'smooth',
+      width: 3
     },
     xaxis: {
       categories,
-      labels: { style: { colors: "#888" } },
+      title: {
+        text: '',
+      },
+      labels: {
+        style: { colors: '#ccc' }
+      }
     },
     yaxis: {
-      labels: { style: { colors: "#888" } },
-    },
-    legend: {
-      labels: { colors: "#ccc" },
-      position: "bottom",
+      title: {
+        text: 'Alertas',
+        style: { color: '#ccc' }
+      },
+      labels: {
+        style: { colors: '#ccc' }
+      }
     },
     tooltip: {
-      theme: "dark",
+      theme: 'dark'
     },
-  }
+    dataLabels: {
+      enabled: false
+    },
+    grid: {
+      borderColor: '#333'
+    },
+    colors: ['#00BFFF']
+  };
 
   return (
-    <div className="w-full">
-      <div className="-mx-2"> {/* Remove padding horizontal para encaixar full */}
-        <Chart
-          options={options}
-          series={series}
-          type="line"
-          height={height}
-          width="100%"
-        />
-      </div>
-    </div>
-  )
+    <Chart options={options} series={series} type="line" height={350} />
+  );
 }

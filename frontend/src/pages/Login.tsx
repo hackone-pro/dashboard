@@ -12,7 +12,7 @@ export default function Login() {
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault()
        
-        if(email ==='user@teste.com' && senha === '123'){
+        if(email ==='admin' && senha === 'Fortinet123!'){
             login()
             toastSuccess('Login realizado com sucesso!')
             navigate('/dashboard')
@@ -41,7 +41,7 @@ export default function Login() {
                 <div className="mb-6">
                     <label className="block text-sm text-gray-300 mb-1">E-mail</label>
                     <input
-                        type="email"
+                        type="text"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-2 bg-[#2a1d5a] text-white border border-[#3d2a7d] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"

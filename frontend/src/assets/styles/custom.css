@@ -88,3 +88,15 @@ button{
 .cards{
   background-color: #132337b8;
 }
+
+.leaflet-right .leaflet-control {
+  margin-right: 10px !important;
+}
+
+.leaflet-bottom .leaflet-control {
+  margin-bottom: 10px !important;
+}
+
+.leaflet-right .leaflet-control {
+  float: right !important;
+}
