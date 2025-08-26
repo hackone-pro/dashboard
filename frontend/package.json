@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.6",
+    "@heroicons/react": "^2.2.0",
     "@south-paw/react-vector-maps": "^3.2.0",
     "apexcharts": "^5.2.0",
     "axios": "^1.11.0",

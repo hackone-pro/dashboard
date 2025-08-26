@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "tenants",
+  "info": {
+    "singularName": "tenant",
+    "pluralName": "tenants",
+    "displayName": "tenant"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nome": {
+      "type": "string"
+    },
+    "cliente_name": {
+      "type": "string"
+    },
+    "wazuh_url": {
+      "type": "string"
+    },
+    "wazuh_username": {
+      "type": "string"
+    },
+    "wazuh_password": {
+      "type": "string",
+      "private": true
+    },
+    "iris_url": {
+      "type": "string"
+    },
+    "iris_apikey": {
+      "type": "string"
+    },
+    "ativa": {
+      "type": "boolean"
+    },
+    "users_permissions_users": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::users-permissions.user",
+      "mappedBy": "tenant"
+    }
+  }
+}

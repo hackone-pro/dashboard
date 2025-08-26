@@ -40,7 +40,7 @@ export default function RiskLevelCard({ level, value, incidentes }: RiskLevelCar
   const config = levelConfig[level];
 
   return (
-    <div className={`relative p-10 rounded-sm shadow-lg flex flex-col justify-center items-center bg-gradient-to-br ${config.colorFrom} ${config.colorTo} w-full h-full min-h-[300px] transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg`}>
+    <div className={`relative p-10 rounded-2xl shadow-lg flex flex-col justify-center items-center bg-gradient-to-br ${config.colorFrom} ${config.colorTo} w-full h-full min-h-[300px] transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg`}>
       <div className="absolute top-5 right-5">
         <div className="text-sm bg-white/20 px-5 py-1 rounded-full font-bold text-white shadow tracking-wide">{level}</div>
       </div>

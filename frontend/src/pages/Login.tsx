@@ -1,76 +1,187 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { login } from '../utils/auth'
-import { toastSuccess, toastError } from '../utils/toast'
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { toastSuccess, toastError } from "../utils/toast";
+import { login } from "../utils/auth";
 
 export default function Login() {
-    const [email, setEmail] = useState('')
-    const [senha, setSenha] = useState('')
-    const [erro, setErro] = useState('')
-    const navigate = useNavigate()
+    const [email, setEmail] = useState("");
+    const [senha, setSenha] = useState("");
+    const [showPass, setShowPass] = useState(false);
+    const [remember, setRemember] = useState(false);
+    const navigate = useNavigate();
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault()
-       
-        if(email ==='admin' && senha === 'Fortinet123!'){
-            login()
-            toastSuccess('Login realizado com sucesso!')
-            navigate('/dashboard')
-        }else{
-            toastError('Credenciais inválidas. Tente novamente.')
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            const res = await fetch(`${API_URL}/api/auth/local`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    identifier: email,
+                    password: senha,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.jwt) {
+                // salva token
+                login(data.jwt);
+                localStorage.setItem("user", JSON.stringify(data.user));
+                if (remember) localStorage.setItem("remember_email", email);
+                toastSuccess("Login realizado com sucesso!");
+                navigate("/dashboard");
+            } else {
+                toastError(
+                    data?.error?.message ||
+                    data?.error?.name ||
+                    "Credenciais inválidas. Tente novamente."
+                );
+            }
+        } catch (err) {
+            toastError("Erro de conexão com o servidor.");
         }
-    }
+    };
 
     return (
-        <div className="min-h-screen bg-hackone flex items-center justify-center bg-gradient-to-br from-[#4C009A] to-[#2A014B] px-4">
+        <div className="min-h-screen grid lg:grid-cols-2 bg-[#0e0b1b]">
+            {/* Coluna ESQUERDA – bloco do formulário */}
+            <div className="relative flex items-center">
+                {/* fundo roxo escuro */}
+                <div className="absolute inset-0 bg-[#151026]" />
+                {/* gradiente de brilho sutil no topo/esquerda */}
+                <div className="pointer-events-none absolute -top-20 -left-20 h-80 w-80 rounded-full opacity-40 blur-3xl"
+                    style={{ background: "radial-gradient(60% 60% at 50% 50%, #6d4bf0 0%, rgba(109,75,240,0) 70%)" }} />
+                {/* conteúdo */}
+                <div className="relative w-full max-w-lg mx-auto px-6 py-10 lg:px-12 lg:py-0">
+                    {/* logo */}
+                    <div className="mb-8">
+                        <img
+                            src="/assets/img/SecurityOne_dark.png"
+                            alt="SecurityOne"
+                            className="h-10"
+                        />
+                    </div>
 
-            <form
-                onSubmit={handleLogin}
-                className="w-full max-w-md bg-[#1b133d] p-8 rounded-2xl shadow-xl border border-[#342470]"
-            >
+                    <h1 className="text-4xl md:text-5xl font-semibold text-white leading-tight">
+                        Bem-vindo ao<br /> SecurityOne
+                    </h1>
 
-                <div className="flex justify-center mb-6">
+                    <p className="mt-4 text-sm text-gray-300 max-w-md">
+                        Acesse o painel de segurança e visualize em tempo real
+                        os níveis de risco, incidentes e ameaças que impactam
+                        seu ambiente.
+                    </p>
+
+                    <form onSubmit={handleLogin} className="mt-10 space-y-5">
+                        {/* Email */}
+                        <div>
+                            <label className="block text-xs text-gray-300 mb-2">Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Digite seu email"
+                                className="w-full rounded-xl bg-[#1c1633] border border-[#2c2450] text-gray-100 placeholder:text-gray-500 px-4 py-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30"
+                                required
+                            />
+                        </div>
+
+                        {/* Senha */}
+                        <div>
+                            <label className="block text-xs text-gray-300 mb-2">Senha</label>
+                            <div className="relative">
+                                <input
+                                    type={showPass ? "text" : "password"}
+                                    value={senha}
+                                    onChange={(e) => setSenha(e.target.value)}
+                                    placeholder="Digite sua senha"
+                                    className="w-full rounded-xl bg-[#1c1633] border border-[#2c2450] text-gray-100 placeholder:text-gray-500 px-4 py-3 pr-12 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPass((s) => !s)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                                    aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
+                                >
+                                    {/* ícone olho simples em SVG */}
+                                    {showPass ? (
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                                            <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.6" />
+                                            <path d="M10.58 10.58A3 3 0 0012 15a3 3 0 002.83-3.74" stroke="currentColor" strokeWidth="1.6" fill="none" />
+                                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7c-2.57 0-4.74-.88-6.5-2.1" stroke="currentColor" strokeWidth="1.6" fill="none" />
+                                        </svg>
+                                    ) : (
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" strokeWidth="1.6" fill="none" />
+                                            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" fill="none" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Lembrar + Esqueceu */}
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                            <label className="inline-flex items-center gap-2 text-xs text-gray-400">
+                                <input
+                                    type="checkbox"
+                                    checked={remember}
+                                    onChange={(e) => setRemember(e.target.checked)}
+                                    className="rounded border-[#2c2450] bg-[#1c1633] text-violet-500 focus:ring-violet-400/40"
+                                />
+                                Lembrar acesso
+                            </label>
+
+                            <Link
+                                to="/esqueci-senha"
+                                className="text-xs text-violet-300 hover:text-violet-200"
+                            >
+                                Esqueceu a senha?
+                            </Link>
+                        </div>
+
+                        {/* Botão */}
+                        <button
+                            type="submit"
+                            className="w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 transition-transform hover:-translate-y-0.5 focus:outline-none"
+                            style={{
+                                background:
+                                    "linear-gradient(90deg, #6C2CF5 0%, #7C4DFF 40%, #7B61FF 100%)",
+                            }}
+                        >
+                            Login
+                        </button>
+
+                        {/* rodapé de links */}
+                        <div className="text-xs text-gray-400 text-center">
+                            Não tem uma conta?{" "}
+                            <a href="#" className="text-violet-300 hover:text-violet-200">
+                                Fale com a Raquel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {/* Coluna DIREITA – imagem de destaque ocupando a tela */}
+            <div className="relative hidden lg:block">
+                <div className="absolute inset-0 bg-[#0b0916]" />
+                <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_20%_20%,#6d4bf0_0%,transparent_35%),radial-gradient(circle_at_80%_10%,#2ec6e8_0%,transparent_30%)]" />
+
+                {/* imagem (coloque seu asset em /public/assets/img/login-hero.png) */}
+                <div className="relative h-full w-full flex items-center justify-center">
                     <img
-                        src="/assets/img/SecurityOne.png"
-                        alt="Hackone Logo"
-                        className="h-15
-                        "
+                        src="/assets/img/mockup-alta.webp"
+                        alt="Dashboard preview"
+                        className="relative h-full w-full object-cover"
                     />
                 </div>
-
-                <div className="mb-6">
-                    <label className="block text-sm text-gray-300 mb-1">E-mail</label>
-                    <input
-                        type="text"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 bg-[#2a1d5a] text-white border border-[#3d2a7d] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                        required
-                    />
-                </div>
-
-                <div className="mb-8">
-                    <label className="block text-sm text-gray-300 mb-1">Senha</label>
-                    <input
-                        type="password"
-                        value={senha}
-                        onChange={(e) => setSenha(e.target.value)}
-                        className="w-full px-4 py-2 bg-[#2a1d5a] text-white border border-[#3d2a7d] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                        required
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    className="w-full bg-cyan-400 hover:bg-cyan-300 text-[#1a1a1a] font-bold py-2 rounded-lg transition-all duration-200"
-                >
-                    Entrar
-                </button>
-
-                <p className="text-center text-xs text-gray-400 mt-6">
-                    © 2025 Hackone. Todos os direitos reservados.
-                </p>
-            </form>
+            </div>
         </div>
-    )
+    );
 }

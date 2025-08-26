@@ -72,6 +72,41 @@ const donutLabels = ["Wazuh", "Iris", "PX-VR", "Shuffle", "Outros"]
 export default function Dashboard() {
     const navigate = useNavigate()
 
+    const [agents, setAgents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const token = localStorage.getItem("token");
+    const apiUrl = import.meta.env.VITE_API_URL;
+
+    useEffect(() => {
+        const fetchAgents = async () => {
+            setLoading(true); // ← inicia carregamento
+            try {
+                const resp = await fetch(`${apiUrl}/api/acesso/wazuh/agents`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!resp.ok) {
+                    const errorMsg = await resp.text();
+                    throw new Error(`Erro ${resp.status}: ${errorMsg}`);
+                }
+
+                const data = await resp.json();
+                console.log("Resposta do Strapi:", data);
+                setAgents(data.data?.affected_items || []);
+            } catch (err) {
+                console.error("Erro ao buscar agentes:", err);
+            } finally {
+                setLoading(false); // ← finaliza carregamento
+            }
+        };
+
+        if (token) fetchAgents();
+    }, [token]);
+
     const handleLogout = () => {
         logout()
         toastSuccess('Logout realizado com sucesso!')
@@ -101,6 +136,7 @@ export default function Dashboard() {
     if (temaClaro === undefined) return null;
 
     return (
+
         <div className="min-h-screen px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300">
             {/* Header */}
             <header className="flex items-center py-4 px-6 rounded-xl justify-between mb-8">
@@ -130,6 +166,23 @@ export default function Dashboard() {
             </header>
 
             {/* Bloco: Bem-vindo + Gráfico + Cards */}
+
+            {/* <section className="cards p-6 rounded-2xl shadow-lg mb-8">
+                <h3 className="text-lg font-semibold text-white mb-4">
+                    Agentes Wazuh (teste)
+                </h3>
+                {loading ? (
+                    <p className="text-gray-400">Carregando...</p>
+                ) : (
+                    <ul className="text-gray-300 text-sm">
+                        {agents.map((agente) => (
+                            <li key={agente.id}>
+                                {agente.name} ({agente.status})
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section> */}
 
             <section className="grid md:grid-cols-3 gap-6 mb-8">
                 {/* COLUNA ESQUERDA: Bem-vindo + Cards */}

@@ -1,11 +1,64 @@
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+a.header:hover{
+  background:#6a01bb;
+  color:#fff;
+}
+
+.badge{
+  width: 55px;
+  text-align: center;
+}
+
+.badge-pink{
+  background-color: #fb35b92a;
+  border: 1px solid #f914ad59;
+  color: #F914AD;
+  font-weight: 400;
+  
+}
+
+.badge-darkpink{
+  background-color: #7058e62c;
+  border: 1px solid #7058e63d;
+  color: #7058e6;
+  font-weight: 400;
+  
+}
+
+.badge-green{
+  background-color: #1dd69b31;
+  border: 1px solid #1dd69b50;
+  color: #1DD69A;
+  font-weight: 400;
+  
+}
+
+.badge-high {
+  background-color: #af45ff30;
+  border: 1px solid #f5f0f940;
+}
+
+.btn{
+  background-color: #4807df41;
+  border: 2px solid #321C64;
+}
+
 /* Padrão para escuro */
 .fundo-dashboard {
-  background: linear-gradient(to bottom right, #4C009A, #34025d);
+  background: #0A0617;
   transition: background-color 0.3s ease, color 0.3s ease, background 0.3s ease;
 }
 
 .cards {
-  background-color: #132337b8;
+  background-color: #161125;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.cards.inverse{
+  background-color: transparent;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
@@ -16,6 +69,11 @@
 .h2 {
   color: white;
   transition: color 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+h3{
+  font-family: 'Inter', sans-serif;
 }
 
 header button{
@@ -29,6 +87,49 @@ header button:hover{
 .logout{
   color: #fff;
 }
+
+li{
+  font-weight: 200;
+  color: #939393;
+}
+
+/*-- Icones --*/
+li svg{
+  width: 20px;
+  height: 20px;
+}
+button svg.bars{
+  width: 25px;
+  height: 25px;
+}
+.icon-risk{
+  margin-top: -10px;
+}
+
+/*---BUTTONS---*/
+button{
+  cursor: pointer;
+}
+
+button.login{
+  background: transparent;
+}
+
+button div.box-icon{
+  background:#744CD8;
+  color:#fff;
+}
+
+button div.box-icon svg{
+  font-size: 18px;
+}
+
+header button.toggle{
+  background: #161125 !important;
+}
+
+/*---------------*/
+
 
 /* ----------------Quando estiver em modo claro -----------*/
 
@@ -57,6 +158,7 @@ header button:hover{
 .tema-claro h2, .tema-claro h3 {
   color: #1a1a1a !important;
   transition: color 0.3s ease;
+  font-family: 'Inter', sans-serif;
 }
 
 .tema-claro p, .tema-claro .cards .text-gray-300{
@@ -81,12 +183,9 @@ header button:hover{
 
 /*----------------------------------------------------------*/
 
-button{
-  cursor: pointer;
-}
-
 .cards{
-  background-color: #132337b8;
+  background-color: #161125;
+  border:2px solid #1D1929;
 }
 
 .leaflet-right .leaflet-control {
@@ -100,3 +199,114 @@ button{
 .leaflet-right .leaflet-control {
   float: right !important;
 }
+
+
+/*ANIMAÇÃO CORES E EFEITOS*/
+
+/*Risk Level Card*/
+.risk-light-effect::before {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: 0;
+  width: 100%;
+  height: 220%;
+  background: radial-gradient(
+    circle at top center,
+    rgba(112, 35, 255, 0.627),
+    rgba(41, 13, 111, 0.533),
+    transparent 75%
+  );
+  animation: moveGlow 8s ease-in-out infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes moveGlow {
+  0% {
+    transform: translateY(-25%);
+  }
+  50% {
+    transform: translateY(10%);
+  }
+  100% {
+    transform: translateY(-25%);
+  }
+}
+
+.risk-light-effect > * {
+  position: relative;
+  z-index: 10;
+}
+
+/*Tendencia e Volumes de Casos*/
+.glow-bottom::after {
+  content: "";
+  position: absolute;
+  bottom: -60%;
+  left: 0;
+  width: 100%;
+  height: 220%;
+  background: radial-gradient(
+    circle at bottom center,
+    rgba(74, 6, 221, 0.678),
+    rgba(238, 53, 251, 0.408),
+    transparent 75%
+  );
+  animation: riseGlow 8s ease-in-out infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes riseGlow {
+  0% {
+    transform: translateY(30%);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(0%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(30%);
+    opacity: 0.3;
+  }
+}
+
+.glow-bottom > * {
+  position: relative;
+  z-index: 10;
+}
+
+/*MAPA*/
+.leaflet-pane path.shooting-line {
+  stroke-dasharray: 5, 27;
+  stroke-dashoffset: 0;
+  animation: dashmove 1s linear infinite;
+}
+
+@keyframes dashmove {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+.leaflet-pane path.bubble-pulse {
+  animation: pulseGlow 1.8s ease-in-out infinite;
+  transform-origin: center;
+  transition: filter 0.2s ease;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    r: 6;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 1px #22c55e);
+  }
+  50% {
+    r: 7;
+    opacity: 1;
+    filter: drop-shadow(0 0 10px #22c55e); /* brilho */
+  }
+}
+
