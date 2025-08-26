@@ -126,7 +126,7 @@ export default function Login() {
                         </div>
 
                         {/* Lembrar + Esqueceu */}
-                        <div className="flex items-center justify-between gap-3 pt-1">
+                        {/* <div className="flex items-center justify-between gap-3 pt-1">
                             <label className="inline-flex items-center gap-2 text-xs text-gray-400">
                                 <input
                                     type="checkbox"
@@ -143,7 +143,7 @@ export default function Login() {
                             >
                                 Esqueceu a senha?
                             </Link>
-                        </div>
+                        </div> */}
 
                         {/* Botão */}
                         <button
