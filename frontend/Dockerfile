@@ -12,6 +12,9 @@ FROM node:20
 
 WORKDIR /app
 
+# Copia o .env.production como .env (usado no build do Vite)
+COPY .env.production .env
+
 # Copia apenas o build
 COPY --from=builder /app/dist /app/dist
 
