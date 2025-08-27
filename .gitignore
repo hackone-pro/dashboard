@@ -26,6 +26,7 @@ out/
 
 # Arquivos de ambiente
 .env
+.env.production
 .env.*.local
 *.log
 frontend/Dockerfile.dev
