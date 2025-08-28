@@ -165,7 +165,7 @@ export default function Login() {
                             </a>
                         </div>
                         <div className="mt-10 d-flex justify-center">
-                            <img src="/assets/img/hackone.png" alt="Hackone" className="w-[82px]"/>
+                            <img src="/assets/img/hackone.png" alt="Hackone" className="w-[82px] mx-auto"/>
                         </div>
                     </form>
                 </div>
