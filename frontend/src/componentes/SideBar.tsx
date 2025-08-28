@@ -70,9 +70,14 @@ export default function Sidebar() {
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
                 )}>
-                    {/* @ts-ignore */}
-                    <PiSkullThin />
-                    {isOpen && <span>Incidentes</span>}
+                    <Link to="/incidentes" className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                        {/* @ts-ignore */}
+                        <PiSkullThin />
+                        {isOpen && <span>Incidentes</span>}
+                    </Link>
                 </li>
 
                 <li className={clsx(

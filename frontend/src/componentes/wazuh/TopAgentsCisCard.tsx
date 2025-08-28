@@ -36,7 +36,7 @@ export default function TopAgentsCisCard() {
 
   // Ordena pela menor % (melhor conformidade) → já vem assim do backend, mas garantimos aqui
   const lista = useMemo(
-    () => [...itens].sort((a, b) => a.score_cis_percent - b.score_cis_percent),
+    () => [...itens].sort((a, b) =>  b.score_cis_percent - a.score_cis_percent),
     [itens]
   );
 
@@ -77,7 +77,7 @@ export default function TopAgentsCisCard() {
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <h3 className="text-white font-semibold text-sm">
-            Top agentes com menores scores de CIS
+            Auditoria CIS - Top Servidores
           </h3>
         </div>
 

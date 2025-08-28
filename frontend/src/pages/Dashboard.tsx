@@ -59,15 +59,14 @@ export default function Dashboard() {
                             <div className="flex justify-between items-center relative z-[9999]">
                                 {/* Título + ícone com tooltip */}
                                 <div className="flex items-center gap-1 text-sm text-white relative group">
-                                    <span>Risk Level</span>
+                                    <span>Nível de Risco</span>
 
                                     {/* @ts-ignore */}
                                     <FaQuestionCircle className="text-purple-400 w-4 h-4 cursor-pointer" />
 
                                     {/* Tooltip */}
                                     <div className="absolute left-6 top-full mt-2 w-64 p-3 rounded-md bg-[#1a1230] text-gray-300 text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
-                                        Indicador geral do nível de exposição da organização nas últimas 24 horas,
-                                        calculado com base no volume e criticidade dos alertas. Quanto maior a porcentagem, maior o risco.
+                                        Quanto maior a porcentagem, maior o risco.
                                     </div>
                                 </div>
 
@@ -80,7 +79,7 @@ export default function Dashboard() {
                             </div>
 
                             <div className="grid grid-cols-12 items-center gap-3 relative">
-                                <div className="col-span-9 flex justify-center relative">
+                                <div className="col-span-12 flex justify-center relative">
                                     <GraficoGauge valor={Math.round(indiceRisco)} cor="#B832F6" />
                                     <img
                                         src="/assets/img/icon-risk.png"
@@ -88,12 +87,12 @@ export default function Dashboard() {
                                         className="absolute z-20 w-6 h-6 top-1/2 left-1/2 -translate-x-1/2 -translate-y-[72%] pointer-events-none"
                                     />
                                 </div>
-                                <div className="col-span-3 flex flex-col items-start justify-center">
+                                {/* <div className="col-span-3 flex flex-col items-start justify-center">
                                     <span className="text-xs text-gray-400 mb-1">Nível de exposição</span>
                                     <span className={`px-3 py-1 text-xs rounded-md text-white ${nivel.badge}`}>
                                         {nivel.label}
                                     </span>
-                                </div>
+                                </div> */}
                             </div>
 
                             <div className="flex items-center justify-between text-[11px] mt-2 text-gray-400 w-full">
@@ -123,7 +122,7 @@ export default function Dashboard() {
                         {/* Threat Map */}
                         <div className="cards inverse flex-grow p-2 md:p-6 rounded-2xl shadow-lg card-dashboard mb-3">
                             <div className="flex justify-between items-center mb-5">
-                                <h3 className="text-sm text-white">Threat Map</h3>
+                                <h3 className="text-sm text-white">Mapa de Ataque</h3>
                                 <button
                                     onClick={() => navigate('/threat-map')}
                                     className="px-2 py-1 btn hover:bg-purple-600 text-[11px] text-white rounded-md"
@@ -148,7 +147,7 @@ export default function Dashboard() {
                         <div className="cards flex-grow p-6 rounded-2xl h-115 shadow-lg card-dashboard mb-3 transition-all hover:-translate-y-1 hover:shadow-lg">
                             <div className="grid grid-cols-12 mb-5">
                                 <div className="col-span-8">
-                                    <h3 className="text-sm text-white">Top 10 países que mais originam ataques</h3>
+                                    <h3 className="text-sm text-white">Top 10 países de origem de ataque</h3>
                                 </div> <div className="col-span-4 flex items-center justify-end">
                                     <span className="text-xs text-white">4.171 ataques</span>
                                 </div>

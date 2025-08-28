@@ -1,16 +1,22 @@
 import axios from "axios";
 
-
 // Tipo de incidente conforme retorno da API IRIS
 export type Incidente = {
     case_id: number;
     case_name: string;
     case_description: string;
     case_open_date: string;
-    classification_id: number;
-    classification: string;
+    classification_id: number | null;
+    classification: string | null;
     opened_by: string;
     client_name: string;
+
+    // 👇 adicionados (existem no payload real)
+    owner?: string;
+    state_name?: string;        // "Open" | "Resolved" | "Assigned" | ...
+    case_close_date?: string;   // pode vir vazio
+    case_uuid?: string;
+    case_soc_id?: string;
 };
 
 

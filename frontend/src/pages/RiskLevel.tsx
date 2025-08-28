@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { getSeveridadeWazuh } from "../services/wazuh/severidade.service";
 import LayoutModel from "../componentes/LayoutModel";
 import GraficoGauge from '../componentes/graficos/GraficoGauge';
-import GraficoDonut from "../componentes/graficos/GraficoDonut";
 import FluxoIncidentes from "../componentes/iris/FluxoIncidentes";
 import SeveridadeCard from "../componentes/wazuh/SeveridadeCard";
 import TopAgentsCard from "../componentes/wazuh/TopAgentsCard";

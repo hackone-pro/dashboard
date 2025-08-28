@@ -168,7 +168,7 @@ export default function TopIncidentes({ token }: Props) {
     return (
         <div className="cards mt-3 p-6 rounded-2xl shadow-lg flex-grow hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
             <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm text-white">Top Incidentes</h3>
+                <h3 className="text-sm text-white">Últimos Incidentes</h3>
                 <select
                     className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
                     value={filtroDias}

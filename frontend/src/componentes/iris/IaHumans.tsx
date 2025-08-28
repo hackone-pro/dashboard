@@ -131,7 +131,7 @@ export default function IaHumans({ token }: Props) {
                             <div className="flex flex-col items-center">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                                    <span className="text-gray-400">Casos de IA</span>
+                                    <span className="text-gray-400">IA</span>
                                 </div>
                                 <span className="text-white text-lg font-semibold">{totalIa}</span>
                             </div>
@@ -139,7 +139,7 @@ export default function IaHumans({ token }: Props) {
                             <div className="flex flex-col items-center">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="w-2 h-2 rounded-full bg-pink-400"></span>
-                                    <span className="text-gray-400">Casos de Humanos</span>
+                                    <span className="text-gray-400">Humanos</span>
                                 </div>
                                 <span className="text-white text-lg font-semibold">{totalHumanos}</span>
                             </div>

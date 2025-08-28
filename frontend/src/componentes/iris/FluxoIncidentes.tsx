@@ -102,10 +102,10 @@ export default function FluxoIncidentesIris({ token }: Props) {
     <>
       <div className="flex justify-between items-start mb-4">
         <div className={`transition-opacity duration-300 ${animReady ? "opacity-100" : "opacity-0"}`}>
-          <h3 className="text-sm text-white font-semibold mb-1">
-            Fluxo de Incidentes no IRIS
+          <h3 className="text-sm text-white font-semibold mb-4">
+            Controle de Incidentes
           </h3>
-          <p className="text-[11px] text-gray-500 mb-3">{tituloPeriodo}</p>
+          {/* <p className="text-[11px] text-gray-500 mb-3">{tituloPeriodo}</p> */}
 
           {carregando ? (
             <div className="flex gap-10">

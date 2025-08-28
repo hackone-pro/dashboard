@@ -70,7 +70,7 @@ export default function Login() {
                         Bem-vindo ao<br /> SecurityOne
                     </h1>
 
-                    <p className="mt-4 text-sm text-gray-300 max-w-md">
+                    <p className="mt-4 text-sm text-gray-400 max-w-md">
                         Acesse o painel de segurança e visualize em tempo real
                         os níveis de risco, incidentes e ameaças que impactam
                         seu ambiente.
@@ -85,7 +85,7 @@ export default function Login() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="Digite seu email"
-                                className="w-full rounded-xl bg-[#1c1633] border border-[#2c2450] text-gray-100 placeholder:text-gray-500 px-4 py-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30"
+                                className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 placeholder:text-gray-500 px-4 py-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30"
                                 required
                             />
                         </div>
@@ -99,7 +99,7 @@ export default function Login() {
                                     value={senha}
                                     onChange={(e) => setSenha(e.target.value)}
                                     placeholder="Digite sua senha"
-                                    className="w-full rounded-xl bg-[#1c1633] border border-[#2c2450] text-gray-100 placeholder:text-gray-500 px-4 py-3 pr-12 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30"
+                                    className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 placeholder:text-gray-500 px-4 py-3 pr-12 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30"
                                     required
                                 />
                                 <button
@@ -160,9 +160,12 @@ export default function Login() {
                         {/* rodapé de links */}
                         <div className="text-xs text-gray-400 text-center">
                             Não tem uma conta?{" "}
-                            <a href="#" className="text-violet-300 hover:text-violet-200">
-                                Fale com a Raquel
+                            <a href="https://hackone.com.br/consultoria-aberturachamado" target="_blank" className="text-violet-300 hover:text-violet-200">
+                                Fale com o suporte
                             </a>
+                        </div>
+                        <div className="mt-10 d-flex justify-center">
+                            <img src="/assets/img/hackone.png" alt="Hackone" className="w-[82px]"/>
                         </div>
                     </form>
                 </div>

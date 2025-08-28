@@ -56,14 +56,14 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
           <div className="flex items-center gap-3">
             {/* WhatsApp */}
             <a
-              href="https://wa.me/55XXXXXXXXX" // substitua pelo número real
+              href="https://hackone.com.br/consultoria-aberturachamado" // substitua pelo número real
               target="_blank"
               rel="noopener noreferrer"
               className="flex header items-center gap-2 text-gray-400 border border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
             >
               {/* @ts-ignore */}
               <FaWhatsapp className="text-gray-300 text-1xl"/>
-              Fale com a Raquel
+              Suporte
             </a>
 
             {/* Sair */}
