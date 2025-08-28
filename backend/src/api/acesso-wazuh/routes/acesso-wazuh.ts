@@ -1,20 +1,34 @@
 export default {
   routes: [
     {
-      method: "POST",
-      path: "/acesso/wazuh",
-      handler: "acesso-wazuh.login",
-      config: {
-        policies: [],
-      },
+      method: "GET",
+      path: '/acesso/wazuh/severidade',
+      handler: 'acesso-wazuh.severidade',
+      config: { policies: [] },
     },
     {
       method: "GET",
-      path: "/acesso/wazuh/agents",
-      handler: "acesso-wazuh.agents",
-      config: {
-        policies: [],
-      },
+      path: "/acesso/wazuh/tenant",
+      handler: "acesso-wazuh.buscarTenantPorUsuario",
+      config: { policies: [] },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/top-geradores",
+      handler: "acesso-wazuh.topGeradores",
+      config: { policies: [] },
+    },
+    {
+      method: 'GET',
+      path: '/acesso/wazuh/top-agentes',
+      handler: 'acesso-wazuh.topAgentes',
+      config: { policies: [] },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/top-agentes-cis",
+      handler: "acesso-wazuh.topAgentesCis",
+      config: { policies: [] },
     },
   ],
 };

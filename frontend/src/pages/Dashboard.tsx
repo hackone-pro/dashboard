@@ -1,9 +1,12 @@
 // src/pages/Dashboard.tsx
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { getSeveridadeWazuh } from "../services/wazuh/severidade.service";
+
 import LayoutModel from "../componentes/LayoutModel";
 import GeoHitsMap from '../componentes/graficos/GeoHitsMap';
 import GraficoGauge from '../componentes/graficos/GraficoGauge';
-import GraficoBarraEmpilhadaHorizontal from "../componentes/graficos/GraficoBarraEmpilhadaHorizontal";
 import { FaQuestionCircle } from "react-icons/fa";
 
 //Utils
@@ -12,21 +15,37 @@ import { getToken } from '../utils/auth';
 //Components
 import TopIncidentesCard from "../componentes/iris/TopIncidents";
 import IaHumans from "../componentes/iris/IaHumans";
+import TopFirewallCard from "../componentes/wazuh/TopFirewallCard";
 
-interface Incidente {
-    case_id: number;
-    case_name: string;
-    case_description: string;
-    case_open_date: string;
-    classification_id: number;
-    classification: string;
-    opened_by: string;
+
+function getNivelExposicao(percentual: number) {
+    if (percentual < 40) return { label: "Baixo", badge: "badge-green" };
+    if (percentual < 73.5) return { label: "Médio", badge: "badge-darkpink" };
+    if (percentual < 93.5) return { label: "Alto", badge: "badge-high" };
+    return { label: "Crítico", badge: "badge-pink" };
 }
 
 export default function Dashboard() {
 
     const token = getToken();
     const navigate = useNavigate();
+    const [indiceRisco, setIndiceRisco] = useState(0);
+    const riscoArredondado = Math.round(indiceRisco);
+    const nivel = getNivelExposicao(riscoArredondado);
+
+    useEffect(() => {
+        async function carregarDados() {
+            const dados = await getSeveridadeWazuh();
+            const { baixo, medio, alto, critico, total } = dados;
+            const risco =
+                total > 0
+                    ? ((baixo * 0.2 + medio * 0.6 + alto * 0.87 + critico * 1.0) / total) *
+                    100
+                    : 0;
+            setIndiceRisco(risco);
+        }
+        carregarDados();
+    }, []);
 
     return (
         <LayoutModel titulo="Home">
@@ -62,7 +81,7 @@ export default function Dashboard() {
 
                             <div className="grid grid-cols-12 items-center gap-3 relative">
                                 <div className="col-span-9 flex justify-center relative">
-                                    <GraficoGauge valor={82} cor="#B832F6" />
+                                    <GraficoGauge valor={Math.round(indiceRisco)} cor="#B832F6" />
                                     <img
                                         src="/assets/img/icon-risk.png"
                                         alt="Risco"
@@ -71,7 +90,9 @@ export default function Dashboard() {
                                 </div>
                                 <div className="col-span-3 flex flex-col items-start justify-center">
                                     <span className="text-xs text-gray-400 mb-1">Nível de exposição</span>
-                                    <span className="px-3 py-1 text-xs rounded-md badge-pink text-white">Crítico</span>
+                                    <span className={`px-3 py-1 text-xs rounded-md text-white ${nivel.badge}`}>
+                                        {nivel.label}
+                                    </span>
                                 </div>
                             </div>
 
@@ -82,7 +103,12 @@ export default function Dashboard() {
                                     <div className="flex items-center gap-1"><span className="w-2 h-2 bg-purple-500 rounded-full"></span> Alto</div>
                                     <div className="flex items-center gap-1"><span className="w-2 h-2 bg-pink-500 rounded-full"></span> Crítico</div>
                                 </div>
-                                <button className="px-2 py-1 btn hover:bg-purple-600 text-white rounded-md">Acessar →</button>
+                                <button
+                                    onClick={() => navigate("/risk-level")}
+                                    className="px-2 py-1 btn hover:bg-purple-600 text-white rounded-md"
+                                >
+                                    Acessar →
+                                </button>
                             </div>
                         </div>
 
@@ -152,24 +178,7 @@ export default function Dashboard() {
                             </table>
                         </div>
 
-                        <div className="cards flex-grow p-6 rounded-2xl shadow-lg card-dashboard transition-all hover:-translate-y-1 hover:shadow-lg">
-                            <div className="grid grid-cols-12 mb-5">
-                                <div className="col-span-8">
-                                    <h3 className="text-sm text-white">Top 5 Firewall geradores de alertas</h3>
-                                </div>
-                                <div className="col-span-4 flex items-center justify-end">
-                                    <select
-                                        className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#1D1929]">
-                                        <option value={1}>24 horas</option>
-                                        <option value={7}>7 dias</option>
-                                        <option value={15}>15 dias</option>
-                                        <option value={30}>30 dias</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <GraficoBarraEmpilhadaHorizontal />
-
-                        </div>
+                        <TopFirewallCard />
                     </div>
                 </div>
             </section>

@@ -1,41 +1,45 @@
+// src/components/graficos/GraficoDonut.tsx
 import Chart from "react-apexcharts";
 
 type GraficoDonutProps = {
-  titulo?: string;
-  labels: string[];
-  series: number[];
-  cores?: string[];
+  labels: string[];              // ex.: ["Crítico","Alto","Médio","Baixo"]
+  series: number[];              // ex.: [criticoTotal, altoTotal, medioTotal, baixoTotal]
+  cores?: string[];              // ex.: ["#EC4899","#6A55DC","#6301F4","#1DD69A"]
   height?: number;
+  /** Título ao lado do total (coluna direita) */
+  descricaoTotal?: string;       // ex.: "Alertas de Firewall"
 };
 
 export default function GraficoDonut({
   labels,
   series,
-  cores = ["#00BFFF", "#8E6FFF", "#EF4444", "#F59E0B", "#10B981"],
-  height = 250,
+  cores = ["#EC4899", "#6A55DC", "#6301F4", "#1DD69A"],
+  height = 220,
+  descricaoTotal = "Alertas",
 }: GraficoDonutProps) {
-  const total = series.reduce((acc, cur) => acc + cur, 0);
-  const percentBaixo = ((series[3] / total) * 100).toFixed(0); // índice 3 = Baixo
+  const total = Math.max(0, series.reduce((a, b) => a + (b || 0), 0));
+
+  // Prioriza "Baixo" para o centro; se não existir, usa a maior fatia
+  const idxBaixo = labels.findIndex((l) => l.toLowerCase().startsWith("baixo"));
+  const idxCentro =
+    idxBaixo >= 0
+      ? idxBaixo
+      : series.indexOf(Math.max(...series.map((n) => n || 0)));
+
+  const pctCentro =
+    total > 0 ? Math.round(((series[idxCentro] || 0) / total) * 100) : 0;
 
   const options: ApexCharts.ApexOptions = {
-    chart: {
-      type: "donut",
-      foreColor: "#fff",
-    },
+    chart: { type: "donut", foreColor: "#fff" },
     labels,
     colors: cores,
-    legend: {
-      show: false, // vamos criar legenda manualmente
-    },
+    legend: { show: false },
     tooltip: {
       theme: "dark",
+      y: { formatter: (val: number) => (val || 0).toLocaleString("pt-BR") },
     },
-    dataLabels: {
-      enabled: false,
-    },
-    stroke: {
-      show: false,
-    },
+    dataLabels: { enabled: false },
+    stroke: { show: false },
     plotOptions: {
       pie: {
         donut: {
@@ -46,7 +50,7 @@ export default function GraficoDonut({
             value: { show: false },
             total: {
               show: true,
-              label: `${percentBaixo}%`,
+              label: `${pctCentro}%`,
               fontSize: "24px",
               color: "#fff",
               formatter: () => "",
@@ -57,47 +61,46 @@ export default function GraficoDonut({
     },
   };
 
+  const corCentro = cores[idxCentro] ?? "#10B981";
+
   return (
     <div className="flex items-center justify-between gap-6 w-full">
-      {/* Donut Chart */}
-      <div className="relative w-40 h-40">
-        <Chart
-          options={options}
-          series={series}
-          type="donut"
-          height={height}
-          width="100%"
-        />
-
-        {/* Label "Baixo" centralizada */}
+      {/* Donut */}
+      <div className="relative w-44 h-44">
+        <Chart options={options} series={series} type="donut" height={height} width="100%" />
+        {/* Centro: % + pill com o nome */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-white text-lg font-semibold">{percentBaixo}%</span>
-          <span className="text-sm px-2 py-0.5 mt-1 rounded-full bg-emerald-500 text-black font-medium">Baixo</span>
+          <span className="text-white text-3xl font-semibold">{pctCentro}%</span>
+          <span
+            className="text-xs px-2 py-0.5 mt-1 rounded-full font-medium"
+            style={{ background: corCentro, color: "#0b0b1a" }}
+          >
+            {labels[idxCentro] ?? ""}
+          </span>
         </div>
       </div>
 
-      {/* Total + legenda */}
-      <div>
-        <h3 className="text-white text-3xl font-bold">4.532</h3>
-        <p className="text-gray-400 text-sm mb-3">Alertas de Firewall</p>
+      {/* Coluna direita: total grande + descrição + lista com pontos coloridos e VALORES */}
+      <div className="flex flex-col items-start">
+        <div className=" gap-2 mb-2">
+          <h3 className="text-white text-2xl">
+            {total.toLocaleString("pt-BR")}
+          </h3>
+          <span className="text-gray-400 text-sm">{descricaoTotal}</span>
+        </div>
 
-        <div className="flex flex-col gap-1 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-pink-500 rounded-full"></span>
-            <span className="text-gray-300">132 alertas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
-            <span className="text-gray-300">500 alertas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-indigo-500 rounded-full"></span>
-            <span className="text-gray-300">1.800 alertas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-emerald-400 rounded-full"></span>
-            <span className="text-gray-300">2.100 alertas</span>
-          </div>
+        <div className="flex flex-col gap-2 text-sm">
+          {labels.map((lb, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <span
+                className="w-3 h-3 rounded-full"
+                style={{ background: cores[i] ?? "#999" }}
+              />
+              <span className="text-gray-300">
+                {(series[i] || 0).toLocaleString("pt-BR")} alertas
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

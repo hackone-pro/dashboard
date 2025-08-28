@@ -1,155 +1,295 @@
 import { useEffect, useState } from "react";
-import { getCasosRecentes } from "../../services/iris/cases.service";
+import { getTenant } from "../../services/wazuh/tenant.service";
+import { getTodosCasos } from "../../services/iris/cases.service";
 
-export type Incidente = {
+interface Incidente {
     case_id: number;
     case_name: string;
     case_description: string;
-    case_open_date: string;
+    case_open_date: string; // "MM/DD/YYYY"
     classification_id: number;
     classification: string;
-};
+    client_name: string;
+}
 
-type Props = {
+interface Props {
     token: string;
-};
+}
 
-export default function TopIncidentesCard({ token }: Props) {
-    const [range, setRange] = useState("1d");
+export default function TopIncidentes({ token }: Props) {
     const [incidentes, setIncidentes] = useState<Incidente[]>([]);
+    const [filtroDias, setFiltroDias] = useState(0);
+    const [irisUrl, setIrisUrl] = useState<string>("");
+
+    const [carregando, setCarregando] = useState(true);
+    const [erro, setErro] = useState<string | null>(null);
+    const [animReady, setAnimReady] = useState(false);
 
     useEffect(() => {
+        let ativo = true;
+
         async function fetch() {
-            const data = await getCasosRecentes(range, token);
-            // console.log("🧪 Incidentes recebidos:", data.slice(0, 12)); // 👈 alterado
-            setIncidentes(data.slice(0, 8));
+            try {
+                setCarregando(true);
+                setErro(null);
+                setAnimReady(false);
+
+                const tenant = await getTenant();
+                if (!ativo) return;
+                setIrisUrl(tenant.iris_url);
+
+                const response = await getTodosCasos(token);
+                // @ts-ignore
+                const data: Incidente[] = Array.isArray(response) ? response : response.data;
+
+                const hoje = new Date();
+                const limite = new Date();
+                limite.setDate(hoje.getDate() - filtroDias);
+
+                // filtra por cliente (+ período se filtroDias > 0)
+                const filtrado = data.filter((incidente) => {
+                    const [mes, dia, ano] = incidente.case_open_date.split("/");
+                    const dataIncidente = new Date(`${ano}-${mes}-${dia}`);
+
+                    if (filtroDias === 0) {
+                        return incidente.client_name === tenant.cliente_name;
+                    }
+                    return (
+                        dataIncidente >= limite &&
+                        incidente.client_name === tenant.cliente_name
+                    );
+                });
+
+                // ordena por data desc e pega somente os 7 mais recentes
+                const ordenado = filtrado.sort((a, b) => {
+                    const [ma, da, ya] = a.case_open_date.split("/");
+                    const [mb, db, yb] = b.case_open_date.split("/");
+                    const daA = new Date(`${ya}-${ma}-${da}`).getTime();
+                    const daB = new Date(`${yb}-${mb}-${db}`).getTime();
+                    return daB - daA;
+                });
+
+                if (!ativo) return;
+                setIncidentes(ordenado.slice(0, 7));
+                setTimeout(() => ativo && setAnimReady(true), 50);
+            } catch (e: any) {
+                if (!ativo) return;
+                setErro(e?.message ?? "Erro ao carregar incidentes");
+            } finally {
+                if (ativo) setCarregando(false);
+            }
         }
+
         fetch();
-    }, [range]);
+        return () => {
+            ativo = false;
+        };
+    }, [token, filtroDias]);
 
     const getCorBadge = (nivel: string) => {
         switch (nivel) {
-            case "Crítico": return "badge-pink";
-            case "Alto": return "bg-purple-500";
-            case "Médio": return "badge-darkpink";
-            case "Baixo": return "badge-green";
-            default: return "bg-gray-500";
+            case "Crítico":
+            case "Crítica":
+                return "badge-pink";
+            case "Alto":
+            case "Alta":
+                return "badge-high";
+            case "Médio":
+            case "Média":
+                return "badge-darkpink";
+            case "Baixo":
+            case "Baixa":
+                return "badge-green";
+            default:
+                return "bg-gray-500";
         }
     };
 
     const getCorBarra = (nivel: string) => {
         switch (nivel) {
-            case "Crítico": return "bg-pink-500";
-            case "Alto": return "bg-purple-400";
-            case "Médio": return "bg-indigo-400";
-            case "Baixo": return "bg-emerald-400";
-            default: return "bg-gray-400";
+            case "Crítico":
+            case "Crítica":
+                return "bg-pink-500";
+            case "Alto":
+            case "Alta":
+                return "bg-purple-400";
+            case "Médio":
+            case "Média":
+                return "bg-indigo-400";
+            case "Baixo":
+            case "Baixa":
+                return "bg-emerald-400";
+            default:
+                return "bg-gray-400";
         }
     };
 
     const getQtdPreenchida = (nivel: string) => {
         switch (nivel) {
-            case "Baixo": return 1;
-            case "Médio": return 2;
-            case "Alto": return 3;
-            case "Crítico": return 4;
-            default: return 1;
+            case "Baixo":
+            case "Baixa":
+                return 1;
+            case "Médio":
+            case "Média":
+                return 2;
+            case "Alto":
+            case "Alta":
+                return 3;
+            case "Crítico":
+            case "Crítica":
+                return 4;
+            default:
+                return 1;
         }
     };
 
-    const mapNivelPorClassificationId = (id: number): "Baixo" | "Médio" | "Alto" | "Crítico" => {
-        if ([1, 2, 11, 12, 13, 25, 32, 33, 34, 35, 36].includes(id)) return "Baixo"; // spam, escaneamentos, conformidade
-        if ([3, 4, 5, 14, 15, 22, 30, 31].includes(id)) return "Médio";              // vírus, phishing, exploits, etc.
-        if ([6, 7, 8, 9, 10, 16, 23, 26, 27, 28, 29].includes(id)) return "Alto";    // ransomware, rootkit, spyware, etc.
-        if ([17, 18, 19, 20, 21, 24].includes(id)) return "Crítico";                 // domínio comprometido, sabotagem, etc.
-        return "Baixo"; // fallback
+    const mapNivelPorClassificationId = (id: number): string => {
+        if ([1, 2, 11, 12, 13, 25, 32, 33, 34, 35, 36].includes(id)) return "Baixo";
+        if ([3, 4, 5, 14, 15, 22, 30, 31].includes(id)) return "Médio";
+        if ([6, 7, 8, 9, 10, 16, 23, 26, 27, 28, 29].includes(id)) return "Alto";
+        if ([17, 18, 19, 20, 21, 24].includes(id)) return "Crítico";
+        return "Baixo";
     };
 
     const detectarNivelPorNome = (nome: string): string | null => {
-        const match = nome.match(/\[\d{2}:\d{2} - \d{2}\/\d{2}\/\d{4}\] - (Baixa|Baixo|Médio|Média|Alto|Alta|Crítica|Crítico)/i);
-        if (!match) return null;
-
-        // Padroniza: transforma "Alta" em "Alto", "Média" em "Médio", etc.
-        const nivel = match[1].toLowerCase();
-        if (nivel.includes("baixo")) return "Baixo";
-        if (nivel.includes("baixa")) return "Baixo";
-        if (nivel.includes("media")) return "Médio";
-        if (nivel.includes("médio")) return "Médio";
-        if (nivel.includes("alta")) return "Alto";
-        if (nivel.includes("alto")) return "Alto";
-        if (nivel.includes("critica")) return "Crítica";
-        if (nivel.includes("crítico")) return "Crítico";
-        return null;
+        const match = nome.match(
+            /\[\d{2}:\d{2} - \d{2}\/\d{2}\/\d{4}\] - (Baixo|Baixa|Médio|Média|Alto|Alta|Crítico|Crítica)/i
+        );
+        return match ? match[1] : null;
     };
 
+    const formatCaseName = (name: string) => {
+        return name.replace(
+            /\[\d{2}:\d{2}\s*-\s*\d{2}\/\d{2}\/\d{4}\]\s*-\s*(Baixo|Baixa|Médio|Média|Alto|Alta|Crítico|Crítica)\s*-\s*/i,
+            ""
+        );
+    };
 
     return (
         <div className="cards mt-3 p-6 rounded-2xl shadow-lg flex-grow hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-3">
                 <h3 className="text-sm text-white">Top Incidentes</h3>
                 <select
-                    className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#1D1929]"
-                    value={range}
-                    onChange={(e) => setRange(e.target.value)}
+                    className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
+                    value={filtroDias}
+                    onChange={(e) => setFiltroDias(Number(e.target.value))}
                 >
-                    <option value="1d">24 horas</option>
-                    <option value="7d">7 dias</option>
-                    <option value="30d">30 dias</option>
+                    <option value={0}>Todos</option>
+                    <option value={1}>24 horas</option>
+                    <option value={7}>7 dias</option>
+                    <option value={15}>15 dias</option>
+                    <option value={30}>30 dias</option>
                 </select>
             </div>
 
-            <div className="flex flex-col gap-2 mt-4 divide-y divide-[#ffffff1e]">
-                {incidentes.length === 0 ? (
-                    <span className="text-xs text-gray-400 text-center py-4">Nenhum incidente encontrado.</span>
-                ) : (
-                    incidentes.map((incidente, i) => {
-                        const nivelManual = detectarNivelPorNome(incidente.case_name);
-                        const nivel = nivelManual || mapNivelPorClassificationId(incidente.classification_id);
-                        const qtd = getQtdPreenchida(nivel);
-                        const total = 4;
+            {/* Erro */}
+            {erro && (
+                <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-2">
+                    {erro}
+                </div>
+            )}
 
-                        const formatCaseName = (name: string) => {
-                            // Remove padrão do tipo: [HH:MM - DD/MM/YYYY] - Nivel -
-                            return name.replace(/\[\d{2}:\d{2}\s*-\s*\d{2}\/\d{2}\/\d{4}\]\s*-\s*(Baixa|Baixo|Médio|Média|Alto|Alta|Crítica|Crítico)\s*-\s*/i, "");
-                        };
-
-
-                        return (
-                            <div
-                                key={i}
-                                className="flex flex-col text-sm text-gray-300 px-2 py-2 hover:bg-[#ffffff0a] rounded-md transition-all"
-                            >
-                                {/* Linha de cima → data à esquerda, badge e traços à direita */}
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[11px] text-gray-400">{incidente.case_open_date}</span>
-                                    <div className="flex items-center gap-4">
-                                        <span
-                                            className={`text-[10px] px-2 py-0.5 rounded-md badge text-white ${getCorBadge(nivel)}`}
-                                        >
-                                            {nivel}
-                                        </span>
-                                        <div className="flex gap-1">
-                                            {Array.from({ length: total }).map((_, j) => (
-                                                <span
-                                                    key={j}
-                                                    className={`w-1.5 h-3 rounded-sm ${j < qtd ? getCorBarra(nivel) : "bg-[#2b2b3a]"
-                                                        }`}
-                                                />
-                                            ))}
-                                        </div>
+            {/* Loading */}
+            {carregando ? (
+                <div className="flex flex-col gap-2">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className="flex flex-col text-sm px-2 py-2 rounded-md bg-transparent"
+                        >
+                            <div className="flex justify-between items-center mb-2">
+                                <div className="h-3 w-24 bg-[#ffffff0f] rounded animate-pulse" />
+                                <div className="flex items-center gap-4">
+                                    <div className="h-4 w-16 bg-[#ffffff0f] rounded animate-pulse" />
+                                    <div className="flex gap-1">
+                                        {Array.from({ length: 4 }).map((_, j) => (
+                                            <span
+                                                key={j}
+                                                className="w-1.5 h-3 rounded-sm bg-[#ffffff0f] animate-pulse"
+                                            />
+                                        ))}
                                     </div>
                                 </div>
-
-                                {/* Linha de baixo → título sozinho */}
-                                <span className="font-medium text-gray-400 truncate mt-1">
-                                    {formatCaseName(incidente.case_name)}
-                                </span>
                             </div>
+                            <div className="flex justify-between items-center">
+                                <div className="h-4 w-48 bg-[#ffffff0f] rounded animate-pulse" />
+                                <div className="h-6 w-10 bg-[#ffffff0f] rounded animate-pulse" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div
+                    className={`flex flex-col gap-2 divide-y divide-[#ffffff1e] transition-opacity duration-300 ${animReady ? "opacity-100" : "opacity-0"
+                        }`}
+                >
+                    {incidentes.length === 0 ? (
+                        <span className="text-xs text-gray-400 text-center py-4">
+                            Nenhum incidente encontrado.
+                        </span>
+                    ) : (
+                        incidentes.map((incidente, i) => {
+                            const nivelManual = detectarNivelPorNome(incidente.case_name);
+                            const nivel =
+                                nivelManual || mapNivelPorClassificationId(incidente.classification_id);
+                            const qtd = getQtdPreenchida(nivel);
+                            const total = 4;
 
-                        );
-                    })
-                )}
-            </div>
+                            return (
+                                <div
+                                    key={i}
+                                    className="group flex flex-col text-sm text-gray-300 px-2 py-2 hover:bg-[#ffffff0a] rounded-md transition-all"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[11px] text-gray-400">
+                                            {incidente.case_open_date}
+                                        </span>
+
+                                        <div className="flex items-center gap-4">
+                                            <span
+                                                className={`text-[11px] px-2 py-0.5 rounded-md badge ${getCorBadge(
+                                                    nivel
+                                                )}`}
+                                            >
+                                                {nivel}
+                                            </span>
+
+                                            <div className="flex gap-1">
+                                                {Array.from({ length: total }).map((_, j) => (
+                                                    <span
+                                                        key={j}
+                                                        className={`w-1.5 h-3 rounded-sm ${j < qtd ? getCorBarra(nivel) : "bg-[#2b2b3a]"
+                                                            }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Linha com nome + botão flutuante */}
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className="font-medium text-gray-400 truncate max-w-[220px]">
+                                            {formatCaseName(incidente.case_name)}
+                                        </span>
+
+                                        {/* Botão visível apenas ao hover na group */}
+                                        {irisUrl && (
+                                            <button
+                                                onClick={() =>
+                                                    window.open(`${irisUrl}/case?cid=${incidente.case_id}`, "_blank")
+                                                }
+                                                className="px-1 py-1 btn hover:bg-purple-600 text-[11px] text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                            >
+                                                Ver →
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            )}
         </div>
     );
 }

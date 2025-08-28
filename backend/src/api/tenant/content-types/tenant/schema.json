@@ -11,9 +11,6 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "nome": {
-      "type": "string"
-    },
     "cliente_name": {
       "type": "string"
     },
@@ -41,6 +38,9 @@
       "relation": "oneToMany",
       "target": "plugin::users-permissions.user",
       "mappedBy": "tenant"
+    },
+    "owner_name": {
+      "type": "string"
     }
   }
 }

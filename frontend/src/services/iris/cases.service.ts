@@ -10,6 +10,7 @@ export type Incidente = {
     classification_id: number;
     classification: string;
     opened_by: string;
+    client_name: string;
 };
 
 

@@ -397,7 +397,7 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
       'api::tenant.tenant'
     > &
       Schema.Attribute.Private;
-    nome: Schema.Attribute.String;
+    owner_name: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &

@@ -1,57 +1,142 @@
-import { autenticarWazuh, buscarAgentes } from "../services/acesso-wazuh";
+import { buscarSeveridadeIndexer, buscarTopGeradoresFirewall, buscarTopAgentes, buscarTopAgentesCis } from '../services/acesso-wazuh';
 
 export default {
-  async login(ctx) {
+  async severidade(ctx) {
     try {
-      const user = ctx.state.user;
-      if (!user) return ctx.unauthorized("Usuário não autenticado");
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
 
-      const fullUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { tenant: true },
-        });
+      const tenant = await strapi.entityService.findMany('api::tenant.tenant', {
+        filters: {
+          users_permissions_users: { id: userId },
+          ativa: true,
+        },
+        populate: ['users_permissions_users'],
+      });
 
-      if (!fullUser?.tenant)
-        return ctx.notFound("Tenant não encontrado para este usuário");
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
 
-      const token = await autenticarWazuh(fullUser.tenant);
+      const tenantData = tenant[0];
+      const resultado = await buscarSeveridadeIndexer(tenantData);
+      return ctx.send({ severidade: resultado });
 
-      return {
-        user: fullUser.username,
-        tenant: fullUser.tenant.slug,
-        wazuhToken: token,
-        wazuhUrl: fullUser.tenant.wazuh_url,
-      };
-    } catch (err) {
-      strapi.log.error("Erro no login Wazuh:", err.response?.data || err);
-      return ctx.badRequest("Erro ao autenticar no Wazuh");
+    } catch (error) {
+      console.error("Erro ao buscar severidade:", error);
+      return ctx.internalServerError("Erro ao consultar severidade");
     }
   },
 
-  async agents(ctx) {
+  async buscarTenantPorUsuario(ctx) {
     try {
-      const user = ctx.state.user;
-      if (!user) return ctx.unauthorized("Usuário não autenticado");
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
 
-      const fullUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { tenant: true },
-        });
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: {
+          users_permissions_users: { id: userId },
+          ativa: true,
+        },
+        populate: ["users_permissions_users"],
+      });
 
-      if (!fullUser?.tenant)
-        return ctx.notFound("Tenant não encontrado para este usuário");
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
 
-      const token = await autenticarWazuh(fullUser.tenant);
-      const agents = await buscarAgentes(fullUser.tenant, token);
+      return ctx.send(tenant[0]); // ou retornar apenas alguns campos se quiser limitar
 
-      return agents;
-    } catch (err) {
-      strapi.log.error("Erro ao buscar agentes:", err.response?.data || err);
-      return ctx.badRequest("Erro ao buscar agentes no Wazuh");
+    } catch (error) {
+      console.error("Erro ao buscar tenant:", error);
+      return ctx.internalServerError("Erro ao consultar tenant");
+    }
+  },
+
+  async topGeradores(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+
+      const dias = ctx.query.dias || "7"; // valores: "1", "7", "15", "30", "todos"
+
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: {
+          users_permissions_users: { id: userId },
+          ativa: true,
+        },
+        populate: ["users_permissions_users"],
+      });
+
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+
+      const tenantData = tenant[0];
+      const resultado = await buscarTopGeradoresFirewall(tenantData, dias);
+
+      return ctx.send({ topGeradores: resultado });
+
+    } catch (error) {
+      console.error("Erro ao buscar top geradores:", error);
+      return ctx.internalServerError("Erro ao consultar top geradores");
+    }
+  },
+
+  async topAgentes(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const dias = ctx.query.dias || "7";
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: {
+          users_permissions_users: { id: userId },
+          ativa: true,
+        },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+      const resultado = await buscarTopAgentes(tenantData, dias);
+  
+      return ctx.send({ topAgentes: resultado });
+  
+    } catch (error) {
+      console.error("Erro ao buscar top agentes com risco:", error);
+      return ctx.internalServerError("Erro ao consultar top agentes");
+    }
+  },
+
+  async topAgentesCis(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+
+      const dias = ctx.query.dias || "7";
+
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+
+      const tenantData = tenant[0];
+      const resultado = await buscarTopAgentesCis(tenantData, dias);
+
+      return ctx.send({ topAgentesCis: resultado });
+
+    } catch (error) {
+      console.error("Erro ao buscar top agentes CIS:", error);
+      return ctx.internalServerError("Erro ao consultar top agentes CIS");
     }
   },
 };
