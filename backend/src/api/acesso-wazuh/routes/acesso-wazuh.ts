@@ -38,5 +38,13 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/top-paises-geo",
+      handler: "acesso-wazuh.topPaisesOrigemGeo",
+      config: {
+        policies: [],
+      },
+    },
   ],
 };

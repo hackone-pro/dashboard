@@ -284,34 +284,42 @@ header button.toggle{
 }
 
 /*MAPA*/
-.leaflet-pane path.shooting-line {
-  stroke-dasharray: 5, 27;
-  stroke-dashoffset: 0;
-  animation: dashmove 0.5s linear infinite;
+
+/* arco com leve glow */
+.shooting-lines-pane path.flow-arc {
+  filter: drop-shadow(0 0 4px rgba(236,72,153,0.45));
 }
 
-@keyframes dashmove {
-  to {
-    stroke-dashoffset: -32;
-  }
+/* pontinho “glow” que corre no arco */
+.leaflet-pane .glow-dot {
+  filter: drop-shadow(0 0 8px rgba(236,72,153,0.9));
 }
 
+/* pequena variação de velocidade (se quiser manter) */
+.flow-arc.speed-0, .glow-dot.speed-0 { animation-duration: .50s; }
+.flow-arc.speed-1, .glow-dot.speed-1 { animation-duration: .62s; }
+.flow-arc.speed-2, .glow-dot.speed-2 { animation-duration: .74s; }
+
+/* se estiver usando a bolha central com “pulse” */
 .leaflet-pane path.bubble-pulse {
   animation: pulseGlow 1.8s ease-in-out infinite;
   transform-origin: center;
   transition: filter 0.2s ease;
 }
-
 @keyframes pulseGlow {
-  0%, 100% {
-    r: 6;
-    opacity: 0.85;
-    filter: drop-shadow(0 0 1px #22c55e);
-  }
-  50% {
-    r: 7;
-    opacity: 1;
-    filter: drop-shadow(0 0 10px #22c55e); /* brilho */
-  }
+  0%, 100% { r: 6; opacity: 0.85; filter: drop-shadow(0 0 1px #22c55e); }
+  50%      { r: 7; opacity: 1;    filter: drop-shadow(0 0 10px #22c55e); }
 }
 
+.leaflet-tooltip.country-tip {
+  background: rgba(17, 17, 26, 0.9);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+.leaflet-tooltip.country-tip::before {
+  border-top-color: rgba(17, 17, 26, 0.9);
+}
