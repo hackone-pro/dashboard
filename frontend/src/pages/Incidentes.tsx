@@ -15,11 +15,40 @@ import { IoStopCircleOutline } from "react-icons/io5";
 import { MdOutlineGppBad, MdOutlineHealthAndSafety } from "react-icons/md";
 import { GrTroubleshoot } from "react-icons/gr";
 import { TbMessageReport } from "react-icons/tb";
-import { FiClock } from "react-icons/fi";
 
-// 🔎 Tipo local: estende o do service com campos que também podem vir na API
+/* ================= owners & utils ================= */
+const OWNER_EXTRA = "automation_n8n";
+const PAGE_SIZE = 10; // 🔒 fixo: 10 por página
+
+const normaliza = (s?: string) =>
+    (s || "")
+        .normalize("NFD")
+        // @ts-ignore unicode property
+        .replace(/\p{Diacritic}/gu, "")
+        .trim()
+        .toLowerCase();
+
+function extractOwner(i: any): string | undefined {
+    return (
+        i.owner ??
+        i.owner_name ??
+        i.ownerUser ??
+        i.owner_user ??
+        i.assigned_to ??
+        undefined
+    );
+}
+
+// client do incidente (payload IRIS usa client_name)
+function extractIncidentClient(i: any): string | undefined {
+    return i.client_name ?? i.client ?? i.customer_name ?? i.tenant_name ?? undefined;
+}
+
+/* ================= tipos locais ================= */
 type PageIncidente = ServiceIncidente & {
     owner?: string;
+    owner_name?: string;
+    opened_by?: string;
     state_name?: string;
     case_close_date?: string;
     case_uuid?: string;
@@ -41,16 +70,19 @@ export default function Incidentes() {
     const [erro, setErro] = useState<string | null>(null);
     const [expandido, setExpandido] = useState<number | string | null>(null);
 
+    // paginação (fixo 10 por página)
+    const [page, setPage] = useState(1);
+
     const STATUS_MAP: Record<string, StatusMeta> = {
-        "open": { label: "Aberto", Icon: FaLockOpen, color: "text-emerald-400" },
+        open: { label: "Aberto", Icon: FaLockOpen, color: "text-emerald-400" },
         "in progress": { label: "Em progresso", Icon: RiProgress5Line, color: "text-[#744CD8]" },
-        "containment": { label: "Contenção", Icon: IoStopCircleOutline, color: "text-[#D0592E]" },
-        "eradication": { label: "Erradicação", Icon: MdOutlineGppBad, color: "text-[#D35555]" },
-        "recovery": { label: "Recuperação", Icon: MdOutlineHealthAndSafety, color: "text-[#5EC059]" },
+        containment: { label: "Contenção", Icon: IoStopCircleOutline, color: "text-[#D0592E]" },
+        eradication: { label: "Erradicação", Icon: MdOutlineGppBad, color: "text-[#D35555]" },
+        recovery: { label: "Recuperação", Icon: MdOutlineHealthAndSafety, color: "text-[#5EC059]" },
         "post-incident": { label: "Pós-incidente", Icon: GrTroubleshoot, color: "text-[#59C0B4]" },
-        "reporting": { label: "Reportando", Icon: TbMessageReport, color: "text-[#C0598B]" },
-        "closed": { label: "Fechado", Icon: FaRegCheckCircle, color: "text-[#1DD69A]" },
-        "unspecified": { label: "Não especificado", Icon: RiQuestionLine, color: "text-[#D5974F]" },
+        reporting: { label: "Reportando", Icon: TbMessageReport, color: "text-[#C0598B]" },
+        closed: { label: "Fechado", Icon: FaRegCheckCircle, color: "text-[#1DD69A]" },
+        unspecified: { label: "Não especificado", Icon: RiQuestionLine, color: "text-[#D5974F]" },
     };
 
     const DEFAULT_STATUS: StatusMeta = { label: "—", Icon: RiQuestionLine, color: "text-gray-400" };
@@ -79,9 +111,20 @@ export default function Incidentes() {
                 setErro(null);
                 setExpandido(null);
 
-                const tenant = await getTenant(); // precisa de tenant.owner_name
+                const tenant = await getTenant();
+                // ⚠️ nomes vindos do Strapi (tenant)
+                const alvoOwnerTenant = normaliza(tenant?.owner_name);
+                const alvoOwnerExtra = normaliza(OWNER_EXTRA);
+                const alvoClienteTenant = normaliza(tenant?.cliente_name); // seu campo no Strapi
 
-                // ✅ normalização defensiva
+                if (!tenant?.cliente_name) {
+                    console.warn("[Incidentes] tenant.cliente_name ausente — bloqueando listagem por segurança.");
+                    setDados([]);
+                    setCarregando(false);
+                    return;
+                }
+
+                // lê lista bruta e normaliza o array
                 const listaBruta = await getTodosCasos(token || "");
                 const src: any = listaBruta as any;
                 const lista: PageIncidente[] = Array.isArray(src)
@@ -94,13 +137,19 @@ export default function Incidentes() {
                                 ? src.items
                                 : [];
 
-                // ✅ somente casos do owner
-                const doOwner = lista.filter((i) => i.owner === tenant.owner_name);
+                // Filtro final: (owner = você OU automation_n8n) E (client_name = tenant.cliente_name)
+                const doOwnerECliente = lista.filter((i) => {
+                    const dono = normaliza(extractOwner(i));
+                    const clienteIncidente = normaliza(extractIncidentClient(i));
+                    const matchOwner = dono === alvoOwnerTenant || dono === alvoOwnerExtra;
+                    const matchCliente = clienteIncidente === alvoClienteTenant;
+                    return matchOwner && matchCliente;
+                });
 
-                // ✅ filtro de datas (Hoje / 7 / 15 / 30 / Todos)
-                const filtrado = filtrarPorDias(doOwner, filtroDias);
+                // Filtro de datas
+                const filtrado = filtrarPorDias(doOwnerECliente, filtroDias);
 
-                // ✅ ordena por data (desc)
+                // Ordenação desc por data de abertura
                 filtrado.sort(
                     (a, b) =>
                         parseDateBR(b.case_open_date).getTime() -
@@ -109,6 +158,7 @@ export default function Incidentes() {
 
                 if (!ativo) return;
                 setDados(filtrado);
+                setPage(1); // reset página ao recarregar dados/filtro
             } catch (e: any) {
                 if (!ativo) return;
                 setErro(e?.message ?? "Erro ao carregar incidentes");
@@ -122,31 +172,75 @@ export default function Incidentes() {
         };
     }, [token, filtroDias]);
 
-    const linhas = useMemo(() => dados.slice(0, 50), [dados]); // limite visual
+    // paginação (fixo 10 por página)
+    const total = dados.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const clampPage = (p: number) => Math.min(Math.max(1, p), totalPages);
+
+    useEffect(() => {
+        setPage((p) => clampPage(p));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [totalPages]);
+
+    const start = (page - 1) * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, total);
+    const linhas = useMemo(() => dados.slice(start, end), [dados, start, end]);
+
     const toggle = (id: number | string) => setExpandido((cur) => (cur === id ? null : id));
 
     return (
         <LayoutModel titulo="Incidentes">
             <section className="cards p-6 rounded-2xl shadow-lg">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
                     <div className="flex items-center gap-2">
                         {/* @ts-ignore */}
                         <GoGraph className="flex text-[#744CD8] size-[20px]" />
                         <h2 className="text-white">Incidentes — Nível de Detalhe</h2>
                     </div>
 
-                    <select
-                        className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-                        value={filtroDias}
-                        onChange={(e) => setFiltroDias(Number(e.target.value))}
-                    >
-                        <option value={1}>Hoje</option>
-                        <option value={7}>7 dias</option>
-                        <option value={15}>15 dias</option>
-                        <option value={30}>30 dias</option>
-                        <option value={0}>Todos</option>
-                    </select>
+                    <div className="flex items-center gap-3">
+                        <label className="text-xs text-gray-400">
+                            Intervalo:&nbsp;
+                            <select
+                                className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
+                                value={filtroDias}
+                                onChange={(e) => setFiltroDias(Number(e.target.value))}
+                            >
+                                <option value={1}>Hoje</option>
+                                <option value={7}>7 dias</option>
+                                <option value={15}>15 dias</option>
+                                <option value={30}>30 dias</option>
+                                <option value={0}>Todos</option>
+                            </select>
+                        </label>
+
+                        <div className="text-xs text-gray-400">
+                            {total > 0 ? (
+                                <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></>
+                            ) : (
+                                <>Mostrando 0 de 0</>
+                            )}
+                        </div>
+
+                        {/* Controles de paginação simples */}
+                        <div className="flex gap-2">
+                            <button
+                                className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
+                                onClick={() => setPage((p) => clampPage(p - 1))}
+                                disabled={page <= 1}
+                            >
+                                ← Anterior
+                            </button>
+                            <button
+                                className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
+                                onClick={() => setPage((p) => clampPage(p + 1))}
+                                disabled={page >= totalPages}
+                            >
+                                Próxima →
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Tabela */}
@@ -177,13 +271,12 @@ export default function Incidentes() {
                                 const aberto = expandido === id;
 
                                 const dataBR = inc.case_open_date; // "MM/DD/YYYY"
-                                const agenteOrigem = inc.case_name; // conforme pedido
+                                const agenteOrigem = inc.case_name;
 
                                 const nivel = mapNivelPorClassificationId(inc.classification_id as any);
                                 const badge = getCorBadge(nivel);
                                 const status = statusPT(inc.state_name);
 
-                                // 👇 meta para exibir ícone + cor no status
                                 const meta = getStatusMeta(inc.state_name);
                                 const StatusIcon = meta.Icon;
 
@@ -240,8 +333,8 @@ export default function Incidentes() {
                                                     </Secao>
 
                                                     <Secao titulo="Propriedades">
-                                                        <Linha label="Cliente:" valor={inc.client_name} />
-                                                        <Linha label="Owner:" valor={inc.owner || "—"} />
+                                                        <Linha label="Cliente:" valor={extractIncidentClient(inc) || "—"} />
+                                                        <Linha label="Owner:" valor={extractOwner(inc) || "—"} />
                                                         <Linha label="Aberto por:" valor={inc.opened_by || "—"} />
                                                     </Secao>
 
@@ -271,6 +364,35 @@ export default function Incidentes() {
                             })}
                         </div>
                     )}
+                </div>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-center my-4">
+                    <div className="flex items-center gap-3">
+                        <div className="text-xs text-gray-400">
+                            {total > 0 ? (
+                                <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></>
+                            ) : (
+                                <>Mostrando 0 de 0</>
+                            )}
+                        </div>
+
+                        {/* Controles de paginação simples */}
+                        <div className="flex gap-2">
+                            <button
+                                className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
+                                onClick={() => setPage((p) => clampPage(p - 1))}
+                                disabled={page <= 1}
+                            >
+                                ← Anterior
+                            </button>
+                            <button
+                                className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
+                                onClick={() => setPage((p) => clampPage(p + 1))}
+                                disabled={page >= totalPages}
+                            >
+                                Próxima →
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
         </LayoutModel>
