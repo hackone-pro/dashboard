@@ -30,5 +30,13 @@ export default {
       handler: "acesso-wazuh.topAgentesCis",
       config: { policies: [] },
     },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/top-paises",
+      handler: "acesso-wazuh.topPaisesOrigem",
+      config: {
+        policies: [],
+      },
+    },
   ],
 };

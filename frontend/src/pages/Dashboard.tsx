@@ -1,5 +1,5 @@
 // src/pages/Dashboard.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getSeveridadeWazuh } from "../services/wazuh/severidade.service";
@@ -16,6 +16,7 @@ import { getToken } from '../utils/auth';
 import TopIncidentesCard from "../componentes/iris/TopIncidents";
 import IaHumans from "../componentes/iris/IaHumans";
 import TopFirewallCard from "../componentes/wazuh/TopFirewallCard";
+import TopCountriesTable from "../componentes/wazuh/threatmap/TopCountriesTable";
 
 
 function getNivelExposicao(percentual: number) {
@@ -32,6 +33,8 @@ export default function Dashboard() {
     const [indiceRisco, setIndiceRisco] = useState(0);
     const riscoArredondado = Math.round(indiceRisco);
     const nivel = getNivelExposicao(riscoArredondado);
+    const [totalAtaques, setTotalAtaques] = useState(0);
+    const fmt = useMemo(() => new Intl.NumberFormat("pt-BR"), []);
 
     useEffect(() => {
         async function carregarDados() {
@@ -152,29 +155,11 @@ export default function Dashboard() {
                                     <span className="text-xs text-white">4.171 ataques</span>
                                 </div>
                             </div>
-
-                            <table className="w-full text-sm text-left text-gray-400">
-
-                                <tbody>
-                                    {[
-                                        { pais: "Estados Unidos", ataques: 920 },
-                                        { pais: "Rússia", ataques: 743 },
-                                        { pais: "China", ataques: 651 },
-                                        { pais: "Brasil", ataques: 412 },
-                                        { pais: "Índia", ataques: 398 },
-                                        { pais: "Alemanha", ataques: 365 },
-                                        { pais: "França", ataques: 289 },
-                                        { pais: "Irã", ataques: 273 },
-                                        { pais: "Reino Unido", ataques: 221 },
-                                        { pais: "Turquia", ataques: 199 },
-                                    ].map((item, i) => (
-                                        <tr key={i}>
-                                            <td className="py-2">{item.pais}</td>
-                                            <td className="py-2 text-right">{item.ataques}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <TopCountriesTable
+                                dias="todos"
+                                limit={10}
+                                onTotalChange={setTotalAtaques}
+                            />
                         </div>
 
                         <TopFirewallCard />

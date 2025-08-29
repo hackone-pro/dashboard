@@ -1,4 +1,4 @@
-import { buscarSeveridadeIndexer, buscarTopGeradoresFirewall, buscarTopAgentes, buscarTopAgentesCis } from '../services/acesso-wazuh';
+import { buscarSeveridadeIndexer, buscarTopGeradoresFirewall, buscarTopAgentes, buscarTopAgentesCis, buscarTopPaisesAtaque } from '../services/acesso-wazuh';
 
 export default {
   async severidade(ctx) {
@@ -139,4 +139,34 @@ export default {
       return ctx.internalServerError("Erro ao consultar top agentes CIS");
     }
   },
+
+  async topPaisesOrigem(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const dias = ctx.query.dias || "7"; // "1","7","15","30","todos"
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: {
+          users_permissions_users: { id: userId },
+          ativa: true,
+        },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+      const resultado = await buscarTopPaisesAtaque(tenantData, dias);
+  
+      return ctx.send({ topPaises: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar top países de origem:", error);
+      return ctx.internalServerError("Erro ao consultar top países");
+    }
+  },  
+
 };

@@ -290,3 +290,84 @@ export async function buscarTopAgentesCis(tenant, dias) {
 
   return resultado;
 }
+
+// --- TOP PAÍSES DE ORIGEM (Fortigate/Wazuh) ---
+export async function buscarTopPaisesAtaque(tenant, dias: string) {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  const query =
+    dias === "todos"
+      ? { match_all: {} }
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        };
+
+  const body = {
+    size: 0,
+    query: {
+      bool: {
+        filter: [query, { term: { "rule.groups": "fortigate" } }], // opcional; remova se quiser geral
+        must_not: [
+          {
+            terms: {
+              "data.srccountry": ["Reserved", "Unknown", "N/A", "-", ""],
+            },
+          },
+        ],
+      },
+    },
+    aggs: {
+      top_countries: {
+        terms: {
+          field: "data.srccountry", // <- sem .keyword, como testado no Postman
+          size: 10,
+          order: { _count: "desc" },
+        },
+        aggs: {
+          severidade: {
+            range: {
+              field: "rule.level",
+              ranges: [
+                { to: 7, key: "Baixo" },
+                { from: 7, to: 12, key: "Médio" },
+                { from: 12, to: 15, key: "Alto" },
+                { from: 15, key: "Crítico" },
+              ],
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    body,
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data.aggregations?.top_countries?.buckets || [];
+
+  // Normaliza saída
+  return buckets.map((b) => ({
+    pais: b.key,
+    total: b.doc_count,
+    severidades: (b.severidade?.buckets ?? []).map((s) => ({
+      key: s.key,
+      doc_count: s.doc_count,
+    })),
+  }));
+}

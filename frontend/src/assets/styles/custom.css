@@ -287,7 +287,7 @@ header button.toggle{
 .leaflet-pane path.shooting-line {
   stroke-dasharray: 5, 27;
   stroke-dashoffset: 0;
-  animation: dashmove 1s linear infinite;
+  animation: dashmove 0.5s linear infinite;
 }
 
 @keyframes dashmove {
