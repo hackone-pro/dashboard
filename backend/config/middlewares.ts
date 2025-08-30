@@ -1,3 +1,4 @@
+// config/middlewares.js ou .ts
 export default [
   'strapi::logger',
   'strapi::errors',
@@ -5,10 +6,15 @@ export default [
   {
     name: 'strapi::cors',
     config: {
-      enabled: true,
-      origin: ['http://localhost:5173', 'http://10.0.77.1:3000, http://app2.securityone.ai:3000'],
-      headers: '*',
+      origin: [
+        'http://localhost:5173',
+        'http://10.0.77.1:3000',
+        'http://app2.securityone.ai:3000',
+        'https://app2.securityone.ai', // quando usar SSL
+      ],
+      headers: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      credentials: true,
     },
   },
   'strapi::poweredBy',
