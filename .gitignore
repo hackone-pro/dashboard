@@ -1,9 +1,9 @@
 # Ignorar arquivos de sistema
 .DS_Store
 Thumbs.db
-.htacces
+.htaccess
 .user.ini
-.well-know/
+.well-known/
 
 # Logs
 *.log
