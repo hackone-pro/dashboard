@@ -10,9 +10,9 @@ export default [
         'http://localhost:5173',
         'http://10.0.77.1:3000',
         'http://app2.securityone.ai:3000',
-        'https://app2.securityone.ai',
-        'https://pod2.soc.hackone.tech',
-        'https://pod2.soc.hackone.tech:3000',
+        'http://app2.securityone.ai',
+        'http://pod2.soc.hackone.tech',
+        'http://pod2.soc.hackone.tech:3000',
          // quando usar SSL
       ],
       headers: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
