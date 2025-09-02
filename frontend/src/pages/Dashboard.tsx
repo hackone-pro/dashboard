@@ -149,11 +149,12 @@ export default function Dashboard() {
                     <div className="flex flex-col h-full">
                         <div className="cards flex-grow p-6 rounded-2xl h-115 shadow-lg card-dashboard mb-3 transition-all hover:-translate-y-1 hover:shadow-lg">
                             <div className="grid grid-cols-12 mb-5">
-                                <div className="col-span-8">
+                                <div className="col-span-12">
                                     <h3 className="text-sm text-white">Top 10 países de origem de ataque</h3>
-                                </div> <div className="col-span-4 flex items-center justify-end">
+                                </div> 
+                                {/* <div className="col-span-4 flex items-center justify-end">
                                     <span className="text-xs text-white">4.171 ataques</span>
-                                </div>
+                                </div> */}
                             </div>
                             <TopCountriesTable
                                 dias="todos"

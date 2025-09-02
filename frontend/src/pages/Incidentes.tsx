@@ -6,6 +6,7 @@ import DescricaoFormatada from "../componentes/iris/DescricaoFormatada";
 import { getTenant } from "../services/wazuh/tenant.service";
 import { getTodosCasos, Incidente as ServiceIncidente } from "../services/iris/cases.service";
 import { getToken } from "../utils/auth";
+import { useSearchParams } from "react-router-dom";
 
 import type { IconType } from "react-icons";
 import { GoGraph } from "react-icons/go";
@@ -65,13 +66,18 @@ export default function Incidentes() {
   const token = getToken();
 
   const [dados, setDados] = useState<PageIncidente[]>([]);
-  const [filtroDias, setFiltroDias] = useState<number>(1); // Hoje
+  const [filtroDias, setFiltroDias] = useState<number>(0); // Hoje
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [expandido, setExpandido] = useState<number | string | null>(null);
+  const [irisUrl, setIrisUrl] = useState<string>("");
 
   // paginação (fixo 10 por página)
   const [page, setPage] = useState(1);
+
+  // query string (?open=ID)
+  const [searchParams] = useSearchParams();
+  const openFromQS = searchParams.get("open");
 
   const STATUS_MAP: Record<string, StatusMeta> = {
     open: { label: "Aberto", Icon: FaLockOpen, color: "text-emerald-400" },
@@ -154,6 +160,7 @@ export default function Incidentes() {
         setExpandido(null);
 
         const tenant = await getTenant();
+        setIrisUrl(tenant?.iris_url || "");
         const alvoOwnerTenant = normaliza(tenant?.owner_name);
         const alvoOwnerExtra = normaliza(OWNER_EXTRA);
         const alvoClienteTenant = normaliza(tenant?.cliente_name); // seu campo no Strapi
@@ -170,12 +177,12 @@ export default function Incidentes() {
         const lista: PageIncidente[] = Array.isArray(src)
           ? src
           : Array.isArray(src?.data)
-          ? src.data
-          : Array.isArray(src?.results)
-          ? src.results
-          : Array.isArray(src?.items)
-          ? src.items
-          : [];
+            ? src.data
+            : Array.isArray(src?.results)
+              ? src.results
+              : Array.isArray(src?.items)
+                ? src.items
+                : [];
 
         // Filtro final: (owner = você OU automation_n8n) E (client_name = tenant.cliente_name)
         const doOwnerECliente = lista.filter((i) => {
@@ -228,6 +235,32 @@ export default function Incidentes() {
 
   const toggle = (id: number | string) => setExpandido((cur) => (cur === id ? null : id));
 
+  // 🔗 Deep-link: quando há ?open=ID, navegar até a página do item e abrir o acordeão
+  useEffect(() => {
+    if (!openFromQS) return;
+    const alvo = Number(openFromQS);
+    if (Number.isNaN(alvo) || dados.length === 0) return;
+
+    // Encontrar índice do item na lista completa
+    const idx = dados.findIndex((i) => Number(i.case_id) === alvo);
+    if (idx === -1) return;
+
+    // Página onde o item está
+    const pageDoItem = Math.floor(idx / PAGE_SIZE) + 1;
+
+    // Se ainda não estamos na página, ir para ela
+    setPage((p) => (p === pageDoItem ? p : pageDoItem));
+
+    // Abrir após a página correta renderizar
+    const t = setTimeout(() => {
+      setExpandido(alvo);
+      const el = document.querySelector(`[data-case-id="${alvo}"]`);
+      if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 0);
+
+    return () => clearTimeout(t);
+  }, [openFromQS, dados]);
+
   return (
     <LayoutModel titulo="Incidentes">
       <section className="cards p-6 rounded-2xl shadow-lg">
@@ -257,7 +290,9 @@ export default function Incidentes() {
 
             <div className="text-xs text-gray-400">
               {total > 0 ? (
-                <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></>
+                <>
+                  Mostrando <span className="text-gray-2 00">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span>
+                </>
               ) : (
                 <>Mostrando 0 de 0</>
               )}
@@ -289,7 +324,7 @@ export default function Incidentes() {
           <div className="grid grid-cols-12 px-5 py-5 bg-[#0A0617] text-xs text-gray-300">
             <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">ID do Incidente</div>
             <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Data</div>
-            <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">Agente/Origem</div>
+            <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">Descrição</div>
             <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Severidade</div>
             <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">Status</div>
             <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Ação</div>
@@ -323,15 +358,25 @@ export default function Incidentes() {
                 const StatusIcon = meta.Icon;
 
                 return (
-                  <div key={String(id)} className="group">
+                  <div key={String(id)} className="group" data-case-id={String(id)}>
                     {/* Linha */}
                     <div
-                      className={`grid grid-cols-12 px-5 py-4 items-center ${
-                        aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"
-                      } transition-colors`}
+                      className={`grid grid-cols-12 px-5 py-4 items-center ${aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"
+                        } transition-colors`}
                     >
                       <div className="col-span-1 text-center text-sm text-gray-400 truncate">
-                        #{id}
+                        {irisUrl ? (
+                          <a
+                            href={`${irisUrl}/case?cid=${id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:underline"
+                          >
+                            #{id}
+                          </a>
+                        ) : (
+                          <>#{id}</>
+                        )}
                       </div>
                       <div className="col-span-2 text-center text-xs text-gray-400">
                         {dataBR}

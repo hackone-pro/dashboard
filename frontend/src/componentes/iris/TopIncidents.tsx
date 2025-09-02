@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getTenant } from "../../services/wazuh/tenant.service";
 import { getTodosCasos } from "../../services/iris/cases.service";
 
@@ -20,6 +21,7 @@ export default function TopIncidentes({ token }: Props) {
     const [incidentes, setIncidentes] = useState<Incidente[]>([]);
     const [filtroDias, setFiltroDias] = useState(0);
     const [irisUrl, setIrisUrl] = useState<string>("");
+    const navigate = useNavigate();
 
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState<string | null>(null);
@@ -275,9 +277,7 @@ export default function TopIncidentes({ token }: Props) {
                                         {/* Botão visível apenas ao hover na group */}
                                         {irisUrl && (
                                             <button
-                                                onClick={() =>
-                                                    window.open(`${irisUrl}/case?cid=${incidente.case_id}`, "_blank")
-                                                }
+                                                onClick={() => navigate(`/incidentes?open=${incidente.case_id}`)} 
                                                 className="px-1 py-1 btn hover:bg-purple-600 text-[11px] text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                             >
                                                 Ver →
