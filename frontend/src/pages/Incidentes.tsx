@@ -11,16 +11,48 @@ import { useSearchParams } from "react-router-dom";
 import type { IconType } from "react-icons";
 import { GoGraph } from "react-icons/go";
 import { RiQuestionLine, RiProgress5Line } from "react-icons/ri";
-import { FaLockOpen, FaRegCheckCircle } from "react-icons/fa";
+import { FaLockOpen, FaRegCheckCircle, FaSort } from "react-icons/fa";
 import { IoStopCircleOutline } from "react-icons/io5";
 import { MdOutlineGppBad, MdOutlineHealthAndSafety } from "react-icons/md";
 import { GrTroubleshoot } from "react-icons/gr";
 import { TbMessageReport } from "react-icons/tb";
 
-/* ================= owners & utils ================= */
-const OWNER_EXTRA = "automation_n8n";
-const PAGE_SIZE = 10; // 10 por página (fixo)
+/* =========================================
+ * CONSTANTES & TYPES
+ * ======================================= */
 
+// Dono “extra” que você usa nos filtros
+const OWNER_EXTRA = "automation_n8n";
+// Itens por página
+const PAGE_SIZE = 10;
+
+// Chaves de ordenação suportadas
+type SortKey = "id" | "data" | "severidade" | "status";
+type SortDir = "asc" | "desc";
+
+// Tipo local enriquecido (opcional)
+type PageIncidente = ServiceIncidente & {
+  owner?: string;
+  owner_name?: string;
+  opened_by?: string;
+  state_name?: string;
+  case_close_date?: string;
+  case_uuid?: string;
+  case_soc_id?: string;
+};
+
+// Metadados de status para ícone/cor
+type StatusMeta = {
+  label: string;
+  Icon: IconType;
+  color: string;
+};
+
+/* =========================================
+ * HELPERS GERAIS
+ * ======================================= */
+
+// Normaliza string com acentos e caixa
 const normaliza = (s?: string) =>
   (s || "")
     .normalize("NFD")
@@ -29,6 +61,7 @@ const normaliza = (s?: string) =>
     .trim()
     .toLowerCase();
 
+// Extrai owner de possíveis campos
 function extractOwner(i: any): string | undefined {
   return (
     i.owner ??
@@ -40,45 +73,150 @@ function extractOwner(i: any): string | undefined {
   );
 }
 
-// client do incidente (payload IRIS usa client_name)
+// Extrai cliente de possíveis campos
 function extractIncidentClient(i: any): string | undefined {
   return i.client_name ?? i.client ?? i.customer_name ?? i.tenant_name ?? undefined;
 }
 
-/* ================= tipos locais ================= */
-type PageIncidente = ServiceIncidente & {
-  owner?: string;
-  owner_name?: string;
-  opened_by?: string;
-  state_name?: string;
-  case_close_date?: string;
-  case_uuid?: string;
-  case_soc_id?: string;
-};
+// Converte "MM/DD/YYYY" em Date
+function parseDateBR(d: string) {
+  const [mes, dia, ano] = d.split("/");
+  return new Date(`${ano}-${mes}-${dia}`);
+}
 
-type StatusMeta = {
+// recebe "MM/DD/YYYY" e devolve "DD/MM/YYYY"
+function formatDateBR(d: string) {
+  if (!d) return "—";
+  const [mes, dia, ano] = d.split("/");
+  return `${dia.padStart(2, "0")}/${mes.padStart(2, "0")}/${ano}`;
+}
+
+// Filtra lista pelos últimos X dias (inclui hoje). 1 = hoje. 0 = todos.
+function filtrarPorDias(lista: PageIncidente[], dias: number) {
+  if (dias === 0) return lista; // todos
+  if (dias === 1) {
+    // hoje
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    return lista.filter((i) => {
+      const d = parseDateBR(i.case_open_date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === hoje.getTime();
+    });
+  }
+  // últimos X dias (inclui hoje)
+  const hoje = new Date();
+  const limite = new Date(hoje);
+  limite.setDate(hoje.getDate() - (dias - 1));
+  limite.setHours(0, 0, 0, 0);
+  return lista.filter((i) => parseDateBR(i.case_open_date) >= limite);
+}
+
+// Badge de cor por severidade (PT/masc/fem)
+function getCorBadge(nivel: string) {
+  switch (nivel) {
+    case "Crítico":
+    case "Crítica":
+      return "badge-pink";
+    case "Alto":
+    case "Alta":
+      return "badge-high";
+    case "Médio":
+    case "Média":
+      return "badge-darkpink";
+    case "Baixo":
+    case "Baixa":
+      return "badge-green";
+    default:
+      return "bg-gray-500";
+  }
+}
+
+// Tradução simples de status (exibido)
+function statusPT(s?: string) {
+  switch ((s || "").toLowerCase()) {
+    case "open":
+      return "Aberto";
+    case "resolved":
+      return "Resolvido";
+    case "assigned":
+      return "Atribuído";
+    case "closed":
+      return "Fechado";
+    default:
+      return s || "—";
+  }
+}
+
+/* =========================================
+ * COMPONENTE DO HEADER ORDENÁVEL
+ * ======================================= */
+
+function SortableHeader({
+  label,
+  active,
+  dir,
+  onClick,
+}: {
   label: string;
-  Icon: IconType;
-  color: string;
-};
+  active: boolean;
+  dir: "asc" | "desc";
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center justify-center gap-1 hover:text-white transition-colors w-full`}
+      title={active ? `Ordenado por ${label} (${dir})` : `Ordenar por ${label}`}
+      aria-label={active ? `Ordenado por ${label} (${dir})` : `Ordenar por ${label}`}
+    >
+      <span>{label}</span>
+      {/* @ts-ignore */}
+      <FaSort
+        className={[
+          "text-[12px] transition-transform",
+          active ? "opacity-100" : "opacity-60",
+          // gira 180° quando estiver em DESC para indicar direção
+          active && dir === "desc" ? "rotate-180" : "rotate-0",
+        ].join(" ")}
+      />
+    </button>
+  );
+}
+
+
+/* =========================================
+ * PÁGINA: INCIDENTES
+ * ======================================= */
 
 export default function Incidentes() {
   const token = getToken();
 
+  // Dados renderizados
   const [dados, setDados] = useState<PageIncidente[]>([]);
-  const [filtroDias, setFiltroDias] = useState<number>(0); // Hoje
+  // Filtro por período (1 = hoje; 0 = todos)
+  const [filtroDias, setFiltroDias] = useState<number>(0);
+  // Estados de carregamento/erro/accordion
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [expandido, setExpandido] = useState<number | string | null>(null);
-  const [irisUrl, setIrisUrl] = useState<string>("");
 
-  // paginação (fixo 10 por página)
+  // Estado de paginação
   const [page, setPage] = useState(1);
 
-  // query string (?open=ID)
+  // Ordenação (padrão: data desc)
+  const [sortBy, setSortBy] = useState<SortKey>("data");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  // Deep-link (?open=ID)
   const [searchParams] = useSearchParams();
   const openFromQS = searchParams.get("open");
 
+  // URL do IRIS (para link no ID)
+  const [irisUrl, setIrisUrl] = useState<string>("");
+
+  // Mapa de status → Icon/cor
   const STATUS_MAP: Record<string, StatusMeta> = {
     open: { label: "Aberto", Icon: FaLockOpen, color: "text-emerald-400" },
     "in progress": { label: "Em progresso", Icon: RiProgress5Line, color: "text-[#744CD8]" },
@@ -98,9 +236,7 @@ export default function Incidentes() {
     return STATUS_MAP[v] ?? { ...DEFAULT_STATUS, label: s || "—" };
   }
 
-  // ====== lógica de nível (mesma do TopIncidentes) ======
-
-  // Detecta nível no NOME (casos da IA), ex: "[hh:mm - dd/mm/aaaa] - Alto - ..."
+  // Detecta nível no NOME (casos IA). Ex: "[hh:mm - dd/mm/aaaa] - Alto - ..."
   function detectarNivelPorNome(nome: string): string | null {
     const match = nome.match(
       /\[\d{2}:\d{2}\s*-\s*\d{2}\/\d{2}\/\d{4}\]\s*-\s*(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica)/i
@@ -108,7 +244,7 @@ export default function Incidentes() {
     return match ? match[1] : null;
   }
 
-  // Remove "#1098 - " e também o prefixo "[hora - data] - Nível - " do título
+  // Remove "#1098 - " e também "[hora - data] - Nível - " do título
   function formatCaseName(name: string) {
     return name
       .replace(/^\s*#\s*\d+\s*-\s*/i, "")
@@ -119,7 +255,7 @@ export default function Incidentes() {
       .trim();
   }
 
-  // Fallback: mapeia pelo classification_id
+  // Fallback: mapeia severidade pelo classification_id
   function mapNivelPorClassificationId(
     id?: number | null
   ): "Crítico" | "Alto" | "Médio" | "Baixo" {
@@ -131,26 +267,54 @@ export default function Incidentes() {
     return "Baixo";
   }
 
-  // Suporta masculino e feminino (Baixo/Baixa, Médio/Média, ...), igual ao TopIncidentes
-  function getCorBadge(nivel: string) {
-    switch (nivel) {
-      case "Crítico":
-      case "Crítica":
-        return "badge-pink";
-      case "Alto":
-      case "Alta":
-        return "badge-high";
-      case "Médio":
-      case "Média":
-        return "badge-darkpink";
-      case "Baixo":
-      case "Baixa":
-        return "badge-green";
-      default:
-        return "bg-gray-500";
+  // Rank numérico de severidade (para ordenar)
+  function severidadeRank(nivel: string) {
+    const n = (nivel || "").toLowerCase();
+    if (n.startsWith("crít")) return 4;
+    if (n.startsWith("alto") || n.startsWith("alta")) return 3;
+    if (n.startsWith("méd") || n.startsWith("med")) return 2; // com/sem acento
+    if (n.startsWith("baix")) return 1;
+    return 0;
+  }
+
+  // Deriva severidade de um incidente (igual ao que mostramos na linha)
+  function nivelDoIncidente(i: PageIncidente) {
+    const manual = detectarNivelPorNome(i.case_name || "");
+    return manual || mapNivelPorClassificationId(i.classification_id as any);
+  }
+
+  // Ordem de status (para rankear ao ordenar)
+  const STATUS_ORDER: Record<string, number> = {
+    "open": 1,
+    "in progress": 2,
+    "containment": 3,
+    "eradication": 4,
+    "recovery": 5,
+    "post-incident": 6,
+    "reporting": 7,
+    "closed": 8,
+    "unspecified": 9,
+  };
+
+  // Toggle do acordeão
+  const toggle = (id: number | string) => setExpandido((cur) => (cur === id ? null : id));
+
+  // Alterna/muda a coluna de ordenação (forma robusta)
+  function toggleSort(col: SortKey) {
+    if (sortBy === col) {
+      // mesma coluna → só alterna a direção
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      // coluna diferente → define a coluna e zera direção (começa em asc)
+      setSortBy(col);
+      setSortDir("asc"); // se preferir começar em "desc", mude aqui
     }
   }
 
+
+  /* -----------------------------------------
+   * BUSCA DE DADOS (TENANT + INCIDENTES)
+   * --------------------------------------- */
   useEffect(() => {
     let ativo = true;
     async function fetch() {
@@ -159,11 +323,13 @@ export default function Incidentes() {
         setErro(null);
         setExpandido(null);
 
+        // 1) Busca tenant e salva iris_url
         const tenant = await getTenant();
-        setIrisUrl(tenant?.iris_url || "");
+        setIrisUrl(tenant?.iris_url || ""); // ← usado no link do ID
+
         const alvoOwnerTenant = normaliza(tenant?.owner_name);
         const alvoOwnerExtra = normaliza(OWNER_EXTRA);
-        const alvoClienteTenant = normaliza(tenant?.cliente_name); // seu campo no Strapi
+        const alvoClienteTenant = normaliza(tenant?.cliente_name);
 
         if (!tenant?.cliente_name) {
           console.warn("[Incidentes] tenant.cliente_name ausente — bloqueando listagem por segurança.");
@@ -172,6 +338,7 @@ export default function Incidentes() {
           return;
         }
 
+        // 2) Busca incidentes (pode vir em diferentes formatos)
         const listaBruta = await getTodosCasos(token || "");
         const src: any = listaBruta as any;
         const lista: PageIncidente[] = Array.isArray(src)
@@ -184,7 +351,7 @@ export default function Incidentes() {
                 ? src.items
                 : [];
 
-        // Filtro final: (owner = você OU automation_n8n) E (client_name = tenant.cliente_name)
+        // 3) Filtro final: (owner = você OU automation_n8n) E (client_name = tenant.cliente_name)
         const doOwnerECliente = lista.filter((i) => {
           const dono = normaliza(extractOwner(i));
           const clienteIncidente = normaliza(extractIncidentClient(i));
@@ -193,10 +360,10 @@ export default function Incidentes() {
           return matchOwner && matchCliente;
         });
 
-        // Filtro de datas
+        // 4) Filtro por período
         const filtrado = filtrarPorDias(doOwnerECliente, filtroDias);
 
-        // Ordenação desc por data de abertura
+        // 5) Ordenação padrão por data desc (antes de aplicar a ordenação dinâmica abaixo)
         filtrado.sort(
           (a, b) =>
             parseDateBR(b.case_open_date).getTime() -
@@ -205,7 +372,7 @@ export default function Incidentes() {
 
         if (!ativo) return;
         setDados(filtrado);
-        setPage(1); // reset página ao recarregar dados/filtro
+        setPage(1); // sempre volta pra 1 ao recarregar
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar incidentes");
@@ -219,39 +386,76 @@ export default function Incidentes() {
     };
   }, [token, filtroDias]);
 
-  // paginação (fixo 10 por página)
+  /* -----------------------------------------
+   * PAGINAÇÃO & ORDENAÇÃO
+   * --------------------------------------- */
   const total = dados.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const clampPage = (p: number) => Math.min(Math.max(1, p), totalPages);
 
+  // Se o total de páginas muda, ajusta a página atual se necessário
   useEffect(() => {
     setPage((p) => clampPage(p));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPages]);
 
+  // Ao mudar sort, volta para a página 1
+  useEffect(() => {
+    setPage(1);
+  }, [sortBy, sortDir]);
+
+  // Aplica ordenação ao dataset completo
+  const ordenados = useMemo(() => {
+    const arr = [...dados];
+    arr.sort((a, b) => {
+      let va = 0, vb = 0;
+
+      if (sortBy === "id") {
+        va = Number(a.case_id) || 0;
+        vb = Number(b.case_id) || 0;
+      } else if (sortBy === "data") {
+        va = parseDateBR(a.case_open_date).getTime();
+        vb = parseDateBR(b.case_open_date).getTime();
+      } else if (sortBy === "severidade") {
+        va = severidadeRank(nivelDoIncidente(a));
+        vb = severidadeRank(nivelDoIncidente(b));
+      } else if (sortBy === "status") {
+        const sa = (a.state_name || "").toLowerCase().trim();
+        const sb = (b.state_name || "").toLowerCase().trim();
+        va = STATUS_ORDER[sa] ?? 999;
+        vb = STATUS_ORDER[sb] ?? 999;
+      }
+
+      const cmp = va === vb ? 0 : va < vb ? -1 : 1;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [dados, sortBy, sortDir]);
+
+  // Calcula faixa da página (depois de ordenar)
   const start = (page - 1) * PAGE_SIZE;
   const end = Math.min(start + PAGE_SIZE, total);
-  const linhas = useMemo(() => dados.slice(start, end), [dados, start, end]);
+  const linhas = useMemo(() => ordenados.slice(start, end), [ordenados, start, end]);
 
-  const toggle = (id: number | string) => setExpandido((cur) => (cur === id ? null : id));
-
-  // 🔗 Deep-link: quando há ?open=ID, navegar até a página do item e abrir o acordeão
+  /* -----------------------------------------
+   * DEEP LINK: ?open=ID → ir para a página e abrir
+   * --------------------------------------- */
   useEffect(() => {
     if (!openFromQS) return;
     const alvo = Number(openFromQS);
     if (Number.isNaN(alvo) || dados.length === 0) return;
 
-    // Encontrar índice do item na lista completa
-    const idx = dados.findIndex((i) => Number(i.case_id) === alvo);
+    // índice do item na lista ordenada atual (importante: usa 'ordenados')
+    const idx = ordenados.findIndex((i) => Number(i.case_id) === alvo);
     if (idx === -1) return;
 
-    // Página onde o item está
+    // página onde o item está
     const pageDoItem = Math.floor(idx / PAGE_SIZE) + 1;
 
-    // Se ainda não estamos na página, ir para ela
+    // se não estamos nela, vai pra lá
     setPage((p) => (p === pageDoItem ? p : pageDoItem));
 
-    // Abrir após a página correta renderizar
+    // abre o acordeão após render da página certa
     const t = setTimeout(() => {
       setExpandido(alvo);
       const el = document.querySelector(`[data-case-id="${alvo}"]`);
@@ -259,8 +463,11 @@ export default function Incidentes() {
     }, 0);
 
     return () => clearTimeout(t);
-  }, [openFromQS, dados]);
+  }, [openFromQS, dados, ordenados]);
 
+  /* -----------------------------------------
+   * RENDER
+   * --------------------------------------- */
   return (
     <LayoutModel titulo="Incidentes">
       <section className="cards p-6 rounded-2xl shadow-lg">
@@ -291,14 +498,14 @@ export default function Incidentes() {
             <div className="text-xs text-gray-400">
               {total > 0 ? (
                 <>
-                  Mostrando <span className="text-gray-2 00">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span>
+                  Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span>
                 </>
               ) : (
                 <>Mostrando 0 de 0</>
               )}
             </div>
 
-            {/* Controles de paginação simples */}
+            {/* Controles de paginação */}
             <div className="flex gap-2">
               <button
                 className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
@@ -320,13 +527,43 @@ export default function Incidentes() {
 
         {/* Tabela */}
         <div className="cards rounded-2xl overflow-hidden">
-          {/* Cabeçalho */}
+          {/* Cabeçalho com colunas ordenáveis */}
           <div className="grid grid-cols-12 px-5 py-5 bg-[#0A0617] text-xs text-gray-300">
-            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">ID do Incidente</div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Data</div>
-            <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">Descrição</div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Severidade</div>
-            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">Status</div>
+            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader
+                label="ID"
+                active={sortBy === "id"}
+                dir={sortDir}
+                onClick={() => toggleSort("id")}
+              />
+            </div>
+            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader
+                label="Data"
+                active={sortBy === "data"}
+                dir={sortDir}
+                onClick={() => toggleSort("data")}
+              />
+            </div>
+            <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">
+              Descrição
+            </div>
+            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader
+                label="Severidade"
+                active={sortBy === "severidade"}
+                dir={sortDir}
+                onClick={() => toggleSort("severidade")}
+              />
+            </div>
+            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader
+                label="Status"
+                active={sortBy === "status"}
+                dir={sortDir}
+                onClick={() => toggleSort("status")}
+              />
+            </div>
             <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Ação</div>
           </div>
 
@@ -348,7 +585,7 @@ export default function Incidentes() {
                 const dataBR = inc.case_open_date; // "MM/DD/YYYY"
                 const agenteOrigem = inc.case_name;
 
-                // 👇 prioridade: nível no nome (IA) > fallback por classification_id
+                // prioridade: nível no nome (IA) > fallback por classification_id
                 const nivelManual = detectarNivelPorNome(inc.case_name || "");
                 const nivel = nivelManual || mapNivelPorClassificationId(inc.classification_id as any);
                 const badge = getCorBadge(nivel);
@@ -364,6 +601,7 @@ export default function Incidentes() {
                       className={`grid grid-cols-12 px-5 py-4 items-center ${aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"
                         } transition-colors`}
                     >
+                      {/* ID com link pro IRIS (se houver irisUrl) */}
                       <div className="col-span-1 text-center text-sm text-gray-400 truncate">
                         {irisUrl ? (
                           <a
@@ -378,12 +616,18 @@ export default function Incidentes() {
                           <>#{id}</>
                         )}
                       </div>
+
+                      {/* Data */}
                       <div className="col-span-2 text-center text-xs text-gray-400">
-                        {dataBR}
+                        {formatDateBR(dataBR)}
                       </div>
+
+                      {/* Agente/Origem */}
                       <div className="col-span-4 text-center text-xs text-gray-400 truncate">
                         {formatCaseName(agenteOrigem || "") || "—"}
                       </div>
+
+                      {/* Severidade */}
                       <div className="col-span-2 text-center">
                         <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>
                           {nivel}
@@ -399,6 +643,7 @@ export default function Incidentes() {
                         </span>
                       </div>
 
+                      {/* Ação (accordion) */}
                       <div className="col-span-2 flex justify-center">
                         <button
                           onClick={() => toggle(id)}
@@ -458,69 +703,9 @@ export default function Incidentes() {
   );
 }
 
-/* ================= helpers ================= */
-
-function parseDateBR(d: string) {
-  // "MM/DD/YYYY" -> Date
-  const [mes, dia, ano] = d.split("/");
-  return new Date(`${ano}-${mes}-${dia}`);
-}
-
-function filtrarPorDias(lista: PageIncidente[], dias: number) {
-  if (dias === 0) return lista; // todos
-  if (dias === 1) {
-    // hoje
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    return lista.filter((i) => {
-      const d = parseDateBR(i.case_open_date);
-      d.setHours(0, 0, 0, 0);
-      return d.getTime() === hoje.getTime();
-    });
-  }
-  // últimos X dias (inclui hoje)
-  const hoje = new Date();
-  const limite = new Date(hoje);
-  limite.setDate(hoje.getDate() - (dias - 1));
-  limite.setHours(0, 0, 0, 0);
-  return lista.filter((i) => parseDateBR(i.case_open_date) >= limite);
-}
-
-function getCorBadge(nivel: string) {
-  switch (nivel) {
-    case "Crítico":
-    case "Crítica":
-      return "badge-pink";
-    case "Alto":
-    case "Alta":
-      return "badge-high";
-    case "Médio":
-    case "Média":
-      return "badge-darkpink";
-    case "Baixo":
-    case "Baixa":
-      return "badge-green";
-    default:
-      return "bg-gray-500";
-  }
-}
-
-function statusPT(s?: string) {
-  switch ((s || "").toLowerCase()) {
-    case "open":
-      return "Aberto";
-    case "resolved":
-      return "Resolvido";
-    case "assigned":
-      return "Atribuído";
-    case "closed":
-      return "Fechado";
-    default:
-      return s || "—";
-  }
-}
-
-/* ============== componentes menores ============== */
+/* =========================================
+ * COMPONENTES AUXILIARES DE UI
+ * ======================================= */
 
 function Secao({
   titulo,

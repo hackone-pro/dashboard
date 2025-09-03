@@ -323,3 +323,25 @@ header button.toggle{
 .leaflet-tooltip.country-tip::before {
   border-top-color: rgba(17, 17, 26, 0.9);
 }
+
+/* LIGA A ANIMAÇÃO NOS ARCOS */
+.shooting-lines-pane path.flow-arc {
+  /* precisa do dash para ter algo a deslocar */
+  stroke-dasharray: 6 28;
+  /* move o dash ao longo do arco continuamente */
+  animation: dashmove var(--dur, 0.60s) linear infinite, glowPulse 2.2s ease-in-out infinite;
+}
+
+/* defasagem suave entre arcos (opcional; deixa mais orgânico) */
+.s-i-0 { --dur: 0.55s; animation-delay: 0.00s, 0s; }
+.s-i-1 { --dur: 0.62s; animation-delay: 0.10s, 0s; }
+.s-i-2 { --dur: 0.58s; animation-delay: 0.20s, 0s; }
+.s-i-3 { --dur: 0.68s; animation-delay: 0.30s, 0s; }
+.s-i-4 { --dur: 0.60s; animation-delay: 0.40s, 0s; }
+.s-i-5 { --dur: 0.72s; animation-delay: 0.50s, 0s; }
+
+/* keyframes da animação (move o dash) */
+@keyframes dashmove { to { stroke-dashoffset: -34; } }
+
+/* “respiração” leve de opacidade (você já tem, mas repito pra garantir) */
+@keyframes glowPulse { 0%,100% { opacity: .95 } 50% { opacity: .75 } }

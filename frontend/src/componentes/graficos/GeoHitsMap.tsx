@@ -1,5 +1,4 @@
-// src/components/GeoHitsMap.tsx
-import { useMemo, useEffect, useState, useRef } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Pane, CircleMarker, useMap, ZoomControl, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -27,41 +26,58 @@ function FitToData({ points, target }: { points: { lat: number; lng: number }[];
   return null;
 }
 
-// -------- helpers gerais --------
-function randInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-function pickWeightedIndex(
-  pts: { count: number }[],
-  excludeIdx?: number
-): number {
-  const total = pts.reduce((acc, p, idx) => acc + (idx === excludeIdx ? 0 : (p.count || 1)), 0);
-  if (total <= 0) return 0;
-  let r = Math.random() * total;
-  for (let i = 0; i < pts.length; i++) {
-    if (i === excludeIdx) continue;
-    r -= (pts[i].count || 1);
-    if (r <= 0) return i;
-  }
-  return 0;
+/** Injeta <defs> com o gradient no mesmo <svg> do Leaflet */
+function MapGradientDefs() {
+  const map = useMap();
+  useEffect(() => {
+    const pane = map.getPanes().overlayPane as HTMLElement | null;
+    if (!pane) return;
+    const svg = pane.querySelector('svg');
+    if (!svg) return;
+
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      svg.prepend(defs);
+    }
+
+    let grad = svg.querySelector('#flowArcGradient') as SVGLinearGradientElement | null;
+    if (!grad) {
+      grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+      grad.setAttribute('id', 'flowArcGradient');
+      grad.setAttribute('gradientUnits', 'objectBoundingBox');
+      grad.setAttribute('x1', '0%');
+      grad.setAttribute('y1', '0%');
+      grad.setAttribute('x2', '100%');
+      grad.setAttribute('y2', '0%');
+
+      const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop1.setAttribute('offset', '0%');
+      stop1.setAttribute('stop-color', '#EC4899');
+      stop1.setAttribute('stop-opacity', '1');
+
+      const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop2.setAttribute('offset', '100%');
+      stop2.setAttribute('stop-color', '#EC4899');
+      stop2.setAttribute('stop-opacity', '0.15');
+
+      grad.appendChild(stop1);
+      grad.appendChild(stop2);
+      defs.appendChild(grad);
+    }
+  }, [map]);
+  return null;
 }
 
-// -------- helpers do arco (Bézier quadrático em coordenadas lat/lng) --------
+/* ------- helpers de arco (Bézier) ------- */
 type Pt = { lat: number; lng: number };
 
-function controlPoint(p0: Pt, p1: Pt, curvature = 0.25): Pt {
-  // ponto médio
+function controlPoint(p0: Pt, p1: Pt, curvature = 0.24): Pt {
   const mid = { lat: (p0.lat + p1.lat) / 2, lng: (p0.lng + p1.lng) / 2 };
-  // vetor P0->P1 no espaço (x = lng, y = lat)
   const dx = p1.lng - p0.lng;
   const dy = p1.lat - p0.lat;
-  // desloca o controle perpendicularmente para criar o arco
-  return {
-    lat: mid.lat + dx * curvature,
-    lng: mid.lng - dy * curvature,
-  };
+  return { lat: mid.lat + dx * curvature, lng: mid.lng - dy * curvature };
 }
-
 function bezierPoint(t: number, p0: Pt, c: Pt, p1: Pt): Pt {
   const u = 1 - t;
   return {
@@ -69,14 +85,25 @@ function bezierPoint(t: number, p0: Pt, c: Pt, p1: Pt): Pt {
     lng: u * u * p0.lng + 2 * u * t * c.lng + t * t * p1.lng,
   };
 }
-
 function sampleBezier(p0: Pt, c: Pt, p1: Pt, samples = 80): Pt[] {
   const pts: Pt[] = [];
-  for (let i = 0; i <= samples; i++) {
-    const t = i / samples;
-    pts.push(bezierPoint(t, p0, c, p1));
-  }
+  for (let i = 0; i <= samples; i++) pts.push(bezierPoint(i / samples, p0, c, p1));
   return pts;
+}
+
+// gera um "hue" (0–359) estável a partir do nome do país
+function hueFromString(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 37 + s.charCodeAt(i)) % 360;
+  }
+  return h;
+}
+
+// cor HSL agradável (viva mas não neon)
+function colorForCountry(name: string) {
+  const h = hueFromString(name);
+  return `hsl(${h} 75% 55%)`; // pode ajustar saturação/luminosidade aqui
 }
 
 export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapProps) {
@@ -85,30 +112,12 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // ativo (-1 = silêncio)
-  const [activeIdx, setActiveIdx] = useState<number>(-1);
-  const activeRef = useRef<number>(-1);
-  useEffect(() => { activeRef.current = activeIdx; }, [activeIdx]);
-
-  // velocidade da animação do "glow dot"
-  const speedClasses = ['speed-0', 'speed-1', 'speed-2'];
-  const [speedClass, setSpeedClass] = useState<string>('speed-1');
-
-  // scheduler params
-  const MIN_MS = 900;
-  const MAX_MS = 2800;
-  const SILENT_CHANCE = 0.15;
-
-  // animação do dot ao longo do arco (0..1)
-  const [animT, setAnimT] = useState<number>(0);
-  const rafRef = useRef<number | null>(null);
-
   const darkTiles = useMemo(
     () => 'https://{s}.basemaps.cartocdn.com/spotify_dark/{z}/{x}/{y}{r}.png',
     []
   );
 
-  // fetch dos dados
+  // fetch
   useEffect(() => {
     let ativo = true;
     (async () => {
@@ -133,12 +142,8 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
 
         setPoints(pts);
 
-        // alvo = Brasil (ou centróide do BR)
         const br = pts.find(p => p.pais.toLowerCase() === 'brazil');
         setTarget(br ? { lat: br.lat, lng: br.lng } : { lat: -14.235, lng: -51.9253 });
-
-        // começa em silêncio
-        setActiveIdx(-1);
       } catch (e: any) {
         if (ativo) setErro(e?.message || 'Erro ao carregar pontos do mapa');
       } finally {
@@ -148,66 +153,17 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
     return () => { ativo = false; };
   }, [dias]);
 
-  // scheduler aleatório (um país por vez, pausas aleatórias)
-  useEffect(() => {
-    if (points.length === 0) return;
-
-    let timeoutId: number | undefined;
-
-    const tick = () => {
-      const doSilent = Math.random() < SILENT_CHANCE;
-
-      if (doSilent) {
-        setActiveIdx(-1);
-      } else {
-        const next = pickWeightedIndex(points, activeRef.current >= 0 ? activeRef.current : undefined);
-        setActiveIdx(next);
-        setSpeedClass(speedClasses[randInt(0, speedClasses.length - 1)]);
-      }
-
-      const delay = randInt(MIN_MS, MAX_MS);
-      timeoutId = window.setTimeout(tick, delay);
-    };
-
-    timeoutId = window.setTimeout(tick, randInt(MIN_MS, MAX_MS));
-    return () => { if (timeoutId) window.clearTimeout(timeoutId); };
-  }, [points]);
-
-  // anima o "glow dot" de 0→1 toda vez que muda o ativo
-  useEffect(() => {
-    if (activeIdx < 0) { setAnimT(0); if (rafRef.current) cancelAnimationFrame(rafRef.current); return; }
-    const start = performance.now();
-    const dur = 1100 + randInt(0, 700); // 1.1s–1.8s
-    // animação linear (pode trocar por easing se quiser)
-    const step = (now: number) => {
-      const t = Math.min(1, (now - start) / dur);
-      setAnimT(t);
-      if (t < 1) rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [activeIdx]);
-
-  // calcula arco + posição do dot para o ativo
-  const arcPositions: [number, number][] | null = (() => {
-    if (activeIdx < 0 || !target || !points[activeIdx]) return null;
-    const src = points[activeIdx];
-    const p0 = { lat: src.lat, lng: src.lng };
-    const p1 = { lat: target.lat, lng: target.lng };
-    const c = controlPoint(p0, p1, 0.24);  // ajuste a curvatura aqui (0.15–0.35)
-    const sampled = sampleBezier(p0, c, p1, 80);
-    return sampled.map(p => [p.lat, p.lng]);
-  })();
-
-  const dotCenter: [number, number] | null = (() => {
-    if (activeIdx < 0 || !target || !points[activeIdx]) return null;
-    const src = points[activeIdx];
-    const p0 = { lat: src.lat, lng: src.lng };
-    const p1 = { lat: target.lat, lng: target.lng };
-    const c = controlPoint(p0, p1, 0.24);
-    const p = bezierPoint(animT, p0, c, p1);
-    return [p.lat, p.lng];
-  })();
+  // pré-calcula todos os arcos (um por país → Brasil)
+  const arcs = useMemo(() => {
+    if (!target) return [] as { positions: [number, number][], group: number }[];
+    return points.map((src, i) => {
+      const p0 = { lat: src.lat, lng: src.lng };
+      const p1 = { lat: target.lat, lng: target.lng };
+      const c = controlPoint(p0, p1, 0.24);
+      const sampled = sampleBezier(p0, c, p1, 80).map(p => [p.lat, p.lng]) as [number, number][];
+      return { positions: sampled, group: i % 6 }; // grupo para variar delay/duração
+    });
+  }, [points, target]);
 
   return (
     <div
@@ -226,6 +182,7 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
         className="w-full h-full"
         worldCopyJump
       >
+        <MapGradientDefs /> {/* gradient para os arcos */}
         <ZoomControl position="topleft" />
 
         <Pane name="basemap" style={{ zIndex: 200 }}>
@@ -233,7 +190,7 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
         </Pane>
 
         <Pane name="bubbles" style={{ zIndex: 400 }}>
-          {/* alvo: BRASIL */}
+          {/* alvo: Brasil */}
           {target && (
             <CircleMarker
               center={[target.lat, target.lng]}
@@ -243,52 +200,46 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
             />
           )}
 
-          {/* países (adicione Tooltip se quiser) */}
+          {/* países (com tooltip) */}
           {points.map((p, i) => (
             <CircleMarker
               key={`pt-${i}`}
               center={[p.lat, p.lng]}
               radius={Math.max(4, Math.log10(p.count + 10))}
               pathOptions={{
-                color: 'transparent',
-                fillColor: '#EC4899',
-                fillOpacity: i === activeIdx ? 0.95 : 0.6,
+                // uma bordinha sutil ajuda a destacar sobre o tile escuro
+                color: 'rgba(255,255,255,0.15)',
+                weight: 0.6,
+                fillColor: colorForCountry(p.pais),
+                fillOpacity: 0.8,
               }}
-              className={i === activeIdx ? 'source-active' : undefined}
             >
-              
               <Tooltip direction="top" offset={[0, -6]} opacity={1} className="country-tip">
                 <div className="text-xs">
                   <div className="font-medium">{p.pais}</div>
                   <div className="opacity-80">Eventos: {p.count.toLocaleString()}</div>
                 </div>
-              </Tooltip> 
-             
+              </Tooltip>
             </CircleMarker>
           ))}
+
         </Pane>
 
-        {/* arco + glow dot do ativo */}
+        {/* TODOS os arcos animando juntos */}
         <Pane name="shooting-lines" className="shooting-lines-pane" style={{ zIndex: 350 }}>
-          {arcPositions && (
+          {arcs.map((arc, i) => (
             <Polyline
-              positions={arcPositions}
+              key={`arc-${i}`}
+              positions={arc.positions}
               pathOptions={{
-                color: '#EC4899',
                 weight: 2.2,
-                opacity: 0.85,
+                opacity: 0.95,
+                dashArray: '6 28', // segmento + espaço (parece “fluxo”)
+                // NÃO defina 'color' aqui; o stroke vem do CSS com o gradient
               }}
-              className={`flow-arc ${speedClass}`}
+              className={`flow-arc s-i-${arc.group}`}
             />
-          )}
-          {dotCenter && (
-            <CircleMarker
-              center={dotCenter}
-              radius={4}
-              pathOptions={{ color: 'transparent', fillColor: '#EC4899', fillOpacity: 1 }}
-              className={`glow-dot ${speedClass}`}
-            />
-          )}
+          ))}
         </Pane>
 
         <FitToData points={points} target={target ?? undefined} />
