@@ -92,6 +92,8 @@ export default function TopIncidentes({ token }: Props) {
         switch (nivel) {
             case "Crítico":
             case "Crítica":
+            case "CRÍTICA":
+            case "CRÍTICO":
                 return "badge-pink";
             case "Alto":
             case "Alta":
@@ -111,6 +113,8 @@ export default function TopIncidentes({ token }: Props) {
         switch (nivel) {
             case "Crítico":
             case "Crítica":
+            case "CRÍTICA":
+            case "CRÍTICO":
                 return "bg-pink-500";
             case "Alto":
             case "Alta":
@@ -139,6 +143,8 @@ export default function TopIncidentes({ token }: Props) {
                 return 3;
             case "Crítico":
             case "Crítica":
+            case "CRÍTICA":
+            case "CRÍTICO":
                 return 4;
             default:
                 return 1;
@@ -153,18 +159,55 @@ export default function TopIncidentes({ token }: Props) {
         return "Baixo";
     };
 
+    const NIVEIS_REGEX = "(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|CR[IÍ]TICA|CR[IÍ]TICO|Cr[ií]tico|Cr[ií]tica)";
+
+
+    // 🔁 SUBSTITUIR a sua detectarNivelPorNome por esta
     const detectarNivelPorNome = (nome: string): string | null => {
-        const match = nome.match(
-            /\[\d{2}:\d{2} - \d{2}\/\d{2}\/\d{4}\] - (Baixo|Baixa|Médio|Média|Alto|Alta|Crítico|Crítica)/i
+        // 1) Padrão antigo: [HH:MM - DD/MM/AAAA] - Nível - ...
+        const rComData = new RegExp(
+            `\\[\\d{2}:\\d{2}\\s*-\\s*\\d{2}/\\d{2}/\\d{4}\\]\\s*-\\s*${NIVEIS_REGEX}`,
+            "i"
         );
-        return match ? match[1] : null;
+
+        // 2) Novo padrão IA: [HH:MM] - Nível - ...
+        const rSemData = new RegExp(
+            `\\[\\d{2}:\\d{2}\\]\\s*-\\s*${NIVEIS_REGEX}\\s*-`,
+            "i"
+        );
+
+        // Tenta casar na ordem
+        let m = nome.match(rComData);
+        if (m) return m[1];
+
+        m = nome.match(rSemData);
+        if (m) return m[1];
+
+        return null;
     };
 
     const formatCaseName = (name: string) => {
-        return name.replace(
-            /\[\d{2}:\d{2}\s*-\s*\d{2}\/\d{2}\/\d{4}\]\s*-\s*(Baixo|Baixa|Médio|Média|Alto|Alta|Crítico|Crítica)\s*-\s*/i,
-            ""
+        // Normaliza espaços e remove NBSP
+        let s = name.replace(/\u00A0/g, " ").replace(/\s+/g, " ").trimStart();
+
+        // Remove cabeçalho:
+        // [opcional] "#86 - " ou "86 - "
+        // + "[HH:MM]" (opcionalmente " - DD/MM/AAAA")
+        // + " - Nível - "
+        const cabecalho = new RegExp(
+            String.raw`^\s*(?:#?\d+\s*[-–]\s*)?\[\d{2}:\d{2}(?:\s*[-–]\s*\d{2}\/\d{2}\/\d{4})?\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]\s*`,
+            "i"
         );
+        s = s.replace(cabecalho, "");
+
+        // Fallback: se vier só prefixo + "[HH:MM] - " (sem nível)
+        const soHora = new RegExp(
+            String.raw`^\s*(?:#?\d+\s*[-–]\s*)?\[\d{2}:\d{2}\]\s*[-–]\s*`,
+            "i"
+        );
+        s = s.replace(soHora, "");
+
+        return s.trim();
     };
 
     return (
@@ -236,6 +279,8 @@ export default function TopIncidentes({ token }: Props) {
                                 nivelManual || mapNivelPorClassificationId(incidente.classification_id);
                             const qtd = getQtdPreenchida(nivel);
                             const total = 4;
+                            const sentenceCase = (texto: string) =>
+                                texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
 
                             return (
                                 <div
@@ -253,7 +298,7 @@ export default function TopIncidentes({ token }: Props) {
                                                     nivel
                                                 )}`}
                                             >
-                                                {nivel}
+                                                {sentenceCase(nivel)}
                                             </span>
 
                                             <div className="flex gap-1">
@@ -271,13 +316,13 @@ export default function TopIncidentes({ token }: Props) {
                                     {/* Linha com nome + botão flutuante */}
                                     <div className="flex justify-between items-center mt-1">
                                         <span className="font-medium text-gray-400 truncate max-w-[220px]">
-                                            {formatCaseName(incidente.case_name)}
+                                            #{incidente.case_id} - {formatCaseName(incidente.case_name)}
                                         </span>
 
                                         {/* Botão visível apenas ao hover na group */}
                                         {irisUrl && (
                                             <button
-                                                onClick={() => navigate(`/incidentes?open=${incidente.case_id}`)} 
+                                                onClick={() => navigate(`/incidentes?open=${incidente.case_id}`)}
                                                 className="px-1 py-1 btn hover:bg-purple-600 text-[11px] text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                             >
                                                 Ver →
