@@ -117,6 +117,8 @@ function getCorBadge(nivel: string) {
   switch (nivel) {
     case "Crítico":
     case "Crítica":
+    case "CRÍTICA":
+    case "CRÍTICO":
       return "badge-pink";
     case "Alto":
     case "Alta":
@@ -146,6 +148,66 @@ function statusPT(s?: string) {
     default:
       return s || "—";
   }
+}
+
+/* =========================================
+ * REGEX / FORMATAÇÃO TÍTULO & SEVERIDADE
+ * ======================================= */
+
+// Aceita baixo/baixa, médio/média, alto/alta, crítico/crítica (com e sem acento/maiúsculas)
+const NIVEIS_REGEX =
+  "(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica|CR[IÍ]TICO|CR[IÍ]TICA)";
+
+// Sentence case
+const sentenceCase = (texto: string) =>
+  texto ? texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase() : texto;
+
+// Detecta severidade no início do nome, tolerando prefixo "#86 -", hífen "-" ou "–", e data opcional
+function detectarNivelPorNome(nome: string): string | null {
+  const comData = new RegExp(
+    String.raw`^\s*(?:#?\d+\s*[-–]\s*)?\[\d{2}:\d{2}\s*[-–]\s*\d{2}\/\d{2}\/\d{4}\]\s*[-–]\s*${NIVEIS_REGEX}`,
+    "i"
+  );
+  const semData = new RegExp(
+    String.raw`^\s*(?:#?\d+\s*[-–]\s*)?\[\d{2}:\d{2}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]`,
+    "i"
+  );
+
+  let m = nome.match(comData);
+  if (m) return m[1];
+  m = nome.match(semData);
+  if (m) return m[1];
+  return null;
+}
+
+// Limpa prefixos do título: "#86 - ", "[HH:MM]" (com/sem data), " - Nível - "
+function formatCaseName(name: string) {
+  let s = (name || "").replace(/\u00A0/g, " ").replace(/\s+/g, " ").trimStart();
+
+  // Remove: [opcional] "#86 - "
+  s = s.replace(/^\s*#?\d+\s*[-–]\s*/i, "");
+
+  // Remove: [HH:MM - DD/MM/AAAA] - Nivel -
+  s = s.replace(
+    new RegExp(
+      String.raw`^\s*\[\d{2}:\d{2}\s*[-–]\s*\d{2}\/\d{2}\/\d{4}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]\s*`,
+      "i"
+    ),
+    ""
+  );
+
+  // Remove: [HH:MM] - Nivel -
+  s = s.replace(
+    new RegExp(
+      String.raw`^\s*\[\d{2}:\d{2}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]\s*`,
+      "i"
+    ),
+    ""
+  );
+
+  // Fallbacks
+  s = s.replace(/^\s*\[\d{2}:\d{2}\]\s*[-–]\s*/i, ""); // só hora
+  return s.trim();
 }
 
 /* =========================================
@@ -234,25 +296,6 @@ export default function Incidentes() {
   function getStatusMeta(s?: string): StatusMeta {
     const v = (s ?? "").toLowerCase().trim();
     return STATUS_MAP[v] ?? { ...DEFAULT_STATUS, label: s || "—" };
-  }
-
-  // Detecta nível no NOME (casos IA). Ex: "[hh:mm - dd/mm/aaaa] - Alto - ..."
-  function detectarNivelPorNome(nome: string): string | null {
-    const match = nome.match(
-      /\[\d{2}:\d{2}\s*-\s*\d{2}\/\d{2}\/\d{4}\]\s*-\s*(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica)/i
-    );
-    return match ? match[1] : null;
-  }
-
-  // Remove "#1098 - " e também "[hora - data] - Nível - " do título
-  function formatCaseName(name: string) {
-    return name
-      .replace(/^\s*#\s*\d+\s*-\s*/i, "")
-      .replace(
-        /\[\d{2}:\d{2}\s*-\s*\d{2}\/\d{2}\/\d{4}\]\s*-\s*(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica)\s*-\s*/i,
-        ""
-      )
-      .trim();
   }
 
   // Fallback: mapeia severidade pelo classification_id
@@ -622,15 +665,15 @@ export default function Incidentes() {
                         {formatDateBR(dataBR)}
                       </div>
 
-                      {/* Agente/Origem */}
+                      {/* Descrição (título limpo + prefixo com #id) */}
                       <div className="col-span-4 text-center text-xs text-gray-400 truncate">
-                        {formatCaseName(agenteOrigem || "") || "—"}
+                        #{id} - {formatCaseName(agenteOrigem || "") || "—"}
                       </div>
 
-                      {/* Severidade */}
+                      {/* Severidade (sentence case) */}
                       <div className="col-span-2 text-center">
                         <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>
-                          {nivel}
+                          {sentenceCase(nivel)}
                         </span>
                       </div>
 
@@ -659,7 +702,7 @@ export default function Incidentes() {
                       <div className="px-5 py-5 bg-[#2a2250]">
                         <div className="rounded-xl p-5 bg-[#1b1730] border border-[#3B2A70] space-y-5">
                           <Secao titulo="Resumo">
-                            <Linha label="Título:" valor={formatCaseName(inc.case_name)} />
+                            <Linha label="Título:" valor={`#${inc.case_id} - ${formatCaseName(inc.case_name)}`} />
                             <div className="mt-2">
                               <DescricaoFormatada texto={inc.case_description} />
                             </div>
@@ -686,7 +729,7 @@ export default function Incidentes() {
                               }
                             />
                             <Linha label="Classification:" valor={(inc as any).classification || "—"} />
-                            <Linha label="Severidade (mapeada):" valor={nivel} />
+                            <Linha label="Severidade (mapeada):" valor={sentenceCase(nivel)} />
                             <Linha label="Status:" valor={status} />
                           </Secao>
                         </div>
