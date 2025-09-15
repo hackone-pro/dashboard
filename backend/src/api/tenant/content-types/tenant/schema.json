@@ -41,6 +41,9 @@
     },
     "owner_name": {
       "type": "string"
+    },
+    "wazuh_client_name": {
+      "type": "string"
     }
   }
 }

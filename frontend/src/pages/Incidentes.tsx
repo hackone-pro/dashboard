@@ -569,7 +569,7 @@ export default function Incidentes() {
         </div>
 
         {/* Tabela */}
-        <div className="cards rounded-2xl overflow-hidden">
+        <div className="cards rounded-2xl overflow-hidden table-incidente">
           {/* Cabeçalho com colunas ordenáveis */}
           <div className="grid grid-cols-12 px-5 py-5 bg-[#0A0617] text-xs text-gray-300">
             <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">

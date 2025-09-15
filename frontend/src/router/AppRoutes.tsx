@@ -5,6 +5,7 @@ import RiskLevel from '../pages/RiskLevel';
 import PrivateRoute from './PrivateRoute';
 import ThreatMap from '../pages/ThreatMap';
 import Incidentes from '../pages/Incidentes';
+import VulnerabilitiesDetection from '../pages/VulnerabilitiesDetection';
 
 export default function AppRoutes() {
   return (
@@ -17,6 +18,7 @@ export default function AppRoutes() {
         <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
         <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
         <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
+        <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
     </>

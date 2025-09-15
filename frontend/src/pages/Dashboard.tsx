@@ -65,7 +65,7 @@ export default function Dashboard() {
                                     <span>Nível de Risco</span>
 
                                     {/* @ts-ignore */}
-                                    <FaQuestionCircle className="text-purple-400 w-4 h-4 cursor-pointer" />
+                                    {/* <FaQuestionCircle className="text-purple-400 w-4 h-4 cursor-pointer" /> */}
 
                                     {/* Tooltip */}
                                     <div className="absolute left-6 top-full mt-2 w-64 p-3 rounded-md bg-[#1a1230] text-gray-300 text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
@@ -107,7 +107,7 @@ export default function Dashboard() {
                                 </div>
                                 <button
                                     onClick={() => navigate("/risk-level")}
-                                    className="px-2 py-1 btn hover:bg-purple-600 text-white rounded-md"
+                                    className="px-2 py-1 card btn hover:bg-purple-600 text-white rounded-md transition-all duration-300"
                                 >
                                     Acessar →
                                 </button>
@@ -128,7 +128,7 @@ export default function Dashboard() {
                                 <h3 className="text-sm text-white">Mapa de Ataque</h3>
                                 <button
                                     onClick={() => navigate('/threat-map')}
-                                    className="px-2 py-1 btn hover:bg-purple-600 text-[11px] text-white rounded-md"
+                                    className="px-2 py-1 btn card text-[11px] text-white rounded-md transition-all duration-300"
                                 >
                                     Ver mapa completo →
                                 </button>

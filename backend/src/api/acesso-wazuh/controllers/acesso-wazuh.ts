@@ -1,4 +1,18 @@
-import { buscarSeveridadeIndexer, buscarTopGeradoresFirewall, buscarTopAgentes, buscarTopAgentesCis, buscarTopPaisesAtaque } from '../services/acesso-wazuh';
+import {
+  buscarSeveridadeIndexer,
+  buscarTopGeradoresFirewall,
+  buscarTopAgentes,
+  buscarTopAgentesCis,
+  buscarTopPaisesAtaque,
+  buscarVulnSeveridades,
+  buscarTopVulnerabilidades,
+  buscarTopOSVulnerabilidades,
+  buscarTopAgentesVulnerabilidades,
+  buscarTopPackagesVulnerabilidades,
+  buscarTopScoresVulnerabilidades,
+  buscarVulnerabilidadesPorAno
+} from '../services/acesso-wazuh';
+
 import { resolveCountryCoords } from '../../../utils/countryResolver';
 
 export default {
@@ -212,5 +226,222 @@ export default {
       return ctx.internalServerError("Erro ao consultar top países (com geo)");
     }
   },
+
+  async vulnSeveridades(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+
+      const tenant = await strapi.entityService.findMany('api::tenant.tenant', {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ['users_permissions_users'],
+      });
+
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+
+      const tenantData = tenant[0];
+      const resultado = await buscarVulnSeveridades(tenantData);
+
+      // mantém o formato igual ao do Postman que você mostrou
+      return ctx.send({ aggregations: resultado });
+
+    } catch (error) {
+      console.error("Erro ao buscar vulnerabilidades resumo:", error);
+      return ctx.internalServerError("Erro ao consultar vulnerabilidades resumo");
+    }
+  },
+
+  async topVulnerabilidades(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+  
+      // lê query params (opcionais)
+      const { by = "cve", size = "5", dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarTopVulnerabilidades(tenantData, {
+        by: String(by) as any,
+        size: Number(size),
+        dias: String(dias),
+      });
+  
+      return ctx.send({ topVulnerabilidades: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar top vulnerabilidades:", error);
+      return ctx.internalServerError("Erro ao consultar top vulnerabilidades");
+    }
+  },
+  
+  async topOSVulnerabilidades(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+  
+      // query params opcionais
+      const { size = "5", dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarTopOSVulnerabilidades(tenantData, {
+        size: Number(size),
+        dias: String(dias),
+      });
+  
+      return ctx.send({ topOS: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar top OS vulnerabilidades:", error);
+      return ctx.internalServerError("Erro ao consultar top OS vulnerabilidades");
+    }
+  },
+
+  async topAgentesVulnerabilidades(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+  
+      // query params opcionais
+      const { size = "5", dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarTopAgentesVulnerabilidades(tenantData, {
+        size: Number(size),
+        dias: String(dias),
+      });
+  
+      return ctx.send({ topAgentes: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar top Agentes vulnerabilidades:", error);
+      return ctx.internalServerError("Erro ao consultar top Agentes vulnerabilidades");
+    }
+  },
+  
+  async topPackagesVulnerabilidades(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+  
+      // query params opcionais
+      const { size = "5", dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarTopPackagesVulnerabilidades(tenantData, {
+        size: Number(size),
+        dias: String(dias),
+      });
+  
+      return ctx.send({ topPackages: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar top Packages vulnerabilidades:", error);
+      return ctx.internalServerError("Erro ao consultar top Packages vulnerabilidades");
+    }
+  },
+  
+  async topScoresVulnerabilidades(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+  
+      // query params opcionais
+      const { size = "5", dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarTopScoresVulnerabilidades(tenantData, {
+        size: Number(size),
+        dias: String(dias),
+      });
+  
+      return ctx.send({ topScores: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar top scores de vulnerabilidades:", error);
+      return ctx.internalServerError(
+        "Erro ao consultar top scores de vulnerabilidades"
+      );
+    }
+  },
+
+  async porAnoVulnerabilidades(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      // busca tenant ativo do usuário
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+  
+      // query params opcionais
+      const { dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarVulnerabilidadesPorAno(tenantData, {
+        dias: String(dias),
+      });
+  
+      return ctx.send({ porAno: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar vulnerabilidades por ano:", error);
+      return ctx.internalServerError(
+        "Erro ao consultar vulnerabilidades por ano"
+      );
+    }
+  }  
 
 };

@@ -27,6 +27,12 @@ export default function TopIncidentes({ token }: Props) {
     const [erro, setErro] = useState<string | null>(null);
     const [animReady, setAnimReady] = useState(false);
 
+    const formatDateBR = (dateStr: string): string => {
+        if (!dateStr) return "";
+        const [mes, dia, ano] = dateStr.split("/");
+        return `${dia.padStart(2, "0")}/${mes.padStart(2, "0")}/${ano}`;
+    };
+
     useEffect(() => {
         let ativo = true;
 
@@ -63,13 +69,7 @@ export default function TopIncidentes({ token }: Props) {
                 });
 
                 // ordena por data desc e pega somente os 7 mais recentes
-                const ordenado = filtrado.sort((a, b) => {
-                    const [ma, da, ya] = a.case_open_date.split("/");
-                    const [mb, db, yb] = b.case_open_date.split("/");
-                    const daA = new Date(`${ya}-${ma}-${da}`).getTime();
-                    const daB = new Date(`${yb}-${mb}-${db}`).getTime();
-                    return daB - daA;
-                });
+                const ordenado = filtrado.sort((a, b) => b.case_id - a.case_id);
 
                 if (!ativo) return;
                 setIncidentes(ordenado.slice(0, 7));
@@ -289,7 +289,7 @@ export default function TopIncidentes({ token }: Props) {
                                 >
                                     <div className="flex justify-between items-center">
                                         <span className="text-[11px] text-gray-400">
-                                            {incidente.case_open_date}
+                                            {formatDateBR(incidente.case_open_date)}
                                         </span>
 
                                         <div className="flex items-center gap-4">
@@ -323,7 +323,7 @@ export default function TopIncidentes({ token }: Props) {
                                         {irisUrl && (
                                             <button
                                                 onClick={() => navigate(`/incidentes?open=${incidente.case_id}`)}
-                                                className="px-1 py-1 btn hover:bg-purple-600 text-[11px] text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                                className="px-1 py-1 btn card hover:bg-purple-600 text-[11px] text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                             >
                                                 Ver →
                                             </button>

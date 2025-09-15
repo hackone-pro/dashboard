@@ -59,7 +59,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
               href="https://hackone.com.br/consultoria-aberturachamado" // substitua pelo número real
               target="_blank"
               rel="noopener noreferrer"
-              className="flex header items-center gap-2 text-gray-400 border border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
+              className="flex header items-center gap-2 text-gray-400 border hover:text-white border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
             >
               {/* @ts-ignore */}
               <FaWhatsapp className="text-gray-300 text-1xl"/>
@@ -69,7 +69,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             {/* Sair */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 text-gray-400 login border border-[#1D1929] hover:text-white px-4 py-2 rounded-md text-sm transition"
+              className="flex items-center header gap-2 text-gray-400 login border border-[#1D1929] hover:text-white px-4 py-2 rounded-md text-sm transition"
             >
               {/* @ts-ignore */}
               <FiLogOut className="text-gray-300" />
@@ -84,7 +84,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             >
               <div
                 className={`
-      w-8 h-8 box-icon rounded-full bg-white text-black text-xs flex items-center justify-center shadow-md transition-all duration-300
+      w-8 h-8 box-icon rounded-full bg-white text-black toggle text-xs flex items-center justify-center shadow-md transition-all duration-300
       transform ${temaClaro ? 'translate-x-0' : 'translate-x-5'}
     `}
               >

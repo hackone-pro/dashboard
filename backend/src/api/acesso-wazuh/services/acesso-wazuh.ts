@@ -1,6 +1,42 @@
 import axios from "axios";
 import https from "https";
 
+export interface TopVulnItem {
+  key: string;                 // CVE / pacote / agente
+  total: number;               // doc_count
+  severity: Record<string, number>; // Critical/High/Medium/Low ...
+}
+
+export interface TopOSItem {
+  os: string;
+  total: number;
+  severity: Record<string, number>;
+}
+
+export interface TopAgentItem {
+  agent: string;
+  total: number;
+  severity: Record<string, number>;
+}
+
+export interface TopPackageItem {
+  package: string;                  // Nome do pacote vulnerável
+  total: number;                    // Total de vulnerabilidades desse pacote
+  severity: Record<string, number>; // Ex: { Critical: 2, High: 10, Medium: 5, Low: 1 }
+}
+
+export interface TopScoreItem {
+  score: string;
+  total: number;
+}
+
+export interface VulnAnoItem {
+  ano: string;                        // Ex: "2025"
+  total: number;                      // Total de vulnerabilidades no ano
+  severity: Record<string, number>;   // Ex: { Critical: 4, High: 42, Medium: 15, Low: 0 }
+}
+
+
 export async function buscarSeveridadeIndexer(tenant) {
   const basicAuth = Buffer.from(
     `${tenant.wazuh_username}:${tenant.wazuh_password}`
@@ -53,13 +89,13 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     dias === "todos"
       ? { match_all: {} }
       : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
           },
-        };
+        },
+      };
 
   const body = {
     size: 0,
@@ -220,13 +256,13 @@ export async function buscarTopAgentesCis(tenant, dias) {
     dias === "todos"
       ? { match_all: {} }
       : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
           },
-        };
+        },
+      };
 
   // Query base: SCA (onde vivem os checks CIS). Se quiser forçar "CIS" no texto,
   // depois podemos adicionar um SHOULD por rule.description/sca.policy.name.
@@ -301,13 +337,13 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
     dias === "todos"
       ? { match_all: {} }
       : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
           },
-        };
+        },
+      };
 
   const body = {
     size: 0,
@@ -370,4 +406,572 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
       doc_count: s.doc_count,
     })),
   }));
+}
+
+export async function buscarVulnSeveridades(tenant) {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  // usa o client_name do tenant para montar o índice
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) {
+    throw new Error("Tenant sem client_name definido");
+  }
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-${clientName}-*/_search?filter_path=aggregations.*`,
+    {
+      size: 0,
+      track_total_hits: false,
+      query: {
+        bool: {
+          filter: [{ exists: { field: "data.vulnerability" } }],
+        },
+      },
+      aggs: {
+        severity: {
+          filters: {
+            filters: {
+              Critical: { match_phrase: { "data.vulnerability.severity": "Critical" } },
+              High: { match_phrase: { "data.vulnerability.severity": "High" } },
+              Medium: { match_phrase: { "data.vulnerability.severity": "Medium" } },
+              Low: { match_phrase: { "data.vulnerability.severity": "Low" } },
+            },
+          },
+        },
+        no_severity_or_other: {
+          filter: {
+            bool: {
+              should: [
+                { bool: { must_not: [{ exists: { field: "data.vulnerability.severity" } }] } },
+                {
+                  bool: {
+                    must: [{ exists: { field: "data.vulnerability.severity" } }],
+                    must_not: [
+                      { match_phrase: { "data.vulnerability.severity": "Critical" } },
+                      { match_phrase: { "data.vulnerability.severity": "High" } },
+                      { match_phrase: { "data.vulnerability.severity": "Medium" } },
+                      { match_phrase: { "data.vulnerability.severity": "Low" } },
+                    ],
+                  },
+                },
+              ],
+              minimum_should_match: 1,
+            },
+          },
+        },
+        status_counts: {
+          filters: {
+            filters: {
+              Active: { match_phrase: { "data.vulnerability.status": "Active" } },
+              Solved: { match_phrase: { "data.vulnerability.status": "Solved" } },
+              Pending: {
+                bool: {
+                  should: [
+                    { match_phrase: { "data.vulnerability.status": "Pending" } },
+                    { match_phrase: { "data.vulnerability.status": "Pending - Evaluation" } },
+                    { match_phrase: { "data.vulnerability.state": "Pending" } },
+                    { match_phrase: { "data.vulnerability.state": "Pending - Evaluation" } },
+                  ],
+                  minimum_should_match: 1,
+                },
+              },
+            },
+          },
+        },
+        total: { filter: { exists: { field: "data.vulnerability" } } },
+      },
+    },
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  return response.data?.aggregations || {};
+}
+
+export async function buscarTopVulnerabilidades(
+  tenant: any,
+  opts?: { by?: "cve" | "package" | "agent"; size?: number; dias?: string }
+): Promise<TopVulnItem[]> {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const by = opts?.by ?? "cve";
+  const size = Number(opts?.size ?? 5);
+  const dias = opts?.dias ?? "todos";
+
+  const field =
+    by === "package" ? "data.vulnerability.package.name" :
+      by === "agent" ? "agent.name" :
+        "data.vulnerability.cve"; // default: cve
+
+  const timeFilter =
+    dias !== "todos"
+      ? {
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
+          },
+        },
+      }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        filter: [
+          { exists: { field: "data.vulnerability" } },
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      top_vulns: {
+        terms: {
+          field,
+          size,
+          order: { _count: "desc" },
+        },
+        aggs: {
+          por_severidade: {
+            terms: { field: "data.vulnerability.severity" },
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-${clientName}-*/_search`,
+    body,
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.top_vulns?.buckets ?? [];
+  return buckets.map((b: any) => {
+    const sevBuckets = b?.por_severidade?.buckets ?? [];
+    const sev: Record<string, number> = {};
+    for (const s of sevBuckets) sev[s.key] = Number(s.doc_count || 0);
+
+    return {
+      key: String(b.key ?? ""),
+      total: Number(b.doc_count ?? 0),
+      severity: sev,
+    };
+  });
+}
+
+export async function buscarTopOSVulnerabilidades(
+  tenant: any,
+  opts?: { size?: number; dias?: string }
+): Promise<TopOSItem[]> {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const size = Number(opts?.size ?? 5);
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? {
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
+          },
+        },
+      }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        filter: [
+          { exists: { field: "data.vulnerability" } },
+          { match_phrase: { "data.vulnerability.package.source": "OS" } },
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      top_os: {
+        terms: {
+          field: "data.vulnerability.package.name", // sem .keyword, conforme solicitado
+          size,
+          order: { _count: "desc" },
+        },
+        aggs: {
+          por_severidade: {
+            terms: { field: "data.vulnerability.severity" }, // sem .keyword
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-${clientName}-*/_search`,
+    body,
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.top_os?.buckets ?? [];
+  return buckets.map((b: any) => {
+    const sev: Record<string, number> = {};
+    for (const s of b?.por_severidade?.buckets ?? []) {
+      sev[s.key] = Number(s.doc_count || 0);
+    }
+    return {
+      os: String(b.key ?? "Desconhecido"),
+      total: Number(b.doc_count ?? 0),
+      severity: sev,
+    };
+  });
+}
+
+export async function buscarTopAgentesVulnerabilidades(
+  tenant: any,
+  opts?: { size?: number; dias?: string }
+): Promise<TopAgentItem[]> {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const size = Number(opts?.size ?? 5);
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? {
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
+          },
+        },
+      }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        filter: [
+          { exists: { field: "data.vulnerability" } },
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      top_agents: {
+        terms: {
+          field: "agent.name", // agrupando por agente
+          size,
+          order: { _count: "desc" },
+        },
+        aggs: {
+          severity: {
+            filters: {
+              filters: {
+                Critical: { match_phrase: { "data.vulnerability.severity": "Critical" } },
+                High: { match_phrase: { "data.vulnerability.severity": "High" } },
+                Medium: { match_phrase: { "data.vulnerability.severity": "Medium" } },
+                Low: { match_phrase: { "data.vulnerability.severity": "Low" } },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-${clientName}-*/_search`,
+    body,
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.top_agents?.buckets ?? [];
+  return buckets.map((b: any) => {
+    const sev: Record<string, number> = {};
+    for (const [key, val] of Object.entries(b?.severity?.buckets ?? {})) {
+      sev[key] = Number((val as any)?.doc_count || 0);
+    }
+    return {
+      agent: String(b.key ?? "Desconhecido"),
+      total: Number(b.doc_count ?? 0),
+      severity: sev,
+    };
+  });
+}
+
+export async function buscarTopPackagesVulnerabilidades(
+  tenant: any,
+  opts?: { size?: number; dias?: string }
+): Promise<TopPackageItem[]> {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const size = Number(opts?.size ?? 5);
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? {
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
+          },
+        },
+      }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        filter: [
+          { exists: { field: "data.vulnerability" } },
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+        must_not: [
+          { match_phrase: { "data.vulnerability.package.source": "OS" } },
+        ],
+      },
+    },
+    aggs: {
+      top_packages: {
+        terms: {
+          field: "data.vulnerability.package.name",
+          size,
+          order: { _count: "desc" },
+        },
+        aggs: {
+          severity: {
+            filters: {
+              filters: {
+                Critical: { match_phrase: { "data.vulnerability.severity": "Critical" } },
+                High: { match_phrase: { "data.vulnerability.severity": "High" } },
+                Medium: { match_phrase: { "data.vulnerability.severity": "Medium" } },
+                Low: { match_phrase: { "data.vulnerability.severity": "Low" } },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-${clientName}-*/_search`,
+    body,
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.top_packages?.buckets ?? [];
+  return buckets.map((b: any) => {
+    const sev: Record<string, number> = {};
+    for (const [key, val] of Object.entries(b?.severity?.buckets ?? {})) {
+      sev[key] = Number((val as any)?.doc_count || 0);
+    }
+    return {
+      package: String(b.key ?? "Desconhecido"),
+      total: Number(b.doc_count ?? 0),
+      severity: sev,
+    };
+  });
+}
+
+export async function buscarTopScoresVulnerabilidades(
+  tenant: any,
+  opts?: { size?: number; dias?: string }
+): Promise<TopScoreItem[]> {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const size = Number(opts?.size ?? 5); // default: top 10
+  const dias = opts?.dias ?? "todos";
+
+  // filtro de tempo
+  const timeFilter =
+    dias !== "todos"
+      ? {
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
+          },
+        },
+      }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        filter: [
+          { exists: { field: "data.vulnerability.score.base" } },
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      top_scores: {
+        terms: {
+          field: "data.vulnerability.score.base", // campo do CVSS base score
+          size,
+          order: { _count: "desc" },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-${clientName}-*/_search`,
+    body,
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.top_scores?.buckets ?? [];
+  return buckets.map((b: any) => ({
+    score: String(b.key ?? "Desconhecido"),
+    total: Number(b.doc_count ?? 0),
+  }));
+}
+
+export async function buscarVulnerabilidadesPorAno(
+  tenant: any,
+  opts?: { dias?: string }
+): Promise<VulnAnoItem[]> {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? {
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
+          },
+        },
+      }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        filter: [
+          { exists: { field: "data.vulnerability.published" } }, // data de publicação da vulnerabilidade
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      por_ano: {
+        date_histogram: {
+          field: "data.vulnerability.published",
+          calendar_interval: "year",
+          format: "yyyy",
+          min_doc_count: 1,
+        },
+        aggs: {
+          por_severidade: {
+            terms: { field: "data.vulnerability.severity" },
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-alerts-${clientName}-*/_search`,
+    body,
+    {
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.por_ano?.buckets ?? [];
+  return buckets.map((b: any) => {
+    const sev: Record<string, number> = {};
+    for (const s of b?.por_severidade?.buckets ?? []) {
+      sev[s.key] = Number(s.doc_count || 0);
+    }
+    return {
+      ano: String(b.key_as_string ?? "Desconhecido"),
+      total: Number(b.doc_count ?? 0),
+      severity: sev,
+    };
+  });
 }

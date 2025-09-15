@@ -406,6 +406,7 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
       'oneToMany',
       'plugin::users-permissions.user'
     >;
+    wazuh_client_name: Schema.Attribute.String;
     wazuh_password: Schema.Attribute.String & Schema.Attribute.Private;
     wazuh_url: Schema.Attribute.String;
     wazuh_username: Schema.Attribute.String;

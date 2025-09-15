@@ -46,5 +46,62 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/vulnerabilidades/severidade",
+      handler: "acesso-wazuh.vulnSeveridades",
+      config: {
+        policies: [],
+      },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/vulnerabilidades/top",
+      handler: "acesso-wazuh.topVulnerabilidades",
+      config: {
+        policies: [],
+      },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/vulnerabilidades/top-os",
+      handler: "acesso-wazuh.topOSVulnerabilidades",
+      config: {
+        policies: [],
+      },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/vulnerabilidades/top-agentes",
+      handler: "acesso-wazuh.topAgentesVulnerabilidades",
+      config: {
+        policies: [],
+      },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/vulnerabilidades/top-packages",
+      handler: "acesso-wazuh.topPackagesVulnerabilidades",
+      config: {
+        policies: [],
+      },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/vulnerabilidades/top-scores",
+      handler: "acesso-wazuh.topScoresVulnerabilidades",
+      config: {
+        policies: [],
+      },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/vulnerabilidades/por-ano",
+      handler: "acesso-wazuh.porAnoVulnerabilidades",
+      config: {
+        policies: [],
+      },
+    },
+    
   ],
 };

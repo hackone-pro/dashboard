@@ -1,5 +1,49 @@
+/*--- TEMA CLARO ---*/
+body.tema-claro a svg, body.tema-claro button svg{
+  color: #939393;
+}
+body.tema-claro  button.toggle svg, 
+body.tema-claro a svg:hover,
+body.tema-claro .table-incidente span{
+  color: #fff !important;
+}
+body.tema-claro button.card{
+  background: #744CD8 !important;
+  border: 2px solid #5e34be;
+}
+body.tema-claro button.card:hover{
+  background: #C5BCF5 !important;
+  color: #352363;
+}
+body.tema-claro button.header{
+  background: transparent !important;
+}
+body.tema-claro button.header:hover{
+  background: #6a01bb !important;
+}
+body.tema-claro h1, body.tema-claro span{
+  color: #1a1a1a !important;
+}
+body.tema-claro text{
+  color: #5e34be;
+}
+body.tema-claro select{
+  background: #EDE6FC !important;
+  border: 0;
+  color: #777 !important;
+}
+body.tema-claro .table-incidente{
+  background-color: #161125 !important;
+}
+/*---- FIM DO TEMA ----*/
+
+
 body {
   font-family: 'Inter', sans-serif;
+}
+
+li{
+  font-weight: normal !important;
 }
 
 a.header:hover{
@@ -47,10 +91,24 @@ a.header:hover{
   border: 2px solid #321C64;
 }
 
+.apexcharts-legend-marker{
+  stroke: none !important;
+}
+
+.apexcharts-legend-marker svg{
+  border-radius: 30px !important; /* deixa redondo */
+  border: none !important;       /* remove a borda */
+}
+
 /* Padrão para escuro */
 .fundo-dashboard {
   background: #0A0617;
   transition: background-color 0.3s ease, color 0.3s ease, background 0.3s ease;
+}
+
+body.tema-escuro a.outline{
+  background: transparent !important;
+  border: 1px solid #1D1929;
 }
 
 .cards {

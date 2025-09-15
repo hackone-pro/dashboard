@@ -5,6 +5,9 @@ import { CiMap } from "react-icons/ci";
 import { CiHome } from "react-icons/ci";
 import { PiSkullThin } from "react-icons/pi";
 import { HiOutlineBars3 } from "react-icons/hi2";
+import { TbShieldSearch } from 'react-icons/tb';
+import { VscSearchFuzzy } from "react-icons/vsc";
+
 
 
 import clsx from 'clsx';
@@ -91,6 +94,20 @@ export default function Sidebar() {
                         {/* @ts-ignore */}
                         <CiMap />
                         {isOpen && <span>Threat Map</span>}
+                    </Link>
+                </li>
+
+                <li className={clsx(
+                    "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                    isOpen ? "justify-start" : "justify-center"
+                )}>
+                    <Link to="/vulnerabilities-detections" className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                        {/* @ts-ignore */}
+                        <VscSearchFuzzy />
+                        {isOpen && <span>Detecção de Vulnerabilidades</span>}
                     </Link>
                 </li>
             </ul>
