@@ -44,7 +44,7 @@ export default function FirewallDonutCard() {
 
     const labels = ["Crítico", "Alto", "Médio", "Baixo"];
     const series = [critico, alto, medio, baixo];
-    const cores = ["#EC4899", "#6A55DC", "#6301F4", "#1DD69A"];
+    const cores = ["#F914AD", "#A855F7", "#6366F1", "#1DD69A"];
 
     return (
         <div className="mb-4">
@@ -65,6 +65,7 @@ export default function FirewallDonutCard() {
                     </select>
                 </div>
 
+
                 {/* Conteúdo */}
                 {erro && (
                     <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-3">
@@ -80,12 +81,20 @@ export default function FirewallDonutCard() {
                     <GraficoDonut
                         labels={["Crítico", "Alto", "Médio", "Baixo"]}
                         series={[critico, alto, medio, baixo]}
-                        cores={["#EC4899", "#6A55DC", "#6301F4", "#1DD69A"]}
+                        cores={["#F914AD", "#A855F7", "#6366F1", "#1DD69A"]}
                         height={220}
                         descricaoTotal="Alertas de Firewall"
                     />
                 )}
+
+                <div className="flex gap-3 flex-wrap mt-4 text-gray-400 text-xs justify-center">
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#1DD69A] rounded-full"></span> Baixo</div>
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#6366F1] rounded-full"></span> Médio</div>
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#A855F7] rounded-full"></span> Alto</div>
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#F914AD] rounded-full"></span> Crítico</div>
+                </div>
             </div>
+
         </div>
     );
 }

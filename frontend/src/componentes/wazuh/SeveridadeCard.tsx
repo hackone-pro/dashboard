@@ -48,14 +48,14 @@ export default function SeveridadeCard() {
   const getCfg = (nivel: Nivel) => {
     switch (nivel) {
       case "Crítico":
-        return { corTexto: "text-pink-500", corBarra: "bg-pink-500", corBadge: "badge-pink" };
+        return { corTexto: "text-[#F914AD]", corBarra: "bg-[#F914AD]", corBadge: "badge-pink" };
       case "Alto":
-        return { corTexto: "text-purple-400", corBarra: "bg-[#7E27FE]", corBadge: "badge-high" };
+        return { corTexto: "text-[#A855F7]", corBarra: "bg-[#A855F7]", corBadge: "badge-high" };
       case "Médio":
-        return { corTexto: "text-blue-400", corBarra: "bg-blue-400", corBadge: "badge-darkpink" };
+        return { corTexto: "text-[#6366F1]", corBarra: "bg-[#6366F1]", corBadge: "badge-darkpink" };
       case "Baixo":
       default:
-        return { corTexto: "text-emerald-400", corBarra: "bg-emerald-400", corBadge: "badge-green" };
+        return { corTexto: "text-[#1DD69A]", corBarra: "bg-[#1DD69A]", corBadge: "badge-green" };
     }
   };
 

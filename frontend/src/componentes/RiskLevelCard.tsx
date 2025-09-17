@@ -13,7 +13,7 @@ const levelConfig = {
   High: {
     colorFrom: 'from-red-700',
     colorTo: 'to-orange-500',
-    icon: <ShieldAlert className="w-16 h-16 text-red-200" />,
+    icon: <ShieldAlert className="w-16 h-16 text-[#A855F7]" />,
     label: 'RISK LEVEL',
     bar: 'bg-gradient-to-r from-red-700 to-orange-400',
     contadorColor: 'text-red-500'
@@ -21,7 +21,7 @@ const levelConfig = {
   Medium: {
     colorFrom: 'from-yellow-600',
     colorTo: 'to-yellow-300',
-    icon: <AlertTriangle className="w-16 h-16 text-yellow-300" />,
+    icon: <AlertTriangle className="w-16 h-16 text-[#6366F1]" />,
     label: 'RISK LEVEL',
     bar: 'bg-gradient-to-r from-yellow-600 to-yellow-300',
     contadorColor: 'text-yellow-500'
@@ -29,7 +29,7 @@ const levelConfig = {
   Low: {
     colorFrom: 'from-cyan-700',
     colorTo: 'to-green-400',
-    icon: <CheckCircle className="w-16 h-16 text-cyan-200" />,
+    icon: <CheckCircle className="w-16 h-16 text-[#1DD69A]" />,
     label: 'RISK LEVEL',
     bar: 'bg-gradient-to-r from-cyan-700 to-green-400',
     contadorColor: 'text-cyan-500'

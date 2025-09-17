@@ -68,9 +68,9 @@ export default function Dashboard() {
                                     {/* <FaQuestionCircle className="text-purple-400 w-4 h-4 cursor-pointer" /> */}
 
                                     {/* Tooltip */}
-                                    <div className="absolute left-6 top-full mt-2 w-64 p-3 rounded-md bg-[#1a1230] text-gray-300 text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+                                    {/* <div className="absolute left-6 top-full mt-2 w-64 p-3 rounded-md bg-[#1a1230] text-gray-300 text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
                                         Quanto maior a porcentagem, maior o risco.
-                                    </div>
+                                    </div> */}
                                 </div>
 
                                 {/* Dropdown */}
@@ -83,7 +83,7 @@ export default function Dashboard() {
 
                             <div className="grid grid-cols-12 items-center gap-3 relative">
                                 <div className="col-span-12 flex justify-center relative">
-                                    <GraficoGauge valor={Math.round(indiceRisco)} cor="#B832F6" />
+                                    <GraficoGauge valor={Math.round(indiceRisco)}  />
                                     <img
                                         src="/assets/img/icon-risk.png"
                                         alt="Risco"
@@ -100,10 +100,10 @@ export default function Dashboard() {
 
                             <div className="flex items-center justify-between text-[11px] mt-2 text-gray-400 w-full">
                                 <div className="flex gap-3 flex-wrap">
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full"></span> Baixo</div>
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-400 rounded-full"></span> Médio</div>
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-purple-500 rounded-full"></span> Alto</div>
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-pink-500 rounded-full"></span> Crítico</div>
+                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#1DD69A] rounded-full"></span> Baixo</div>
+                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#6366F1] rounded-full"></span> Médio</div>
+                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#A855F7] rounded-full"></span> Alto</div>
+                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#F914AD] rounded-full"></span> Crítico</div>
                                 </div>
                                 <button
                                     onClick={() => navigate("/risk-level")}

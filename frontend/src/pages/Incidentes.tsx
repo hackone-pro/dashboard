@@ -280,15 +280,15 @@ export default function Incidentes() {
 
   // Mapa de status → Icon/cor
   const STATUS_MAP: Record<string, StatusMeta> = {
-    open: { label: "Aberto", Icon: FaLockOpen, color: "text-emerald-400" },
-    "in progress": { label: "Em progresso", Icon: RiProgress5Line, color: "text-[#744CD8]" },
-    containment: { label: "Contenção", Icon: IoStopCircleOutline, color: "text-[#D0592E]" },
-    eradication: { label: "Erradicação", Icon: MdOutlineGppBad, color: "text-[#D35555]" },
-    recovery: { label: "Recuperação", Icon: MdOutlineHealthAndSafety, color: "text-[#5EC059]" },
-    "post-incident": { label: "Pós-incidente", Icon: GrTroubleshoot, color: "text-[#59C0B4]" },
-    reporting: { label: "Reportando", Icon: TbMessageReport, color: "text-[#C0598B]" },
-    closed: { label: "Fechado", Icon: FaRegCheckCircle, color: "text-[#1DD69A]" },
-    unspecified: { label: "Não especificado", Icon: RiQuestionLine, color: "text-[#D5974F]" },
+    open: { label: "Aberto", Icon: FaLockOpen, color: "text-gray-500" },
+    "in progress": { label: "Em progresso", Icon: RiProgress5Line, color: "text-gray-500" },
+    containment: { label: "Contenção", Icon: IoStopCircleOutline, color: "text-gray-500" },
+    eradication: { label: "Erradicação", Icon: MdOutlineGppBad, color: "text-gray-500" },
+    recovery: { label: "Recuperação", Icon: MdOutlineHealthAndSafety, color: "text-gray-500" },
+    "post-incident": { label: "Pós-incidente", Icon: GrTroubleshoot, color: "text-gray-500" },
+    reporting: { label: "Reportando", Icon: TbMessageReport, color: "text-gray-500" },
+    closed: { label: "Fechado", Icon: FaRegCheckCircle, color: "text-gray-500" },
+    unspecified: { label: "Não especificado", Icon: RiQuestionLine, color: "text-gray-500" },
   };
 
   const DEFAULT_STATUS: StatusMeta = { label: "—", Icon: RiQuestionLine, color: "text-gray-400" };

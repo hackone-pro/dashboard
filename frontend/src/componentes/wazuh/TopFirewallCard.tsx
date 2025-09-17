@@ -177,7 +177,7 @@ export default function TopFirewallCard() {
       yaxis: { lines: { show: false } },
     },
     // ordem visual (verde→azul→roxo→rosa)
-    colors: ["#10B981", "#6366F1", "#A855F7", "#EC4899"],
+    colors: ["#1DD69A", "#6366F1", "#A855F7", "#F914AD"],
     fill: { opacity: 1 },
     states: { hover: { filter: { type: "none" } } },
   };
@@ -218,6 +218,9 @@ export default function TopFirewallCard() {
       ) : (
         <Chart key={chartKey} options={options} series={series as any} type="bar" height={340} />
       )}
+
+      
     </div>
+    
   );
 }

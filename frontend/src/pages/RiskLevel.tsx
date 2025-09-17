@@ -93,24 +93,24 @@ export default function RiskLevel() {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-stretch">
                     {/* Coluna 1 - Gráfico central */}
                     <div className="cards rounded-xl p-4 flex flex-col justify-center relative h-full">
-                        <GraficoGauge valor={Math.round(indiceRisco)} cor="#B832F6" />
+                        <GraficoGauge valor={Math.round(indiceRisco)} />
                         <img
                             src="/assets/img/icon-risk.png"
                             alt="Risco"
                             className="absolute z-20 w-6 h-6 top-1/3 left-1/2 -translate-x-1/2 -translate-y-[72%] pointer-events-none"
                         />
-                        <div className="flex gap-3 text-xs text-gray-300 mt-4">
+                        <div className="flex gap-3 text-xs text-gray-400 mt-4 ">
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-emerald-400 rounded-full"></span> Baixo
+                                <span className="w-3 h-3 bg-[#1DD69A] rounded-full"></span> Baixo
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-blue-400 rounded-full"></span> Médio
+                                <span className="w-3 h-3 bg-[#6366F1] rounded-full"></span> Médio
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-purple-400 rounded-full"></span> Alto
+                                <span className="w-3 h-3 bg-[#A855F7] rounded-full"></span> Alto
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-pink-500 rounded-full"></span> Crítico
+                                <span className="w-3 h-3 bg-[#F914AD] rounded-full"></span> Crítico
                             </div>
                         </div>
                     </div>

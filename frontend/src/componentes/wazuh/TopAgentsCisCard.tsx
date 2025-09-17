@@ -36,7 +36,7 @@ export default function TopAgentsCisCard() {
 
   // Ordena pela menor % (melhor conformidade) → já vem assim do backend, mas garantimos aqui
   const lista = useMemo(
-    () => [...itens].sort((a, b) =>  b.score_cis_percent - a.score_cis_percent),
+    () => [...itens].sort((a, b) => b.score_cis_percent - a.score_cis_percent),
     [itens]
   );
 
@@ -45,29 +45,29 @@ export default function TopAgentsCisCard() {
   const getClassesPorScore = (p: number) => {
     if (p < 30) {
       return {
-        bar: "badge-green",
-        text: "text-[#1dd69a]",
-        border: "border-[#1dd69a73]",
+        bar: "bg-[#1DD69A1A]",
+        text: "text-[#1DD69A]",
+        border: "border-[#1DD69A33]",
       };
     }
     if (p < 40) {
       return {
-        bar: "badge-darkpink",
-        text: "text-[#6f58e6]",
-        border: "border-[#6f58e678]",
+        bar: "bg-[#6F58E61A]",
+        text: "text-[#6366F1]",
+        border: "border-[#6F58E633]",
       };
     }
     if (p <= 75) {
       return {
-        bar: "badge-high",
-        text: "text-[#a758ff]",
-        border: "border-[#f5f0f940]",
+        bar: "bg-[#6700FF1A]",
+        text: "text-[#A855F7]",
+        border: "border-[#6700FF33]",
       };
     }
     return {
-      bar: "badge-pink",
-      text: "text-[#fb35b9]",
-      border: "border-[#fb35b994]",
+      bar: "bg-[#FB35B91A]",
+      text: "text-[#F914AD]",
+      border: "border-[#FB35B933]",
     };
   };
 
@@ -97,16 +97,16 @@ export default function TopAgentsCisCard() {
       {/* Legenda */}
       <div className="flex gap-4 text-xs text-gray-400 mb-6">
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#1dd69a]" />Bom
+          <span className="w-2 h-2 rounded-full bg-[#1DD69A]" />Baixo
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#6f58e6]" />Médio
+          <span className="w-2 h-2 rounded-full bg-[#6366F1]" />Médio
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#a758ff]" />Alto
+          <span className="w-2 h-2 rounded-full bg-[#A855F7]" />Alto
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#fb35b9]" />Crítico
+          <span className="w-2 h-2 rounded-full bg-[#F914AD]" />Crítico
         </div>
       </div>
 
@@ -133,7 +133,7 @@ export default function TopAgentsCisCard() {
           ) : (
             lista.map((item, i) => {
               const p = Math.max(0, Math.min(100, Math.round(item.score_cis_percent)));
-              const widthPercent = 100 - p; // como no seu mock
+              const widthPercent = p; // como no seu mock
               const { bar, text, border } = getClassesPorScore(p);
 
               return (

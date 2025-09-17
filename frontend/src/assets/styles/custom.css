@@ -67,7 +67,7 @@ a.header:hover{
 .badge-darkpink{
   background-color: #7058e62c;
   border: 1px solid #7058e63d;
-  color: #7058e6;
+  color: #6366F1;
   font-weight: 400;
   
 }
@@ -83,7 +83,7 @@ a.header:hover{
 .badge-high {
   background-color: #af45ff30;
   border: 1px solid #f5f0f940;
-  color: #af45ff;
+  color: #A855F7;
 }
 
 .btn{
