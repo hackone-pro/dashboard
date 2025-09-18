@@ -28,7 +28,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   // Atualizar o título da aba do navegador
   useEffect(() => {
     if (titulo) {
-      document.title = `${titulo} - Dashboard`;
+      document.title = `${titulo}`;
     } else {
       document.title = "Dashboard";
     }
