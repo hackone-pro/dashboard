@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "./SideBar";
 import { logout } from "../utils/auth";
 import { toastSuccess } from "../utils/toast";
-import { FiLogOut} from "react-icons/fi";
+import { FiLogOut } from "react-icons/fi";
 import { AiFillSun, AiFillQuestionCircle } from "react-icons/ai";
-import { FaWhatsapp, FaMoon} from "react-icons/fa";
+import { FaWhatsapp, FaMoon } from "react-icons/fa";
 
 interface LayoutModelProps {
   children: ReactNode;
@@ -24,6 +24,16 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
     document.body.classList.remove("tema-claro", "tema-escuro");
     document.body.classList.add(temaSalvo ? "tema-claro" : "tema-escuro");
   }, []);
+
+  // Atualizar o título da aba do navegador
+  useEffect(() => {
+    if (titulo) {
+      document.title = `${titulo} - Dashboard`;
+    } else {
+      document.title = "Dashboard";
+    }
+  }, [titulo]);
+
 
   // Alternar tema
   const alternarTema = () => {
@@ -62,7 +72,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
               className="flex header items-center gap-2 text-gray-400 border hover:text-white border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
             >
               {/* @ts-ignore */}
-              <FaWhatsapp className="text-gray-300 text-1xl"/>
+              <FaWhatsapp className="text-gray-300 text-1xl" />
               Suporte
             </a>
 

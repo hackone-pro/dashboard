@@ -268,7 +268,7 @@ export default function Incidentes() {
   const [page, setPage] = useState(1);
 
   // Ordenação (padrão: data desc)
-  const [sortBy, setSortBy] = useState<SortKey>("data");
+  const [sortBy, setSortBy] = useState<SortKey>("id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // Deep-link (?open=ID)
@@ -407,11 +407,7 @@ export default function Incidentes() {
         const filtrado = filtrarPorDias(doOwnerECliente, filtroDias);
 
         // 5) Ordenação padrão por data desc (antes de aplicar a ordenação dinâmica abaixo)
-        filtrado.sort(
-          (a, b) =>
-            parseDateBR(b.case_open_date).getTime() -
-            parseDateBR(a.case_open_date).getTime()
-        );
+        filtrado.sort((a, b) => Number(b.case_id) - Number(a.case_id));
 
         if (!ativo) return;
         setDados(filtrado);

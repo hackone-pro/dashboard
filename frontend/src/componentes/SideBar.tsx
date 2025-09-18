@@ -29,7 +29,7 @@ export default function Sidebar() {
                 >
                     {isOpen ? (
                         <img
-                            src="/assets/img/logo-light-negativo.png"
+                            src="/assets/img/Logo-Security-One-Positivo.png"
                             alt="Logo Completa"
                             className="h-10"
                         />

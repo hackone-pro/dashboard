@@ -65,7 +65,7 @@ export default function Login() {
                             rel="noopener noreferrer"
                         >
                             <img
-                                src="/assets/img/logo-light-negativo.png"
+                                src="/assets/img/Logo-Security-One-Positivo.png"
                                 alt="SecurityOne"
                                 className="h-10"
                             />
