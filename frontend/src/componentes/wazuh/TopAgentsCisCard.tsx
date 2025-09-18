@@ -95,18 +95,18 @@ export default function TopAgentsCisCard() {
       </div>
 
       {/* Legenda */}
-      <div className="flex gap-4 text-xs text-gray-400 mb-6">
+      <div className="flex gap-4 text-[10px] text-xs text-gray-400 mb-6">
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#1DD69A]" />Baixo
+          <span className="w-3 h-3 rounded-xs bg-[#1DD69A]" />Baixo
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#6366F1]" />Médio
+          <span className="w-3 h-3 rounded-xs bg-[#6366F1]" />Médio
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#A855F7]" />Alto
+          <span className="w-3 h-3 rounded-xs bg-[#A855F7]" />Alto
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#F914AD]" />Crítico
+          <span className="w-3 h-3 rounded-xs bg-[#F914AD]" />Crítico
         </div>
       </div>
 

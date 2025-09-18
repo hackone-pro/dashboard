@@ -99,18 +99,18 @@ export default function RiskLevel() {
                             alt="Risco"
                             className="absolute z-20 w-6 h-6 top-1/3 left-1/2 -translate-x-1/2 -translate-y-[72%] pointer-events-none"
                         />
-                        <div className="flex gap-3 text-xs text-gray-400 mt-4 ">
+                        <div className="flex gap-3 text-xs text-gray-400 mt-4 text-[10px] justify-center">
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-[#1DD69A] rounded-full"></span> Baixo
+                                <span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-[#6366F1] rounded-full"></span> Médio
+                                <span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-[#A855F7] rounded-full"></span> Alto
+                                <span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="w-3 h-3 bg-[#F914AD] rounded-full"></span> Crítico
+                                <span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico
                             </div>
                         </div>
                     </div>

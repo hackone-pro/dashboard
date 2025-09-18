@@ -59,11 +59,17 @@ export default function Login() {
                 <div className="relative w-full max-w-lg mx-auto px-6 py-10 lg:px-12 lg:py-0">
                     {/* logo */}
                     <div className="mb-8">
-                        <img
-                            src="/assets/img/SecurityOne_dark.png"
-                            alt="SecurityOne"
-                            className="h-10"
-                        />
+                        <a
+                            href="https://securityone.ai"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <img
+                                src="/assets/img/logo-light-negativo.png"
+                                alt="SecurityOne"
+                                className="h-10"
+                            />
+                        </a>
                     </div>
 
                     <h1 className="text-4xl md:text-5xl font-semibold text-white leading-tight">
@@ -163,9 +169,6 @@ export default function Login() {
                             <a href="https://hackone.com.br/consultoria-aberturachamado" target="_blank" className="text-violet-300 hover:text-violet-200">
                                 Fale com o suporte
                             </a>
-                        </div>
-                        <div className="mt-10 d-flex justify-center">
-                            <img src="/assets/img/hackone.png" alt="Hackone" className="w-[82px] mx-auto"/>
                         </div>
                     </form>
                 </div>

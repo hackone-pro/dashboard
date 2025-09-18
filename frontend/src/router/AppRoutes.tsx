@@ -6,6 +6,7 @@ import PrivateRoute from './PrivateRoute';
 import ThreatMap from '../pages/ThreatMap';
 import Incidentes from '../pages/Incidentes';
 import VulnerabilitiesDetection from '../pages/VulnerabilitiesDetection';
+import ArchivesIntegrity from '../pages/ArchivesIntegrity';
 
 export default function AppRoutes() {
   return (
@@ -19,6 +20,7 @@ export default function AppRoutes() {
         <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
         <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
         <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
+        <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
     </>

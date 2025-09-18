@@ -51,7 +51,7 @@ export default function FirewallDonutCard() {
             <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between">
                 {/* Header com seletor */}
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm text-white">Regras de Firewall</h3>
+                    <h3 className="text-sm text-white">Alertas de Firewall</h3>
                     <select
                         className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
                         value={dias}
@@ -87,11 +87,11 @@ export default function FirewallDonutCard() {
                     />
                 )}
 
-                <div className="flex gap-3 flex-wrap mt-4 text-gray-400 text-xs justify-center">
-                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#1DD69A] rounded-full"></span> Baixo</div>
-                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#6366F1] rounded-full"></span> Médio</div>
-                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#A855F7] rounded-full"></span> Alto</div>
-                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#F914AD] rounded-full"></span> Crítico</div>
+                <div className="flex gap-3 flex-wrap mt-4 text-[10px] text-gray-400 text-xs justify-center">
+                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
+                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
+                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                 </div>
             </div>
 

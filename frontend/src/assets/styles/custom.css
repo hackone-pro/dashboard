@@ -190,6 +190,13 @@ header button.toggle{
 /*---------------*/
 
 
+.apexcharts-legend-text{
+  color: #99a1af !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 10px !important;
+}
+
+
 /* ----------------Quando estiver em modo claro -----------*/
 
 .tema-claro .fundo-dashboard {

@@ -36,6 +36,9 @@ function guessCountryCode(name: string): string {
     "australia": "AU",
     "bulgaria": "BG",
     "singapore": "SG",
+    "hong kong": "HK",
+    "thailand": "TH",
+    "kingdom of thailand": "TH",
   };
   return map[n] || "";
 }

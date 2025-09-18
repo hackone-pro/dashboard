@@ -5,8 +5,7 @@ import { CiMap } from "react-icons/ci";
 import { CiHome } from "react-icons/ci";
 import { PiSkullThin } from "react-icons/pi";
 import { HiOutlineBars3 } from "react-icons/hi2";
-import { TbShieldSearch } from 'react-icons/tb';
-import { VscSearchFuzzy } from "react-icons/vsc";
+import { VscSearchFuzzy, VscFileSymlinkDirectory } from "react-icons/vsc";
 
 
 
@@ -23,11 +22,24 @@ export default function Sidebar() {
 
             {/* LOGO */}
             <div className="mb-8 transition-all duration-300">
-                {isOpen ? (
-                    <img src="/assets/img/SecurityOne_dark.png" alt="Logo Completa" className="h-10" />
-                ) : (
-                    <img src="/assets/img/icone-logo.png" alt="Logo Ícone" />
-                )}
+                <a
+                    href="https://securityone.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    {isOpen ? (
+                        <img
+                            src="/assets/img/logo-light-negativo.png"
+                            alt="Logo Completa"
+                            className="h-10"
+                        />
+                    ) : (
+                        <img
+                            src="/assets/img/icone-logo.png"
+                            alt="Logo Ícone"
+                        />
+                    )}
+                </a>
             </div>
 
             <button
@@ -110,6 +122,20 @@ export default function Sidebar() {
                         {isOpen && <span>Detecção de Vulnerabilidades</span>}
                     </Link>
                 </li>
+
+                {/* <li className={clsx(
+                    "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                    isOpen ? "justify-start" : "justify-center"
+                )}>
+                    <Link to="/archives-integrity" className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                        
+                        <VscFileSymlinkDirectory />
+                        {isOpen && <span>Integridade de Arquivos</span>}
+                    </Link>
+                </li> */}
             </ul>
         </div>
     );

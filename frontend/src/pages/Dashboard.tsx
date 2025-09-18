@@ -98,12 +98,12 @@ export default function Dashboard() {
                                 </div> */}
                             </div>
 
-                            <div className="flex items-center justify-between text-[11px] mt-2 text-gray-400 w-full">
+                            <div className="flex items-center justify-between text-[10px] mt-2 text-gray-400 w-full">
                                 <div className="flex gap-3 flex-wrap">
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#1DD69A] rounded-full"></span> Baixo</div>
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#6366F1] rounded-full"></span> Médio</div>
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#A855F7] rounded-full"></span> Alto</div>
-                                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-[#F914AD] rounded-full"></span> Crítico</div>
+                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
+                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
+                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                                 <button
                                     onClick={() => navigate("/risk-level")}
