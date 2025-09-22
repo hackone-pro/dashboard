@@ -14,6 +14,10 @@ export default [
         'http://lab.pod2.securityone.ai',
         'http://lab.pod2.securityone.ai:3000',
          // quando usar SSL
+        'https://lab.pod2.securityone.ai',
+        'https://lab.pod2.securityone.ai:3000',
+        
+        
       ],
       headers: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
