@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CiWarning } from "react-icons/ci";
-import { CiMap } from "react-icons/ci";
-import { CiHome } from "react-icons/ci";
+import { CiWarning, CiSettings, CiMap, CiHome } from "react-icons/ci";
 import { PiSkullThin } from "react-icons/pi";
 import { HiOutlineBars3 } from "react-icons/hi2";
+
+
 import { VscSearchFuzzy, VscFileSymlinkDirectory } from "react-icons/vsc";
 
 
@@ -120,6 +120,20 @@ export default function Sidebar() {
                         {/* @ts-ignore */}
                         <VscSearchFuzzy />
                         {isOpen && <span>Detecção de Vulnerabilidades</span>}
+                    </Link>
+                </li>
+
+                <li className={clsx(
+                    "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                    isOpen ? "justify-start" : "justify-center"
+                )}>
+                    <Link to="/config" className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                        {/* @ts-ignore */}
+                        <CiSettings />
+                        {isOpen && <span>Configurações</span>}
                     </Link>
                 </li>
 

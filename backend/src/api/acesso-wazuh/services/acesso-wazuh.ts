@@ -48,7 +48,7 @@ function authHeader(tenant) {
 }
 
 function customerFilter(clientName: string) {
-  return { match: { "agent.labels.customer": clientName } };
+  return { match: { "customer": clientName } };
 }
 
 /* ==================== FUNÇÕES ==================== */

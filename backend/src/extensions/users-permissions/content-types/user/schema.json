@@ -74,6 +74,12 @@
       "relation": "manyToOne",
       "target": "api::tenant.tenant",
       "inversedBy": "users_permissions_users"
+    },
+    "reset_token": {
+      "type": "string"
+    },
+    "reset_expire": {
+      "type": "datetime"
     }
   }
 }

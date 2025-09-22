@@ -1,47 +1,7 @@
 // src/componentes/threatmap/TopCountriesTable.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTopPaises, PaisItem } from "../../../services/wazuh/toppaises.service";
-
-// Nome -> ISO2 (para bandeira). Ajuste/expanda conforme necessário.
-function guessCountryCode(name: string): string {
-  const n = (name || "").toLowerCase().trim();
-  const map: Record<string, string> = {
-    "brazil": "BR",
-    "united states": "US",
-    "usa": "US",
-    "canada": "CA",
-    "netherlands": "NL",
-    "germany": "DE",
-    "france": "FR",
-    "italy": "IT",
-    "spain": "ES",
-    "portugal": "PT",
-    "united kingdom": "GB",
-    "uk": "GB",
-    "argentina": "AR",
-    "chile": "CL",
-    "colombia": "CO",
-    "peru": "PE",
-    "mexico": "MX",
-    "uruguay": "UY",
-    "paraguay": "PY",
-    "bolivia": "BO",
-    "venezuela": "VE",
-    "india": "IN",
-    "china": "CN",
-    "japan": "JP",
-    "russia": "RU",
-    "russian federation": "RU",
-    "south africa": "ZA",
-    "australia": "AU",
-    "bulgaria": "BG",
-    "singapore": "SG",
-    "hong kong": "HK",
-    "thailand": "TH",
-    "kingdom of thailand": "TH",
-  };
-  return map[n] || "";
-}
+import { guessCountryCode } from "../../../utils/countryUtils";
 
 type Props = {
   dias?: string;               // "todos" | "1" | "7" | "15" | "30"

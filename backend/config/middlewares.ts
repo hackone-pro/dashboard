@@ -11,8 +11,8 @@ export default [
         'http://10.0.77.1:3000',
         'http://app2.securityone.ai:3000',
         'http://app2.securityone.ai',
-        'http://pod2.soc.hackone.tech',
-        'http://pod2.soc.hackone.tech:3000',
+        'http://lab.pod2.securityone.ai',
+        'http://lab.pod2.securityone.ai:3000',
          // quando usar SSL
       ],
       headers: ['Content-Type', 'Authorization', 'Origin', 'Accept'],

@@ -98,8 +98,8 @@ export default function Login() {
 
                 toastError(
                     data?.error?.message ||
-                        data?.error?.name ||
-                        "Credenciais inválidas. Tente novamente."
+                    data?.error?.name ||
+                    "Credenciais inválidas. Tente novamente."
                 );
             }
         } catch (err) {
@@ -218,15 +218,23 @@ export default function Login() {
                             </div>
                         </div>
 
+                        <div className="text-xs text-gray-400 text-right">
+                            <Link
+                                to="/forgot-password"
+                                className="text-violet-300 hover:text-violet-200"
+                            >
+                                Esqueceu a senha?
+                            </Link>
+                        </div>
+
                         {/* Botão */}
                         <button
                             type="submit"
                             disabled={bloqueado}
-                            className={`w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 transition-transform ${
-                                bloqueado
+                            className={`w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 transition-transform ${bloqueado
                                     ? "bg-gray-500 cursor-not-allowed"
                                     : "hover:-translate-y-0.5 focus:outline-none"
-                            }`}
+                                }`}
                             style={{
                                 background: bloqueado
                                     ? ""
@@ -235,8 +243,8 @@ export default function Login() {
                         >
                             {bloqueado
                                 ? `Bloqueado (${Math.floor(tempoRestante / 60)}:${String(
-                                      tempoRestante % 60
-                                  ).padStart(2, "0")})`
+                                    tempoRestante % 60
+                                ).padStart(2, "0")})`
                                 : "Login"}
                         </button>
 
