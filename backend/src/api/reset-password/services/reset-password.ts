@@ -8,12 +8,8 @@ export default {
             <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
             
             <!-- Cabeçalho -->
-            <div style="background: linear-gradient(90deg,#1d0f3a,#23094f); padding: 20px; text-align: center;">
-                <img 
-                src="${process.env.FRONTEND_URL}/assets/img/banner-securityone.jpg" 
-                alt="SecurityOne" 
-                style="height: 80px;" 
-                />
+            <div style="background: linear-gradient(90deg,#1d0f3a,#23094f); text-align: center;">
+                <img src="${process.env.FRONTEND_URL}/assets/img/banner-securityone.jpg" alt="SecurityOne" width="100%"/>
             </div>
     
             <!-- Conteúdo -->
