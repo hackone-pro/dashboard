@@ -10,7 +10,11 @@ import {
   buscarTopAgentesVulnerabilidades,
   buscarTopPackagesVulnerabilidades,
   buscarTopScoresVulnerabilidades,
-  buscarVulnerabilidadesPorAno
+  buscarVulnerabilidadesPorAno,
+  buscarEventosSummary,
+  buscarEventosOvertime,
+  buscarRuleDistribution,
+  buscarTopUsers
 } from '../services/acesso-wazuh';
 
 import { resolveCountryCoords } from '../../../utils/countryResolver';
@@ -442,6 +446,122 @@ export default {
         "Erro ao consultar vulnerabilidades por ano"
       );
     }
-  }  
+  },
+  
+  async overtimeEventos(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+      const { dias = "todos" } = ctx.query;
+  
+      // 👇 Corrigido para chamar a função certa
+      const resultado = await buscarEventosOvertime(tenantData, {
+        dias: String(dias),
+      });
+  
+      return ctx.send({ overtime: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar eventos overtime:", error);
+      return ctx.internalServerError("Erro ao consultar eventos overtime");
+    }
+  },
+  
+  async eventosSummary(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+      const { dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarEventosSummary(tenantData, {
+        dias: String(dias),
+      });
+  
+      return ctx.send({ eventos: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar eventos summary:", error);
+      return ctx.internalServerError("Erro ao consultar eventos summary");
+    }
+  },
 
-};
+  async ruleDistribution(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+      const { dias = "todos" } = ctx.query;
+  
+      const resultado = await buscarRuleDistribution(tenantData, {
+        dias: String(dias),
+      });
+  
+      return ctx.send({ rules: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar rule distribution:", error);
+      return ctx.internalServerError("Erro ao consultar rule distribution");
+    }
+  },
+
+  async topUsers(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+
+      // Buscar tenant ativo vinculado ao usuário
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
+      });
+
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+
+      const tenantData = tenant[0];
+      const { dias = "todos" } = ctx.query;
+
+      // Chama o service que criamos
+      const resultado = await buscarTopUsers(tenantData, {
+        dias: String(dias),
+      });
+
+      return ctx.send({ topUsers: resultado });
+    } catch (error) {
+      console.error("Erro ao buscar top users:", error);
+      return ctx.internalServerError("Erro ao consultar top users");
+    }
+  },
+  
+  
+}

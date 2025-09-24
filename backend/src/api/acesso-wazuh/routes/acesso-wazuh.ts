@@ -102,6 +102,30 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/overtime",
+      handler: "acesso-wazuh.overtimeEventos",
+      config: { policies: [] },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/eventos-summary",
+      handler: "acesso-wazuh.eventosSummary",
+      config: { policies: [] },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/rule-distribution",
+      handler: "acesso-wazuh.ruleDistribution",
+      config: { policies: [] },
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/top-users",
+      handler: "acesso-wazuh.topUsers",
+      config: { policies: [] },
+    }
     
   ],
 };

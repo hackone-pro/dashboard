@@ -127,6 +127,20 @@ export default function Sidebar() {
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
                 )}>
+                    <Link to="/archives-integrity" className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                         {/* @ts-ignore */}
+                        <VscFileSymlinkDirectory />
+                        {isOpen && <span>Integridade de Arquivos</span>}
+                    </Link>
+                </li>
+
+                <li className={clsx(
+                    "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                    isOpen ? "justify-start" : "justify-center"
+                )}>
                     <Link to="/config" className={clsx(
                         "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                         isOpen ? "justify-start" : "justify-center"
@@ -136,20 +150,6 @@ export default function Sidebar() {
                         {isOpen && <span>Configurações</span>}
                     </Link>
                 </li>
-
-                {/* <li className={clsx(
-                    "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
-                    isOpen ? "justify-start" : "justify-center"
-                )}>
-                    <Link to="/archives-integrity" className={clsx(
-                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
-                        isOpen ? "justify-start" : "justify-center"
-                    )}>
-                        
-                        <VscFileSymlinkDirectory />
-                        {isOpen && <span>Integridade de Arquivos</span>}
-                    </Link>
-                </li> */}
             </ul>
         </div>
     );

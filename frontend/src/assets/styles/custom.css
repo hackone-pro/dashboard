@@ -189,6 +189,9 @@ header button.toggle{
 
 /*---------------*/
 
+.overtime .apexcharts-legend-text{
+  font-size: 12px !important;
+}
 
 .apexcharts-legend-text{
   color: #99a1af !important;

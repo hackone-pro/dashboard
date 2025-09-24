@@ -2,9 +2,9 @@ import axios from "axios";
 import https from "https";
 
 export interface TopVulnItem {
-  key: string;                 
-  total: number;               
-  severity: Record<string, number>; 
+  key: string;
+  total: number;
+  severity: Record<string, number>;
 }
 
 export interface TopOSItem {
@@ -20,9 +20,9 @@ export interface TopAgentItem {
 }
 
 export interface TopPackageItem {
-  package: string;                  
-  total: number;                    
-  severity: Record<string, number>; 
+  package: string;
+  total: number;
+  severity: Record<string, number>;
 }
 
 export interface TopScoreItem {
@@ -31,9 +31,31 @@ export interface TopScoreItem {
 }
 
 export interface VulnAnoItem {
-  ano: string;                        
-  total: number;                      
-  severity: Record<string, number>;   
+  ano: string;
+  total: number;
+  severity: Record<string, number>;
+}
+
+export interface OvertimeResponse {
+  labels: string[];
+  datasets: { name: string; data: number[] }[];
+}
+
+export interface EventosSummaryResponse {
+  labels: string[];
+  values: number[];
+}
+
+export interface RuleDistributionItem {
+  rule: string;
+  count: number;
+}
+
+export interface TopUserItem {
+  user: string;
+  agent_id: string;
+  agent_name: string;
+  count: number;
 }
 
 function authHeader(tenant) {
@@ -48,7 +70,7 @@ function authHeader(tenant) {
 }
 
 function customerFilter(clientName: string) {
-  return { match: { "agent.labels.customer": clientName } };
+  return { match: { "customer": clientName } };
 }
 
 /* ==================== FUNÇÕES ==================== */
@@ -87,7 +109,7 @@ export async function buscarSeveridadeIndexer(tenant) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -128,7 +150,7 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -165,7 +187,7 @@ export async function buscarTopAgentes(tenant, dias) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -210,7 +232,7 @@ export async function buscarTopAgentesCis(tenant, dias) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -260,7 +282,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -295,7 +317,7 @@ export async function buscarVulnSeveridades(tenant) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search?filter_path=aggregations.*`,
+    `${tenant.wazuh_url}/wazuh-*/_search?filter_path=aggregations.*`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -316,8 +338,8 @@ export async function buscarTopVulnerabilidades(
 
   const field =
     by === "package" ? "data.vulnerability.package.name" :
-    by === "agent" ? "agent.name" :
-    "data.vulnerability.cve";
+      by === "agent" ? "agent.name" :
+        "data.vulnerability.cve";
 
   const timeFilter =
     dias !== "todos"
@@ -344,7 +366,7 @@ export async function buscarTopVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -393,7 +415,7 @@ export async function buscarTopOSVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -443,7 +465,7 @@ export async function buscarTopAgentesVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -500,7 +522,7 @@ export async function buscarTopPackagesVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -536,7 +558,7 @@ export async function buscarTopScoresVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -573,7 +595,7 @@ export async function buscarVulnerabilidadesPorAno(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
@@ -583,4 +605,266 @@ export async function buscarVulnerabilidadesPorAno(
     for (const s of b?.por_severidade?.buckets ?? []) sev[s.key] = Number(s.doc_count || 0);
     return { ano: String(b.key_as_string ?? "Desconhecido"), total: Number(b.doc_count ?? 0), severity: sev };
   });
+}
+
+export async function buscarEventosOvertime(
+  tenant: any,
+  opts?: { dias?: string }
+): Promise<OvertimeResponse> {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        must: [
+          customerFilter(clientName),
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      por_dia: {
+        date_histogram: {
+          field: "@timestamp",
+          fixed_interval: "1d",
+          min_doc_count: 0,
+        },
+        aggs: {
+          acoes: {
+            terms: {
+              field: "syscheck.event",
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-*/_search`,
+    body,
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.por_dia?.buckets ?? [];
+
+  // 🔹 Labels formatados como dd/MM
+  const labels: string[] = buckets.map((b: any) => {
+    const d = new Date(b.key_as_string);
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+    });
+  });
+
+  const tipos = [
+    { key: "modified", label: "Modificado" },
+    { key: "added", label: "Adicionado" },
+    { key: "deleted", label: "Deletado" },
+  ];
+
+  const datasets = tipos.map((tipo) => ({
+    name: tipo.label, // 👈 já traduzido aqui
+    data: [] as number[],
+  }));
+
+  for (const bucket of buckets) {
+    for (const tipo of tipos) {
+      const ds = datasets.find((d) => d.name === tipo.label)!;
+      const valor =
+        bucket.acoes?.buckets?.find((a: any) => a.key === tipo.key)?.doc_count ?? 0;
+      ds.data.push(valor);
+    }
+  }
+
+  return { labels, datasets };
+}
+
+export async function buscarEventosSummary(
+  tenant: any,
+  opts?: { dias?: string }
+): Promise<EventosSummaryResponse> {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        must: [customerFilter(clientName), ...(timeFilter ? [timeFilter] : [])],
+      },
+    },
+    aggs: {
+      por_dia: {
+        date_histogram: {
+          field: "@timestamp",
+          fixed_interval: "1d",
+          min_doc_count: 0,
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-*/_search`,
+    body,
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.por_dia?.buckets ?? [];
+
+  // 🔹 Labels formatados como dd/MM
+  const labels: string[] = buckets.map((b: any) => {
+    const d = new Date(b.key_as_string);
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+    });
+  });
+
+  // 🔹 Valores totais de alertas por dia
+  const values: number[] = buckets.map((b: any) => b.doc_count ?? 0);
+
+  return { labels, values };
+}
+
+
+export async function buscarRuleDistribution(
+  tenant: any,
+  opts?: { dias?: string }
+): Promise<RuleDistributionItem[]> {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        must: [
+          customerFilter(clientName),
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      rules: {
+        terms: {
+          field: "rule.description", // 👈 sem .keyword
+          size: 10,
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-*/_search`,
+    body,
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  return (response.data?.aggregations?.rules?.buckets ?? []).map((b: any) => ({
+    rule: String(b.key ?? "Desconhecido"),
+    count: Number(b.doc_count ?? 0),
+  }));
+}
+
+export async function buscarTopUsers(
+  tenant: any,
+  opts?: { dias?: string }
+): Promise<TopUserItem[]> {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      : null;
+
+  const body: any = {
+    size: 0,
+    query: {
+      bool: {
+        must: [
+          customerFilter(clientName),
+          ...(timeFilter ? [timeFilter] : []),
+        ],
+      },
+    },
+    aggs: {
+      top_users: {
+        terms: { field: "syscheck.uname_after", size: 5 },
+        aggs: {
+          top_agents: {
+            terms: { field: "agent.id", size: 5 },
+            aggs: {
+              agent_name: {
+                terms: { field: "agent.name", size: 1 },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const response = await axios.post(
+    `${tenant.wazuh_url}/wazuh-*/_search`,
+    body,
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
+  );
+
+  const buckets = response.data?.aggregations?.top_users?.buckets ?? [];
+
+  // Flatten para lista simples [{user, agent_id, agent_name, count}]
+  const results: TopUserItem[] = [];
+  for (const u of buckets) {
+    for (const a of u.top_agents.buckets) {
+      const agentName = a.agent_name.buckets?.[0]?.key ?? "Desconhecido";
+      results.push({
+        user: u.key ?? "Desconhecido",
+        agent_id: a.key ?? "-",
+        agent_name: agentName,
+        count: Number(a.doc_count ?? 0),
+      });
+    }
+  }
+
+  return results;
 }
