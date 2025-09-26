@@ -871,6 +871,7 @@ export interface PluginUsersPermissionsUser
   };
   attributes: {
     blocked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    blocked_time: Schema.Attribute.DateTime;
     confirmationToken: Schema.Attribute.String & Schema.Attribute.Private;
     confirmed: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     createdAt: Schema.Attribute.DateTime;
@@ -887,6 +888,7 @@ export interface PluginUsersPermissionsUser
       'plugin::users-permissions.user'
     > &
       Schema.Attribute.Private;
+    login_attempts: Schema.Attribute.Integer;
     Nome: Schema.Attribute.String;
     password: Schema.Attribute.Password &
       Schema.Attribute.Private &

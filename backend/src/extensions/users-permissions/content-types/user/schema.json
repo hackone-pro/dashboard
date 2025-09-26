@@ -80,6 +80,12 @@
     },
     "reset_expire": {
       "type": "datetime"
+    },
+    "login_attempts": {
+      "type": "integer"
+    },
+    "blocked_time": {
+      "type": "datetime"
     }
   }
 }
