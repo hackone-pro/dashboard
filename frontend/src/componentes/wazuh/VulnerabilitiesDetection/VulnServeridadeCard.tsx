@@ -1,11 +1,21 @@
-import { useEffect, useState } from "react";
-import { getVulnSeveridades, VulnSeveridades } from "../../services/wazuh/vulnseveridades.service";
+// src/components/wazuh/VulnSeveridadeCard.tsx
+import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import { getVulnSeveridades, VulnSeveridades } from "../../../services/wazuh/vulnseveridades.service";
 import { FaSyncAlt } from "react-icons/fa";
+
+export type VulnSeveridadeCardRef = {
+  carregar: () => void;
+  getTotal: () => number; // 👈 expõe o total para o pai
+};
+
+type Props = {
+  onAtualizar?: () => void;
+};
 
 const formatPt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
 
-export default function VulnSeveridadeCard() {
+const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(({ onAtualizar }, ref) => {
   const [data, setData] = useState<VulnSeveridades | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -27,6 +37,11 @@ export default function VulnSeveridadeCard() {
     carregar();
   }, []);
 
+  useImperativeHandle(ref, () => ({
+    carregar,
+    getTotal: () => data?.total ?? 0,
+  }));
+
   return (
     <section className="cards p-6 rounded-2xl shadow-lg">
       <div className="flex flex-wrap justify-between items-start mb-6">
@@ -40,7 +55,7 @@ export default function VulnSeveridadeCard() {
 
         <div className="flex items-end gap-3 flex-wrap">
           <button
-            onClick={carregar}
+            onClick={onAtualizar}
             className="flex items-center gap-2 text-md border border-[#1D1929] bg-[#0A0617] hover:bg-gray-700 text-gray-400 px-3 py-1 rounded-md transition"
           >
             {/* @ts-ignore */}
@@ -70,7 +85,6 @@ export default function VulnSeveridadeCard() {
           ))
         ) : (
           <>
-            {/* Crítico */}
             <div className="rounded-xl p-4 h-full border border-white/5 text-center">
               <div className="text-3xl font-semibold leading-tight text-pink-400">
                 {formatPt(data?.critical ?? 0)}
@@ -78,7 +92,6 @@ export default function VulnSeveridadeCard() {
               <div className="text-sm text-gray-300 mt-1">Severidade Crítica</div>
             </div>
 
-            {/* Alto */}
             <div className="rounded-xl p-4 h-full border border-white/5 text-center">
               <div className="text-3xl font-semibold leading-tight text-violet-400">
                 {formatPt(data?.high ?? 0)}
@@ -86,7 +99,6 @@ export default function VulnSeveridadeCard() {
               <div className="text-sm text-gray-300 mt-1">Severidade Alta</div>
             </div>
 
-            {/* Médio */}
             <div className="rounded-xl p-4 h-full border border-white/5 text-center">
               <div className="text-3xl font-semibold leading-tight text-indigo-400">
                 {formatPt(data?.medium ?? 0)}
@@ -94,7 +106,6 @@ export default function VulnSeveridadeCard() {
               <div className="text-sm text-gray-300 mt-1">Severidade Média</div>
             </div>
 
-            {/* Baixo */}
             <div className="rounded-xl p-4 h-full border border-white/5 text-center">
               <div className="text-3xl font-semibold leading-tight text-emerald-400">
                 {formatPt(data?.low ?? 0)}
@@ -102,18 +113,17 @@ export default function VulnSeveridadeCard() {
               <div className="text-sm text-gray-300 mt-1">Severidade Baixa</div>
             </div>
 
-            {/* Pendentes */}
             <div className="rounded-xl p-4 h-full border border-white/5 text-center">
               <div className="text-3xl font-semibold leading-tight text-slate-300">
                 {formatPt(data?.pending ?? 0)}
               </div>
-              <div className="text-sm text-gray-300 mt-1">
-                Pendentes (Avaliação)
-              </div>
+              <div className="text-sm text-gray-300 mt-1">Pendentes (Avaliação)</div>
             </div>
           </>
         )}
       </div>
     </section>
   );
-}
+});
+
+export default VulnSeveridadeCard;
