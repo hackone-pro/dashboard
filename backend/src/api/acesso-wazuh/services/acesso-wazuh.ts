@@ -257,8 +257,18 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
     size: 0,
     query: {
       bool: {
-        must: [customerFilter(clientName), timeFilter, { term: { "rule.groups": "fortigate" } }],
-        must_not: [{ terms: { "data.srccountry": ["Reserved", "Unknown", "N/A", "-", ""] } }],
+        must: [
+          customerFilter(clientName),
+          timeFilter,
+          { term: { "rule.groups": "fortigate" } },
+        ],
+        must_not: [
+          {
+            terms: {
+              "data.srccountry": ["Reserved", "Unknown", "N/A", "-", ""],
+            },
+          },
+        ],
       },
     },
     aggs: {
@@ -278,21 +288,66 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
           },
         },
       },
+      top_destinos: {
+        terms: { field: "data.dstip", size: 10, order: { _count: "desc" } },
+        aggs: {
+          agentes: { terms: { field: "agent.name", size: 1 } }, // 👈 novo
+          origens: { terms: { field: "data.srcip", size: 10 } },
+          severidade: {
+            range: {
+              field: "rule.level",
+              ranges: [
+                { to: 7, key: "Baixo" },
+                { from: 7, to: 12, key: "Médio" },
+                { from: 12, to: 15, key: "Alto" },
+                { from: 15, key: "Crítico" },
+              ],
+            },
+          },
+        },
+      }
     },
   };
 
   const response = await axios.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
-    { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
   );
 
-  return (response.data.aggregations?.top_countries?.buckets || []).map((b) => ({
-    pais: b.key,
-    total: b.doc_count,
-    severidades: (b.severidade?.buckets ?? []).map((s) => ({ key: s.key, doc_count: s.doc_count })),
-  }));
+  return [
+    // Origens (países que atacam)
+    ...(response.data.aggregations?.top_countries?.buckets || []).map((b) => ({
+      tipo: "origem",
+      pais: b.key,
+      total: b.doc_count,
+      severidades: (b.severidade?.buckets ?? []).map((s) => ({
+        key: s.key,
+        doc_count: s.doc_count,
+      })),
+    })),
+
+    // Destinos (IPs que recebem ataque)
+    ...(response.data.aggregations?.top_destinos?.buckets || []).map((b) => ({
+      tipo: "destino",
+      destino: b.key,
+      total: b.doc_count,
+      agente: b.agentes?.buckets?.[0]?.key || null,   // 👈 agora vem preenchido
+      severidades: (b.severidade?.buckets ?? []).map((s) => ({
+        key: s.key,
+        doc_count: s.doc_count,
+      })),
+      origens: (b.origens?.buckets ?? []).map((o) => ({
+        ip: o.key,
+        total: o.doc_count,
+      })),
+    }))
+  ];
 }
+
 
 export async function buscarVulnSeveridades(tenant: any) {
   const clientName = tenant.wazuh_client_name;
@@ -326,77 +381,27 @@ export async function buscarVulnSeveridades(tenant: any) {
           filters: {
             Pending: {
               bool: {
-                must: [],
-                filter: [
-                  {
-                    bool: {
-                      should: [{ match: { "vulnerability.under_evaluation": true } }],
-                      minimum_should_match: 1
-                    }
-                  }
-                ],
-                should: [],
-                must_not: []
+                filter: [{ term: { "vulnerability.under_evaluation": true } }]
               }
             },
             Critical: {
               bool: {
-                must: [],
-                filter: [
-                  {
-                    bool: {
-                      should: [{ match_phrase: { "vulnerability.severity": "Critical" } }],
-                      minimum_should_match: 1
-                    }
-                  }
-                ],
-                should: [],
-                must_not: []
+                filter: [{ match_phrase: { "vulnerability.severity": "Critical" } }]
               }
             },
             High: {
               bool: {
-                must: [],
-                filter: [
-                  {
-                    bool: {
-                      should: [{ match_phrase: { "vulnerability.severity": "High" } }],
-                      minimum_should_match: 1
-                    }
-                  }
-                ],
-                should: [],
-                must_not: []
+                filter: [{ match_phrase: { "vulnerability.severity": "High" } }]
               }
             },
             Medium: {
               bool: {
-                must: [],
-                filter: [
-                  {
-                    bool: {
-                      should: [{ match_phrase: { "vulnerability.severity": "Medium" } }],
-                      minimum_should_match: 1
-                    }
-                  }
-                ],
-                should: [],
-                must_not: []
+                filter: [{ match_phrase: { "vulnerability.severity": "Medium" } }]
               }
             },
             Low: {
               bool: {
-                must: [],
-                filter: [
-                  {
-                    bool: {
-                      should: [{ match_phrase: { "vulnerability.severity": "Low" } }],
-                      minimum_should_match: 1
-                    }
-                  }
-                ],
-                should: [],
-                must_not: []
+                filter: [{ match_phrase: { "vulnerability.severity": "Low" } }]
               }
             }
           }
@@ -415,8 +420,20 @@ export async function buscarVulnSeveridades(tenant: any) {
     }
   );
 
-  return response.data?.aggregations || {};
+  const buckets = response.data?.aggregations?.severity?.buckets || {};
+  const total = response.data?.aggregations?.total?.doc_count || 0;
+
+  // retorna já simplificado
+  return {
+    Pending: buckets.Pending?.doc_count || 0,
+    Critical: buckets.Critical?.doc_count || 0,
+    High: buckets.High?.doc_count || 0,
+    Medium: buckets.Medium?.doc_count || 0,
+    Low: buckets.Low?.doc_count || 0,
+    Total: total
+  };
 }
+
 
 export async function buscarTopVulnerabilidades(
   tenant: any,

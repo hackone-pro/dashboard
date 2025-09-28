@@ -18,6 +18,7 @@ import {
 } from '../services/acesso-wazuh';
 
 import { resolveCountryCoords } from '../../../utils/countryResolver';
+import { resolveIpCoords } from "../../../utils/geo";
 
 export default {
   async severidade(ctx) {
@@ -192,9 +193,9 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-
+  
       const dias = ctx.query.dias || "7"; // "1","7","15","30","todos"
-
+  
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: {
           users_permissions_users: { id: userId },
@@ -202,32 +203,48 @@ export default {
         },
         populate: ["users_permissions_users"],
       });
-
+  
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-
+  
       const tenantData = tenant[0];
-
-      // Reaproveita a tua função já existente
       const resultado = await buscarTopPaisesAtaque(tenantData, dias);
-      // resultado deve ser exatamente o array que você mostrou no exemplo (sem lat/lng)
-
-      const topPaises = (resultado || []).map((p: any) => {
-        const coords = resolveCountryCoords(p.pais);
-        return {
-          ...p,
-          lat: coords?.lat ?? null,
-          lng: coords?.lng ?? null,
-          countryCode2: coords?.cca2 ?? null,
-          countryCode3: coords?.cca3 ?? null,
-        };
+  
+      // Filtra apenas destinos (IPs atacados)
+      const destinos = resultado.filter((p: any) => p.tipo === "destino");
+  
+      // Cada origem dentro do destino gera um "flow"
+      const flows = destinos.flatMap((dest: any) => {
+        return (dest.origens || []).map((o: any) => {
+          // Origem → resolve via GeoIP
+          const origemCoords = resolveIpCoords(o.ip);
+          // Destino → resolve via GeoIP
+          const destinoCoords = resolveIpCoords(dest.destino);
+  
+          return {
+            origem: {
+              ip: o.ip,
+              pais: origemCoords?.country || null,
+              lat: origemCoords?.lat ?? null,
+              lng: origemCoords?.lng ?? null,
+            },
+            destino: {
+              pais: destinoCoords?.country || null,
+              // agente: tenantData.wazuh_client_name || null, // 👈 pega do tenant
+              lat: destinoCoords?.lat ?? null,
+              lng: destinoCoords?.lng ?? null,
+            },      
+            total: o.total,
+            severidades: dest.severidades,
+          };
+        });
       });
-
-      return ctx.send({ topPaises });
+  
+      return ctx.send({ flows });
     } catch (error) {
-      console.error("Erro ao buscar top países de origem (com geo):", error);
-      return ctx.internalServerError("Erro ao consultar top países (com geo)");
+      console.error("Erro ao buscar fluxos de ataque:", error);
+      return ctx.internalServerError("Erro ao consultar fluxos de ataque");
     }
   },
 

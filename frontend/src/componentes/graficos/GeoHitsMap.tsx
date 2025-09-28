@@ -1,71 +1,47 @@
-import { useMemo, useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Pane, CircleMarker, useMap, ZoomControl, Polyline, Tooltip } from 'react-leaflet';
-import L from 'leaflet';
+import { useMemo, useEffect, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Pane,
+  CircleMarker,
+  useMap,
+  ZoomControl,
+  Polyline,
+  Tooltip,
+} from "react-leaflet";
+import L from "leaflet";
 
 type GeoHitsMapProps = {
   height?: number | string;
-  dias?: '1' | '7' | '15' | '30' | 'todos';
+  dias?: "1" | "7" | "15" | "30" | "todos";
 };
 
-type TopPais = {
-  pais: string;
+type Flow = {
+  origem: {
+    ip: string;
+    pais: string | null;
+    lat: number | null;
+    lng: number | null;
+  };
+  destino: {
+    ip: string;
+    pais?: string | null;
+    lat: number | null;
+    lng: number | null;
+    agente?: string | null;   // 👈 adiciona aqui
+    tenant?: string | null;   // 👈 se quiser também já deixar tenant
+  };
   total: number;
-  lat: number | null;
-  lng: number | null;
+  severidades: { key: string; doc_count: number }[];
 };
 
-function FitToData({ points, target }: { points: { lat: number; lng: number }[]; target?: { lat: number; lng: number } }) {
+function FitToData({ points }: { points: { lat: number; lng: number }[] }) {
   const map = useMap();
   useEffect(() => {
-    const todos = [...points];
-    if (target) todos.push(target);
-    if (!todos.length) return;
-    const bounds = L.latLngBounds(todos.map(p => [p.lat, p.lng]));
+    if (!points.length) return;
+    const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng]));
     map.fitBounds(bounds.pad(0.2));
-  }, [map, points, target]);
-  return null;
-}
-
-/** Injeta <defs> com o gradient no mesmo <svg> do Leaflet */
-function MapGradientDefs() {
-  const map = useMap();
-  useEffect(() => {
-    const pane = map.getPanes().overlayPane as HTMLElement | null;
-    if (!pane) return;
-    const svg = pane.querySelector('svg');
-    if (!svg) return;
-
-    let defs = svg.querySelector('defs');
-    if (!defs) {
-      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-      svg.prepend(defs);
-    }
-
-    let grad = svg.querySelector('#flowArcGradient') as SVGLinearGradientElement | null;
-    if (!grad) {
-      grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-      grad.setAttribute('id', 'flowArcGradient');
-      grad.setAttribute('gradientUnits', 'objectBoundingBox');
-      grad.setAttribute('x1', '0%');
-      grad.setAttribute('y1', '0%');
-      grad.setAttribute('x2', '100%');
-      grad.setAttribute('y2', '0%');
-
-      const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-      stop1.setAttribute('offset', '0%');
-      stop1.setAttribute('stop-color', '#EC4899');
-      stop1.setAttribute('stop-opacity', '1');
-
-      const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-      stop2.setAttribute('offset', '100%');
-      stop2.setAttribute('stop-color', '#EC4899');
-      stop2.setAttribute('stop-opacity', '0.15');
-
-      grad.appendChild(stop1);
-      grad.appendChild(stop2);
-      defs.appendChild(grad);
-    }
-  }, [map]);
+  }, [map, points]);
   return null;
 }
 
@@ -91,29 +67,13 @@ function sampleBezier(p0: Pt, c: Pt, p1: Pt, samples = 80): Pt[] {
   return pts;
 }
 
-// gera um "hue" (0–359) estável a partir do nome do país
-function hueFromString(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (h * 37 + s.charCodeAt(i)) % 360;
-  }
-  return h;
-}
-
-// cor HSL agradável (viva mas não neon)
-function colorForCountry(name: string) {
-  const h = hueFromString(name);
-  return `hsl(${h} 75% 55%)`; // pode ajustar saturação/luminosidade aqui
-}
-
-export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapProps) {
-  const [points, setPoints] = useState<{ lat: number; lng: number; count: number; pais: string }[]>([]);
-  const [target, setTarget] = useState<{ lat: number; lng: number } | null>(null);
+export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapProps) {
+  const [flows, setFlows] = useState<Flow[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const darkTiles = useMemo(
-    () => 'https://{s}.basemaps.cartocdn.com/spotify_dark/{z}/{x}/{y}{r}.png',
+    () => "https://{s}.basemaps.cartocdn.com/spotify_dark/{z}/{x}/{y}{r}.png",
     []
   );
 
@@ -125,52 +85,62 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
         setCarregando(true);
         setErro(null);
         const API_URL = import.meta.env.VITE_API_URL;
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
 
         const url = new URL(`${API_URL}/api/acesso/wazuh/top-paises-geo`);
-        if (dias) url.searchParams.set('dias', dias);
+        if (dias) url.searchParams.set("dias", dias);
 
         const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const data: { topPaises: TopPais[] } = await res.json();
+        const data: { flows: Flow[] } = await res.json();
         if (!ativo) return;
-
-        const pts = (data?.topPaises || [])
-          .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
-          .map(p => ({ lat: p.lat as number, lng: p.lng as number, count: p.total, pais: p.pais }));
-
-        setPoints(pts);
-
-        const br = pts.find(p => p.pais.toLowerCase() === 'brazil');
-        setTarget(br ? { lat: br.lat, lng: br.lng } : { lat: -14.235, lng: -51.9253 });
+        setFlows(data.flows || []);
       } catch (e: any) {
-        if (ativo) setErro(e?.message || 'Erro ao carregar pontos do mapa');
+        if (ativo) setErro(e?.message || "Erro ao carregar pontos do mapa");
       } finally {
         if (ativo) setCarregando(false);
       }
     })();
-    return () => { ativo = false; };
+    return () => {
+      ativo = false;
+    };
   }, [dias]);
 
-  // pré-calcula todos os arcos (um por país → Brasil)
-  const arcs = useMemo(() => {
-    if (!target) return [] as { positions: [number, number][], group: number }[];
-    return points.map((src, i) => {
-      const p0 = { lat: src.lat, lng: src.lng };
-      const p1 = { lat: target.lat, lng: target.lng };
-      const c = controlPoint(p0, p1, 0.24);
-      const sampled = sampleBezier(p0, c, p1, 80).map(p => [p.lat, p.lng]) as [number, number][];
-      return { positions: sampled, group: i % 6 }; // grupo para variar delay/duração
+  // prepara pontos para ajustar bounds
+  const allPoints = useMemo(() => {
+    return flows.flatMap((f) => {
+      const pts: { lat: number; lng: number }[] = [];
+      if (f.origem.lat && f.origem.lng) pts.push({ lat: f.origem.lat, lng: f.origem.lng });
+      if (f.destino.lat && f.destino.lng) pts.push({ lat: f.destino.lat, lng: f.destino.lng });
+      return pts;
     });
-  }, [points, target]);
+  }, [flows]);
+
+  // calcula arcos origem → destino
+  const arcs = useMemo(() => {
+    return flows
+      .map((f, i) => {
+        if (!f.origem.lat || !f.origem.lng || !f.destino.lat || !f.destino.lng) return null;
+        const p0 = { lat: f.origem.lat, lng: f.origem.lng };
+        const p1 = { lat: f.destino.lat, lng: f.destino.lng };
+        const c = controlPoint(p0, p1, 0.24);
+        const sampled = sampleBezier(p0, c, p1, 80).map((p) => [p.lat, p.lng]) as [
+          number,
+          number
+        ][];
+        return { positions: sampled, group: i % 6 };
+      })
+      .filter(Boolean) as { positions: [number, number][]; group: number }[];
+  }, [flows]);
 
   return (
     <div
       className="w-full relative z-0 rounded-sm overflow-hidden"
       style={{
-        height: typeof height === 'number' ? `${height}px` : height,
-        background: 'radial-gradient(circle at center, #6B21A8 0%, #321C5E 40%, #1B1032 75%, #0D0C22 100%)'
+        height: typeof height === "number" ? `${height}px` : height,
+        background:
+          "radial-gradient(circle at center, #6B21A8 0%, #321C5E 40%, #1B1032 75%, #0D0C22 100%)",
       }}
     >
       <MapContainer
@@ -182,67 +152,108 @@ export default function GeoHitsMap({ height = 400, dias = 'todos' }: GeoHitsMapP
         className="w-full h-full"
         worldCopyJump
       >
-        <MapGradientDefs /> {/* gradient para os arcos */}
         <ZoomControl position="topleft" />
 
         <Pane name="basemap" style={{ zIndex: 200 }}>
           <TileLayer url={darkTiles} />
         </Pane>
 
-        <Pane name="bubbles" style={{ zIndex: 400 }}>
-          {/* alvo: Brasil */}
-          {target && (
-            <CircleMarker
-              center={[target.lat, target.lng]}
-              radius={6}
-              pathOptions={{ color: 'transparent', fillColor: '#22c55e', fillOpacity: 0.85 }}
-              className="bubble-pulse"
-            />
+        {/* ORIGENS (pulse vermelho) */}
+        <Pane name="origin-bubbles" style={{ zIndex: 410 }}>
+          {flows.map(
+            (f, i) =>
+              f.origem.lat &&
+              f.origem.lng && (
+                <CircleMarker
+                  key={`origem-${i}`}
+                  center={[f.origem.lat, f.origem.lng]}
+                  radius={5}
+                  pathOptions={{
+                    color: "transparent",
+                    fillColor: "#ec4899",
+                    fillOpacity: 0.9,
+                  }}
+                  className="origin-pulse"
+                >
+                  <Tooltip direction="top" offset={[0, -8]} opacity={1} className="country-tip">
+                    <div className="text-xs">
+                      <div className="pb-2"><b>Origem:</b> {f.origem.pais || "Desconhecido"}</div>
+                      {/* <div><b>IP:</b> {f.origem.ip}</div> */}
+                      <div><b>Total:</b> {f.total}</div>
+                    </div>
+                  </Tooltip>
+                </CircleMarker>
+              )
           )}
-
-          {/* países (com tooltip) */}
-          {points.map((p, i) => (
-            <CircleMarker
-              key={`pt-${i}`}
-              center={[p.lat, p.lng]}
-              radius={Math.max(4, Math.log10(p.count + 10))}
-              pathOptions={{
-                // uma bordinha sutil ajuda a destacar sobre o tile escuro
-                color: 'rgba(255,255,255,0.15)',
-                weight: 0.6,
-                fillColor: colorForCountry(p.pais),
-                fillOpacity: 0.8,
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -6]} opacity={1} className="country-tip">
-                <div className="text-xs">
-                  <div className="font-medium">{p.pais}</div>
-                  <div className="opacity-80">Eventos: {p.count.toLocaleString()}</div>
-                </div>
-              </Tooltip>
-            </CircleMarker>
-          ))}
-
         </Pane>
 
-        {/* TODOS os arcos animando juntos */}
+        {/* DESTINOS (pulse verde) */}
+        <Pane name="dest-bubbles" style={{ zIndex: 420 }}>
+          {flows.map(
+            (f, i) =>
+              f.destino.lat &&
+              f.destino.lng && (
+                <CircleMarker
+                  key={`destino-${i}`}
+                  center={[f.destino.lat, f.destino.lng]}
+                  radius={6}
+                  pathOptions={{
+                    color: "transparent",
+                    fillColor: "#22c55e",
+                    fillOpacity: 0.85,
+                  }}
+                  className="bubble-pulse"
+                >
+                  <Tooltip direction="top" offset={[0, -8]} opacity={1} className="country-tip">
+                    <div className="text-xs">
+                      <div className="pb-2"><b>Destino:</b> {f.destino.pais || "Desconhecido"}</div>
+                      {/* <div><b>Agente:</b> {f.destino.agente || "N/A"}</div> */}
+                      <div><b>Total:</b> {f.total}</div>
+                    </div>
+                  </Tooltip>
+                </CircleMarker>
+              )
+          )}
+        </Pane>
+
+        {/* ARCOS + DOTS CORRENDO */}
         <Pane name="shooting-lines" className="shooting-lines-pane" style={{ zIndex: 350 }}>
-          {arcs.map((arc, i) => (
-            <Polyline
-              key={`arc-${i}`}
-              positions={arc.positions}
-              pathOptions={{
-                weight: 2.2,
-                opacity: 0.95,
-                dashArray: '6 28', // segmento + espaço (parece “fluxo”)
-                // NÃO defina 'color' aqui; o stroke vem do CSS com o gradient
-              }}
-              className={`flow-arc s-i-${arc.group}`}
-            />
-          ))}
+          {arcs.map((arc, i) => {
+            const d =
+              `M ${arc.positions[0][1]},${arc.positions[0][0]} ` +
+              arc.positions.slice(1).map((p) => `L ${p[1]},${p[0]}`).join(" ");
+
+            return (
+              <g key={`arc-${i}`}>
+                <Polyline
+                  positions={arc.positions}
+                  pathOptions={{
+                    weight: 2.2,
+                    opacity: 0.95,
+                    color: "transparent",   // 👈 transparente
+                  }}
+                  className={`flow-arc s-i-${arc.group}`}
+                />
+
+                {/* dot correndo */}
+                {[...Array(3)].map((_, j) => (
+                  <circle
+                    key={`dot-${i}-${j}`}
+                    className="glow-dot"
+                    style={{
+                      offsetPath: `path('${d}')`,
+                      offsetRotate: "auto",
+                      ["--dot-dur" as any]: `${2.5 + Math.random() * 1.5}s`, // duração aleatória
+                      ["--delay" as any]: `${Math.random() * 5}s`,            // delay aleatório
+                    }}
+                  />
+                ))}
+              </g>
+            );
+          })}
         </Pane>
 
-        <FitToData points={points} target={target ?? undefined} />
+        <FitToData points={allPoints} />
       </MapContainer>
 
       {carregando && (

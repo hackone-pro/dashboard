@@ -383,10 +383,12 @@ header button.toggle{
   background: rgba(17, 17, 26, 0.9);
   border: 1px solid rgba(255,255,255,0.12);
   color: #fff;
-  padding: 6px 8px;
+  padding: 10px;
+  line-height: 18px;
   border-radius: 8px;
   box-shadow: 0 6px 16px rgba(0,0,0,0.35);
   pointer-events: none;
+  z-index: 999;
 }
 .leaflet-tooltip.country-tip::before {
   border-top-color: rgba(17, 17, 26, 0.9);
@@ -413,3 +415,71 @@ header button.toggle{
 
 /* “respiração” leve de opacidade (você já tem, mas repito pra garantir) */
 @keyframes glowPulse { 0%,100% { opacity: .95 } 50% { opacity: .75 } }
+
+
+
+/* Arcos com dash roxo e glow */
+.shooting-lines-pane path.flow-arc {
+  stroke: rgba(139, 92, 246, 0.7);   /* Roxo #8B5CF6 */
+  stroke-width: 2.2;
+  fill: none;
+  stroke-dasharray: 5 30;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.5)); /* Glow roxo */
+  animation: dashmove var(--dur, 2.5s) linear infinite, glowPulse 2.2s ease-in-out infinite;
+}
+
+/* Defasagem suave entre arcos (mais orgânico) */
+.s-i-0 { --dur: 2.5s; animation-delay: 0.10s, 0s; }
+.s-i-1 { --dur: 2.5s; animation-delay: 0.20s, 0s; }
+.s-i-2 { --dur: 2.3s; animation-delay: 0.40s, 0s; }
+.s-i-3 { --dur: 2.7s; animation-delay: 0.60s, 0s; }
+.s-i-4 { --dur: 2.4s; animation-delay: 0.80s, 0s; }
+.s-i-5 { --dur: 2.8s; animation-delay: 1.00s, 0s; }
+
+/* Pontinho brilhante percorrendo o arco */
+.glow-dot {
+  r: 4;
+  fill: #a855f7;  /* Roxo neon */
+  filter: drop-shadow(0 0 8px #a855f7);
+  offset-distance: 0%;
+  animation: move-dot var(--dot-dur, 2.5s) linear infinite;
+}
+
+/* Keyframes */
+@keyframes dashmove {
+  to { stroke-dashoffset: -200; }
+}
+
+@keyframes glowPulse {
+  0%,100% { opacity: .95 }
+  50%     { opacity: .75 }
+}
+
+@keyframes move-dot {
+  to { offset-distance: 100%; }
+}
+
+/* Destino pulsando */
+.bubble-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    r: 6;
+    fill: #22c55e;
+    opacity: 0.8;
+  }
+  50% {
+    r: 9;
+    fill: #38ef7d;
+    opacity: 1;
+  }
+  100% {
+    r: 6;
+    fill: #22c55e;
+    opacity: 0.8;
+  }
+}
+
