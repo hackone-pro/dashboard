@@ -39,6 +39,8 @@ export function guessCountryCode(name: string): string {
       "republic of poland": "PL",
       "republic of korea": "KR",
       "korea, republic of": "KR",
+      "lithuania": "LT",
+      "republic of lithuania": "LT"
     };
     return map[n] || "";
   }

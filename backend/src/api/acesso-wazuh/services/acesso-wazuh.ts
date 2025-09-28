@@ -166,22 +166,44 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
   });
 }
 
-export async function buscarTopAgentes(tenant, dias) {
+export async function buscarTopAgentes(tenant, dias: string) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const timeFilter =
     dias === "todos"
       ? { match_all: {} }
-      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        };
 
   const body = {
     size: 0,
-    query: { bool: { must: [customerFilter(clientName), timeFilter] } },
+    query: {
+      bool: {
+        must: [
+          timeFilter,
+          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo do Postman
+          { match_phrase: { "rule.groups": "syscheck" } },      // fixo do Postman
+          { match_phrase: { customer: clientName } },           // vem do tenant
+        ],
+      },
+    },
     aggs: {
       top_agentes_alertas: {
-        terms: { field: "agent.name", size: 9 },
-        aggs: { por_severidade: { terms: { field: "rule.level" } } },
+        terms: {
+          field: "agent.name",
+          order: { _count: "desc" },
+          size: 9, // igual ao Postman
+        },
+        aggs: {
+          por_severidade: { terms: { field: "rule.level" } },
+        },
       },
     },
   };
@@ -189,15 +211,30 @@ export async function buscarTopAgentes(tenant, dias) {
   const response = await axios.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
-    { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
   );
 
-  return (response.data.aggregations?.top_agentes_alertas?.buckets || []).map((agente) => {
-    const total = agente.por_severidade.buckets.reduce((sum, item) => sum + item.doc_count, 0);
+  return (
+    response.data.aggregations?.top_agentes_alertas?.buckets || []
+  ).map((agente) => {
+    const total = agente.por_severidade.buckets.reduce(
+      (sum, item) => sum + item.doc_count,
+      0
+    );
+
     const score =
       agente.por_severidade.buckets.reduce((acc, item) => {
         const peso =
-          item.key >= 0 && item.key <= 6 ? 0.2 : item.key <= 11 ? 0.6 : item.key <= 14 ? 0.87 : 1.0;
+          item.key >= 0 && item.key <= 6
+            ? 0.2
+            : item.key <= 11
+            ? 0.6
+            : item.key <= 14
+            ? 0.87
+            : 1.0;
         return acc + item.doc_count * peso;
       }, 0) / (total || 1);
 
@@ -207,9 +244,16 @@ export async function buscarTopAgentes(tenant, dias) {
     else if (score >= 0.6) nivel = "Médio";
     else nivel = "Baixo";
 
-    return { agente: agente.key, total_alertas: total, severidades: agente.por_severidade.buckets, nivel_risco: nivel, score: Math.round(score * 100) };
+    return {
+      agente: agente.key,
+      total_alertas: total,
+      severidades: agente.por_severidade.buckets,
+      nivel_risco: nivel,
+      score: Math.round(score * 100),
+    };
   });
 }
+
 
 export async function buscarTopAgentesCis(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
@@ -981,22 +1025,35 @@ export async function buscarEventosSummary(
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        }
       : null;
 
   const body: any = {
     size: 0,
     query: {
       bool: {
-        must: [customerFilter(clientName), ...(timeFilter ? [timeFilter] : [])],
+        must: [
+          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo igual ao Postman
+          { match_phrase: { "rule.groups": "syscheck" } },      // fixo igual ao Postman
+          { match_phrase: { customer: clientName } },           // variável
+          ...(timeFilter ? [timeFilter] : []),
+        ],
       },
     },
     aggs: {
       por_dia: {
         date_histogram: {
-          field: "@timestamp",
-          fixed_interval: "1d",
-          min_doc_count: 0,
+          field: "timestamp", // no Postman usaram `timestamp` em vez de `@timestamp`
+          fixed_interval: "30m", // Postman pediu 30 minutos
+          time_zone: "America/Sao_Paulo",
+          min_doc_count: 1, // só buckets com docs
         },
       },
     },
@@ -1013,20 +1070,23 @@ export async function buscarEventosSummary(
 
   const buckets = response.data?.aggregations?.por_dia?.buckets ?? [];
 
-  // 🔹 Labels formatados como dd/MM
+  // 🔹 Labels formatados como dd/MM HH:mm
   const labels: string[] = buckets.map((b: any) => {
     const d = new Date(b.key_as_string);
-    return d.toLocaleDateString("pt-BR", {
+    return d.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   });
 
-  // 🔹 Valores totais de alertas por dia
+  // 🔹 Valores totais de alertas por intervalo
   const values: number[] = buckets.map((b: any) => b.doc_count ?? 0);
 
   return { labels, values };
 }
+
 
 
 export async function buscarRuleDistribution(
@@ -1040,7 +1100,14 @@ export async function buscarRuleDistribution(
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        }
       : null;
 
   const body: any = {
@@ -1048,7 +1115,9 @@ export async function buscarRuleDistribution(
     query: {
       bool: {
         must: [
-          customerFilter(clientName),
+          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo igual Postman
+          { match_phrase: { "rule.groups": "syscheck" } },      // fixo igual Postman
+          { match_phrase: { customer: clientName } },           // variável do tenant
           ...(timeFilter ? [timeFilter] : []),
         ],
       },
@@ -1056,8 +1125,9 @@ export async function buscarRuleDistribution(
     aggs: {
       rules: {
         terms: {
-          field: "rule.description", // 👈 sem .keyword
-          size: 10,
+          field: "rule.description", // igual ao Postman (sem .keyword)
+          order: { _count: "desc" }, // ordenar por mais frequentes
+          size: 5,                   // top 5 (Postman usou 5)
         },
       },
     },
@@ -1072,11 +1142,14 @@ export async function buscarRuleDistribution(
     }
   );
 
-  return (response.data?.aggregations?.rules?.buckets ?? []).map((b: any) => ({
+  return (
+    response.data?.aggregations?.rules?.buckets ?? []
+  ).map((b: any) => ({
     rule: String(b.key ?? "Desconhecido"),
     count: Number(b.doc_count ?? 0),
   }));
 }
+
 
 export async function buscarTopUsers(
   tenant: any,

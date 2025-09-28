@@ -46,7 +46,7 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
   const labels = top5.map((r) => r.label || "Desconhecido");
   const series = top5.map((r) => Number.isFinite(r.value) ? r.value : 0);
 
-  const cores = ["#6A55DC", "#1DD69A", "#EC4899", "#FACC15", "#3B82F6"];
+  const cores = ["#1DD69A", "#6A55DC", "#EC4899", "#FACC15", "#3B82F6"];
 
   if (erro) {
     return (
@@ -81,7 +81,7 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
         {labels.map((label, i) => (
           <div key={i} className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded-sm"
+              className="w-3 h-3 rounded-xs"
               style={{ backgroundColor: cores[i % cores.length] }}
             />
             {label}
