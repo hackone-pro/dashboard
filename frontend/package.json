@@ -13,8 +13,6 @@
     "@fontsource/inter": "^5.2.6",
     "@heroicons/react": "^2.2.0",
     "@south-paw/react-vector-maps": "^3.2.0",
-    "@syncfusion/ej2-base": "^31.1.20",
-    "@syncfusion/ej2-react-maps": "^31.1.17",
     "apexcharts": "^5.2.0",
     "axios": "^1.11.0",
     "d3-geo": "^3.1.1",
