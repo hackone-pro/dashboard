@@ -41,7 +41,7 @@ import type { PageIncidente } from "../types/incidentes.types";
  * CONSTANTES & TYPES
  * ======================================= */
 
-const OWNER_EXTRA = "automation_n8n";
+const OWNER_EXTRA = "Inteligencia_Artificial";
 const PAGE_SIZE = 10;
 
 type SortKey = "id" | "data" | "severidade" | "status";
