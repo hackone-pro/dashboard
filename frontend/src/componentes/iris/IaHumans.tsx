@@ -196,7 +196,7 @@ function agruparPorDia(incidentes: Incidente[], dias: number) {
         const [mes, dia, ano] = incidente.case_open_date.split("/");
         const data = `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
 
-        if (incidente.opened_by === "automation_n8n") {
+        if (incidente.opened_by === "Inteligencia_Artificial") {
             contagemIA[data] = (contagemIA[data] || 0) + 1;
         } else {
             contagemHumanos[data] = (contagemHumanos[data] || 0) + 1;
