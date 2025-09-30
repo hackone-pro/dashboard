@@ -266,7 +266,14 @@ export async function buscarTopAgentesCis(tenant, dias) {
 
   const body = {
     size: 0,
-    query: { bool: { must: [customerFilter(clientName), timeFilter, { term: { "rule.groups": "sca" } }] } },
+    query: {
+      bool: {
+        must: [
+          timeFilter, // ⬅️ mantemos só o filtro de tempo
+          { term: { "rule.groups": "sca" } } // ⬅️ e o filtro de grupo
+        ],
+      },
+    },
     aggs: {
       agentes: {
         terms: { field: "agent.name", size: 14, order: { media_score: "asc" } },
@@ -278,15 +285,27 @@ export async function buscarTopAgentesCis(tenant, dias) {
   const response = await axios.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
-    { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
   );
 
   return (response.data.aggregations?.agentes?.buckets || []).map((b) => {
     const media = Number(b?.media_score?.value ?? 0);
-    const score_percent = Math.max(0, Math.min(100, Math.round((media / 15) * 100)));
-    return { agente: b.key, total_eventos: b.doc_count, media_score: media, score_cis_percent: score_percent };
+    const score_percent = Math.max(
+      0,
+      Math.min(100, Math.round((media / 15) * 100))
+    );
+    return {
+      agente: b.key,
+      total_eventos: b.doc_count,
+      media_score: media,
+      score_cis_percent: score_percent,
+    };
   });
 }
+
 
 export async function buscarTopPaisesAtaque(tenant, dias: string) {
   const clientName = tenant.wazuh_client_name;

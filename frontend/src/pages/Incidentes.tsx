@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import DescricaoFormatada from "../componentes/iris/DescricaoFormatada";
+import GraficoDonutIncidentes from "../componentes/graficos/GraficoDonutIncidentes";
 
 import { getTenant } from "../services/wazuh/tenant.service";
 import { getTodosCasos, Incidente as ServiceIncidente } from "../services/iris/cases.service";
@@ -12,36 +13,40 @@ import type { IconType } from "react-icons";
 import { GoGraph } from "react-icons/go";
 import { RiQuestionLine, RiProgress5Line } from "react-icons/ri";
 import { FaLockOpen, FaRegCheckCircle, FaSort } from "react-icons/fa";
+import { HiLockClosed } from "react-icons/hi";
 import { IoStopCircleOutline } from "react-icons/io5";
 import { MdOutlineGppBad, MdOutlineHealthAndSafety } from "react-icons/md";
 import { GrTroubleshoot } from "react-icons/gr";
 import { TbMessageReport } from "react-icons/tb";
+import { VscError } from "react-icons/vsc";
+
+import {
+  normaliza,
+  extractOwner,
+  extractIncidentClient,
+  parseDateBR,
+  formatDateBR,
+  filtrarPorDias,
+  getCorBadge,
+  statusPT,
+  agruparPorSeveridade,
+  detectarNivelPorNome,
+  formatCaseName,
+  sentenceCase,
+} from "../utils/incidentes/helpers";
+
+import type { PageIncidente } from "../types/incidentes.types";
 
 /* =========================================
  * CONSTANTES & TYPES
  * ======================================= */
 
-// Dono “extra” que você usa nos filtros
 const OWNER_EXTRA = "automation_n8n";
-// Itens por página
 const PAGE_SIZE = 10;
 
-// Chaves de ordenação suportadas
 type SortKey = "id" | "data" | "severidade" | "status";
 type SortDir = "asc" | "desc";
 
-// Tipo local enriquecido (opcional)
-type PageIncidente = ServiceIncidente & {
-  owner?: string;
-  owner_name?: string;
-  opened_by?: string;
-  state_name?: string;
-  case_close_date?: string;
-  case_uuid?: string;
-  case_soc_id?: string;
-};
-
-// Metadados de status para ícone/cor
 type StatusMeta = {
   label: string;
   Icon: IconType;
@@ -49,171 +54,8 @@ type StatusMeta = {
 };
 
 /* =========================================
- * HELPERS GERAIS
- * ======================================= */
-
-// Normaliza string com acentos e caixa
-const normaliza = (s?: string) =>
-  (s || "")
-    .normalize("NFD")
-    // @ts-ignore unicode property
-    .replace(/\p{Diacritic}/gu, "")
-    .trim()
-    .toLowerCase();
-
-// Extrai owner de possíveis campos
-function extractOwner(i: any): string | undefined {
-  return (
-    i.owner ??
-    i.owner_name ??
-    i.ownerUser ??
-    i.owner_user ??
-    i.assigned_to ??
-    undefined
-  );
-}
-
-// Extrai cliente de possíveis campos
-function extractIncidentClient(i: any): string | undefined {
-  return i.client_name ?? i.client ?? i.customer_name ?? i.tenant_name ?? undefined;
-}
-
-// Converte "MM/DD/YYYY" em Date
-function parseDateBR(d: string) {
-  const [mes, dia, ano] = d.split("/");
-  return new Date(`${ano}-${mes}-${dia}`);
-}
-
-// recebe "MM/DD/YYYY" e devolve "DD/MM/YYYY"
-function formatDateBR(d: string) {
-  if (!d) return "—";
-  const [mes, dia, ano] = d.split("/");
-  return `${dia.padStart(2, "0")}/${mes.padStart(2, "0")}/${ano}`;
-}
-
-// Filtra lista pelos últimos X dias (inclui hoje). 1 = hoje. 0 = todos.
-function filtrarPorDias(lista: PageIncidente[], dias: number) {
-  if (dias === 0) return lista; // todos
-  if (dias === 1) {
-    // hoje
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    return lista.filter((i) => {
-      const d = parseDateBR(i.case_open_date);
-      d.setHours(0, 0, 0, 0);
-      return d.getTime() === hoje.getTime();
-    });
-  }
-  // últimos X dias (inclui hoje)
-  const hoje = new Date();
-  const limite = new Date(hoje);
-  limite.setDate(hoje.getDate() - (dias - 1));
-  limite.setHours(0, 0, 0, 0);
-  return lista.filter((i) => parseDateBR(i.case_open_date) >= limite);
-}
-
-// Badge de cor por severidade (PT/masc/fem)
-function getCorBadge(nivel: string) {
-  switch (nivel) {
-    case "Crítico":
-    case "Crítica":
-    case "CRÍTICA":
-    case "CRÍTICO":
-      return "badge-pink";
-    case "Alto":
-    case "Alta":
-      return "badge-high";
-    case "Médio":
-    case "Média":
-      return "badge-darkpink";
-    case "Baixo":
-    case "Baixa":
-      return "badge-green";
-    default:
-      return "bg-gray-500";
-  }
-}
-
-// Tradução simples de status (exibido)
-function statusPT(s?: string) {
-  switch ((s || "").toLowerCase()) {
-    case "open":
-      return "Aberto";
-    case "resolved":
-      return "Resolvido";
-    case "assigned":
-      return "Atribuído";
-    case "closed":
-      return "Fechado";
-    default:
-      return s || "—";
-  }
-}
-
-/* =========================================
- * REGEX / FORMATAÇÃO TÍTULO & SEVERIDADE
- * ======================================= */
-
-// Aceita baixo/baixa, médio/média, alto/alta, crítico/crítica (com e sem acento/maiúsculas)
-const NIVEIS_REGEX =
-  "(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica|CR[IÍ]TICO|CR[IÍ]TICA)";
-
-// Sentence case
-const sentenceCase = (texto: string) =>
-  texto ? texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase() : texto;
-
-// Detecta severidade no início do nome, tolerando prefixo "#86 -", hífen "-" ou "–", e data opcional
-function detectarNivelPorNome(nome: string): string | null {
-  const comData = new RegExp(
-    String.raw`^\s*(?:#?\d+\s*[-–]\s*)?\[\d{2}:\d{2}\s*[-–]\s*\d{2}\/\d{2}\/\d{4}\]\s*[-–]\s*${NIVEIS_REGEX}`,
-    "i"
-  );
-  const semData = new RegExp(
-    String.raw`^\s*(?:#?\d+\s*[-–]\s*)?\[\d{2}:\d{2}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]`,
-    "i"
-  );
-
-  let m = nome.match(comData);
-  if (m) return m[1];
-  m = nome.match(semData);
-  if (m) return m[1];
-  return null;
-}
-
-// Limpa prefixos do título: "#86 - ", "[HH:MM]" (com/sem data), " - Nível - "
-function formatCaseName(name: string) {
-  let s = (name || "").replace(/\u00A0/g, " ").replace(/\s+/g, " ").trimStart();
-
-  // Remove: [opcional] "#86 - "
-  s = s.replace(/^\s*#?\d+\s*[-–]\s*/i, "");
-
-  // Remove: [HH:MM - DD/MM/AAAA] - Nivel -
-  s = s.replace(
-    new RegExp(
-      String.raw`^\s*\[\d{2}:\d{2}\s*[-–]\s*\d{2}\/\d{2}\/\d{4}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]\s*`,
-      "i"
-    ),
-    ""
-  );
-
-  // Remove: [HH:MM] - Nivel -
-  s = s.replace(
-    new RegExp(
-      String.raw`^\s*\[\d{2}:\d{2}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]\s*`,
-      "i"
-    ),
-    ""
-  );
-
-  // Fallbacks
-  s = s.replace(/^\s*\[\d{2}:\d{2}\]\s*[-–]\s*/i, ""); // só hora
-  return s.trim();
-}
-
-/* =========================================
  * COMPONENTE DO HEADER ORDENÁVEL
  * ======================================= */
-
 function SortableHeader({
   label,
   active,
@@ -229,7 +71,7 @@ function SortableHeader({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-1 hover:text-white transition-colors w-full`}
+      className="inline-flex items-center justify-center gap-1 hover:text-white transition-colors w-full"
       title={active ? `Ordenado por ${label} (${dir})` : `Ordenar por ${label}`}
       aria-label={active ? `Ordenado por ${label} (${dir})` : `Ordenar por ${label}`}
     >
@@ -239,7 +81,6 @@ function SortableHeader({
         className={[
           "text-[12px] transition-transform",
           active ? "opacity-100" : "opacity-60",
-          // gira 180° quando estiver em DESC para indicar direção
           active && dir === "desc" ? "rotate-180" : "rotate-0",
         ].join(" ")}
       />
@@ -277,6 +118,8 @@ export default function Incidentes() {
 
   // URL do IRIS (para link no ID)
   const [irisUrl, setIrisUrl] = useState<string>("");
+  const [tenantOwner, setTenantOwner] = useState<string>("");
+
 
   // Mapa de status → Icon/cor
   const STATUS_MAP: Record<string, StatusMeta> = {
@@ -320,11 +163,23 @@ export default function Incidentes() {
     return 0;
   }
 
-  // Deriva severidade de um incidente (igual ao que mostramos na linha)
+  // Deriva severidade de um incidente
   function nivelDoIncidente(i: PageIncidente) {
+    // 1) tenta pelo regex existente
     const manual = detectarNivelPorNome(i.case_name || "");
-    return manual || mapNivelPorClassificationId(i.classification_id as any);
+    if (manual) return manual;
+
+    // 2) fallback: busca palavra-chave no título
+    const nome = (i.case_name || "").toLowerCase();
+    if (nome.includes("crít")) return "Crítico";
+    if (nome.includes("alto") || nome.includes("alta")) return "Alto";
+    if (nome.includes("méd") || nome.includes("media")) return "Médio";
+    if (nome.includes("baix")) return "Baixo";
+
+    // 3) fallback final → classification_id
+    return mapNivelPorClassificationId(i.classification_id as any);
   }
+
 
   // Ordem de status (para rankear ao ordenar)
   const STATUS_ORDER: Record<string, number> = {
@@ -369,6 +224,7 @@ export default function Incidentes() {
         // 1) Busca tenant e salva iris_url
         const tenant = await getTenant();
         setIrisUrl(tenant?.iris_url || ""); // ← usado no link do ID
+        setTenantOwner(normaliza(tenant?.owner_name)); // salva o owner_name do tenant
 
         const alvoOwnerTenant = normaliza(tenant?.owner_name);
         const alvoOwnerExtra = normaliza(OWNER_EXTRA);
@@ -431,6 +287,17 @@ export default function Incidentes() {
   const total = dados.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const clampPage = (p: number) => Math.min(Math.max(1, p), totalPages);
+
+  // Subconjuntos para os gráficos
+  const abertos = dados.filter((i) => (i.state_name || "").toLowerCase() === "open");
+  const fechados = dados.filter((i) => (i.state_name || "").toLowerCase() === "closed");
+  const atribuidos = dados.filter(
+    (i) => normaliza(extractOwner(i)) === tenantOwner
+  );
+  const naoAtribuidos = dados.filter(
+    (i) => (i.state_name || "").toLowerCase() === "open" && !extractOwner(i)
+  );
+
 
   // Se o total de páginas muda, ajusta a página atual se necessário
   useEffect(() => {
@@ -509,6 +376,53 @@ export default function Incidentes() {
    * --------------------------------------- */
   return (
     <LayoutModel titulo="Incidentes">
+      {/* Gráficos de resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <GraficoDonutIncidentes
+          titulo={
+            <span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <FaLockOpen className="text-gray-400" />
+              Incidentes abertos
+            </span>
+          }
+          total={abertos.length}
+          valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
+        />
+        <GraficoDonutIncidentes
+          titulo={
+            <span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <HiLockClosed className="text-gray-400" />
+              Incidentes fechados
+            </span>
+          }
+          total={fechados.length}
+          valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
+        />
+        <GraficoDonutIncidentes
+          titulo={
+            <span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <FaRegCheckCircle className="text-gray-400" />
+              Incidentes atribuídos
+            </span>
+          }
+          total={atribuidos.length}
+          valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
+        />
+        <GraficoDonutIncidentes
+          titulo={
+            <span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <VscError className="text-gray-400" />
+              Incidentes não atribuídos
+            </span>
+          }
+          total={naoAtribuidos.length}
+          valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
+        />
+      </div>
       <section className="cards p-6 rounded-2xl shadow-lg">
         {/* Header */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
