@@ -10,4 +10,5 @@ export type PageIncidente = ServiceIncidente & {
   case_close_date?: string;
   case_uuid?: string;
   case_soc_id?: string;
+  severity?: string;
 };

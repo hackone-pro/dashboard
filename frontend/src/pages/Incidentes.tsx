@@ -165,20 +165,30 @@ export default function Incidentes() {
 
   // Deriva severidade de um incidente
   function nivelDoIncidente(i: PageIncidente) {
-    // 1) tenta pelo regex existente
+    // 1) Se já veio do IRIS
+    if (i.severity) {
+      const s = i.severity.toLowerCase();
+      if (s.includes("crit")) return "Crítico";
+      if (s.includes("high") || s.includes("alto")) return "Alto";
+      if (s.includes("med")) return "Médio";
+      if (s.includes("low") || s.includes("baix")) return "Baixo";
+    }
+
+    // 2) tenta pelo regex do nome
     const manual = detectarNivelPorNome(i.case_name || "");
     if (manual) return manual;
 
-    // 2) fallback: busca palavra-chave no título
+    // 3) fallback pelo título
     const nome = (i.case_name || "").toLowerCase();
     if (nome.includes("crít")) return "Crítico";
     if (nome.includes("alto") || nome.includes("alta")) return "Alto";
     if (nome.includes("méd") || nome.includes("media")) return "Médio";
     if (nome.includes("baix")) return "Baixo";
 
-    // 3) fallback final → classification_id
+    // 4) fallback final → classification_id
     return mapNivelPorClassificationId(i.classification_id as any);
   }
+
 
 
   // Ordem de status (para rankear ao ordenar)
@@ -224,7 +234,7 @@ export default function Incidentes() {
         // 1) Busca tenant e salva iris_url
         const tenant = await getTenant();
         setIrisUrl(tenant?.iris_url || ""); // ← usado no link do ID
-        setTenantOwner(normaliza(tenant?.owner_name)); // salva o owner_name do tenant
+        setTenantOwner(tenant?.owner_name || "");
 
         const alvoOwnerTenant = normaliza(tenant?.owner_name);
         const alvoOwnerExtra = normaliza(OWNER_EXTRA);
@@ -239,25 +249,17 @@ export default function Incidentes() {
 
         // 2) Busca incidentes (pode vir em diferentes formatos)
         const listaBruta = await getTodosCasos(token || "");
-        const src: any = listaBruta as any;
-        const lista: PageIncidente[] = Array.isArray(src)
-          ? src
-          : Array.isArray(src?.data)
-            ? src.data
-            : Array.isArray(src?.results)
-              ? src.results
-              : Array.isArray(src?.items)
-                ? src.items
-                : [];
 
-        // 3) Filtro final: (owner = você OU automation_n8n) E (client_name = tenant.cliente_name)
+        // garante que pega sempre o array correto
+        const lista: PageIncidente[] = await getTodosCasos(token || "");
+
+
+        // 3) Filtro final: apenas garante que o incidente pertence ao cliente do tenant
         const doOwnerECliente = lista.filter((i) => {
-          const dono = normaliza(extractOwner(i));
           const clienteIncidente = normaliza(extractIncidentClient(i));
-          const matchOwner = dono === alvoOwnerTenant || dono === alvoOwnerExtra;
-          const matchCliente = clienteIncidente === alvoClienteTenant;
-          return matchOwner && matchCliente;
+          return clienteIncidente === alvoClienteTenant;
         });
+
 
         // 4) Filtro por período
         const filtrado = filtrarPorDias(doOwnerECliente, filtroDias);
@@ -291,12 +293,19 @@ export default function Incidentes() {
   // Subconjuntos para os gráficos
   const abertos = dados.filter((i) => (i.state_name || "").toLowerCase() === "open");
   const fechados = dados.filter((i) => (i.state_name || "").toLowerCase() === "closed");
+
   const atribuidos = dados.filter(
-    (i) => normaliza(extractOwner(i)) === tenantOwner
+    (i) =>
+      (i.state_name || "").toLowerCase() === "open" &&
+      normaliza(extractOwner(i)) === tenantOwner
   );
+
   const naoAtribuidos = dados.filter(
-    (i) => (i.state_name || "").toLowerCase() === "open" && !extractOwner(i)
+    (i) =>
+      (i.state_name || "").toLowerCase() === "open" &&
+      normaliza(extractOwner(i)) !== tenantOwner
   );
+
 
 
   // Se o total de páginas muda, ajusta a página atual se necessário
