@@ -25,28 +25,31 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-
-      const tenant = await strapi.entityService.findMany('api::tenant.tenant', {
+  
+      const dias = ctx.query.dias || "7"; // 👈 adiciona o filtro
+  
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: {
           users_permissions_users: { id: userId },
           ativa: true,
         },
-        populate: ['users_permissions_users'],
+        populate: ["users_permissions_users"],
       });
-
+  
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-
+  
       const tenantData = tenant[0];
-      const resultado = await buscarSeveridadeIndexer(tenantData);
+      const resultado = await buscarSeveridadeIndexer(tenantData, dias); // 👈 passa o segundo argumento
+  
       return ctx.send({ severidade: resultado });
-
     } catch (error) {
       console.error("Erro ao buscar severidade:", error);
       return ctx.internalServerError("Erro ao consultar severidade");
     }
   },
+  
 
   async buscarTenantPorUsuario(ctx) {
     try {
@@ -579,6 +582,82 @@ export default {
       return ctx.internalServerError("Erro ao consultar top users");
     }
   },
-  
+
+  async riskLevel(ctx) {
+  try {
+    const userId = ctx.state.user?.id;
+    if (!userId) return ctx.unauthorized("Usuário não autenticado");
+
+    // 🔹 Global (fallback)
+    const diasGlobal = ctx.query.dias || "1";
+
+    // 🔹 Overrides individuais
+    const diasFirewall = ctx.query.firewall || diasGlobal;
+    const diasAgentes = ctx.query.agentes || diasGlobal;
+    const diasSeveridade = ctx.query.severidade || diasGlobal;
+
+    const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+      filters: { users_permissions_users: { id: userId }, ativa: true },
+      populate: ["users_permissions_users"],
+    });
+
+    if (!tenant || tenant.length === 0) {
+      return ctx.notFound("Tenant não encontrado ou inativo");
+    }
+
+    const tenantData = tenant[0];
+
+    // 🔹 Buscar dados de cada fonte, já respeitando os filtros individuais
+    const [fw, agentes, severidade] = await Promise.all([
+      buscarTopGeradoresFirewall(tenantData, diasFirewall),
+      buscarTopAgentes(tenantData, diasAgentes),
+      buscarSeveridadeIndexer(tenantData, diasSeveridade),
+    ]);
+
+    // 🔹 Somar severidades
+    let baixo = severidade.baixo,
+      medio = severidade.medio,
+      alto = severidade.alto,
+      critico = severidade.critico,
+      total = severidade.total;
+
+    fw.forEach((item) => {
+      baixo += item.severidade.baixo;
+      medio += item.severidade.medio;
+      alto += item.severidade.alto;
+      critico += item.severidade.critico;
+      total += item.total;
+    });
+
+    agentes.forEach((agente) => {
+      agente.severidades.forEach((s) => {
+        if (s.key <= 6) baixo += s.doc_count;
+        else if (s.key <= 11) medio += s.doc_count;
+        else if (s.key <= 14) alto += s.doc_count;
+        else critico += s.doc_count;
+        total += s.doc_count;
+      });
+    });
+
+    // 🔹 Calcular índice global
+    const risco =
+      total > 0
+        ? ((baixo * 0.2 + medio * 0.6 + alto * 0.87 + critico * 1.0) / total) *
+          100
+        : 0;
+
+    return ctx.send({
+      severidades: { baixo, medio, alto, critico, total },
+      indiceRisco: parseFloat(risco.toFixed(2)),
+
+      // 👇 útil pra debug
+      filtrosUsados: { diasGlobal, diasFirewall, diasAgentes, diasSeveridade },
+    });
+  } catch (error) {
+    console.error("Erro ao calcular risk level:", error);
+    return ctx.internalServerError("Erro ao calcular risk level");
+  }
+}
+
   
 }

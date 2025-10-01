@@ -75,22 +75,20 @@ function customerFilter(clientName: string) {
 
 /* ==================== FUNÇÕES ==================== */
 
-export async function buscarSeveridadeIndexer(tenant) {
+export async function buscarSeveridadeIndexer(tenant, dias: string) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const timeFilter =
+    dias === "todos"
+      ? { match_all: {} }
+      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
 
   const body = {
     size: 0,
     query: {
       bool: {
-        must: [
-          customerFilter(clientName),
-          {
-            range: {
-              "@timestamp": { gte: "now-24h", lte: "now" },
-            },
-          },
-        ],
+        must: [customerFilter(clientName), timeFilter],
       },
     },
     aggs: {
@@ -111,11 +109,25 @@ export async function buscarSeveridadeIndexer(tenant) {
   const response = await axios.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
-    { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
   );
 
-  return response.data.aggregations?.severidade?.buckets || [];
+  const buckets = response.data?.aggregations?.severidade?.buckets || [];
+  const get = (k: string) =>
+    buckets.find((x: any) => x.key === k)?.doc_count || 0;
+
+  return {
+    baixo: get("Low"),
+    medio: get("Medium"),
+    alto: get("High"),
+    critico: get("Critical"),
+    total: buckets.reduce((acc, b) => acc + (b.doc_count || 0), 0),
+  };
 }
+
 
 export async function buscarTopGeradoresFirewall(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
@@ -261,23 +273,42 @@ export async function buscarTopAgentesCis(tenant, dias) {
 
   const timeFilter =
     dias === "todos"
-      ? { match_all: {} }
-      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
+      ? null
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        };
 
   const body = {
     size: 0,
     query: {
       bool: {
-        must: [
-          timeFilter, // ⬅️ mantemos só o filtro de tempo
-          { term: { "rule.groups": "sca" } } // ⬅️ e o filtro de grupo
+        must: [],
+        filter: [
+          { match_all: {} },
+          { match_phrase: { customer: clientName } },
+          { term: { "rule.groups": "sca" } },
+          { term: { "data.sca.type": "summary" } }, // só pega resumo
+          ...(timeFilter ? [timeFilter] : []),
         ],
       },
     },
     aggs: {
       agentes: {
-        terms: { field: "agent.name", size: 14, order: { media_score: "asc" } },
-        aggs: { media_score: { avg: { field: "rule.level" } } },
+        terms: { field: "agent.name", size: 20 },
+        aggs: {
+          ultimos_summary: {
+            top_hits: {
+              _source: ["agent.name", "data.sca"],
+              size: 1,
+              sort: [{ "@timestamp": { order: "desc" } }],
+            },
+          },
+        },
       },
     },
   };
@@ -291,20 +322,28 @@ export async function buscarTopAgentesCis(tenant, dias) {
     }
   );
 
-  return (response.data.aggregations?.agentes?.buckets || []).map((b) => {
-    const media = Number(b?.media_score?.value ?? 0);
-    const score_percent = Math.max(
-      0,
-      Math.min(100, Math.round((media / 15) * 100))
-    );
+  const buckets = response.data.aggregations?.agentes?.buckets ?? [];
+
+  return buckets.map((b) => {
+    const hit = b.ultimos_summary.hits.hits[0]?._source;
+    const sca = hit?.data?.sca ?? {};
+
+    const scoreWazuh = Number(sca.score ?? 0);
+
     return {
-      agente: b.key,
+      agente: b.key,                  // 👈 mantém o padrão antigo
       total_eventos: b.doc_count,
-      media_score: media,
-      score_cis_percent: score_percent,
+      score: scoreWazuh,              // valor bruto do Wazuh
+      total_checks: Number(sca.total_checks ?? 0),
+      passed: Number(sca.passed ?? 0),
+      failed: Number(sca.failed ?? 0),
+      policy: sca.policy ?? "Desconhecida",
+      score_cis_percent: scoreWazuh,  // 👈 devolve o score do Wazuh como %
     };
   });
 }
+
+
 
 
 export async function buscarTopPaisesAtaque(tenant, dias: string) {

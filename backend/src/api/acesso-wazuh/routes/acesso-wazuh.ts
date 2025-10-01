@@ -125,7 +125,13 @@ export default {
       path: "/acesso/wazuh/top-users",
       handler: "acesso-wazuh.topUsers",
       config: { policies: [] },
-    }
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/risklevel",
+      handler: "acesso-wazuh.riskLevel",
+      config: { policies: [] },
+    },
     
   ],
 };
