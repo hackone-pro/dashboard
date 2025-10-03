@@ -49,8 +49,8 @@ const TopUsersCard = forwardRef<TopUsersCardRef>((props, ref) => {
         <thead>
           <tr className="border-b border-gray-700 text-gray-400 text-xs uppercase">
             <th className="px-3 py-2">Usuário</th>
-            <th className="px-3 py-2 text-center">ID do Agente</th>
-            <th className="px-3 py-2 text-center">Nome do Agente</th>
+            <th className="px-3 py-2 text-center">ID do Host</th>
+            <th className="px-3 py-2 text-center">Nome do Host</th>
             <th className="px-3 py-2 text-right">Contagem</th>
           </tr>
         </thead>

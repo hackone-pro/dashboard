@@ -205,6 +205,29 @@ export default function Incidentes() {
   const [irisUrl, setIrisUrl] = useState("");
   const [tenantOwner, setTenantOwner] = useState("");
 
+  // Quando dados forem carregados, aplica o expandido via querystring
+  useEffect(() => {
+    if (openFromQS && dados.length > 0) {
+      setExpandido(Number(openFromQS));
+    }
+  }, [openFromQS, dados]);
+
+  useEffect(() => {
+    if (openFromQS && dados.length > 0) {
+      const id = Number(openFromQS);
+      setExpandido(id);
+  
+      // scroll até o elemento
+      setTimeout(() => {
+        const el = document.getElementById(`incidente-${id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 300); // pequeno delay pra garantir render
+    }
+  }, [openFromQS, dados]);
+
+
   // Fetch dados
   useEffect(() => {
     let ativo = true;
@@ -293,12 +316,10 @@ export default function Incidentes() {
   );
 
   const atribuidos = dados.filter(i =>
-    (i.state_name || "").toLowerCase() !== "closed" &&
     normaliza(extractOwner(i)) === tenantOwner
   );
 
   const naoAtribuidos = dados.filter(i =>
-    (i.state_name || "").toLowerCase() !== "closed" &&
     normaliza(extractOwner(i)) !== tenantOwner
   );
 
@@ -396,7 +417,12 @@ export default function Incidentes() {
                 const StatusIcon = meta.Icon;
 
                 return (
-                  <div key={String(id)} className="group" data-case-id={String(id)}>
+                  <div
+                    key={String(id)}
+                    id={`incidente-${id}`}
+                    className="group"
+                    data-case-id={String(id)}
+                  >
                     {/* Linha */}
                     <div className={`grid grid-cols-12 px-5 py-4 items-center ${aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"} transition-colors`}>
                       <div className="col-span-1 text-center text-sm text-gray-400 truncate">

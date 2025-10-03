@@ -193,6 +193,7 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
                           : [f.origem.cidade, f.origem.pais].filter(Boolean).join(" - ") || "Desconhecido"}
                       </div>
                       {/* <div><b>Total:</b> {f.total}</div> */}
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">IP:</b> {f.origem.ip}</div>
                       <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Porta:</b> {f.origem.srcport || "N/A"}</div>
                       <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Serviço:</b> {f.origem.servico || "N/A"}</div>
                       <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Interface:</b> {f.origem.interface || "N/A"}</div>

@@ -43,11 +43,11 @@ export default function RiskLevel() {
         <div className="flex flex-wrap justify-between items-start mb-6">
           <div className="flex flex-col">
             <h2 className="text-white text-md font-medium"> Nível de alertas</h2>
-            <span className="text-white">{formatador.format(totalAlertas)} alertas totais</span>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
             <h3 className="text-white text-base font-semibold">
+              <span className="text-white">{formatador.format(totalAlertas)} alertas totais</span>
 
             </h3>
 

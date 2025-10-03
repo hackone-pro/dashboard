@@ -42,7 +42,7 @@ export default function TopAgentsCard({ dias }: TopAgentsCardProps) {
   return (
     <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300">
       <div className="flex justify-between items-center mb-5">
-        <h3 className="text-sm text-white">Top Agentes</h3>
+        <h3 className="text-sm text-white">Top Hosts</h3>
         {/* 🔹 Select interno opcional */}
         <select
           className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
@@ -77,7 +77,7 @@ export default function TopAgentsCard({ dias }: TopAgentsCardProps) {
           <table className="w-full text-sm text-gray-300 border-collapse py-3">
             <thead>
               <tr className="text-xs text-gray-400 top-agents">
-                <th className="text-left w-[40%] pl-2 pb-3">Agentes</th>
+                <th className="text-left w-[40%] pl-2 pb-3">Hosts</th>
                 <th className="w-[15%] text-center">
                   <span className="text-pink-500 badge-pink badge rounded-md py-0.5 px-2">
                     Crítico

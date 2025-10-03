@@ -53,7 +53,8 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
   }, {} as Record<string, { modified: number; added: number; deleted: number }>);
 
   // Paleta fixa para 5 agentes
-  const cores = ["#B91C1C", "#C2410C", "#CA8A04", "#92400E", "#4B5563"];
+  const cores = ["#6B7280", "#A8A29E", "#D6D3D1", "#78716C", "#57534E"];
+
 
 
   if (erro) {

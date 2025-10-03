@@ -46,7 +46,7 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
   const labels = top5.map((r) => r.label || "Desconhecido");
   const series = top5.map((r) => Number.isFinite(r.value) ? r.value : 0);
 
-  const cores = ["#1DD69A", "#6A55DC", "#EC4899", "#FACC15", "#3B82F6"];
+  const cores = ["#6A55DC", "#1DD69A", "#EC4899", "#FACC15", "#3B82F6"];
 
   if (erro) {
     return (

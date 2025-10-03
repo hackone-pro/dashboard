@@ -39,6 +39,30 @@ function firstText(node: React.ReactNode): string {
   return "";
 }
 
+// Função que percorre recursivamente os children e limpa apenas strings
+function cleanChildren(children: React.ReactNode): React.ReactNode {
+  if (typeof children === "string") {
+    return children
+      .replace(/,+/g, ",")      // mantém vírgula no começo, mas remove duplicadas (",," → ",")
+      .replace(/\s+/g, " ");    // normaliza espaços
+  }
+
+  if (Array.isArray(children)) {
+    return children.map((c) => cleanChildren(c));
+  }
+
+  if (React.isValidElement(children)) {
+    const el = children as React.ReactElement<{ children?: React.ReactNode }>;
+    return React.cloneElement(el, {
+      children: cleanChildren(el.props.children),
+    });
+  }
+
+  return children;
+}
+
+
+
 type Props = { texto?: string | null };
 
 export default function DescricaoFormatada({ texto }: Props) {
@@ -64,7 +88,7 @@ export default function DescricaoFormatada({ texto }: Props) {
         h3: ({ children }: { children: React.ReactNode }) => {
           const title = firstText(children);
           return (
-            <h3 className="text-sm text-white font-semibold mt-5 mb-2 flex items-center gap-2">
+            <h3 className="text-md text-white font-semibold mt-5 mb-2 flex items-center">
               <span>{iconFor(title)}</span>
               {children}
             </h3>
@@ -76,19 +100,21 @@ export default function DescricaoFormatada({ texto }: Props) {
         ),
         // @ts-ignore
         p: ({ children }: { children: React.ReactNode }) => (
-          <p className="text-sm text-gray-300 leading-relaxed">{children}</p>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            {cleanChildren(children)}
+          </p>
         ),
         // @ts-ignore
         ul: ({ children }: { children: React.ReactNode }) => (
-          <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">{children}</ul>
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-400">{children}</ul>
         ),
         // @ts-ignore
         ol: ({ children }: { children: React.ReactNode }) => (
-          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">{children}</ol>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-400">{children}</ol>
         ),
         // @ts-ignore
         li: ({ children }: { children: React.ReactNode }) => (
-          <li className="text-sm case-color text-gray-300">{children}</li>
+          <li className="text-sm text-gray-400" style={{color:"#99a1af"}}>{cleanChildren(children)}</li>
         ),
         a: (props) => (
           <a
@@ -99,14 +125,9 @@ export default function DescricaoFormatada({ texto }: Props) {
           />
         ),
         // @ts-ignore
-        code: ({ inline, children }: { inline?: boolean; children: React.ReactNode }) =>
-          inline ? (
-            <code className="px-1.5 py-0.5 rounded bg-[#ffffff12] text-purple-200">{children}</code>
-          ) : (
-            <pre className="p-3 bg-[#110f24] rounded-md overflow-auto text-sm">
-              <code className="text-gray-300">{children}</code>
-            </pre>
-          ),
+        code: ({ children }: { children: React.ReactNode }) => (
+          <span className="text-sm text-gray-300">{cleanChildren(children)}</span>
+        ),
         hr: () => <hr className="my-4 border-[#ffffff12]" />,
       }}
     >

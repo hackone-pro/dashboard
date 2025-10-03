@@ -64,7 +64,7 @@ export default function ArchivesIntegrity() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
                     {/* Coluna 1 - Top 5 agentes */}
                     <div className="cards rounded-xl p-6">
-                        <h4 className="text-white text-sm font-semibold mb-4">Top 5 Agentes</h4>
+                        <h4 className="text-white text-sm font-semibold mb-4">Top 5 Hosts</h4>
                         <div className="h-64 flex items-center justify-center rounded-xl">
                             <TopAgentsDonutCard ref={topAgentsRef} />
                         </div>
@@ -72,7 +72,7 @@ export default function ArchivesIntegrity() {
 
                     {/* Coluna 2 e 3 - Resumo de eventos */}
                     <div className="cards rounded-xl p-6 md:col-span-2">
-                        <h4 className="text-white text-sm font-semibold mb-4">Resumo de eventos</h4>
+                        <h4 className="text-white text-sm font-semibold mb-4">Resumo de Eventos</h4>
                         <EventosSummaryCard ref={eventosSummaryRef} />
                     </div>
                 </div>
@@ -83,13 +83,13 @@ export default function ArchivesIntegrity() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
                     {/* Coluna 1 - Distribuição de regras */}
                     <div className="cards rounded-xl p-6">
-                        <h4 className="text-white text-sm font-semibold mb-4">Distribuição de regras</h4>
+                        <h4 className="text-white text-sm font-semibold mb-4">Distribuição de Regras</h4>
                         <RuleDistributionCard ref={ruleDistributionRef} />
                     </div>
 
                     {/* Coluna 2 - Distribuição de ações */}
                     <div className="cards rounded-xl p-6">
-                        <h4 className="text-white text-sm font-semibold mb-4">Distribuição de ações</h4>
+                        <h4 className="text-white text-sm font-semibold mb-4">Distribuição de Ações</h4>
                         <DistribuicaoAcoesCard ref={distribuicoesAcoesRef} />
                     </div>
 
