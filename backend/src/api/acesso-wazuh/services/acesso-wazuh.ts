@@ -387,7 +387,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             },
           },
         ],
-        filter: [{ range: { "rule.level": { gte: 2 } } }],
+        // filter: [{ range: { "rule.level": { gte: 2 } } }],
       },
     },
     aggs: {
