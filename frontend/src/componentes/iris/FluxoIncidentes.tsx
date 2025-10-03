@@ -24,7 +24,7 @@ export default function FluxoIncidentesIris({ token }: Props) {
   const [totalAtribuidos, setTotalAtribuidos] = useState(0);
   const [totalCasos, setTotalCasos] = useState(0);
   const [filtroDias, setFiltroDias] = useState(0); // 👈 0 = Todos
-
+  
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
@@ -69,8 +69,8 @@ export default function FluxoIncidentesIris({ token }: Props) {
         setTotalAbertos(abertos);
         setTotalAtribuidos(atribuidos);
         setTotalCasos(totalCliente);
-
-        const agrupado = agruparPorDia(dataFiltrada, tenant.owner_name);
+        
+        const agrupado = agruparPorDia(dataFiltrada, tenant.owner_name, filtroDias);
         setSeries(agrupado.series);
         setCategoriasX(agrupado.categoriasX);
 
@@ -190,7 +190,7 @@ export default function FluxoIncidentesIris({ token }: Props) {
   );
 }
 
-function agruparPorDia(incidentes: Incidente[], ownerName: string) {
+function agruparPorDia(incidentes: Incidente[], ownerName: string, dias: number) {
   const contagemAbertos: Record<string, number> = {};
   const contagemAtribuidos: Record<string, number> = {};
 
@@ -210,17 +210,42 @@ function agruparPorDia(incidentes: Incidente[], ownerName: string) {
     }
   });
 
-  const todasDatas = Array.from(
-    new Set([...Object.keys(contagemAbertos), ...Object.keys(contagemAtribuidos)])
-  ).sort();
+  let diasOrdenados: string[];
 
-  const categoriasX = todasDatas.map((d) => {
+  if (dias === 0) {
+    // "Todos" → gera de min até hoje
+    const todasDatas = [
+      ...Object.keys(contagemAbertos),
+      ...Object.keys(contagemAtribuidos),
+    ];
+    const minData = todasDatas.length
+      ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
+      : new Date();
+    const hoje = new Date();
+
+    diasOrdenados = [];
+    let d = new Date(minData);
+    while (d <= hoje) {
+      diasOrdenados.push(d.toISOString().slice(0, 10)); // yyyy-mm-dd
+      d.setDate(d.getDate() + 1);
+    }
+  } else {
+    // Últimos N dias
+    const hoje = new Date();
+    diasOrdenados = Array.from({ length: dias }).map((_, i) => {
+      const d = new Date(hoje);
+      d.setDate(hoje.getDate() - (dias - 1 - i));
+      return d.toISOString().slice(0, 10);
+    });
+  }
+
+  const categoriasX = diasOrdenados.map((d) => {
     const [ano, mes, dia] = d.split("-");
     return `${dia}/${mes}`;
   });
 
-  const dataAbertos = todasDatas.map((d) => contagemAbertos[d] || 0);
-  const dataAtribuidos = todasDatas.map((d) => contagemAtribuidos[d] || 0);
+  const dataAbertos = diasOrdenados.map((d) => contagemAbertos[d] || 0);
+  const dataAtribuidos = diasOrdenados.map((d) => contagemAtribuidos[d] || 0);
 
   return {
     categoriasX,
