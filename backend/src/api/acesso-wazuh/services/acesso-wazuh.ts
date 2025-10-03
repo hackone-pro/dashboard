@@ -432,9 +432,9 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             range: {
               field: "rule.level",
               ranges: [
-                { to: 7, key: "Baixo" },
-                { from: 7, to: 12, key: "Médio" },
-                { from: 12, to: 15, key: "Alto" },
+                { from: 0, to: 6, key: "Baixo" },
+                { from: 7, to: 11, key: "Médio" },
+                { from: 12, to: 14, key: "Alto" },
                 { from: 15, key: "Crítico" },
               ],
             },
@@ -445,7 +445,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
+    `${tenant.wazuh_url}/wazuh-archives-*/_search`,
     body,
     {
       headers: authHeader(tenant),

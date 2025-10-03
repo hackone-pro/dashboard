@@ -6,7 +6,7 @@ export type PaisItem = {
   severidades?: { key: string; doc_count: number }[];
 };
 
-export async function getTopPaises(dias: string = "7"): Promise<PaisItem[]> {
+export async function getTopPaises(dias: string = "30"): Promise<PaisItem[]> {
   const token = getToken();
 
   const url = `${import.meta.env.VITE_API_URL}/api/acesso/wazuh/top-paises?dias=${encodeURIComponent(
