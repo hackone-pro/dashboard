@@ -16,7 +16,7 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
     try {
       setCarregando(true);
       setErro(null);
-      const res = await getTopAgents("todos"); // default: 7 dias
+      const res = await getTopAgents("todos"); // 👈 default
       setDados(res);
     } catch (e: any) {
       setErro(e?.message ?? "Erro ao carregar dados de agentes");
@@ -33,18 +33,28 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
     carregar,
   }));
 
-  // Pega somente os Top 5
+  // 👉 Pega só os Top 5
   const top5 = useMemo(() => {
-    return [...dados]
-      .sort((a, b) => b.total_alertas - a.total_alertas)
-      .slice(0, 5);
+    return [...dados].sort((a, b) => b.total_alertas - a.total_alertas).slice(0, 5);
   }, [dados]);
 
-  const labels = top5.map((a) => a.agent_name || "Desconhecido");
+  const labels = top5.map((a) => a.agente || a.agent_name || "Desconhecido");
   const series = top5.map((a) => a.total_alertas);
 
+  // 👉 Extra para o tooltip
+  const tooltipExtra = top5.reduce((acc, a) => {
+    const nome = a.agente || a.agent_name || "Desconhecido";
+    acc[nome] = {
+      modified: a.modified ?? 0,
+      added: a.added ?? 0,
+      deleted: a.deleted ?? 0,
+    };
+    return acc;
+  }, {} as Record<string, { modified: number; added: number; deleted: number }>);
+
   // Paleta fixa para 5 agentes
-  const cores = ["#EC4899", "#A855F7", "#6A55DC", "#FACC15", "#1DD69A"];
+  const cores = ["#B91C1C", "#C2410C", "#CA8A04", "#92400E", "#4B5563"];
+
 
   if (erro) {
     return (
@@ -71,6 +81,7 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
           series={series}
           cores={cores}
           height={220}
+          tooltipExtra={tooltipExtra} // 👈 passa os extras
         />
       </div>
 

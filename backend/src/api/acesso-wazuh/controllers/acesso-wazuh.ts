@@ -17,17 +17,14 @@ import {
   buscarTopUsers
 } from '../services/acesso-wazuh';
 
-import { resolveCountryCoords } from '../../../utils/countryResolver';
-import { resolveIpCoords } from "../../../utils/geo";
-
 export default {
   async severidade(ctx) {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const dias = ctx.query.dias || "7"; // 👈 adiciona o filtro
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: {
           users_permissions_users: { id: userId },
@@ -35,21 +32,21 @@ export default {
         },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
       const resultado = await buscarSeveridadeIndexer(tenantData, dias); // 👈 passa o segundo argumento
-  
+
       return ctx.send({ severidade: resultado });
     } catch (error) {
       console.error("Erro ao buscar severidade:", error);
       return ctx.internalServerError("Erro ao consultar severidade");
     }
   },
-  
+
 
   async buscarTenantPorUsuario(ctx) {
     try {
@@ -196,9 +193,9 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const dias = ctx.query.dias || "7"; // "1","7","15","30","todos"
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: {
           users_permissions_users: { id: userId },
@@ -206,44 +203,50 @@ export default {
         },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
       const resultado = await buscarTopPaisesAtaque(tenantData, dias);
-  
+
       // Filtra apenas destinos (IPs atacados)
       const destinos = resultado.filter((p: any) => p.tipo === "destino");
-  
+
       // Cada origem dentro do destino gera um "flow"
       const flows = destinos.flatMap((dest: any) => {
         return (dest.origens || []).map((o: any) => {
-          // Origem → resolve via GeoIP
-          const origemCoords = resolveIpCoords(o.ip);
-          // Destino → resolve via GeoIP
-          const destinoCoords = resolveIpCoords(dest.destino);
-  
+          // Origem ainda precisa resolver coordenadas (se você não tem GeoLocation.src configurado)
           return {
             origem: {
               ip: o.ip,
-              pais: origemCoords?.country || null,
-              lat: origemCoords?.lat ?? null,
-              lng: origemCoords?.lng ?? null,
+              pais: o.pais || null,    
+              cidade: o.cidade || null,
+              lat: o.lat ?? null,      
+              lng: o.lng ?? null,
+              srcport: o.srcport ?? null,
+              servico: o.servico ?? null,
+              interface: o.interface ?? null,
             },
             destino: {
-              pais: destinoCoords?.country || null,
-              // agente: tenantData.wazuh_client_name || null, // 👈 pega do tenant
-              lat: destinoCoords?.lat ?? null,
-              lng: destinoCoords?.lng ?? null,
-            },      
+              ip: dest.destino,
+              pais: dest.pais || null,
+              cidade: dest.cidade || null,
+              lat: dest.lat ?? null,
+              lng: dest.lng ?? null,
+              agente: dest.agente || null,
+              dstintf: dest.dstintf || null,
+              dstport: dest.dstport || null,
+              devname: dest.devname || null,
+            },
             total: o.total,
             severidades: dest.severidades,
           };
+          
         });
       });
-  
+
       return ctx.send({ flows });
     } catch (error) {
       console.error("Erro ao buscar fluxos de ataque:", error);
@@ -281,58 +284,58 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
-  
+
       // lê query params (opcionais)
       const { by = "cve", size = "5", dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarTopVulnerabilidades(tenantData, {
         by: String(by) as any,
         size: Number(size),
         dias: String(dias),
       });
-  
+
       return ctx.send({ topVulnerabilidades: resultado });
     } catch (error) {
       console.error("Erro ao buscar top vulnerabilidades:", error);
       return ctx.internalServerError("Erro ao consultar top vulnerabilidades");
     }
   },
-  
+
   async topOSVulnerabilidades(ctx) {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
-  
+
       // query params opcionais
       const { size = "5", dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarTopOSVulnerabilidades(tenantData, {
         size: Number(size),
         dias: String(dias),
       });
-  
+
       return ctx.send({ topOS: resultado });
     } catch (error) {
       console.error("Erro ao buscar top OS vulnerabilidades:", error);
@@ -344,88 +347,88 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
-  
+
       // query params opcionais
       const { size = "5", dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarTopAgentesVulnerabilidades(tenantData, {
         size: Number(size),
         dias: String(dias),
       });
-  
+
       return ctx.send({ topAgentes: resultado });
     } catch (error) {
       console.error("Erro ao buscar top Agentes vulnerabilidades:", error);
       return ctx.internalServerError("Erro ao consultar top Agentes vulnerabilidades");
     }
   },
-  
+
   async topPackagesVulnerabilidades(ctx) {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
-  
+
       // query params opcionais
       const { size = "5", dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarTopPackagesVulnerabilidades(tenantData, {
         size: Number(size),
         dias: String(dias),
       });
-  
+
       return ctx.send({ topPackages: resultado });
     } catch (error) {
       console.error("Erro ao buscar top Packages vulnerabilidades:", error);
       return ctx.internalServerError("Erro ao consultar top Packages vulnerabilidades");
     }
   },
-  
+
   async topScoresVulnerabilidades(ctx) {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
-  
+
       // query params opcionais
       const { size = "5", dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarTopScoresVulnerabilidades(tenantData, {
         size: Number(size),
         dias: String(dias),
       });
-  
+
       return ctx.send({ topScores: resultado });
     } catch (error) {
       console.error("Erro ao buscar top scores de vulnerabilidades:", error);
@@ -439,26 +442,26 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       // busca tenant ativo do usuário
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
-  
+
       // query params opcionais
       const { dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarVulnerabilidadesPorAno(tenantData, {
         dias: String(dias),
       });
-  
+
       return ctx.send({ porAno: resultado });
     } catch (error) {
       console.error("Erro ao buscar vulnerabilidades por ano:", error);
@@ -467,57 +470,57 @@ export default {
       );
     }
   },
-  
+
   async overtimeEventos(ctx) {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
       const { dias = "todos" } = ctx.query;
-  
+
       // 👇 Corrigido para chamar a função certa
       const resultado = await buscarEventosOvertime(tenantData, {
         dias: String(dias),
       });
-  
+
       return ctx.send({ overtime: resultado });
     } catch (error) {
       console.error("Erro ao buscar eventos overtime:", error);
       return ctx.internalServerError("Erro ao consultar eventos overtime");
     }
   },
-  
+
   async eventosSummary(ctx) {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
       const { dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarEventosSummary(tenantData, {
         dias: String(dias),
       });
-  
+
       return ctx.send({ eventos: resultado });
     } catch (error) {
       console.error("Erro ao buscar eventos summary:", error);
@@ -529,23 +532,23 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-  
+
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
-  
+
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const tenantData = tenant[0];
       const { dias = "todos" } = ctx.query;
-  
+
       const resultado = await buscarRuleDistribution(tenantData, {
         dias: String(dias),
       });
-  
+
       return ctx.send({ rules: resultado });
     } catch (error) {
       console.error("Erro ao buscar rule distribution:", error);
@@ -584,80 +587,80 @@ export default {
   },
 
   async riskLevel(ctx) {
-  try {
-    const userId = ctx.state.user?.id;
-    if (!userId) return ctx.unauthorized("Usuário não autenticado");
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
 
-    // 🔹 Global (fallback)
-    const diasGlobal = ctx.query.dias || "1";
+      // 🔹 Global (fallback)
+      const diasGlobal = ctx.query.dias || "1";
 
-    // 🔹 Overrides individuais
-    const diasFirewall = ctx.query.firewall || diasGlobal;
-    const diasAgentes = ctx.query.agentes || diasGlobal;
-    const diasSeveridade = ctx.query.severidade || diasGlobal;
+      // 🔹 Overrides individuais
+      const diasFirewall = ctx.query.firewall || diasGlobal;
+      const diasAgentes = ctx.query.agentes || diasGlobal;
+      const diasSeveridade = ctx.query.severidade || diasGlobal;
 
-    const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
-      filters: { users_permissions_users: { id: userId }, ativa: true },
-      populate: ["users_permissions_users"],
-    });
-
-    if (!tenant || tenant.length === 0) {
-      return ctx.notFound("Tenant não encontrado ou inativo");
-    }
-
-    const tenantData = tenant[0];
-
-    // 🔹 Buscar dados de cada fonte, já respeitando os filtros individuais
-    const [fw, agentes, severidade] = await Promise.all([
-      buscarTopGeradoresFirewall(tenantData, diasFirewall),
-      buscarTopAgentes(tenantData, diasAgentes),
-      buscarSeveridadeIndexer(tenantData, diasSeveridade),
-    ]);
-
-    // 🔹 Somar severidades
-    let baixo = severidade.baixo,
-      medio = severidade.medio,
-      alto = severidade.alto,
-      critico = severidade.critico,
-      total = severidade.total;
-
-    fw.forEach((item) => {
-      baixo += item.severidade.baixo;
-      medio += item.severidade.medio;
-      alto += item.severidade.alto;
-      critico += item.severidade.critico;
-      total += item.total;
-    });
-
-    agentes.forEach((agente) => {
-      agente.severidades.forEach((s) => {
-        if (s.key <= 6) baixo += s.doc_count;
-        else if (s.key <= 11) medio += s.doc_count;
-        else if (s.key <= 14) alto += s.doc_count;
-        else critico += s.doc_count;
-        total += s.doc_count;
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: { users_permissions_users: { id: userId }, ativa: true },
+        populate: ["users_permissions_users"],
       });
-    });
 
-    // 🔹 Calcular índice global
-    const risco =
-      total > 0
-        ? ((baixo * 0.2 + medio * 0.6 + alto * 0.87 + critico * 1.0) / total) *
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+
+      const tenantData = tenant[0];
+
+      // 🔹 Buscar dados de cada fonte, já respeitando os filtros individuais
+      const [fw, agentes, severidade] = await Promise.all([
+        buscarTopGeradoresFirewall(tenantData, diasFirewall),
+        buscarTopAgentes(tenantData, diasAgentes),
+        buscarSeveridadeIndexer(tenantData, diasSeveridade),
+      ]);
+
+      // 🔹 Somar severidades
+      let baixo = severidade.baixo,
+        medio = severidade.medio,
+        alto = severidade.alto,
+        critico = severidade.critico,
+        total = severidade.total;
+
+      fw.forEach((item) => {
+        baixo += item.severidade.baixo;
+        medio += item.severidade.medio;
+        alto += item.severidade.alto;
+        critico += item.severidade.critico;
+        total += item.total;
+      });
+
+      agentes.forEach((agente) => {
+        agente.severidades.forEach((s) => {
+          if (s.key <= 6) baixo += s.doc_count;
+          else if (s.key <= 11) medio += s.doc_count;
+          else if (s.key <= 14) alto += s.doc_count;
+          else critico += s.doc_count;
+          total += s.doc_count;
+        });
+      });
+
+      // 🔹 Calcular índice global
+      const risco =
+        total > 0
+          ? ((baixo * 0.2 + medio * 0.6 + alto * 0.87 + critico * 1.0) / total) *
           100
-        : 0;
+          : 0;
 
-    return ctx.send({
-      severidades: { baixo, medio, alto, critico, total },
-      indiceRisco: parseFloat(risco.toFixed(2)),
+      return ctx.send({
+        severidades: { baixo, medio, alto, critico, total },
+        indiceRisco: parseFloat(risco.toFixed(2)),
 
-      // 👇 útil pra debug
-      filtrosUsados: { diasGlobal, diasFirewall, diasAgentes, diasSeveridade },
-    });
-  } catch (error) {
-    console.error("Erro ao calcular risk level:", error);
-    return ctx.internalServerError("Erro ao calcular risk level");
+        // 👇 útil pra debug
+        filtrosUsados: { diasGlobal, diasFirewall, diasAgentes, diasSeveridade },
+      });
+    } catch (error) {
+      console.error("Erro ao calcular risk level:", error);
+      return ctx.internalServerError("Erro ao calcular risk level");
+    }
   }
-}
 
-  
+
 }

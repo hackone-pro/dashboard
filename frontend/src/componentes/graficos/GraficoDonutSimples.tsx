@@ -6,7 +6,9 @@ export interface Props {
   series: number[];
   cores?: string[];
   height?: number;
-  tituloDiagonal?: string; // 👈 novo prop
+  tituloDiagonal?: string;
+  // 👇 Novo: dados extras opcionais por label
+  tooltipExtra?: Record<string, { modified: number; added: number; deleted: number }>;
 }
 
 export default function GraficoDonutSimples({
@@ -15,6 +17,7 @@ export default function GraficoDonutSimples({
   cores,
   height = 200,
   tituloDiagonal,
+  tooltipExtra,
 }: Props) {
   const options: ApexCharts.ApexOptions = {
     chart: {
@@ -25,6 +28,27 @@ export default function GraficoDonutSimples({
     colors: cores,
     legend: { show: false },
     dataLabels: { enabled: false },
+    tooltip: {
+      custom: ({ series, seriesIndex, w }) => {
+        const label = w.globals.labels[seriesIndex];
+        const value = series[seriesIndex];
+        const extra = tooltipExtra?.[label];
+
+        return `
+          <div style="padding:6px; font-size:12px">
+            <strong>${label}</strong><br/>
+            Total: ${value}
+            ${
+              extra
+                ? `<br/>Modificado: ${extra.modified}
+                   <br/>Adicionado: ${extra.added}
+                   <br/>Deletado: ${extra.deleted}`
+                : ""
+            }
+          </div>
+        `;
+      },
+    },
     plotOptions: {
       pie: {
         donut: {

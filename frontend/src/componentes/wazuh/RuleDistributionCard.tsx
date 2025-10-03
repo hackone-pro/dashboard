@@ -46,7 +46,10 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
   const series = top5.map((r) => r.value);
 
   // Paleta fixa para 5 regras
-  const cores = ["#EC4899", "#A855F7", "#6A55DC", "#FACC15", "#1DD69A"];
+  const cores = ["#78350F", "#A16207", "#EAB308", "#854D0E", "#A3A3A3"];
+
+
+
 
   if (erro) {
     return (

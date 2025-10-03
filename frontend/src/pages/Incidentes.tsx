@@ -1,15 +1,14 @@
 // src/pages/Incidentes.tsx
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import LayoutModel from "../componentes/LayoutModel";
 import DescricaoFormatada from "../componentes/iris/DescricaoFormatada";
 import GraficoDonutIncidentes from "../componentes/graficos/GraficoDonutIncidentes";
 
 import { getTenant } from "../services/wazuh/tenant.service";
-import { getTodosCasos, Incidente as ServiceIncidente } from "../services/iris/cases.service";
+import { getTodosCasos } from "../services/iris/cases.service";
 import { getToken } from "../utils/auth";
-import { useSearchParams } from "react-router-dom";
 
-import type { IconType } from "react-icons";
 import { GoGraph } from "react-icons/go";
 import { RiQuestionLine, RiProgress5Line } from "react-icons/ri";
 import { FaLockOpen, FaRegCheckCircle, FaSort } from "react-icons/fa";
@@ -35,37 +34,98 @@ import {
   sentenceCase,
 } from "../utils/incidentes/helpers";
 
+import type { IconType } from "react-icons";
 import type { PageIncidente } from "../types/incidentes.types";
 
 /* =========================================
  * CONSTANTES & TYPES
  * ======================================= */
-
-const OWNER_EXTRA = "Inteligencia_Artificial";
 const PAGE_SIZE = 10;
 
 type SortKey = "id" | "data" | "severidade" | "status";
 type SortDir = "asc" | "desc";
 
-type StatusMeta = {
-  label: string;
-  Icon: IconType;
-  color: string;
+type StatusMeta = { label: string; Icon: IconType; color: string };
+
+const STATUS_MAP: Record<string, StatusMeta> = {
+  open: { label: "Aberto", Icon: FaLockOpen, color: "text-gray-500" },
+  "in progress": { label: "Em progresso", Icon: RiProgress5Line, color: "text-gray-500" },
+  containment: { label: "Contenção", Icon: IoStopCircleOutline, color: "text-gray-500" },
+  eradication: { label: "Erradicação", Icon: MdOutlineGppBad, color: "text-gray-500" },
+  recovery: { label: "Recuperação", Icon: MdOutlineHealthAndSafety, color: "text-gray-500" },
+  "post-incident": { label: "Pós-incidente", Icon: GrTroubleshoot, color: "text-gray-500" },
+  reporting: { label: "Reportando", Icon: TbMessageReport, color: "text-gray-500" },
+  closed: { label: "Fechado", Icon: FaRegCheckCircle, color: "text-gray-500" },
+  unspecified: { label: "Não especificado", Icon: RiQuestionLine, color: "text-gray-500" },
+};
+
+const DEFAULT_STATUS: StatusMeta = { label: "—", Icon: RiQuestionLine, color: "text-gray-400" };
+
+const STATUS_ORDER: Record<string, number> = {
+  open: 1,
+  "in progress": 2,
+  containment: 3,
+  eradication: 4,
+  recovery: 5,
+  "post-incident": 6,
+  reporting: 7,
+  closed: 8,
+  unspecified: 9,
 };
 
 /* =========================================
- * COMPONENTE DO HEADER ORDENÁVEL
+ * HELPERS
  * ======================================= */
-function SortableHeader({
-  label,
-  active,
-  dir,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  dir: "asc" | "desc";
-  onClick: () => void;
+function getStatusMeta(s?: string): StatusMeta {
+  const v = (s ?? "").toLowerCase().trim();
+  return STATUS_MAP[v] ?? { ...DEFAULT_STATUS, label: s || "—" };
+}
+
+function mapNivelPorClassificationId(
+  id?: number | null
+): "Crítico" | "Alto" | "Médio" | "Baixo" {
+  if (id == null) return "Baixo";
+  if ([1, 2, 11, 12, 13, 25, 32, 33, 34, 35, 36].includes(id)) return "Baixo";
+  if ([3, 4, 5, 14, 15, 22, 30, 31].includes(id)) return "Médio";
+  if ([6, 7, 8, 9, 10, 16, 23, 26, 27, 28, 29].includes(id)) return "Alto";
+  if ([17, 18, 19, 20, 21, 24].includes(id)) return "Crítico";
+  return "Baixo";
+}
+
+function severidadeRank(nivel: string) {
+  const n = (nivel || "").toLowerCase();
+  if (n.startsWith("crít")) return 4;
+  if (n.startsWith("alto") || n.startsWith("alta")) return 3;
+  if (n.startsWith("méd") || n.startsWith("med")) return 2;
+  if (n.startsWith("baix")) return 1;
+  return 0;
+}
+
+function nivelDoIncidente(i: PageIncidente) {
+  if (i.severity) {
+    const s = i.severity.toLowerCase();
+    if (s.includes("crit")) return "Crítico";
+    if (s.includes("high") || s.includes("alto")) return "Alto";
+    if (s.includes("med")) return "Médio";
+    if (s.includes("low") || s.includes("baix")) return "Baixo";
+  }
+  const manual = detectarNivelPorNome(i.case_name || "");
+  if (manual) return manual;
+
+  const nome = (i.case_name || "").toLowerCase();
+  if (nome.includes("crít")) return "Crítico";
+  if (nome.includes("alto") || nome.includes("alta")) return "Alto";
+  if (nome.includes("méd") || nome.includes("media")) return "Médio";
+  if (nome.includes("baix")) return "Baixo";
+
+  return mapNivelPorClassificationId(i.classification_id as any);
+}
+
+/* =========================================
+ * COMPONENTES AUXILIARES
+ * ======================================= */
+function SortableHeader({ label, active, dir, onClick }: {
+  label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void;
 }) {
   return (
     <button
@@ -73,7 +133,6 @@ function SortableHeader({
       onClick={onClick}
       className="inline-flex items-center justify-center gap-1 hover:text-white transition-colors w-full"
       title={active ? `Ordenado por ${label} (${dir})` : `Ordenar por ${label}`}
-      aria-label={active ? `Ordenado por ${label} (${dir})` : `Ordenar por ${label}`}
     >
       <span>{label}</span>
       {/* @ts-ignore */}
@@ -88,594 +147,7 @@ function SortableHeader({
   );
 }
 
-
-/* =========================================
- * PÁGINA: INCIDENTES
- * ======================================= */
-
-export default function Incidentes() {
-  const token = getToken();
-
-  // Dados renderizados
-  const [dados, setDados] = useState<PageIncidente[]>([]);
-  // Filtro por período (1 = hoje; 0 = todos)
-  const [filtroDias, setFiltroDias] = useState<number>(0);
-  // Estados de carregamento/erro/accordion
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
-  const [expandido, setExpandido] = useState<number | string | null>(null);
-
-  // Estado de paginação
-  const [page, setPage] = useState(1);
-
-  // Ordenação (padrão: data desc)
-  const [sortBy, setSortBy] = useState<SortKey>("id");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  // Deep-link (?open=ID)
-  const [searchParams] = useSearchParams();
-  const openFromQS = searchParams.get("open");
-
-  // URL do IRIS (para link no ID)
-  const [irisUrl, setIrisUrl] = useState<string>("");
-  const [tenantOwner, setTenantOwner] = useState<string>("");
-
-
-  // Mapa de status → Icon/cor
-  const STATUS_MAP: Record<string, StatusMeta> = {
-    open: { label: "Aberto", Icon: FaLockOpen, color: "text-gray-500" },
-    "in progress": { label: "Em progresso", Icon: RiProgress5Line, color: "text-gray-500" },
-    containment: { label: "Contenção", Icon: IoStopCircleOutline, color: "text-gray-500" },
-    eradication: { label: "Erradicação", Icon: MdOutlineGppBad, color: "text-gray-500" },
-    recovery: { label: "Recuperação", Icon: MdOutlineHealthAndSafety, color: "text-gray-500" },
-    "post-incident": { label: "Pós-incidente", Icon: GrTroubleshoot, color: "text-gray-500" },
-    reporting: { label: "Reportando", Icon: TbMessageReport, color: "text-gray-500" },
-    closed: { label: "Fechado", Icon: FaRegCheckCircle, color: "text-gray-500" },
-    unspecified: { label: "Não especificado", Icon: RiQuestionLine, color: "text-gray-500" },
-  };
-
-  const DEFAULT_STATUS: StatusMeta = { label: "—", Icon: RiQuestionLine, color: "text-gray-400" };
-
-  function getStatusMeta(s?: string): StatusMeta {
-    const v = (s ?? "").toLowerCase().trim();
-    return STATUS_MAP[v] ?? { ...DEFAULT_STATUS, label: s || "—" };
-  }
-
-  // Fallback: mapeia severidade pelo classification_id
-  function mapNivelPorClassificationId(
-    id?: number | null
-  ): "Crítico" | "Alto" | "Médio" | "Baixo" {
-    if (id == null) return "Baixo";
-    if ([1, 2, 11, 12, 13, 25, 32, 33, 34, 35, 36].includes(id)) return "Baixo";
-    if ([3, 4, 5, 14, 15, 22, 30, 31].includes(id)) return "Médio";
-    if ([6, 7, 8, 9, 10, 16, 23, 26, 27, 28, 29].includes(id)) return "Alto";
-    if ([17, 18, 19, 20, 21, 24].includes(id)) return "Crítico";
-    return "Baixo";
-  }
-
-  // Rank numérico de severidade (para ordenar)
-  function severidadeRank(nivel: string) {
-    const n = (nivel || "").toLowerCase();
-    if (n.startsWith("crít")) return 4;
-    if (n.startsWith("alto") || n.startsWith("alta")) return 3;
-    if (n.startsWith("méd") || n.startsWith("med")) return 2; // com/sem acento
-    if (n.startsWith("baix")) return 1;
-    return 0;
-  }
-
-  // Deriva severidade de um incidente
-  function nivelDoIncidente(i: PageIncidente) {
-    // 1) Se já veio do IRIS
-    if (i.severity) {
-      const s = i.severity.toLowerCase();
-      if (s.includes("crit")) return "Crítico";
-      if (s.includes("high") || s.includes("alto")) return "Alto";
-      if (s.includes("med")) return "Médio";
-      if (s.includes("low") || s.includes("baix")) return "Baixo";
-    }
-
-    // 2) tenta pelo regex do nome
-    const manual = detectarNivelPorNome(i.case_name || "");
-    if (manual) return manual;
-
-    // 3) fallback pelo título
-    const nome = (i.case_name || "").toLowerCase();
-    if (nome.includes("crít")) return "Crítico";
-    if (nome.includes("alto") || nome.includes("alta")) return "Alto";
-    if (nome.includes("méd") || nome.includes("media")) return "Médio";
-    if (nome.includes("baix")) return "Baixo";
-
-    // 4) fallback final → classification_id
-    return mapNivelPorClassificationId(i.classification_id as any);
-  }
-
-
-
-  // Ordem de status (para rankear ao ordenar)
-  const STATUS_ORDER: Record<string, number> = {
-    "open": 1,
-    "in progress": 2,
-    "containment": 3,
-    "eradication": 4,
-    "recovery": 5,
-    "post-incident": 6,
-    "reporting": 7,
-    "closed": 8,
-    "unspecified": 9,
-  };
-
-  // Toggle do acordeão
-  const toggle = (id: number | string) => setExpandido((cur) => (cur === id ? null : id));
-
-  // Alterna/muda a coluna de ordenação (forma robusta)
-  function toggleSort(col: SortKey) {
-    if (sortBy === col) {
-      // mesma coluna → só alterna a direção
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      // coluna diferente → define a coluna e zera direção (começa em asc)
-      setSortBy(col);
-      setSortDir("asc"); // se preferir começar em "desc", mude aqui
-    }
-  }
-
-
-  /* -----------------------------------------
-   * BUSCA DE DADOS (TENANT + INCIDENTES)
-   * --------------------------------------- */
-  useEffect(() => {
-    let ativo = true;
-    async function fetch() {
-      try {
-        setCarregando(true);
-        setErro(null);
-        setExpandido(null);
-
-        // 1) Busca tenant e salva iris_url
-        const tenant = await getTenant();
-        setIrisUrl(tenant?.iris_url || ""); // ← usado no link do ID
-        setTenantOwner(tenant?.owner_name || "");
-
-        const alvoOwnerTenant = normaliza(tenant?.owner_name);
-        const alvoOwnerExtra = normaliza(OWNER_EXTRA);
-        const alvoClienteTenant = normaliza(tenant?.cliente_name);
-
-        if (!tenant?.cliente_name) {
-          console.warn("[Incidentes] tenant.cliente_name ausente — bloqueando listagem por segurança.");
-          setDados([]);
-          setCarregando(false);
-          return;
-        }
-
-        // 2) Busca incidentes (pode vir em diferentes formatos)
-        const listaBruta = await getTodosCasos(token || "");
-
-        // garante que pega sempre o array correto
-        const lista: PageIncidente[] = await getTodosCasos(token || "");
-
-
-        // 3) Filtro final: apenas garante que o incidente pertence ao cliente do tenant
-        const doOwnerECliente = lista.filter((i) => {
-          const clienteIncidente = normaliza(extractIncidentClient(i));
-          return clienteIncidente === alvoClienteTenant;
-        });
-
-
-        // 4) Filtro por período
-        const filtrado = filtrarPorDias(doOwnerECliente, filtroDias);
-
-        // 5) Ordenação padrão por data desc (antes de aplicar a ordenação dinâmica abaixo)
-        filtrado.sort((a, b) => Number(b.case_id) - Number(a.case_id));
-
-        if (!ativo) return;
-        setDados(filtrado);
-        setPage(1); // sempre volta pra 1 ao recarregar
-      } catch (e: any) {
-        if (!ativo) return;
-        setErro(e?.message ?? "Erro ao carregar incidentes");
-      } finally {
-        if (ativo) setCarregando(false);
-      }
-    }
-    fetch();
-    return () => {
-      ativo = false;
-    };
-  }, [token, filtroDias]);
-
-  /* -----------------------------------------
-   * PAGINAÇÃO & ORDENAÇÃO
-   * --------------------------------------- */
-  const total = dados.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const clampPage = (p: number) => Math.min(Math.max(1, p), totalPages);
-
-  // Subconjuntos para os gráficos
-  const abertos = dados.filter((i) => (i.state_name || "").toLowerCase() === "open");
-  const fechados = dados.filter((i) => (i.state_name || "").toLowerCase() === "closed");
-
-  const atribuidos = dados.filter(
-    (i) =>
-      (i.state_name || "").toLowerCase() === "open" &&
-      normaliza(extractOwner(i)) === tenantOwner
-  );
-
-  const naoAtribuidos = dados.filter(
-    (i) =>
-      (i.state_name || "").toLowerCase() === "open" &&
-      normaliza(extractOwner(i)) !== tenantOwner
-  );
-
-
-
-  // Se o total de páginas muda, ajusta a página atual se necessário
-  useEffect(() => {
-    setPage((p) => clampPage(p));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPages]);
-
-  // Ao mudar sort, volta para a página 1
-  useEffect(() => {
-    setPage(1);
-  }, [sortBy, sortDir]);
-
-  // Aplica ordenação ao dataset completo
-  const ordenados = useMemo(() => {
-    const arr = [...dados];
-    arr.sort((a, b) => {
-      let va = 0, vb = 0;
-
-      if (sortBy === "id") {
-        va = Number(a.case_id) || 0;
-        vb = Number(b.case_id) || 0;
-      } else if (sortBy === "data") {
-        va = parseDateBR(a.case_open_date).getTime();
-        vb = parseDateBR(b.case_open_date).getTime();
-      } else if (sortBy === "severidade") {
-        va = severidadeRank(nivelDoIncidente(a));
-        vb = severidadeRank(nivelDoIncidente(b));
-      } else if (sortBy === "status") {
-        const sa = (a.state_name || "").toLowerCase().trim();
-        const sb = (b.state_name || "").toLowerCase().trim();
-        va = STATUS_ORDER[sa] ?? 999;
-        vb = STATUS_ORDER[sb] ?? 999;
-      }
-
-      const cmp = va === vb ? 0 : va < vb ? -1 : 1;
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-    return arr;
-  }, [dados, sortBy, sortDir]);
-
-  // Calcula faixa da página (depois de ordenar)
-  const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, total);
-  const linhas = useMemo(() => ordenados.slice(start, end), [ordenados, start, end]);
-
-  /* -----------------------------------------
-   * DEEP LINK: ?open=ID → ir para a página e abrir
-   * --------------------------------------- */
-  useEffect(() => {
-    if (!openFromQS) return;
-    const alvo = Number(openFromQS);
-    if (Number.isNaN(alvo) || dados.length === 0) return;
-
-    // índice do item na lista ordenada atual (importante: usa 'ordenados')
-    const idx = ordenados.findIndex((i) => Number(i.case_id) === alvo);
-    if (idx === -1) return;
-
-    // página onde o item está
-    const pageDoItem = Math.floor(idx / PAGE_SIZE) + 1;
-
-    // se não estamos nela, vai pra lá
-    setPage((p) => (p === pageDoItem ? p : pageDoItem));
-
-    // abre o acordeão após render da página certa
-    const t = setTimeout(() => {
-      setExpandido(alvo);
-      const el = document.querySelector(`[data-case-id="${alvo}"]`);
-      if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 0);
-
-    return () => clearTimeout(t);
-  }, [openFromQS, dados, ordenados]);
-
-  /* -----------------------------------------
-   * RENDER
-   * --------------------------------------- */
-  return (
-    <LayoutModel titulo="Incidentes">
-      {/* Gráficos de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <GraficoDonutIncidentes
-          titulo={
-            <span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <FaLockOpen className="text-gray-400" />
-              Incidentes abertos
-            </span>
-          }
-          total={abertos.length}
-          valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
-        />
-        <GraficoDonutIncidentes
-          titulo={
-            <span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <HiLockClosed className="text-gray-400" />
-              Incidentes fechados
-            </span>
-          }
-          total={fechados.length}
-          valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
-        />
-        <GraficoDonutIncidentes
-          titulo={
-            <span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <FaRegCheckCircle className="text-gray-400" />
-              Incidentes atribuídos
-            </span>
-          }
-          total={atribuidos.length}
-          valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
-        />
-        <GraficoDonutIncidentes
-          titulo={
-            <span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <VscError className="text-gray-400" />
-              Incidentes não atribuídos
-            </span>
-          }
-          total={naoAtribuidos.length}
-          valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
-        />
-      </div>
-      <section className="cards p-6 rounded-2xl shadow-lg">
-        {/* Header */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-          <div className="flex items-center gap-2">
-            {/* @ts-ignore */}
-            <GoGraph className="flex text-[#744CD8] size-[20px]" />
-            <h2 className="text-white">Incidentes — Nível de Detalhe</h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <label className="text-xs text-gray-400">
-              Intervalo:&nbsp;
-              <select
-                className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-                value={filtroDias}
-                onChange={(e) => setFiltroDias(Number(e.target.value))}
-              >
-                <option value={1}>Hoje</option>
-                <option value={7}>7 dias</option>
-                <option value={15}>15 dias</option>
-                <option value={30}>30 dias</option>
-                <option value={0}>Todos</option>
-              </select>
-            </label>
-
-            <div className="text-xs text-gray-400">
-              {total > 0 ? (
-                <>
-                  Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span>
-                </>
-              ) : (
-                <>Mostrando 0 de 0</>
-              )}
-            </div>
-
-            {/* Controles de paginação */}
-            <div className="flex gap-2">
-              <button
-                className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
-                onClick={() => setPage((p) => clampPage(p - 1))}
-                disabled={page <= 1}
-              >
-                ← Anterior
-              </button>
-              <button
-                className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
-                onClick={() => setPage((p) => clampPage(p + 1))}
-                disabled={page >= totalPages}
-              >
-                Próxima →
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabela */}
-        <div className="cards rounded-2xl overflow-hidden table-incidente">
-          {/* Cabeçalho com colunas ordenáveis */}
-          <div className="grid grid-cols-12 px-5 py-5 bg-[#0A0617] text-xs text-gray-300">
-            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader
-                label="ID"
-                active={sortBy === "id"}
-                dir={sortDir}
-                onClick={() => toggleSort("id")}
-              />
-            </div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader
-                label="Data"
-                active={sortBy === "data"}
-                dir={sortDir}
-                onClick={() => toggleSort("data")}
-              />
-            </div>
-            <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">
-              Descrição
-            </div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader
-                label="Severidade"
-                active={sortBy === "severidade"}
-                dir={sortDir}
-                onClick={() => toggleSort("severidade")}
-              />
-            </div>
-            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader
-                label="Status"
-                active={sortBy === "status"}
-                dir={sortDir}
-                onClick={() => toggleSort("status")}
-              />
-            </div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Ação</div>
-          </div>
-
-          {/* Corpo */}
-          {carregando ? (
-            <ListaSkeleton />
-          ) : erro ? (
-            <div className="p-5 text-xs text-red-400 bg-red-950/30 border-t border-red-900">
-              {erro}
-            </div>
-          ) : linhas.length === 0 ? (
-            <div className="p-5 text-xs text-gray-400">Nenhum incidente encontrado.</div>
-          ) : (
-            <div className="divide-y divide-[#ffffff12]">
-              {linhas.map((inc) => {
-                const id = inc.case_id;
-                const aberto = expandido === id;
-
-                const dataBR = inc.case_open_date; // "MM/DD/YYYY"
-                const agenteOrigem = inc.case_name;
-
-                // prioridade: nível no nome (IA) > fallback por classification_id
-                const nivelManual = detectarNivelPorNome(inc.case_name || "");
-                const nivel = nivelManual || mapNivelPorClassificationId(inc.classification_id as any);
-                const badge = getCorBadge(nivel);
-                const status = statusPT(inc.state_name);
-
-                const meta = getStatusMeta(inc.state_name);
-                const StatusIcon = meta.Icon;
-
-                return (
-                  <div key={String(id)} className="group" data-case-id={String(id)}>
-                    {/* Linha */}
-                    <div
-                      className={`grid grid-cols-12 px-5 py-4 items-center ${aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"
-                        } transition-colors`}
-                    >
-                      {/* ID com link pro IRIS (se houver irisUrl) */}
-                      <div className="col-span-1 text-center text-sm text-gray-400 truncate">
-                        {irisUrl ? (
-                          <a
-                            href={`${irisUrl}/case?cid=${id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-purple-400 hover:underline"
-                          >
-                            #{id}
-                          </a>
-                        ) : (
-                          <>#{id}</>
-                        )}
-                      </div>
-
-                      {/* Data */}
-                      <div className="col-span-2 text-center text-xs text-gray-400">
-                        {formatDateBR(dataBR)}
-                      </div>
-
-                      {/* Descrição (título limpo + prefixo com #id) */}
-                      <div className="col-span-4 text-center text-xs text-gray-400 truncate">
-                        #{id} - {formatCaseName(agenteOrigem || "") || "—"}
-                      </div>
-
-                      {/* Severidade (sentence case) */}
-                      <div className="col-span-2 text-center">
-                        <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>
-                          {sentenceCase(nivel)}
-                        </span>
-                      </div>
-
-                      {/* Status com ícone + cor */}
-                      <div className="col-span-1 text-center">
-                        <span className="inline-flex items-center justify-center gap-1 text-xs text-gray-400">
-                          {/* @ts-ignore */}
-                          <StatusIcon className={`w-4 h-4 ${meta.color}`} />
-                          {meta.label}
-                        </span>
-                      </div>
-
-                      {/* Ação (accordion) */}
-                      <div className="col-span-2 flex justify-center">
-                        <button
-                          onClick={() => toggle(id)}
-                          className="px-3 py-1.5 btn hover:bg-purple-600 text-[12px] text-white rounded-md"
-                        >
-                          {aberto ? "Recolher —" : "Ver detalhes  +"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Accordion */}
-                    {aberto && (
-                      <div className="px-5 py-5 bg-[#2a2250]">
-                        <div className="rounded-xl p-5 bg-[#1b1730] border border-[#3B2A70] space-y-5">
-                          <Secao titulo="Resumo">
-                            <Linha label="Título:" valor={`#${inc.case_id} - ${formatCaseName(inc.case_name)}`} />
-                            <div className="mt-2">
-                              <DescricaoFormatada texto={inc.case_description} />
-                            </div>
-                          </Secao>
-
-                          <Secao titulo="Propriedades">
-                            <Linha label="Cliente:" valor={extractIncidentClient(inc) || "—"} />
-                            <Linha label="Owner:" valor={extractOwner(inc) || "—"} />
-                            <Linha label="Aberto por:" valor={inc.opened_by || "—"} />
-                          </Secao>
-
-                          <Secao titulo="Datas">
-                            <Linha label="Abertura:" valor={inc.case_open_date || "—"} />
-                            <Linha label="Fechamento:" valor={inc.case_close_date || "—"} />
-                          </Secao>
-
-                          <Secao titulo="Classificação">
-                            <Linha
-                              label="Classification ID:"
-                              valor={
-                                (inc as any).classification_id != null
-                                  ? String((inc as any).classification_id)
-                                  : "—"
-                              }
-                            />
-                            <Linha label="Classification:" valor={(inc as any).classification || "—"} />
-                            <Linha label="Severidade (mapeada):" valor={sentenceCase(nivel)} />
-                            <Linha label="Status:" valor={status} />
-                          </Secao>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-    </LayoutModel>
-  );
-}
-
-/* =========================================
- * COMPONENTES AUXILIARES DE UI
- * ======================================= */
-
-function Secao({
-  titulo,
-  children,
-}: {
-  titulo: string;
-  children: React.ReactNode;
-}) {
+function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div>
       <h4 className="text-sm text-white font-semibold mb-2 flex items-center gap-2">
@@ -700,30 +172,291 @@ function ListaSkeleton() {
   return (
     <div className="p-5">
       {Array.from({ length: 10 }).map((_, i) => (
-        <div
-          key={i}
-          className="grid grid-cols-12 px-5 py-4 items-center border-t border-[#ffffff12]"
-        >
-          <div className="col-span-3">
-            <div className="h-4 w-28 bg-[#ffffff0a] rounded animate-pulse" />
-          </div>
-          <div className="col-span-2">
-            <div className="h-4 w-16 bg-[#ffffff0a] rounded animate-pulse" />
-          </div>
-          <div className="col-span-3">
-            <div className="h-4 w-40 bg-[#ffffff0a] rounded animate-pulse" />
-          </div>
-          <div className="col-span-2">
-            <div className="h-5 w-16 bg-[#ffffff0a] rounded animate-pulse" />
-          </div>
-          <div className="col-span-1">
-            <div className="h-4 w-16 bg-[#ffffff0a] rounded animate-pulse" />
-          </div>
-          <div className="col-span-1 flex justify-end">
-            <div className="h-7 w-24 bg-[#ffffff0a] rounded animate-pulse" />
-          </div>
+        <div key={i} className="grid grid-cols-12 px-5 py-4 items-center border-t border-[#ffffff12]">
+          <div className="col-span-3 h-4 w-28 bg-[#ffffff0a] rounded animate-pulse" />
+          <div className="col-span-2 h-4 w-16 bg-[#ffffff0a] rounded animate-pulse" />
+          <div className="col-span-3 h-4 w-40 bg-[#ffffff0a] rounded animate-pulse" />
+          <div className="col-span-2 h-5 w-16 bg-[#ffffff0a] rounded animate-pulse" />
+          <div className="col-span-1 h-4 w-16 bg-[#ffffff0a] rounded animate-pulse" />
+          <div className="col-span-1 h-7 w-24 bg-[#ffffff0a] rounded animate-pulse ml-auto" />
         </div>
       ))}
     </div>
+  );
+}
+
+/* =========================================
+ * PÁGINA: INCIDENTES
+ * ======================================= */
+export default function Incidentes() {
+  const token = getToken();
+  const [dados, setDados] = useState<PageIncidente[]>([]);
+  const [filtroDias, setFiltroDias] = useState(0);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [expandido, setExpandido] = useState<number | string | null>(null);
+  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortKey>("id");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const [searchParams] = useSearchParams();
+  const openFromQS = searchParams.get("open");
+
+  const [irisUrl, setIrisUrl] = useState("");
+  const [tenantOwner, setTenantOwner] = useState("");
+
+  // Fetch dados
+  useEffect(() => {
+    let ativo = true;
+    async function fetch() {
+      try {
+        setCarregando(true);
+        setErro(null);
+        setExpandido(null);
+
+        const tenant = await getTenant();
+        setIrisUrl(tenant?.iris_url || "");
+        setTenantOwner(tenant?.owner_name || "");
+
+        if (!tenant?.cliente_name) {
+          console.warn("[Incidentes] tenant.cliente_name ausente");
+          setDados([]);
+          return;
+        }
+
+        const lista: PageIncidente[] = await getTodosCasos(token || "");
+
+        const filtrado = filtrarPorDias(
+          lista.filter(i => normaliza(extractIncidentClient(i)) === normaliza(tenant.cliente_name)),
+          filtroDias
+        );
+
+        filtrado.sort((a, b) => Number(b.case_id) - Number(a.case_id));
+
+        if (ativo) {
+          setDados(filtrado);
+          setPage(1);
+        }
+      } catch (e: any) {
+        console.error("[Incidentes] erro fetch", e);
+        if (ativo) setErro(e?.message ?? "Erro ao carregar incidentes");
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    }
+    fetch();
+    return () => { ativo = false; };
+  }, [token, filtroDias]);
+
+  // Paginação
+  const total = dados.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const clampPage = (p: number) => Math.min(Math.max(1, p), totalPages);
+
+  useEffect(() => { setPage(p => clampPage(p)); }, [totalPages]);
+  useEffect(() => { setPage(1); }, [sortBy, sortDir]);
+
+  // Ordenação
+  const ordenados = useMemo(() => {
+    return [...dados].sort((a, b) => {
+      let va = 0, vb = 0;
+      if (sortBy === "id") {
+        va = Number(a.case_id) || 0; vb = Number(b.case_id) || 0;
+      } else if (sortBy === "data") {
+        va = parseDateBR(a.case_open_date).getTime();
+        vb = parseDateBR(b.case_open_date).getTime();
+      } else if (sortBy === "severidade") {
+        va = severidadeRank(nivelDoIncidente(a));
+        vb = severidadeRank(nivelDoIncidente(b));
+      } else if (sortBy === "status") {
+        const sa = (a.state_name || "").toLowerCase().trim();
+        const sb = (b.state_name || "").toLowerCase().trim();
+        va = STATUS_ORDER[sa] ?? 999;
+        vb = STATUS_ORDER[sb] ?? 999;
+      }
+      const cmp = va === vb ? 0 : va < vb ? -1 : 1;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [dados, sortBy, sortDir]);
+
+  const start = (page - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, total);
+  const linhas = useMemo(() => ordenados.slice(start, end), [ordenados, start, end]);
+
+  // Subconjuntos para gráficos
+  const abertos = dados.filter(i =>
+    (i.state_name || "").toLowerCase() !== "closed"
+  );
+
+  const fechados = dados.filter(i =>
+    (i.state_name || "").toLowerCase() === "closed"
+  );
+
+  const atribuidos = dados.filter(i =>
+    (i.state_name || "").toLowerCase() !== "closed" &&
+    normaliza(extractOwner(i)) === tenantOwner
+  );
+
+  const naoAtribuidos = dados.filter(i =>
+    (i.state_name || "").toLowerCase() !== "closed" &&
+    normaliza(extractOwner(i)) !== tenantOwner
+  );
+
+  /* -----------------------------------------
+   * RENDER
+   * --------------------------------------- */
+  return (
+    <LayoutModel titulo="Incidentes">
+      {/* Gráficos resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* @ts-ignore */}
+        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><FaLockOpen className="text-gray-400" /> Incidentes abertos</span>} total={abertos.length} valores={agruparPorSeveridade(abertos, nivelDoIncidente)} />
+        {/* @ts-ignore */}
+        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><HiLockClosed className="text-gray-400" /> Incidentes fechados</span>} total={fechados.length} valores={agruparPorSeveridade(fechados, nivelDoIncidente)} />
+        {/* @ts-ignore */}
+        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos</span>} total={atribuidos.length} valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)} />
+        {/* @ts-ignore */}
+        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><VscError className="text-gray-400" /> Incidentes não atribuídos</span>} total={naoAtribuidos.length} valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)} />
+      </div>
+
+      {/* Tabela */}
+      <section className="cards p-6 rounded-2xl shadow-lg">
+        {/* Header */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {/* @ts-ignore */}
+            <GoGraph className="flex text-[#744CD8] size-[20px]" />
+            <h2 className="text-white">Incidentes — Nível de Detalhe</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-gray-400">
+              Intervalo:&nbsp;
+              <select
+                className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
+                value={filtroDias}
+                onChange={e => setFiltroDias(Number(e.target.value))}
+              >
+                <option value={1}>Hoje</option>
+                <option value={7}>7 dias</option>
+                <option value={15}>15 dias</option>
+                <option value={30}>30 dias</option>
+                <option value={0}>Todos</option>
+              </select>
+            </label>
+            <div className="text-xs text-gray-400">
+              {total > 0 ? <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></> : <>Mostrando 0 de 0</>}
+            </div>
+            <div className="flex gap-2">
+              <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p - 1))} disabled={page <= 1}>← Anterior</button>
+              <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p + 1))} disabled={page >= totalPages}>Próxima →</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Cabeçalho tabela */}
+        <div className="cards rounded-2xl overflow-hidden table-incidente">
+          <div className="grid grid-cols-12 px-5 py-5 bg-[#0A0617] text-xs text-gray-300">
+            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader label="ID" active={sortBy === "id"} dir={sortDir} onClick={() => setSortBy("id")} />
+            </div>
+            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader label="Data" active={sortBy === "data"} dir={sortDir} onClick={() => setSortBy("data")} />
+            </div>
+            <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">Descrição</div>
+            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader label="Severidade" active={sortBy === "severidade"} dir={sortDir} onClick={() => setSortBy("severidade")} />
+            </div>
+            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
+              <SortableHeader label="Status" active={sortBy === "status"} dir={sortDir} onClick={() => setSortBy("status")} />
+            </div>
+            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Ação</div>
+          </div>
+
+          {/* Corpo */}
+          {carregando ? (
+            <ListaSkeleton />
+          ) : erro ? (
+            <div className="p-5 text-xs text-red-400 bg-red-950/30 border-t border-red-900">{erro}</div>
+          ) : linhas.length === 0 ? (
+            <div className="p-5 text-xs text-gray-400">Nenhum incidente encontrado.</div>
+          ) : (
+            <div className="divide-y divide-[#ffffff12]">
+              {linhas.map(inc => {
+                const id = inc.case_id;
+                const aberto = expandido === id;
+                const dataBR = inc.case_open_date;
+                const agenteOrigem = inc.case_name;
+
+                const nivelManual = detectarNivelPorNome(inc.case_name || "");
+                const nivel = nivelManual || mapNivelPorClassificationId(inc.classification_id as any);
+                const badge = getCorBadge(nivel);
+                const status = statusPT(inc.state_name);
+
+                const meta = getStatusMeta(inc.state_name);
+                const StatusIcon = meta.Icon;
+
+                return (
+                  <div key={String(id)} className="group" data-case-id={String(id)}>
+                    {/* Linha */}
+                    <div className={`grid grid-cols-12 px-5 py-4 items-center ${aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"} transition-colors`}>
+                      <div className="col-span-1 text-center text-sm text-gray-400 truncate">
+                        {irisUrl ? (
+                          <a href={`${irisUrl}/case?cid=${id}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">#{id}</a>
+                        ) : <>#{id}</>}
+                      </div>
+                      <div className="col-span-2 text-center text-xs text-gray-400">{formatDateBR(dataBR)}</div>
+                      <div className="col-span-4 text-center text-xs text-gray-400 truncate">
+                        #{id} - {formatCaseName(agenteOrigem || "") || "—"}
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>{sentenceCase(nivel)}</span>
+                      </div>
+                      <div className="col-span-1 text-center">
+                        <span className="inline-flex items-center justify-center gap-1 text-xs text-gray-400">
+                          {/* @ts-ignore */}
+                          <StatusIcon className={`w-4 h-4 ${meta.color}`} />{meta.label}
+                        </span>
+                      </div>
+                      <div className="col-span-2 flex justify-center">
+                        <button onClick={() => setExpandido(c => (c === id ? null : id))} className="px-3 py-1.5 btn hover:bg-purple-600 text-[12px] text-white rounded-md">
+                          {aberto ? "Recolher —" : "Ver detalhes  +"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Accordion */}
+                    {aberto && (
+                      <div className="px-5 py-5 bg-[#2a2250]">
+                        <div className="rounded-xl p-5 bg-[#1b1730] border border-[#3B2A70] space-y-5">
+                          <Secao titulo="Resumo">
+                            <Linha label="Título:" valor={`#${inc.case_id} - ${formatCaseName(inc.case_name)}`} />
+                            <div className="mt-2"><DescricaoFormatada texto={inc.case_description} /></div>
+                          </Secao>
+                          <Secao titulo="Propriedades">
+                            <Linha label="Cliente:" valor={extractIncidentClient(inc) || "—"} />
+                            <Linha label="Owner:" valor={extractOwner(inc) || "—"} />
+                            <Linha label="Aberto por:" valor={inc.opened_by || "—"} />
+                          </Secao>
+                          <Secao titulo="Datas">
+                            <Linha label="Abertura:" valor={inc.case_open_date || "—"} />
+                            <Linha label="Fechamento:" valor={inc.case_close_date || "—"} />
+                          </Secao>
+                          <Secao titulo="Classificação">
+                            <Linha label="Classification ID:" valor={(inc as any).classification_id != null ? String((inc as any).classification_id) : "—"} />
+                            <Linha label="Classification:" valor={(inc as any).classification || "—"} />
+                            <Linha label="Severidade (mapeada):" valor={sentenceCase(nivel)} />
+                            <Linha label="Status:" valor={status} />
+                          </Secao>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </LayoutModel>
   );
 }

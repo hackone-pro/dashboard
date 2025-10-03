@@ -374,9 +374,18 @@ header button.toggle{
   transform-origin: center;
   transition: filter 0.2s ease;
 }
+.leaflet-pane path.origin-pulse {
+  animation: originPulseGlow 1.8s ease-in-out infinite;
+  transform-origin: center;
+  transition: filter 0.2s ease;
+}
 @keyframes pulseGlow {
   0%, 100% { r: 6; opacity: 0.85; filter: drop-shadow(0 0 1px #22c55e); }
-  50%      { r: 7; opacity: 1;    filter: drop-shadow(0 0 10px #22c55e); }
+  50%      { r: 7; opacity: 1;    filter: drop-shadow(0 0 4px #22c55e); }
+}
+@keyframes originPulseGlow {
+  0%, 100% { r: 6; opacity: 0.85; filter: drop-shadow(0 0 1px #b92f2f); }
+  50%      { r: 7; opacity: 1;    filter: drop-shadow(0 0 4px #ee4949); }
 }
 
 .leaflet-tooltip.country-tip {
@@ -461,24 +470,46 @@ header button.toggle{
 }
 
 /* Destino pulsando */
-.bubble-pulse {
+.bubble-pulse{
   animation: pulse 2s infinite;
+}
+
+.origin-pulse {
+  animation: origin-pulse 2s infinite;
 }
 
 @keyframes pulse {
   0% {
-    r: 6;
+    r: 2;
     fill: #22c55e;
     opacity: 0.8;
   }
   50% {
-    r: 9;
+    r: 6;
     fill: #38ef7d;
     opacity: 1;
   }
   100% {
-    r: 6;
+    r: 3;
     fill: #22c55e;
+    opacity: 0.8;
+  }
+}
+
+@keyframes origin-pulse {
+  0% {
+    r: 2;
+    fill: #c52248;
+    opacity: 0.8;
+  }
+  50% {
+    r: 6;
+    fill: #d92751;
+    opacity: 1;
+  }
+  100% {
+    r: 3;
+    fill: #f12857;
     opacity: 0.8;
   }
 }

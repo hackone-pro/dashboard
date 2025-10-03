@@ -20,20 +20,29 @@ type Flow = {
   origem: {
     ip: string;
     pais: string | null;
+    cidade?: string | null;
     lat: number | null;
     lng: number | null;
+    srcport: string | null;
+    servico: string | null;
+    interface: string | null;
   };
   destino: {
     ip: string;
     pais?: string | null;
+    cidade?: string | null;
     lat: number | null;
     lng: number | null;
-    agente?: string | null;   // 👈 adiciona aqui
-    tenant?: string | null;   // 👈 se quiser também já deixar tenant
+    agente?: string | null;
+    tenant?: string | null;
+    dstintf?: string | null;
+    dstport?: string | null;
+    devname?: string | null;
   };
   total: number;
   severidades: { key: string; doc_count: number }[];
 };
+
 
 function FitToData({ points }: { points: { lat: number; lng: number }[] }) {
   const map = useMap();
@@ -170,16 +179,23 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
                   radius={5}
                   pathOptions={{
                     color: "transparent",
-                    fillColor: "#ec4899",
-                    fillOpacity: 0.9,
+                    fillColor: "#c52248",
+                    fillOpacity: 0.85,
                   }}
                   className="origin-pulse"
                 >
                   <Tooltip direction="top" offset={[0, -8]} opacity={1} className="country-tip">
-                    <div className="text-xs">
-                      <div className="pb-2"><b>Origem:</b> {f.origem.pais || "Desconhecido"}</div>
-                      {/* <div><b>IP:</b> {f.origem.ip}</div> */}
-                      <div><b>Total:</b> {f.total}</div>
+                    <div className="text-xs p-1">
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Origem:</b>{" "}
+                        {f.origem.pais === "Interno"
+                          ? "IP Interno"
+                          : [f.origem.cidade, f.origem.pais].filter(Boolean).join(" - ") || "Desconhecido"}
+                      </div>
+                      {/* <div><b>Total:</b> {f.total}</div> */}
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Porta:</b> {f.origem.srcport || "N/A"}</div>
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Serviço:</b> {f.origem.servico || "N/A"}</div>
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Interface:</b> {f.origem.interface || "N/A"}</div>
                     </div>
                   </Tooltip>
                 </CircleMarker>
@@ -205,10 +221,19 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
                   className="bubble-pulse"
                 >
                   <Tooltip direction="top" offset={[0, -8]} opacity={1} className="country-tip">
-                    <div className="text-xs">
-                      <div className="pb-2"><b>Destino:</b> {f.destino.pais || "Desconhecido"}</div>
+                    <div className="text-xs p-1">
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Destino:</b>{" "}
+                        {f.destino.pais === "Interno"
+                          ? "IP Interno"
+                          : [f.destino.cidade, f.destino.pais].filter(Boolean).join(" - ") || "Desconhecido"}
+                      </div>
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">IP:</b> {f.destino.ip}</div>
                       {/* <div><b>Agente:</b> {f.destino.agente || "N/A"}</div> */}
-                      <div><b>Total:</b> {f.total}</div>
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Interface:</b> {f.destino.dstintf || "N/A"}</div>
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Porta:</b> {f.destino.dstport || "N/A"}</div>
+                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Device:</b> {f.destino.devname || "N/A"}</div>
+                      {/* <div className="pt-1"><b>Total:</b> {f.total}</div> */}
                     </div>
                   </Tooltip>
                 </CircleMarker>

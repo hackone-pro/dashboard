@@ -2,6 +2,7 @@
 import { getToken } from "../../utils/auth";
 
 export interface TopAgentItem {
+  agente: string;
   agent_name: string;
   total_alertas: number;
   score: number; // 0–100
@@ -11,12 +12,14 @@ export interface TopAgentItem {
     Alto: number;
     Crítico: number;
   };
+  modified: number;
+  added: number;
+  deleted: number;
 }
 
 /**
  * Busca os top agentes no Wazuh agregados por agente,
- * retornando: nome, total de alertas, score e severidade separada.
- * @param dias "1" | "7" | "15" | "30" | "todos" (default "7")
+ * retornando: nome, total de alertas, score, severidade separada e diffs (modified/added/deleted).
  */
 export async function getTopAgents(dias: string = "7"): Promise<TopAgentItem[]> {
   const token = getToken();
@@ -59,10 +62,14 @@ export async function getTopAgents(dias: string = "7"): Promise<TopAgentItem[]> 
     });
 
     return {
+      agente: item?.agente ?? "",
       agent_name: item?.agente ?? "",
       total_alertas: Number(item?.total_alertas ?? 0),
       score: Number(item?.score ?? 0),
       severidade,
+      modified: Number(item?.modified ?? 0),
+      added: Number(item?.added ?? 0),
+      deleted: Number(item?.deleted ?? 0),
     };
   });
 
