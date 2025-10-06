@@ -1,4 +1,4 @@
-import { resolveCountryCoords } from 'utils/countryResolver';
+import { resolveCountryCoords } from '../../../utils/countryResolver';
 import {
   buscarSeveridadeIndexer,
   buscarTopGeradoresFirewall,
