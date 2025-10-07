@@ -207,9 +207,8 @@ export async function buscarTopAgentes(tenant, dias: string) {
       bool: {
         must: [
           timeFilter,
-          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo do Postman
-          { match_phrase: { "rule.groups": "syscheck" } },      // fixo do Postman
-          { match_phrase: { customer: clientName } },           // vem do tenant
+          { match_phrase: { "rule.groups": "syscheck" } },
+          { match_phrase: { customer: clientName } },
         ],
       },
     },
