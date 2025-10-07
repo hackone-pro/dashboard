@@ -235,29 +235,50 @@ export default {
 
   async vulnSeveridades(ctx) {
     try {
+      // 🔒 1. Valida usuário autenticado
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-
-      const tenant = await strapi.entityService.findMany('api::tenant.tenant', {
+  
+      // 🔍 2. Busca tenant ativo vinculado ao usuário
+      const tenantList = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
-        populate: ['users_permissions_users'],
+        populate: ["users_permissions_users"],
+        limit: 1,
       });
-
-      if (!tenant || tenant.length === 0) {
+  
+      const tenant = tenantList?.[0];
+      if (!tenant) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-
-      const tenantData = tenant[0];
-      const resultado = await buscarVulnSeveridades(tenantData);
-
-      // mantém o formato igual ao do Postman que você mostrou
-      return ctx.send({ aggregations: resultado });
-
+  
+      // ⚙️ 3. Busca dados de vulnerabilidades
+      const resultado = await buscarVulnSeveridades(tenant);
+  
+      // 🧩 4. Garante retorno consistente (igual ao Elasticsearch)
+      return ctx.send({
+        took: 1,
+        timed_out: false,
+        _shards: { total: 1, successful: 1, skipped: 0, failed: 0 },
+        aggregations: {
+          severity: {
+            buckets: {
+              Pending: { doc_count: resultado.Pending },
+              Critical: { doc_count: resultado.Critical },
+              High: { doc_count: resultado.High },
+              Medium: { doc_count: resultado.Medium },
+              Low: { doc_count: resultado.Low },
+            },
+          },
+          total: { doc_count: resultado.Total },
+        },
+      });
+  
     } catch (error) {
-      console.error("Erro ao buscar vulnerabilidades resumo:", error);
+      console.error("❌ Erro ao buscar vulnerabilidades resumo:", error);
       return ctx.internalServerError("Erro ao consultar vulnerabilidades resumo");
     }
   },
+  
 
   async topVulnerabilidades(ctx) {
     try {
