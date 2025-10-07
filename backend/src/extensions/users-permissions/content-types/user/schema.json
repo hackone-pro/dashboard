@@ -86,6 +86,9 @@
     },
     "blocked_time": {
       "type": "datetime"
+    },
+    "owner_name_iris": {
+      "type": "string"
     }
   }
 }
