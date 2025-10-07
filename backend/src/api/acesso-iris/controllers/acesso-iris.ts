@@ -1,5 +1,5 @@
 import { buscarCasos } from "../services/acesso-iris";
-import { parse, isAfter, isBefore, startOfDay, endOfDay, subDays } from 'date-fns';
+import { parse, isAfter, isBefore, startOfDay, endOfDay, subDays } from "date-fns";
 
 export default {
   // LISTA TODOS OS CASOS IRIS
@@ -18,8 +18,12 @@ export default {
       if (!fullUser?.tenant)
         return ctx.notFound("Tenant não encontrado para este usuário");
 
-      const data = await buscarCasos(fullUser.tenant, fullUser);
+      // 🔹 injeta dinamicamente o owner_name do usuário logado no tenant
+      if (user.owner_name_iris) {
+        fullUser.tenant.owner_name = user.owner_name_iris;
+      }
 
+      const data = await buscarCasos(fullUser.tenant, fullUser);
       return data;
     } catch (err) {
       strapi.log.error("❌ Erro ao buscar casos no Iris:", err.response?.data || err);
@@ -43,6 +47,11 @@ export default {
       if (!fullUser?.tenant)
         return ctx.notFound("Tenant não encontrado para este usuário");
 
+      // 🔹 injeta o owner_name do usuário logado também neste endpoint
+      if (user.owner_name_iris) {
+        fullUser.tenant.owner_name = user.owner_name_iris;
+      }
+
       const casosResponse = await buscarCasos(fullUser.tenant, fullUser);
       const casos = casosResponse.data || casosResponse;
 
@@ -58,8 +67,7 @@ export default {
 
       const recentes = casos.filter((caso) => {
         if (!caso.case_open_date) return false;
-
-        const data = parse(caso.case_open_date, 'MM/dd/yyyy', new Date());
+        const data = parse(caso.case_open_date, "MM/dd/yyyy", new Date());
         return isAfter(data, inicio) && isBefore(data, fim);
       });
 
@@ -68,5 +76,5 @@ export default {
       strapi.log.error("❌ Erro ao listar casos recentes:", err.response?.data || err);
       return ctx.internalServerError("Erro ao buscar casos recentes");
     }
-  }
+  },
 };
