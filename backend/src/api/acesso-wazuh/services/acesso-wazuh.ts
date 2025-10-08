@@ -156,9 +156,9 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
             range: {
               field: "rule.level",
               ranges: [
-                { to: 7, key: "Low" },
-                { from: 7, to: 12, key: "Medium" },
-                { from: 12, to: 15, key: "High" },
+                { from: 0, to: 6, key: "Low" },
+                { from: 7, to: 11, key: "Medium" },
+                { from: 12, to: 14, key: "High" },
                 { from: 15, key: "Critical" },
               ],
             },
@@ -207,7 +207,7 @@ export async function buscarTopAgentes(tenant, dias: string) {
       bool: {
         must: [
           timeFilter,
-          { match_phrase: { "rule.groups": "syscheck" } },
+          // { match_phrase: { "rule.groups": "syscheck" } },
           { match_phrase: { customer: clientName } },
         ],
       },
@@ -221,7 +221,7 @@ export async function buscarTopAgentes(tenant, dias: string) {
         },
         aggs: {
           por_severidade: { terms: { field: "rule.level" } },
-          por_evento: { terms: { field: "syscheck.event" } }, // 👈 novo
+          // por_evento: { terms: { field: "syscheck.event" } }, 
         },
       },
     },
@@ -423,10 +423,10 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             range: {
               field: "rule.level",
               ranges: [
-                { to: 7, key: "Baixo" },
-                { from: 7, to: 12, key: "Médio" },
-                { from: 12, to: 15, key: "Alto" },
-                { from: 15, key: "Crítico" },
+                { from: 0, to: 6, key: "Low" },
+                { from: 7, to: 11, key: "Medium" },
+                { from: 12, to: 14, key: "High" },
+                { from: 15, key: "Critical" },
               ],
             },
           },
