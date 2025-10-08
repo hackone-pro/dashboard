@@ -207,9 +207,12 @@ export async function buscarTopAgentes(tenant, dias: string) {
       bool: {
         must: [
           timeFilter,
-          { match_phrase: { "rule.groups": "syscheck" } },      // fixo do Postman
+          // { match_phrase: { "rule.groups": "syscheck" } },     
           { match_phrase: { customer: clientName } },           // vem do tenant
         ],
+        must_not: [
+          {match_phrase: {"agent.name": "wazuhhackone"} }
+        ]
       },
     },
     aggs: {
@@ -221,7 +224,7 @@ export async function buscarTopAgentes(tenant, dias: string) {
         },
         aggs: {
           por_severidade: { terms: { field: "rule.level" } },
-          por_evento: { terms: { field: "syscheck.event" } }, // 👈 novo
+          // por_evento: { terms: { field: "syscheck.event" } }, // 👈 novo
         },
       },
     },
