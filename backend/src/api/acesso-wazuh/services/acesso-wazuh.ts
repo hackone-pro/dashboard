@@ -150,7 +150,7 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     query: { bool: { must: [customerFilter(clientName), timeFilter] } },
     aggs: {
       top_geradores: {
-        terms: { field: "data.devname", size: 8, order: { _count: "desc" } },
+        terms: { field: "data.devname.keyword", size: 8, order: { _count: "desc" } },
         aggs: {
           severidade: {
             range: {
@@ -207,7 +207,6 @@ export async function buscarTopAgentes(tenant, dias: string) {
       bool: {
         must: [
           timeFilter,
-          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo do Postman
           { match_phrase: { "rule.groups": "syscheck" } },      // fixo do Postman
           { match_phrase: { customer: clientName } },           // vem do tenant
         ],
