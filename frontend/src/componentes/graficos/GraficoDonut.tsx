@@ -1,15 +1,14 @@
-// src/components/graficos/GraficoDonut.tsx
+import { useState, useMemo, useEffect } from "react";
 import Chart from "react-apexcharts";
 
 type GraficoDonutProps = {
-  labels: string[];              // ex.: ["Crítico","Alto","Médio","Baixo"]
-  series: number[];              // ex.: [criticoTotal, altoTotal, medioTotal, baixoTotal]
-  cores?: string[];              // ex.: ["#EC4899","#6A55DC","#6301F4","#1DD69A"]
+  labels: string[];
+  series: number[];
+  cores?: string[];
   height?: number;
-  /** Título ao lado do total (coluna direita) */
-  descricaoTotal?: string;       // ex.: "Alertas de Firewall"
-  /** Índice selecionado manualmente (opcional) */
+  descricaoTotal?: string;
   idxSelecionado?: number | null;
+  onSelecionarIdx?: (index: number | null) => void;
 };
 
 export default function GraficoDonut({
@@ -19,42 +18,71 @@ export default function GraficoDonut({
   height = 220,
   descricaoTotal = "Alertas",
   idxSelecionado = null,
+  onSelecionarIdx,
 }: GraficoDonutProps) {
   const total = Math.max(0, series.reduce((a, b) => a + (b || 0), 0));
+  const [ativoIdx, setAtivoIdx] = useState<number | null>(idxSelecionado);
 
-  // 🔹 cria uma versão ajustada só para renderização
-  const MIN_PERCENT = 2; // fatia mínima de 2%
-  const seriesPlot = total > 0
-    ? series.map((val) => {
-        if (!val) return 0;
-        const pct = (val / total) * 100;
-        return pct < MIN_PERCENT ? (total * MIN_PERCENT) / 100 : val;
-      })
-    : series;
+  // 🔹 Sincroniza com o valor vindo do pai
+  useEffect(() => {
+    setAtivoIdx(idxSelecionado);
+  }, [idxSelecionado]);
 
-  // 🔹 índice do centro: se veio do pai, usa ele, senão pega o maior valor
+  // 🔹 Decide se mostra tudo ou só a fatia ativa
+  const seriesPlot = useMemo(() => {
+    // 🔹 Se o total for 0 (nenhum alerta), renderiza 100% de uma fatia neutra
+    if (total === 0) return [100];
+  
+    // 🔹 Se clicou numa severidade que é 0, ainda força uma pequena fatia visível (1)
+    if (ativoIdx !== null) {
+      const val = series[ativoIdx] || 0;
+      return [val > 0 ? val : 1];
+    }
+  
+    // 🔹 Modo normal (mostra todas as fatias)
+    return series;
+  }, [ativoIdx, series, total]);
+  
+
+  const labelsPlot = useMemo(() => {
+    if (total === 0) return ["Sem dados"];
+    if (ativoIdx === null) return labels;
+    return [labels[ativoIdx]];
+  }, [ativoIdx, labels, total]);
+
+  const coresPlot = useMemo(() => {
+    // 🔹 Cinza escuro neutro se total for zero
+    if (total === 0) return ["#3B3B3B"];
+  
+    // 🔹 Se clicou em uma severidade com valor 0, ainda mantém a cor da severidade
+    if (ativoIdx !== null) return [cores[ativoIdx] ?? "#10B981"];
+  
+    // 🔹 Caso padrão (mostra todas)
+    return cores;
+  }, [ativoIdx, cores, total]);
+  
+
+
   const idxCentro =
-    idxSelecionado !== null && idxSelecionado !== undefined
-      ? idxSelecionado
+    ativoIdx !== null && ativoIdx !== undefined
+      ? ativoIdx
       : series.indexOf(Math.max(...series.map((n) => n || 0)));
 
   const ratioCentro = total > 0 ? ((series[idxCentro] || 0) / total) * 100 : 0;
   const pctCentro = Math.round(ratioCentro);
+  const corCentro = cores[idxCentro] ?? "#10B981";
 
   const options: ApexCharts.ApexOptions = {
     chart: { type: "donut", foreColor: "#fff" },
-    labels,
-    colors: cores,
-    legend: { show: false }, // legenda nativa desligada (usamos manual no Card)
+    labels: labelsPlot,
+    colors: coresPlot,
+    legend: { show: false },
     tooltip: {
       theme: "dark",
       fillSeriesColor: false,
       x: { show: false },
       y: {
-        formatter: (val: number, opts: any) => {
-          const realVal = series[opts.seriesIndex] || 0;
-          return `${realVal.toLocaleString("pt-BR")} alertas`;
-        },
+        formatter: (val: number) => `${val.toLocaleString("pt-BR")} alertas`,
       },
     },
     dataLabels: { enabled: false },
@@ -80,22 +108,32 @@ export default function GraficoDonut({
     },
   };
 
-  const corCentro = cores[idxCentro] ?? "#10B981";
-
   return (
     <div className="flex items-center justify-between gap-6 w-full">
       {/* Donut */}
-      <div className="relative w-44 h-44">
+      <div className="relative w-44 h-44 transition-all duration-300">
         <Chart
           options={options}
           series={seriesPlot}
           type="donut"
           height={height}
           width="100%"
+          key={ativoIdx} // força re-render ao clicar
         />
         {/* Centro */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-white text-3xl font-semibold">
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all"
+          style={{
+            filter: ativoIdx !== null ? "brightness(1.2)" : "none",
+          }}
+        >
+          <span
+            className="text-white text-3xl font-semibold"
+            style={{
+              color: corCentro,
+              // textShadow: "0 0 10px rgba(255,255,255,0.3)",
+            }}
+          >
             {pctCentro}%
           </span>
           <span
@@ -107,7 +145,7 @@ export default function GraficoDonut({
         </div>
       </div>
 
-      {/* Coluna lateral com valores reais */}
+      {/* Coluna lateral com labels */}
       <div className="flex flex-col items-start">
         <div className="gap-2 mb-2">
           <h3 className="text-white text-2xl">
@@ -119,17 +157,33 @@ export default function GraficoDonut({
         <div className="flex flex-col gap-2 text-sm">
           {labels.map((lb, i) => {
             const percent = total > 0 ? (series[i] / total) * 100 : 0;
+            const ativo = ativoIdx === i;
             return (
-              <div key={i} className="flex items-center gap-3">
+              <button
+                key={i}
+                onClick={() => {
+                  const novo = i === ativoIdx ? null : i;
+                  setAtivoIdx(novo);
+                  onSelecionarIdx?.(novo);
+                }}
+                className={`flex items-center gap-3 text-left transition-all ${ativo ? "scale-105" : "opacity-80 hover:opacity-100"
+                  }`}
+              >
                 <span
                   className="w-3 h-3 rounded-full"
-                  style={{ background: cores[i] ?? "#999" }}
+                  style={{
+                    background: cores[i] ?? "#999",
+                    boxShadow: ativo ? `0 0 8px ${cores[i]}` : "none",
+                  }}
                 />
-                <span className="text-gray-300">
-                  {series[i].toLocaleString("pt-BR")} alertas 
+                <span
+                  className={`text-gray-300 ${ativo ? "text-white font-semibold" : ""
+                    }`}
+                >
+                  {series[i].toLocaleString("pt-BR")} alertas
                   ({percent.toFixed(2)}%)
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
