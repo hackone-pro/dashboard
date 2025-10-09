@@ -890,6 +890,7 @@ export interface PluginUsersPermissionsUser
       Schema.Attribute.Private;
     login_attempts: Schema.Attribute.Integer;
     Nome: Schema.Attribute.String;
+    owner_name_iris: Schema.Attribute.String;
     password: Schema.Attribute.Password &
       Schema.Attribute.Private &
       Schema.Attribute.SetMinMaxLength<{

@@ -1,3 +1,4 @@
+import { resolveCountryCoords } from '../../../utils/countryResolver';
 import {
   buscarSeveridadeIndexer,
   buscarTopGeradoresFirewall,
@@ -209,76 +210,75 @@ export default {
       }
 
       const tenantData = tenant[0];
+
+      // Reaproveita a tua função já existente
       const resultado = await buscarTopPaisesAtaque(tenantData, dias);
+      // resultado deve ser exatamente o array que você mostrou no exemplo (sem lat/lng)
 
-      // Filtra apenas destinos (IPs atacados)
-      const destinos = resultado.filter((p: any) => p.tipo === "destino");
-
-      // Cada origem dentro do destino gera um "flow"
-      const flows = destinos.flatMap((dest: any) => {
-        return (dest.origens || []).map((o: any) => {
-          // Origem ainda precisa resolver coordenadas (se você não tem GeoLocation.src configurado)
-          return {
-            origem: {
-              ip: o.ip,
-              pais: o.pais || null,    
-              cidade: o.cidade || null,
-              lat: o.lat ?? null,      
-              lng: o.lng ?? null,
-              srcport: o.srcport ?? null,
-              servico: o.servico ?? null,
-              interface: o.interface ?? null,
-            },
-            destino: {
-              ip: dest.destino,
-              pais: dest.pais || null,
-              cidade: dest.cidade || null,
-              lat: dest.lat ?? null,
-              lng: dest.lng ?? null,
-              agente: dest.agente || null,
-              dstintf: dest.dstintf || null,
-              dstport: dest.dstport || null,
-              devname: dest.devname || null,
-            },
-            total: o.total,
-            severidades: dest.severidades,
-          };
-          
-        });
+      const topPaises = (resultado || []).map((p: any) => {
+        const coords = resolveCountryCoords(p.pais);
+        return {
+          ...p,
+          lat: coords?.lat ?? null,
+          lng: coords?.lng ?? null,
+          countryCode2: coords?.cca2 ?? null,
+          countryCode3: coords?.cca3 ?? null,
+        };
       });
 
-      return ctx.send({ flows });
+      return ctx.send({ topPaises });
     } catch (error) {
-      console.error("Erro ao buscar fluxos de ataque:", error);
-      return ctx.internalServerError("Erro ao consultar fluxos de ataque");
+      console.error("Erro ao buscar top países de origem (com geo):", error);
+      return ctx.internalServerError("Erro ao consultar top países (com geo)");
     }
   },
 
   async vulnSeveridades(ctx) {
     try {
+      // 🔒 1. Valida usuário autenticado
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-
-      const tenant = await strapi.entityService.findMany('api::tenant.tenant', {
+  
+      // 🔍 2. Busca tenant ativo vinculado ao usuário
+      const tenantList = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
-        populate: ['users_permissions_users'],
+        populate: ["users_permissions_users"],
+        limit: 1,
       });
-
-      if (!tenant || tenant.length === 0) {
+  
+      const tenant = tenantList?.[0];
+      if (!tenant) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-
-      const tenantData = tenant[0];
-      const resultado = await buscarVulnSeveridades(tenantData);
-
-      // mantém o formato igual ao do Postman que você mostrou
-      return ctx.send({ aggregations: resultado });
-
+  
+      // ⚙️ 3. Busca dados de vulnerabilidades
+      const resultado = await buscarVulnSeveridades(tenant);
+  
+      // 🧩 4. Garante retorno consistente (igual ao Elasticsearch)
+      return ctx.send({
+        took: 1,
+        timed_out: false,
+        _shards: { total: 1, successful: 1, skipped: 0, failed: 0 },
+        aggregations: {
+          severity: {
+            buckets: {
+              Pending: { doc_count: resultado.Pending },
+              Critical: { doc_count: resultado.Critical },
+              High: { doc_count: resultado.High },
+              Medium: { doc_count: resultado.Medium },
+              Low: { doc_count: resultado.Low },
+            },
+          },
+          total: { doc_count: resultado.Total },
+        },
+      });
+  
     } catch (error) {
-      console.error("Erro ao buscar vulnerabilidades resumo:", error);
+      console.error("❌ Erro ao buscar vulnerabilidades resumo:", error);
       return ctx.internalServerError("Erro ao consultar vulnerabilidades resumo");
     }
   },
+  
 
   async topVulnerabilidades(ctx) {
     try {

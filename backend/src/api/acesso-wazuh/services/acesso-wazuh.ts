@@ -156,9 +156,9 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
             range: {
               field: "rule.level",
               ranges: [
-                { to: 7, key: "Low" },
-                { from: 7, to: 12, key: "Medium" },
-                { from: 12, to: 15, key: "High" },
+                { from: 0, to: 6, key: "Low" },
+                { from: 7, to: 11, key: "Medium" },
+                { from: 12, to: 14, key: "High" },
                 { from: 15, key: "Critical" },
               ],
             },
@@ -185,7 +185,7 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
   });
 }
 
-export async function buscarTopAgentes(tenant, dias: string) {
+export async function buscarTopAgentes(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
@@ -203,13 +203,34 @@ export async function buscarTopAgentes(tenant, dias: string) {
 
   const body = {
     size: 0,
+    stored_fields: ["*"],
+    script_fields: {},
+    docvalue_fields: [
+      { field: "timestamp", format: "date_time" },
+      { field: "syscheck.mtime_after", format: "date_time" },
+      { field: "syscheck.mtime_before", format: "date_time" },
+      { field: "data.vulnerability.published", format: "date_time" },
+      { field: "data.vulnerability.updated", format: "date_time" },
+      { field: "data.timestamp", format: "date_time" },
+      { field: "data.aws.createdAt", format: "date_time" },
+      { field: "data.aws.end", format: "date_time" },
+      { field: "data.aws.start", format: "date_time" },
+      { field: "data.aws.updatedAt", format: "date_time" }
+    ],
+    _source: {
+      excludes: ["@timestamp"],
+    },
     query: {
       bool: {
         must: [
           timeFilter,
-          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo do Postman
-          { match_phrase: { "rule.groups": "syscheck" } },      // fixo do Postman
-          { match_phrase: { customer: clientName } },           // vem do tenant
+          { match_phrase: { customer: clientName } },
+        ],
+        filter: [
+          { match_phrase: { "rule.groups": { query: "syscheck" } } },
+        ],
+        must_not: [
+          { match_phrase: { "agent.name": "wazuhhackone" } },
         ],
       },
     },
@@ -222,7 +243,7 @@ export async function buscarTopAgentes(tenant, dias: string) {
         },
         aggs: {
           por_severidade: { terms: { field: "rule.level" } },
-          por_evento: { terms: { field: "syscheck.event" } }, // 👈 novo
+          por_evento: { terms: { field: "syscheck.event" } },
         },
       },
     },
@@ -237,9 +258,9 @@ export async function buscarTopAgentes(tenant, dias: string) {
     }
   );
 
-  return (
-    response.data.aggregations?.top_agentes_alertas?.buckets || []
-  ).map((agente) => {
+  const agentes = response.data?.aggregations?.top_agentes_alertas?.buckets || [];
+
+  return agentes.map((agente) => {
     const total = agente.por_severidade.buckets.reduce(
       (sum, item) => sum + item.doc_count,
       0
@@ -264,7 +285,6 @@ export async function buscarTopAgentes(tenant, dias: string) {
     else if (score >= 0.6) nivel = "Médio";
     else nivel = "Baixo";
 
-    // 👇 novo: mapeando os eventos de syscheck
     const eventos = agente.por_evento?.buckets || [];
     const modified = eventos.find((e) => e.key === "modified")?.doc_count || 0;
     const added = eventos.find((e) => e.key === "added")?.doc_count || 0;
@@ -276,14 +296,13 @@ export async function buscarTopAgentes(tenant, dias: string) {
       severidades: agente.por_severidade.buckets,
       nivel_risco: nivel,
       score: Math.round(score * 100),
-
-      // 👇 novos campos
       modified,
       added,
       deleted,
     };
   });
 }
+
 
 
 export async function buscarTopAgentesCis(tenant, dias) {
@@ -362,24 +381,47 @@ export async function buscarTopAgentesCis(tenant, dias) {
   });
 }
 
+// --- TOP PAÍSES DE ORIGEM (Fortigate/Wazuh) ---
 export async function buscarTopPaisesAtaque(tenant, dias: string) {
+  const basicAuth = Buffer.from(
+    `${tenant.wazuh_username}:${tenant.wazuh_password}`
+  ).toString("base64");
+
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  // Tempo
   const timeFilter =
     dias === "todos"
       ? { match_all: {} }
-      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        };
+
+  // 🔹 Detecta automaticamente se o cliente usa Fortigate
+  // Você pode armazenar isso no banco (ex: tenant.usar_fortigate)
+  const usaFortigate =
+    tenant.usar_fortigate === true ||
+    (clientName.toLowerCase().includes("forti") ? true : false);
+
+  // Query base
+  const filtros: any[] = [timeFilter, { match_phrase: { customer: clientName } }];
+
+  // 🔹 Só aplica o filtro Fortigate se o tenant usar
+  if (usaFortigate) {
+    filtros.push({ term: { "rule.groups": "fortigate" } });
+  }
 
   const body = {
     size: 0,
     query: {
       bool: {
-        must: [
-          customerFilter(clientName),
-          timeFilter,
-          { term: { "rule.groups": "fortigate" } },
-        ],
+        filter: filtros,
         must_not: [
           {
             terms: {
@@ -387,55 +429,24 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             },
           },
         ],
-        filter: [{ range: { "rule.level": { gte: 2, lte:15 } } }],
       },
     },
     aggs: {
       top_countries: {
-        terms: { field: "data.srccountry", size: 10, order: { _count: "desc" } },
-        aggs: {
-          severidade: {
-            range: {
-              field: "rule.level",
-              ranges: [
-                { from: 0, to: 6, key: "Baixo" },
-                { from: 7, to: 11, key: "Médio" },
-                { from: 12, to: 14, key: "Alto" },
-                { from: 15, key: "Crítico" },
-              ],
-            },
-          },
+        terms: {
+          field: "data.srccountry",
+          size: 10,
+          order: { _count: "desc" },
         },
-      },
-      top_destinos: {
-        terms: { field: "data.dstip", size: 10, order: { _count: "desc" } },
         aggs: {
-          agentes: { terms: { field: "agent.name", size: 1 } },
-          origens: {
-            terms: { field: "data.srcip", size: 10 },
-            aggs: {
-              pais_origem: { terms: { field: "GeoLocation.country_name", size: 1 } },
-              cidade_origem: { terms: { field: "GeoLocation.city_name", size: 1 } },
-              location: { top_hits: { size: 1, _source: ["GeoLocation.location"] } },
-              srcport: { terms: { field: "data.srcport", size: 1 } },
-              servico: { terms: { field: "data.service", size: 1 } },
-              interface: { terms: { field: "data.srcintf", size: 1 } },
-            }
-          },
-          dstintf: { terms: { field: "data.dstintf", size: 1 } },
-          dstport: { terms: { field: "data.dstport", size: 1 } },
-          devname: { terms: { field: "data.devname", size: 1 } },
-          pais_destino: { terms: { field: "GeoLocation.country_name", size: 1 } },
-          cidade_destino: { terms: { field: "GeoLocation.city_name", size: 1 } },
-          location: { top_hits: { size: 1, _source: ["GeoLocation.location"] } },
           severidade: {
             range: {
               field: "rule.level",
               ranges: [
-                { from: 0, to: 6, key: "Baixo" },
-                { from: 7, to: 11, key: "Médio" },
-                { from: 12, to: 14, key: "Alto" },
-                { from: 15, key: "Crítico" },
+                { from: 0, to: 6, key: "Low" },
+                { from: 7, to: 11, key: "Medium" },
+                { from: 12, to: 14, key: "High" },
+                { from: 15, key: "Critical" },
               ],
             },
           },
@@ -445,66 +456,27 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-archives-*/_search`,
+    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
     body,
     {
-      headers: authHeader(tenant),
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     }
   );
 
-  return [
-    // Origens (países que atacam)
-    ...(response.data.aggregations?.top_countries?.buckets || []).map((b) => ({
-      tipo: "origem",
-      pais: b.key,
-      total: b.doc_count,
-      severidades: (b.severidade?.buckets ?? []).map((s) => ({
-        key: s.key,
-        doc_count: s.doc_count,
-      })),
+  const buckets = response.data?.aggregations?.top_countries?.buckets ?? [];
+
+  return buckets.map((b) => ({
+    pais: b.key,
+    total: b.doc_count,
+    severidades: (b.severidade?.buckets ?? []).map((s) => ({
+      key: s.key,
+      doc_count: s.doc_count,
     })),
-
-    // Destinos (IPs que recebem ataque)
-    ...(response.data.aggregations?.top_destinos?.buckets || []).map((b) => {
-      const loc = b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location;
-      const ip = b.key;
-
-      return {
-        tipo: "destino",
-        destino: ip,
-        total: b.doc_count,
-        agente: b.agentes?.buckets?.[0]?.key || null,
-        pais: isPrivateIp(ip) ? "Interno" : b.pais_destino?.buckets?.[0]?.key || null,
-        cidade: isPrivateIp(ip) ? null : b.cidade_destino?.buckets?.[0]?.key || null,
-        lat: loc?.lat ?? null,
-        lng: loc?.lon ?? null,
-        dstintf: b.dstintf?.buckets?.[0]?.key || null,
-        dstport: b.dstport?.buckets?.[0]?.key || null,
-        devname: b.devname?.buckets?.[0]?.key || null,
-        severidades: (b.severidade?.buckets ?? []).map((s) => ({
-          key: s.key,
-          doc_count: s.doc_count,
-        })),
-        origens: (b.origens?.buckets ?? []).map((o) => {
-          const loc = o.location?.hits?.hits?.[0]?._source?.GeoLocation?.location;
-          const ipOrigem = o.key;
-        
-          return {
-            ip: ipOrigem,
-            total: o.doc_count,
-            pais: isPrivateIp(ipOrigem) ? "Interno" : o.pais_origem?.buckets?.[0]?.key || null,
-            cidade: isPrivateIp(ipOrigem) ? null : o.cidade_origem?.buckets?.[0]?.key || null,
-            lat: loc?.lat ?? null,
-            lng: loc?.lon ?? null,
-            srcport: o.srcport?.buckets?.[0]?.key || null,
-            servico: o.servico?.buckets?.[0]?.key || null,
-            interface: o.interface?.buckets?.[0]?.key || null,
-          };
-        }),        
-      };
-    }),
-  ];
+  }));
 }
 
 
@@ -517,21 +489,28 @@ export async function buscarVulnSeveridades(tenant: any) {
     stored_fields: ["*"],
     script_fields: {},
     docvalue_fields: [
-      { field: "package.installed", format: "date_time" },
-      { field: "vulnerability.detected_at", format: "date_time" },
-      { field: "vulnerability.published_at", format: "date_time" }
+      { field: "data.vulnerability.detected_at", format: "date_time" },
+      { field: "data.vulnerability.published_at", format: "date_time" },
+      { field: "package.installed", format: "date_time" }
     ],
     _source: { excludes: [] },
     query: {
       bool: {
-        must: [],
-        filter: [
-          { match_all: {} },
-          { match_phrase: { "wazuh.cluster.name": { query: "wazuhhackone" } } },
+        must: [
+          { match_phrase: { location: "vulnerability-detector" } },
           { match_phrase: { customer: clientName } }
+          // ❌ removido o "status: Solved"
         ],
-        should: [],
-        must_not: []
+        filter: [
+          {
+            range: {
+              "@timestamp": {
+                gte: "now-30d",
+                lte: "now"
+              }
+            }
+          }
+        ]
       }
     },
     aggs: {
@@ -540,33 +519,43 @@ export async function buscarVulnSeveridades(tenant: any) {
           filters: {
             Pending: {
               bool: {
-                filter: [{ term: { "vulnerability.under_evaluation": true } }]
+                filter: [
+                  { term: { "data.vulnerability.under_evaluation": true } }
+                ]
               }
             },
             Critical: {
               bool: {
-                filter: [{ match_phrase: { "vulnerability.severity": "Critical" } }]
+                filter: [
+                  { match_phrase: { "data.vulnerability.severity": "Critical" } }
+                ]
               }
             },
             High: {
               bool: {
-                filter: [{ match_phrase: { "vulnerability.severity": "High" } }]
+                filter: [
+                  { match_phrase: { "data.vulnerability.severity": "High" } }
+                ]
               }
             },
             Medium: {
               bool: {
-                filter: [{ match_phrase: { "vulnerability.severity": "Medium" } }]
+                filter: [
+                  { match_phrase: { "data.vulnerability.severity": "Medium" } }
+                ]
               }
             },
             Low: {
               bool: {
-                filter: [{ match_phrase: { "vulnerability.severity": "Low" } }]
+                filter: [
+                  { match_phrase: { "data.vulnerability.severity": "Low" } }
+                ]
               }
             }
           }
         }
       },
-      total: { filter: { exists: { field: "vulnerability" } } }
+      total: { filter: { exists: { field: "data.vulnerability" } } }
     }
   };
 
@@ -582,7 +571,6 @@ export async function buscarVulnSeveridades(tenant: any) {
   const buckets = response.data?.aggregations?.severity?.buckets || {};
   const total = response.data?.aggregations?.total?.doc_count || 0;
 
-  // retorna já simplificado
   return {
     Pending: buckets.Pending?.doc_count || 0,
     Critical: buckets.Critical?.doc_count || 0,
@@ -594,6 +582,7 @@ export async function buscarVulnSeveridades(tenant: any) {
 }
 
 
+
 export async function buscarTopVulnerabilidades(
   tenant: any,
   opts?: { by?: "cve" | "package" | "agent"; size?: number; dias?: string }
@@ -603,16 +592,26 @@ export async function buscarTopVulnerabilidades(
 
   const by = opts?.by ?? "cve";
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "todos";
+  const dias = opts?.dias ?? "30"; // padrão 30 dias
 
+  // 🔹 Corrigido para campos reais no Wazuh
   const field =
-    by === "package" ? "package.name" :
-    by === "agent" ? "agent.name" :
-    "vulnerability.id"; // igual ao Postman
+    by === "package"
+      ? "data.vulnerability.package.name"
+      : by === "agent"
+      ? "agent.name"
+      : "data.vulnerability.cve";
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now"
+            }
+          }
+        }
       : { match_all: {} };
 
   const body: any = {
@@ -620,20 +619,19 @@ export async function buscarTopVulnerabilidades(
     stored_fields: ["*"],
     script_fields: {},
     docvalue_fields: [
-      { field: "package.installed", format: "date_time" },
-      { field: "vulnerability.detected_at", format: "date_time" },
-      { field: "vulnerability.published_at", format: "date_time" }
+      { field: "data.vulnerability.detected_at", format: "date_time" },
+      { field: "data.vulnerability.published_at", format: "date_time" },
+      { field: "package.installed", format: "date_time" }
     ],
     _source: { excludes: [] },
     query: {
       bool: {
-        must: [],
-        filter: [
-          timeFilter,
-          { match_phrase: { customer: clientName } }
+        must: [
+          { match_phrase: { location: "vulnerability-detector" } },
+          { match_phrase: { customer: clientName } },
+          { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
-        should: [],
-        must_not: []
+        filter: [timeFilter]
       }
     },
     aggs: {
@@ -641,7 +639,7 @@ export async function buscarTopVulnerabilidades(
         terms: { field, size, order: { _count: "desc" } },
         aggs: {
           por_severidade: {
-            terms: { field: "vulnerability.severity" }
+            terms: { field: "data.vulnerability.severity" }
           }
         }
       }
@@ -649,7 +647,7 @@ export async function buscarTopVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search?filter_path=aggregations.top_vulns.buckets`,
     body,
     {
       headers: authHeader(tenant),
@@ -658,6 +656,7 @@ export async function buscarTopVulnerabilidades(
   );
 
   const buckets = response.data?.aggregations?.top_vulns?.buckets ?? [];
+
   return buckets.map((b: any) => {
     const sev: Record<string, number> = {};
     for (const s of b?.por_severidade?.buckets ?? []) {
@@ -671,7 +670,6 @@ export async function buscarTopVulnerabilidades(
   });
 }
 
-
 export async function buscarTopOSVulnerabilidades(
   tenant: any,
   opts?: { size?: number; dias?: string }
@@ -680,66 +678,124 @@ export async function buscarTopOSVulnerabilidades(
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "todos";
+  const dias = opts?.dias ?? "30"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now"
+            }
+          }
+        }
       : { match_all: {} };
 
-  const body: any = {
+  // 1️⃣ Etapa 1 — Buscar vulnerabilidades e coletar agent.id
+  const bodyVuln = {
     size: 0,
-    stored_fields: ["*"],
-    script_fields: {},
-    docvalue_fields: [
-      { field: "package.installed", format: "date_time" },
-      { field: "vulnerability.detected_at", format: "date_time" },
-      { field: "vulnerability.published_at", format: "date_time" }
-    ],
-    _source: { excludes: [] },
     query: {
       bool: {
-        must: [],
-        filter: [
-          timeFilter,
-          { match_phrase: { customer: clientName } }
+        must: [
+          { match_phrase: { location: "vulnerability-detector" } },
+          { match_phrase: { customer: clientName } },
+          { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
-        should: [],
-        must_not: []
+        filter: [timeFilter]
       }
     },
     aggs: {
-      top_os: {
-        terms: { field: "host.os.full", size, order: { _count: "desc" } },
+      top_agents: {
+        terms: { field: "agent.id", size: 1000, order: { _count: "desc" } },
         aggs: {
           por_severidade: {
-            terms: { field: "vulnerability.severity" }
+            terms: { field: "data.vulnerability.severity" }
           }
         }
       }
     }
   };
 
-  const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
-    body,
+  const resVuln = await axios.post(
+    `${tenant.wazuh_url}/wazuh-*/_search?filter_path=aggregations.top_agents.buckets`,
+    bodyVuln,
     {
       headers: authHeader(tenant),
       httpsAgent: new https.Agent({ rejectUnauthorized: false })
     }
   );
 
-  return (response.data?.aggregations?.top_os?.buckets ?? []).map((b: any) => {
+  const agentsBuckets = resVuln.data?.aggregations?.top_agents?.buckets ?? [];
+  const agentIds = agentsBuckets.map((b: any) => b.key).filter(Boolean);
+
+  if (!agentIds.length) return [];
+
+  // 2️⃣ Etapa 2 — Buscar OS de cada agente
+  const bodyOS = {
+    size: 1000,
+    _source: ["agent.id", "host.os.full"],
+    query: {
+      bool: {
+        must: [
+          { terms: { "agent.id": agentIds } },
+          { exists: { field: "host.os.full" } }
+        ]
+      }
+    }
+  };
+
+  const resOS = await axios.post(
+    `${tenant.wazuh_url}/wazuh-monitoring-*/_search`,
+    bodyOS,
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false })
+    }
+  );
+
+  const hitsOS = resOS.data?.hits?.hits ?? [];
+  const osMap: Record<string, string> = {};
+  for (const h of hitsOS) {
+    const agentId = h._source?.agent?.id;
+    const osName = h._source?.host?.os?.full;
+    if (agentId && osName) osMap[agentId] = osName;
+  }
+
+  // 3️⃣ Etapa 3 — Montar resultado agrupando por nome do OS
+  const osAgg: Record<
+    string,
+    { total: number; severity: Record<string, number> }
+  > = {};
+
+  for (const b of agentsBuckets) {
+    const agentId = b.key;
+    const osName = osMap[agentId] ?? "Desconhecido";
     const sev: Record<string, number> = {};
     for (const s of b?.por_severidade?.buckets ?? []) {
       sev[s.key] = Number(s.doc_count || 0);
     }
-    return {
-      os: String(b.key ?? "Desconhecido"),
-      total: Number(b.doc_count ?? 0),
-      severity: sev
-    };
-  });
+
+    if (!osAgg[osName]) {
+      osAgg[osName] = { total: 0, severity: {} };
+    }
+
+    osAgg[osName].total += Number(b.doc_count || 0);
+    for (const [k, v] of Object.entries(sev)) {
+      osAgg[osName].severity[k] = (osAgg[osName].severity[k] || 0) + v;
+    }
+  }
+
+  // 4️⃣ Retornar os top sistemas operacionais
+  const sorted = Object.entries(osAgg)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, size);
+
+  return sorted.map(([os, data]) => ({
+    os,
+    total: data.total,
+    severity: data.severity
+  }));
 }
 
 
@@ -751,11 +807,18 @@ export async function buscarTopAgentesVulnerabilidades(
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "todos";
+  const dias = opts?.dias ?? "30"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now"
+            }
+          }
+        }
       : { match_all: {} };
 
   const body: any = {
@@ -763,34 +826,32 @@ export async function buscarTopAgentesVulnerabilidades(
     stored_fields: ["*"],
     script_fields: {},
     docvalue_fields: [
-      { field: "package.installed", format: "date_time" },
-      { field: "vulnerability.detected_at", format: "date_time" },
-      { field: "vulnerability.published_at", format: "date_time" }
+      { field: "data.vulnerability.detected_at", format: "date_time" },
+      { field: "data.vulnerability.published_at", format: "date_time" },
+      { field: "package.installed", format: "date_time" }
     ],
     _source: { excludes: [] },
     query: {
       bool: {
-        must: [],
-        filter: [
-          timeFilter,
-          { match_phrase: { "wazuh.cluster.name": { query: "wazuhhackone" } } },
-          { match_phrase: { customer: clientName } }
+        must: [
+          { match_phrase: { location: "vulnerability-detector" } },
+          { match_phrase: { customer: clientName } },
+          { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
-        should: [],
-        must_not: []
+        filter: [timeFilter]
       }
     },
     aggs: {
       top_agents: {
         terms: {
-          field: "agent.name", // igual ao Postman
+          field: "agent.name",
           size,
           order: { _count: "desc" },
           missing: "N/A"
         },
         aggs: {
           por_severidade: {
-            terms: { field: "vulnerability.severity" }
+            terms: { field: "data.vulnerability.severity" }
           }
         }
       }
@@ -798,7 +859,7 @@ export async function buscarTopAgentesVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search?filter_path=aggregations.top_agents.buckets`,
     body,
     {
       headers: authHeader(tenant),
@@ -806,7 +867,9 @@ export async function buscarTopAgentesVulnerabilidades(
     }
   );
 
-  return (response.data?.aggregations?.top_agents?.buckets ?? []).map((b: any) => {
+  const buckets = response.data?.aggregations?.top_agents?.buckets ?? [];
+
+  return buckets.map((b: any) => {
     const sev: Record<string, number> = {};
     for (const s of b?.por_severidade?.buckets ?? []) {
       sev[s.key] = Number(s.doc_count || 0);
@@ -819,8 +882,6 @@ export async function buscarTopAgentesVulnerabilidades(
   });
 }
 
-
-
 export async function buscarTopPackagesVulnerabilidades(
   tenant: any,
   opts?: { size?: number; dias?: string }
@@ -829,11 +890,18 @@ export async function buscarTopPackagesVulnerabilidades(
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "todos";
+  const dias = opts?.dias ?? "30"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now"
+            }
+          }
+        }
       : { match_all: {} };
 
   const body: any = {
@@ -841,34 +909,32 @@ export async function buscarTopPackagesVulnerabilidades(
     stored_fields: ["*"],
     script_fields: {},
     docvalue_fields: [
-      { field: "package.installed", format: "date_time" },
-      { field: "vulnerability.detected_at", format: "date_time" },
-      { field: "vulnerability.published_at", format: "date_time" }
+      { field: "data.vulnerability.detected_at", format: "date_time" },
+      { field: "data.vulnerability.published_at", format: "date_time" },
+      { field: "package.installed", format: "date_time" }
     ],
     _source: { excludes: [] },
     query: {
       bool: {
-        must: [],
-        filter: [
-          timeFilter,
-          { match_phrase: { "wazuh.cluster.name": { query: "wazuhhackone" } } },
-          { match_phrase: { customer: clientName } }
+        must: [
+          { match_phrase: { location: "vulnerability-detector" } },
+          { match_phrase: { customer: clientName } },
+          { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
-        should: [],
-        must_not: []
+        filter: [timeFilter]
       }
     },
     aggs: {
       top_packages: {
         terms: {
-          field: "package.name", // igual Postman
+          field: "data.vulnerability.package.name",
           size,
           order: { _count: "desc" },
           missing: "N/A"
         },
         aggs: {
           por_severidade: {
-            terms: { field: "vulnerability.severity" }
+            terms: { field: "data.vulnerability.severity" }
           }
         }
       }
@@ -876,7 +942,7 @@ export async function buscarTopPackagesVulnerabilidades(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search?filter_path=aggregations.top_packages.buckets`,
     body,
     {
       headers: authHeader(tenant),
@@ -884,7 +950,9 @@ export async function buscarTopPackagesVulnerabilidades(
     }
   );
 
-  return (response.data?.aggregations?.top_packages?.buckets ?? []).map((b: any) => {
+  const buckets = response.data?.aggregations?.top_packages?.buckets ?? [];
+
+  return buckets.map((b: any) => {
     const sev: Record<string, number> = {};
     for (const s of b?.por_severidade?.buckets ?? []) {
       sev[s.key] = Number(s.doc_count || 0);
@@ -898,7 +966,6 @@ export async function buscarTopPackagesVulnerabilidades(
 }
 
 
-
 export async function buscarTopScoresVulnerabilidades(
   tenant: any,
   opts?: { size?: number; dias?: string }
@@ -906,12 +973,19 @@ export async function buscarTopScoresVulnerabilidades(
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  const size = Number(opts?.size ?? 10); // default do Postman é 10
-  const dias = opts?.dias ?? "todos";
+  const size = Number(opts?.size ?? 10); // padrão 10
+  const dias = opts?.dias ?? "30"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now"
+            }
+          }
+        }
       : { match_all: {} };
 
   const body: any = {
@@ -919,36 +993,35 @@ export async function buscarTopScoresVulnerabilidades(
     stored_fields: ["*"],
     script_fields: {},
     docvalue_fields: [
-      { field: "package.installed", format: "date_time" },
-      { field: "vulnerability.detected_at", format: "date_time" },
-      { field: "vulnerability.published_at", format: "date_time" }
+      { field: "data.vulnerability.detected_at", format: "date_time" },
+      { field: "data.vulnerability.published_at", format: "date_time" },
+      { field: "package.installed", format: "date_time" }
     ],
     _source: { excludes: [] },
     query: {
       bool: {
-        must: [],
-        filter: [
-          timeFilter,
-          { match_phrase: { "wazuh.cluster.name": { query: "wazuhhackone" } } },
-          { match_phrase: { customer: clientName } }
+        must: [
+          { match_phrase: { location: "vulnerability-detector" } },
+          { match_phrase: { customer: clientName } },
+          { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
-        should: [],
-        must_not: []
+        filter: [timeFilter]
       }
     },
     aggs: {
       top_scores: {
         terms: {
-          field: "vulnerability.score.base",
+          field: "data.vulnerability.score.base",
           size,
-          order: { _count: "desc" }
+          order: { _count: "desc" },
+          missing: "N/A"
         }
       }
     }
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search?filter_path=aggregations.top_scores.buckets`,
     body,
     {
       headers: authHeader(tenant),
@@ -956,7 +1029,9 @@ export async function buscarTopScoresVulnerabilidades(
     }
   );
 
-  return (response.data?.aggregations?.top_scores?.buckets ?? []).map((b: any) => ({
+  const buckets = response.data?.aggregations?.top_scores?.buckets ?? [];
+
+  return buckets.map((b: any) => ({
     score: String(b.key ?? "Desconhecido"),
     total: Number(b.doc_count ?? 0)
   }));
@@ -970,11 +1045,18 @@ export async function buscarVulnerabilidadesPorAno(
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  const dias = opts?.dias ?? "todos";
+  const dias = opts?.dias ?? "30"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+      ? {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now"
+            }
+          }
+        }
       : { match_all: {} };
 
   const body: any = {
@@ -982,27 +1064,24 @@ export async function buscarVulnerabilidadesPorAno(
     stored_fields: ["*"],
     script_fields: {},
     docvalue_fields: [
-      { field: "package.installed", format: "date_time" },
-      { field: "vulnerability.detected_at", format: "date_time" },
-      { field: "vulnerability.published_at", format: "date_time" }
+      { field: "@timestamp", format: "date_time" },
+      { field: "data.vulnerability.detected_at", format: "date_time" }
     ],
     _source: { excludes: [] },
     query: {
       bool: {
-        must: [],
-        filter: [
-          timeFilter,
-          { match_phrase: { "wazuh.cluster.name": { query: "wazuhhackone" } } },
-          { match_phrase: { customer: clientName } }
+        must: [
+          { match_phrase: { location: "vulnerability-detector" } },
+          { match_phrase: { customer: clientName } },
+          { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
-        should: [],
-        must_not: []
+        filter: [timeFilter]
       }
     },
     aggs: {
       por_ano: {
         date_histogram: {
-          field: "vulnerability.published_at",
+          field: "@timestamp", // 👈 corrigido para usar o campo real existente
           calendar_interval: "1y",
           time_zone: "America/Sao_Paulo",
           format: "yyyy",
@@ -1011,7 +1090,7 @@ export async function buscarVulnerabilidadesPorAno(
         aggs: {
           por_severidade: {
             terms: {
-              field: "vulnerability.severity",
+              field: "data.vulnerability.severity",
               order: { _count: "desc" },
               size: 5
             }
@@ -1022,7 +1101,7 @@ export async function buscarVulnerabilidadesPorAno(
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search?filter_path=aggregations.por_ano.buckets`,
     body,
     {
       headers: authHeader(tenant),
@@ -1030,7 +1109,9 @@ export async function buscarVulnerabilidadesPorAno(
     }
   );
 
-  return (response.data?.aggregations?.por_ano?.buckets ?? []).map((b: any) => {
+  const buckets = response.data?.aggregations?.por_ano?.buckets ?? [];
+
+  return buckets.map((b: any) => {
     const sev: Record<string, number> = {};
     for (const s of b?.por_severidade?.buckets ?? []) {
       sev[s.key] = Number(s.doc_count || 0);
@@ -1155,9 +1236,8 @@ export async function buscarEventosSummary(
     query: {
       bool: {
         must: [
-          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo igual ao Postman
-          { match_phrase: { "rule.groups": "syscheck" } },      // fixo igual ao Postman
-          { match_phrase: { customer: clientName } },           // variável
+          { match_phrase: { "rule.groups": "syscheck" } },
+          { match_phrase: { customer: clientName } },
           ...(timeFilter ? [timeFilter] : []),
         ],
       },
@@ -1165,10 +1245,10 @@ export async function buscarEventosSummary(
     aggs: {
       por_dia: {
         date_histogram: {
-          field: "timestamp", // no Postman usaram `timestamp` em vez de `@timestamp`
-          fixed_interval: "30m", // Postman pediu 30 minutos
+          field: "timestamp",
+          fixed_interval: "30m", // 👈 1 ponto por dia
           time_zone: "America/Sao_Paulo",
-          min_doc_count: 1, // só buckets com docs
+          min_doc_count: 1,
         },
       },
     },
@@ -1183,10 +1263,15 @@ export async function buscarEventosSummary(
     }
   );
 
+  // 🔹 Pega os buckets da agregação
   const buckets = response.data?.aggregations?.por_dia?.buckets ?? [];
 
-  // 🔹 Labels formatados como dd/MM HH:mm
-  const labels: string[] = buckets.map((b: any) => {
+  // 🔹 Limita a quantidade de pontos no gráfico
+  const MAX_PONTOS = 30;
+  const bucketsLimitados = buckets.slice(-MAX_PONTOS);
+
+  // 🔹 Formata labels com dia + hora + minuto (como antes)
+  const labels: string[] = bucketsLimitados.map((b: any) => {
     const d = new Date(b.key_as_string);
     return d.toLocaleString("pt-BR", {
       day: "2-digit",
@@ -1196,8 +1281,8 @@ export async function buscarEventosSummary(
     });
   });
 
-  // 🔹 Valores totais de alertas por intervalo
-  const values: number[] = buckets.map((b: any) => b.doc_count ?? 0);
+  // 🔹 Totais de alertas por intervalo
+  const values: number[] = bucketsLimitados.map((b: any) => b.doc_count ?? 0);
 
   return { labels, values };
 }
@@ -1230,7 +1315,6 @@ export async function buscarRuleDistribution(
     query: {
       bool: {
         must: [
-          { match_phrase: { "manager.name": "wazuhhackone" } }, // fixo igual Postman
           { match_phrase: { "rule.groups": "syscheck" } },      // fixo igual Postman
           { match_phrase: { customer: clientName } },           // variável do tenant
           ...(timeFilter ? [timeFilter] : []),
