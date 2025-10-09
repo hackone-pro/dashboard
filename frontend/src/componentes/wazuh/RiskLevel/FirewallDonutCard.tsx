@@ -98,26 +98,32 @@ export default function FirewallDonutCard({ dias }: FirewallDonutCardProps) {
             height={220}
             descricaoTotal="Alertas de Firewall"
             idxSelecionado={idxSelecionado}
+            onSelecionarIdx={setIdxSelecionado} // 🔹 sincroniza os cliques
           />
         )}
 
         {/* Legenda manual clicável */}
         <div className="flex gap-3 flex-wrap mt-4 text-[10px] text-gray-400 text-xs justify-center">
-          {labels.map((lb, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-1 cursor-pointer ${
-                idxSelecionado === i ? "font-semibold text-white" : ""
-              }`}
-              onClick={() => setIdxSelecionado(i)}
-            >
-              <span
-                className="w-3 h-3 rounded-xs"
-                style={{ background: cores[i] }}
-              />
-              {lb}
-            </div>
-          ))}
+          {labels.map((lb, i) => {
+            const ativo = idxSelecionado === i;
+            return (
+              <div
+                key={i}
+                className={`flex items-center gap-1 cursor-pointer transition-all ${ativo ? "font-semibold text-white scale-105" : "hover:text-white/80"
+                  }`}
+                onClick={() => setIdxSelecionado(ativo ? null : i)} // 🔹 permite desmarcar
+              >
+                <span
+                  className="w-3 h-3 rounded-xs"
+                  style={{
+                    background: cores[i],
+                    boxShadow: ativo ? `0 0 8px ${cores[i]}` : "none",
+                  }}
+                />
+                {lb}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
