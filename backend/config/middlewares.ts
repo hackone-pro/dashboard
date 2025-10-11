@@ -13,6 +13,9 @@ export default [
         'http://app2.securityone.ai',
         'http://lab.pod2.securityone.ai',
         'http://lab.pod2.securityone.ai:3000',
+        'http://app.pod1.securityone.ai/login',
+        'http://app.pod1.securityone.ai:3000',
+        'http://app.pod1.securityone.ai'
          // quando usar SSL
         
       ],
