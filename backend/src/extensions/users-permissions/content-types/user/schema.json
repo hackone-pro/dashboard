@@ -66,7 +66,7 @@
       "inversedBy": "users",
       "configurable": false
     },
-    "Nome": {
+    "nome": {
       "type": "string"
     },
     "tenant": {
@@ -89,6 +89,12 @@
     },
     "owner_name_iris": {
       "type": "string"
+    },
+    "user_role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::user-role.user-role",
+      "inversedBy": "users"
     }
   }
 }
