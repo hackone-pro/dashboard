@@ -185,7 +185,7 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
   });
 }
 
-export async function buscarTopAgentes(tenant, dias: string) {
+export async function buscarTopAgentes(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
@@ -203,16 +203,35 @@ export async function buscarTopAgentes(tenant, dias: string) {
 
   const body = {
     size: 0,
+    stored_fields: ["*"],
+    script_fields: {},
+    docvalue_fields: [
+      { field: "timestamp", format: "date_time" },
+      { field: "syscheck.mtime_after", format: "date_time" },
+      { field: "syscheck.mtime_before", format: "date_time" },
+      { field: "data.vulnerability.published", format: "date_time" },
+      { field: "data.vulnerability.updated", format: "date_time" },
+      { field: "data.timestamp", format: "date_time" },
+      { field: "data.aws.createdAt", format: "date_time" },
+      { field: "data.aws.end", format: "date_time" },
+      { field: "data.aws.start", format: "date_time" },
+      { field: "data.aws.updatedAt", format: "date_time" }
+    ],
+    _source: {
+      excludes: ["@timestamp"],
+    },
     query: {
       bool: {
         must: [
           timeFilter,
-          // { match_phrase: { "rule.groups": "syscheck" } },     
-          { match_phrase: { customer: clientName } },           // vem do tenant
+          { match_phrase: { customer: clientName } },
+        ],
+        filter: [
+          { match_phrase: { "rule.groups": { query: "syscheck" } } },
         ],
         must_not: [
-          {match_phrase: {"agent.name": "wazuhhackone"} }
-        ]
+          { match_phrase: { "agent.name": "wazuhhackone" } },
+        ],
       },
     },
     aggs: {
@@ -224,7 +243,7 @@ export async function buscarTopAgentes(tenant, dias: string) {
         },
         aggs: {
           por_severidade: { terms: { field: "rule.level" } },
-          // por_evento: { terms: { field: "syscheck.event" } }, // 👈 novo
+          por_evento: { terms: { field: "syscheck.event" } },
         },
       },
     },
@@ -239,9 +258,8 @@ export async function buscarTopAgentes(tenant, dias: string) {
     }
   );
 
-  return (
-    response.data.aggregations?.top_agentes_alertas?.buckets || []
-  ).map((agente) => {
+  const agentes = response.data?.aggregations?.top_agentes_alertas?.buckets || [];
+  return agentes.map((agente) => {
     const total = agente.por_severidade.buckets.reduce(
       (sum, item) => sum + item.doc_count,
       0
