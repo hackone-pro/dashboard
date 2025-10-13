@@ -51,6 +51,11 @@ a.header:hover{
   color:#fff;
 }
 
+input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .badge{
   width: 55px;
   text-align: center;

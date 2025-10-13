@@ -137,7 +137,7 @@ export default function Sidebar() {
                     </Link>
                 </li>
 
-                <li className={clsx(
+                {/* <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
                 )}>
@@ -145,11 +145,11 @@ export default function Sidebar() {
                         "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                         isOpen ? "justify-start" : "justify-center"
                     )}>
-                        {/* @ts-ignore */}
+                       
                         <CiSettings />
                         {isOpen && <span>Configurações</span>}
                     </Link>
-                </li>
+                </li> */}
             </ul>
         </div>
     );

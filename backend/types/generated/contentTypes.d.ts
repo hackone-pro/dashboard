@@ -413,6 +413,39 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiUserRoleUserRole extends Struct.CollectionTypeSchema {
+  collectionName: 'user_roles';
+  info: {
+    displayName: 'User Role';
+    pluralName: 'user-roles';
+    singularName: 'user-role';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-role.user-role'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    slug: Schema.Attribute.UID<'name'> & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
 export interface PluginContentReleasesRelease
   extends Struct.CollectionTypeSchema {
   collectionName: 'strapi_releases';
@@ -889,7 +922,7 @@ export interface PluginUsersPermissionsUser
     > &
       Schema.Attribute.Private;
     login_attempts: Schema.Attribute.Integer;
-    Nome: Schema.Attribute.String;
+    nome: Schema.Attribute.String;
     owner_name_iris: Schema.Attribute.String;
     password: Schema.Attribute.Password &
       Schema.Attribute.Private &
@@ -909,6 +942,10 @@ export interface PluginUsersPermissionsUser
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    user_role: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::user-role.user-role'
+    >;
     username: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique &
@@ -929,6 +966,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::tenant.tenant': ApiTenantTenant;
+      'api::user-role.user-role': ApiUserRoleUserRole;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

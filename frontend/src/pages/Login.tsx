@@ -140,14 +140,14 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="text-xs text-gray-400 text-right">
+            {/* <div className="text-xs text-gray-400 text-right">
               <Link
                 to="/forgot-password"
                 className="text-violet-300 hover:text-violet-200"
               >
                 Esqueceu a senha?
               </Link>
-            </div>
+            </div> */}
 
             {/* Botão */}
             <button
