@@ -367,7 +367,7 @@ export default function Configuracoes() {
                                     <input id="swal-nome" class="w-full mb-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Nome" value="${u.nome || ""}">
                                     <label class="block text-sm text-gray-300 my-2 text-left">Email:</label>
                                     <input id="swal-email" type="email" class="w-full mb-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="E-mail" value="${u.email || ""}">
-                                    <label class="block text-sm text-gray-300 my-2 text-left">Owner Iris:</label>
+                                    <label class="block text-sm text-gray-300 my-2 text-left">Usuário no DFIR (IRIS)</label>
                                     <input id="swal-owner" class="w-full rounded-xl mb-2 bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Owner IRIS" value="${u.owner_name_iris || ""}">
             `,
                                   background: "#0A0617",
