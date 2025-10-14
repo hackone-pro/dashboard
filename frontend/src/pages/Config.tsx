@@ -323,7 +323,7 @@ export default function Configuracoes() {
                   <div className="grid grid-cols-12 px-5 py-4 bg-[#0A0617] text-sm text-gray-300 border-b border-[#1D1929]">
                     <div className="col-span-4 text-left">Nome</div>
                     <div className="col-span-5 text-left">E-mail</div>
-                    <div className="col-span-2 text-center">Owner IRIS</div>
+                    <div className="col-span-2 text-center">Usuário no DFIR (IRIS)</div>
                     <div className="col-span-1 text-center">Ações</div> {/* 🔹 nova coluna */}
                   </div>
 
@@ -368,7 +368,7 @@ export default function Configuracoes() {
                                     <label class="block text-sm text-gray-300 my-2 text-left">Email:</label>
                                     <input id="swal-email" type="email" class="w-full mb-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="E-mail" value="${u.email || ""}">
                                     <label class="block text-sm text-gray-300 my-2 text-left">Usuário no DFIR (IRIS)</label>
-                                    <input id="swal-owner" class="w-full rounded-xl mb-2 bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Owner IRIS" value="${u.owner_name_iris || ""}">
+                                    <input id="swal-owner" class="w-full rounded-xl mb-2 bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Usuário no DFIR (IRIS)" value="${u.owner_name_iris || ""}">
             `,
                                   background: "#0A0617",
                                   color: "#fff",
@@ -534,7 +534,7 @@ export default function Configuracoes() {
                   </div>
                   <div>
                     <label className="block text-sm text-gray-300 mb-2">
-                      Owner Name (IRIS)
+                      Usuário no DFIR (IRIS)
                     </label>
                     <input
                       type="text"
