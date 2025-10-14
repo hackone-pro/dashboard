@@ -210,26 +210,48 @@ export default {
       }
 
       const tenantData = tenant[0];
-
-      // Reaproveita a tua função já existente
       const resultado = await buscarTopPaisesAtaque(tenantData, dias);
-      // resultado deve ser exatamente o array que você mostrou no exemplo (sem lat/lng)
 
-      const topPaises = (resultado || []).map((p: any) => {
-        const coords = resolveCountryCoords(p.pais);
-        return {
-          ...p,
-          lat: coords?.lat ?? null,
-          lng: coords?.lng ?? null,
-          countryCode2: coords?.cca2 ?? null,
-          countryCode3: coords?.cca3 ?? null,
-        };
+      // Filtra apenas destinos (IPs atacados)
+      const destinos = resultado.filter((p: any) => p.tipo === "destino");
+
+      // Cada origem dentro do destino gera um "flow"
+      const flows = destinos.flatMap((dest: any) => {
+        return (dest.origens || []).map((o: any) => {
+          // Origem ainda precisa resolver coordenadas (se você não tem GeoLocation.src configurado)
+          return {
+            origem: {
+              ip: o.ip,
+              pais: o.pais || null,    
+              cidade: o.cidade || null,
+              lat: o.lat ?? null,      
+              lng: o.lng ?? null,
+              srcport: o.srcport ?? null,
+              servico: o.servico ?? null,
+              interface: o.interface ?? null,
+            },
+            destino: {
+              ip: dest.destino,
+              pais: dest.pais || null,
+              cidade: dest.cidade || null,
+              lat: dest.lat ?? null,
+              lng: dest.lng ?? null,
+              agente: dest.agente || null,
+              dstintf: dest.dstintf || null,
+              dstport: dest.dstport || null,
+              devname: dest.devname || null,
+            },
+            total: o.total,
+            severidades: dest.severidades,
+          };
+          
+        });
       });
 
-      return ctx.send({ topPaises });
+      return ctx.send({ flows });
     } catch (error) {
-      console.error("Erro ao buscar top países de origem (com geo):", error);
-      return ctx.internalServerError("Erro ao consultar top países (com geo)");
+      console.error("Erro ao buscar fluxos de ataque:", error);
+      return ctx.internalServerError("Erro ao consultar fluxos de ataque");
     }
   },
 

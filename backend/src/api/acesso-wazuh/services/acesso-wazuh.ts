@@ -150,7 +150,7 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     query: { bool: { must: [customerFilter(clientName), timeFilter] } },
     aggs: {
       top_geradores: {
-        terms: { field: "data.devname.keyword", size: 8, order: { _count: "desc" } },
+        terms: { field: "data.devname", size: 8, order: { _count: "desc" } },
         aggs: {
           severidade: {
             range: {
@@ -383,45 +383,23 @@ export async function buscarTopAgentesCis(tenant, dias) {
 
 // --- TOP PAÍSES DE ORIGEM (Fortigate/Wazuh) ---
 export async function buscarTopPaisesAtaque(tenant, dias: string) {
-  const basicAuth = Buffer.from(
-    `${tenant.wazuh_username}:${tenant.wazuh_password}`
-  ).toString("base64");
-
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  // Tempo
   const timeFilter =
     dias === "todos"
       ? { match_all: {} }
-      : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
-          },
-        };
-
-  // 🔹 Detecta automaticamente se o cliente usa Fortigate
-  // Você pode armazenar isso no banco (ex: tenant.usar_fortigate)
-  const usaFortigate =
-    tenant.usar_fortigate === true ||
-    (clientName.toLowerCase().includes("forti") ? true : false);
-
-  // Query base
-  const filtros: any[] = [timeFilter, { match_phrase: { customer: clientName } }];
-
-  // 🔹 Só aplica o filtro Fortigate se o tenant usar
-  if (usaFortigate) {
-    filtros.push({ term: { "rule.groups": "fortigate" } });
-  }
+      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
 
   const body = {
     size: 0,
     query: {
       bool: {
-        filter: filtros,
+        must: [
+          customerFilter(clientName),
+          timeFilter,
+          { term: { "rule.groups": "fortigate" } },
+        ],
         must_not: [
           {
             terms: {
@@ -429,24 +407,55 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             },
           },
         ],
+        filter: [{ range: { "rule.level": { gte: 1, lte:15 } } }],
       },
     },
     aggs: {
       top_countries: {
-        terms: {
-          field: "data.srccountry",
-          size: 10,
-          order: { _count: "desc" },
-        },
+        terms: { field: "data.srccountry", size: 10, order: { _count: "desc" } },
         aggs: {
           severidade: {
             range: {
               field: "rule.level",
               ranges: [
-                { from: 0, to: 6, key: "Low" },
-                { from: 7, to: 11, key: "Medium" },
-                { from: 12, to: 14, key: "High" },
-                { from: 15, key: "Critical" },
+                { from: 0, to: 6, key: "Baixo" },
+                { from: 7, to: 11, key: "Médio" },
+                { from: 12, to: 14, key: "Alto" },
+                { from: 15, key: "Crítico" },
+              ],
+            },
+          },
+        },
+      },
+      top_destinos: {
+        terms: { field: "data.dstip", size: 10, order: { _count: "desc" } },
+        aggs: {
+          agentes: { terms: { field: "agent.name", size: 1 } },
+          origens: {
+            terms: { field: "data.srcip", size: 10 },
+            aggs: {
+              pais_origem: { terms: { field: "GeoLocation.country_name", size: 1 } },
+              cidade_origem: { terms: { field: "GeoLocation.city_name", size: 1 } },
+              location: { top_hits: { size: 1, _source: ["GeoLocation.location"] } },
+              srcport: { terms: { field: "data.srcport", size: 1 } },
+              servico: { terms: { field: "data.service", size: 1 } },
+              interface: { terms: { field: "data.srcintf", size: 1 } },
+            }
+          },
+          dstintf: { terms: { field: "data.dstintf", size: 1 } },
+          dstport: { terms: { field: "data.dstport", size: 1 } },
+          devname: { terms: { field: "data.devname", size: 1 } },
+          pais_destino: { terms: { field: "GeoLocation.country_name", size: 1 } },
+          cidade_destino: { terms: { field: "GeoLocation.city_name", size: 1 } },
+          location: { top_hits: { size: 1, _source: ["GeoLocation.location"] } },
+          severidade: {
+            range: {
+              field: "rule.level",
+              ranges: [
+                { from: 0, to: 6, key: "Baixo" },
+                { from: 7, to: 11, key: "Médio" },
+                { from: 12, to: 14, key: "Alto" },
+                { from: 15, key: "Crítico" },
               ],
             },
           },
@@ -456,27 +465,66 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
   };
 
   const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-alerts-*/_search`,
+    `${tenant.wazuh_url}/wazuh-archives-*/_search`,
     body,
     {
-      headers: {
-        Authorization: `Basic ${basicAuth}`,
-        "Content-Type": "application/json",
-      },
+      headers: authHeader(tenant),
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     }
   );
 
-  const buckets = response.data?.aggregations?.top_countries?.buckets ?? [];
-
-  return buckets.map((b) => ({
-    pais: b.key,
-    total: b.doc_count,
-    severidades: (b.severidade?.buckets ?? []).map((s) => ({
-      key: s.key,
-      doc_count: s.doc_count,
+  return [
+    // Origens (países que atacam)
+    ...(response.data.aggregations?.top_countries?.buckets || []).map((b) => ({
+      tipo: "origem",
+      pais: b.key,
+      total: b.doc_count,
+      severidades: (b.severidade?.buckets ?? []).map((s) => ({
+        key: s.key,
+        doc_count: s.doc_count,
+      })),
     })),
-  }));
+
+    // Destinos (IPs que recebem ataque)
+    ...(response.data.aggregations?.top_destinos?.buckets || []).map((b) => {
+      const loc = b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location;
+      const ip = b.key;
+
+      return {
+        tipo: "destino",
+        destino: ip,
+        total: b.doc_count,
+        agente: b.agentes?.buckets?.[0]?.key || null,
+        pais: isPrivateIp(ip) ? "Interno" : b.pais_destino?.buckets?.[0]?.key || null,
+        cidade: isPrivateIp(ip) ? null : b.cidade_destino?.buckets?.[0]?.key || null,
+        lat: loc?.lat ?? null,
+        lng: loc?.lon ?? null,
+        dstintf: b.dstintf?.buckets?.[0]?.key || null,
+        dstport: b.dstport?.buckets?.[0]?.key || null,
+        devname: b.devname?.buckets?.[0]?.key || null,
+        severidades: (b.severidade?.buckets ?? []).map((s) => ({
+          key: s.key,
+          doc_count: s.doc_count,
+        })),
+        origens: (b.origens?.buckets ?? []).map((o) => {
+          const loc = o.location?.hits?.hits?.[0]?._source?.GeoLocation?.location;
+          const ipOrigem = o.key;
+        
+          return {
+            ip: ipOrigem,
+            total: o.doc_count,
+            pais: isPrivateIp(ipOrigem) ? "Interno" : o.pais_origem?.buckets?.[0]?.key || null,
+            cidade: isPrivateIp(ipOrigem) ? null : o.cidade_origem?.buckets?.[0]?.key || null,
+            lat: loc?.lat ?? null,
+            lng: loc?.lon ?? null,
+            srcport: o.srcport?.buckets?.[0]?.key || null,
+            servico: o.servico?.buckets?.[0]?.key || null,
+            interface: o.interface?.buckets?.[0]?.key || null,
+          };
+        }),        
+      };
+    }),
+  ];
 }
 
 
