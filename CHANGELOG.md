@@ -4,7 +4,7 @@ Todas as mudanças notáveis neste projeto serão documentadas aqui.
 ---
 
 ## [v1.3.0.1]
-- Mapa de Geolocalização
+- Mapa de Geolocalização de origens de ataques
 - Criação da Página de Cadastro de Usuários
 
 ## [v1.2.0.1]
