@@ -1,5 +1,5 @@
 # 🧾 Changelog
-Todas as mudanças notáveis neste projeto serão documentadas aqui.
+Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
