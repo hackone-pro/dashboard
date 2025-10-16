@@ -131,7 +131,7 @@ export default function Sidebar() {
                         "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                         isOpen ? "justify-start" : "justify-center"
                     )}>
-                         
+                        {/* @ts-ignore */}
                         <VscFileSymlinkDirectory />
                         {isOpen && <span>Integridade de Arquivos</span>}
                     </Link>
