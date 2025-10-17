@@ -116,21 +116,42 @@ export function statusPT(s?: string) {
   }
 }
 
-// Agrupa incidentes por severidade
+// Agrupa incidentes por severidade (com normalização e tipo seguro)
 export function agruparPorSeveridade(
   lista: PageIncidente[],
   nivelDoIncidente: (i: PageIncidente) => string
 ) {
-  const base = { Baixo: 0, Médio: 0, Alto: 0, Crítico: 0 };
+  const base: Record<"Baixo" | "Médio" | "Alto" | "Crítico", number> = {
+    Baixo: 0,
+    Médio: 0,
+    Alto: 0,
+    Crítico: 0,
+  };
+
   lista.forEach((i) => {
-    const nivel = nivelDoIncidente(i);
-    if (nivel.startsWith("Crít")) base.Crítico++;
-    else if (nivel.startsWith("Alto") || nivel.startsWith("Alta")) base.Alto++;
-    else if (nivel.startsWith("Méd") || nivel.startsWith("Med")) base.Médio++;
-    else base.Baixo++;
+    let nivel = nivelDoIncidente(i) || "";
+
+    // Normaliza texto (sem acento e minúsculo)
+    const n = nivel
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    let chave: keyof typeof base;
+
+    if (n.includes("crit")) chave = "Crítico";
+    else if (n.includes("alt")) chave = "Alto";
+    else if (n.includes("med")) chave = "Médio";
+    else if (n.includes("baix")) chave = "Baixo";
+    else chave = "Médio"; // fallback neutro
+
+    base[chave] = (base[chave] || 0) + 1;
   });
+
   return base;
 }
+
+
 
 /* ======================
  * Título & Regex

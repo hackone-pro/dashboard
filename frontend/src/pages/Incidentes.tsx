@@ -109,6 +109,7 @@ function nivelDoIncidente(i: PageIncidente) {
     if (s.includes("med")) return "Médio";
     if (s.includes("low") || s.includes("baix")) return "Baixo";
   }
+
   const manual = detectarNivelPorNome(i.case_name || "");
   if (manual) return manual;
 
@@ -118,7 +119,29 @@ function nivelDoIncidente(i: PageIncidente) {
   if (nome.includes("méd") || nome.includes("media")) return "Médio";
   if (nome.includes("baix")) return "Baixo";
 
+  // 👇 ÚNICO AJUSTE: se não houver classification_id, retorna "Médio"
+  if (!i.classification_id) return "Médio";
+
   return mapNivelPorClassificationId(i.classification_id as any);
+}
+
+
+function matchSeveridade(nivelItem: string, filtro: string) {
+  const norm = (txt: string) =>
+    (txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // remove acentos
+
+  const a = norm(nivelItem);
+  const b = norm(filtro);
+
+  // trata equivalências de gênero, plural e inglês
+  if (a.startsWith("crit") && b.startsWith("crit")) return true;
+  if (a.startsWith("alt") && b.startsWith("alt")) return true;
+  if (a.startsWith("med") && b.startsWith("med")) return true;
+  if (a.startsWith("baix") && b.startsWith("baix")) return true;
+  return false;
 }
 
 /* =========================================
@@ -198,12 +221,14 @@ export default function Incidentes() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortKey>("id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [filtroSeveridade, setFiltroSeveridade] = useState<string | null>(null);
 
   const [searchParams] = useSearchParams();
   const openFromQS = searchParams.get("open");
 
   const [irisUrl, setIrisUrl] = useState("");
   const [tenantOwner, setTenantOwner] = useState("");
+  const [filtroOrigem, setFiltroOrigem] = useState<"abertos" | "fechados" | "atribuidos" | "nao_atribuidos" | null>(null);
 
   // Quando dados forem carregados, aplica o expandido via querystring
   useEffect(() => {
@@ -216,7 +241,7 @@ export default function Incidentes() {
     if (openFromQS && dados.length > 0) {
       const id = Number(openFromQS);
       setExpandido(id);
-  
+
       // scroll até o elemento
       setTimeout(() => {
         const el = document.getElementById(`incidente-${id}`);
@@ -254,10 +279,12 @@ export default function Incidentes() {
           filtroDias
         );
 
+        const baseLimpa = filtrado.filter(i => nivelDoIncidente(i) !== "Baixo" || i.severity?.toLowerCase() === "low");
+
         filtrado.sort((a, b) => Number(b.case_id) - Number(a.case_id));
 
         if (ativo) {
-          setDados(filtrado);
+          setDados(baseLimpa);
           setPage(1);
         }
       } catch (e: any) {
@@ -304,24 +331,63 @@ export default function Incidentes() {
 
   const start = (page - 1) * PAGE_SIZE;
   const end = Math.min(start + PAGE_SIZE, total);
-  const linhas = useMemo(() => ordenados.slice(start, end), [ordenados, start, end]);
+  const linhas = useMemo(() => {
+    let base = [...ordenados];
+
+    // 👇 aplica filtro de severidade se existir
+    if (filtroSeveridade) {
+      base = base.filter(i =>
+        matchSeveridade(nivelDoIncidente(i), filtroSeveridade) &&
+        (
+          filtroOrigem === "abertos"
+            ? (i.state_name || "").toLowerCase() === "open"
+            : filtroOrigem === "fechados"
+              ? (i.state_name || "").toLowerCase() === "closed"
+              : filtroOrigem === "atribuidos"
+                ? normaliza(extractOwner(i)) === normaliza(tenantOwner)
+                : filtroOrigem === "nao_atribuidos"
+                  ? normaliza(extractOwner(i)) !== normaliza(tenantOwner)
+                  : true
+        )
+      );
+    }
+
+    return base.slice(start, end);
+  }, [ordenados, start, end, filtroSeveridade]);
+
+  const baseTabela = useMemo(() => {
+    return [...dados].filter(i => {
+      const nivel = nivelDoIncidente(i);
+      // descarta "Baixo" se não tiver severity real "low"
+      if (nivel === "Baixo" && !(i.severity?.toLowerCase() === "low")) return false;
+      return true;
+    });
+  }, [dados]);
 
   // Subconjuntos para gráficos
-  const abertos = dados.filter(i =>
-    (i.state_name || "").toLowerCase() !== "closed"
+  const abertos = baseTabela.filter(i =>
+    (i.state_name || "").toLowerCase() === "open" || ""
   );
-
-  const fechados = dados.filter(i =>
+  
+  const fechados = baseTabela.filter(i =>
     (i.state_name || "").toLowerCase() === "closed"
   );
-
-  const atribuidos = dados.filter(i =>
-    normaliza(extractOwner(i)) === tenantOwner
+  
+  const atribuidos = baseTabela.filter(i =>
+    normaliza(extractOwner(i)) === normaliza(tenantOwner)
   );
+  
+  const naoAtribuidos = baseTabela.filter(i =>
+    normaliza(extractOwner(i)) !== normaliza(tenantOwner)
+  );  
 
-  const naoAtribuidos = dados.filter(i =>
-    normaliza(extractOwner(i)) !== tenantOwner
-  );
+  useEffect(() => {
+    const resumo = baseTabela.reduce((acc, i) => {
+      const n = nivelDoIncidente(i);
+      acc[n] = (acc[n] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [baseTabela]);
 
   /* -----------------------------------------
    * RENDER
@@ -330,14 +396,73 @@ export default function Incidentes() {
     <LayoutModel titulo="Incidentes">
       {/* Gráficos resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* @ts-ignore */}
-        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><FaLockOpen className="text-gray-400" /> Incidentes abertos</span>} total={abertos.length} valores={agruparPorSeveridade(abertos, nivelDoIncidente)} />
-        {/* @ts-ignore */}
-        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><HiLockClosed className="text-gray-400" /> Incidentes fechados</span>} total={fechados.length} valores={agruparPorSeveridade(fechados, nivelDoIncidente)} />
-        {/* @ts-ignore */}
-        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos</span>} total={atribuidos.length} valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)} />
-        {/* @ts-ignore */}
-        <GraficoDonutIncidentes titulo={<span className="flex items-center gap-1"><VscError className="text-gray-400" /> Incidentes não atribuídos</span>} total={naoAtribuidos.length} valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)} />
+        <GraficoDonutIncidentes
+          titulo={<span className="flex items-center gap-1">
+            {/* @ts-ignore */}
+            <FaLockOpen className="text-gray-400" /> Incidentes abertos</span>}
+          total={abertos.length}
+          valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
+          onFiltrarPorNivel={(nivel) => {
+            if (!nivel) {
+              setFiltroSeveridade(null);
+              setFiltroOrigem(null);
+            } else {
+              setFiltroSeveridade(nivel);
+              setFiltroOrigem("abertos"); // ou "fechados"
+            }
+          }}
+        />
+
+        <GraficoDonutIncidentes
+          titulo={<span className="flex items-center gap-1">
+            {/* @ts-ignore */}
+            <HiLockClosed className="text-gray-400" /> Incidentes fechados</span>}
+          total={fechados.length}
+          valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
+          onFiltrarPorNivel={(nivel) => {
+            if (filtroSeveridade === nivel && filtroOrigem === "fechados") {
+              setFiltroSeveridade(null);
+              setFiltroOrigem(null);
+            } else {
+              setFiltroSeveridade(nivel);
+              setFiltroOrigem("fechados");
+            }
+          }}
+        />
+
+        <GraficoDonutIncidentes
+          titulo={<span className="flex items-center gap-1">
+            {/* @ts-ignore */}
+            <FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos</span>}
+          total={atribuidos.length}
+          valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
+          onFiltrarPorNivel={(nivel) => {
+            if (!nivel) {
+              setFiltroSeveridade(null);
+              setFiltroOrigem(null);
+            } else {
+              setFiltroSeveridade(nivel);
+              setFiltroOrigem("atribuidos");
+            }
+          }}
+        />
+
+        <GraficoDonutIncidentes
+          titulo={<span className="flex items-center gap-1">
+            {/* @ts-ignore */}
+            <VscError className="text-gray-400" /> Incidentes não atribuídos</span>}
+          total={naoAtribuidos.length}
+          valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
+          onFiltrarPorNivel={(nivel) => {
+            if (!nivel) {
+              setFiltroSeveridade(null);
+              setFiltroOrigem(null);
+            } else {
+              setFiltroSeveridade(nivel);
+              setFiltroOrigem("nao_atribuidos");
+            }
+          }}
+        />
       </div>
 
       {/* Tabela */}
