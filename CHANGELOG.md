@@ -14,6 +14,7 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 ## [v1.2.0]
 - Graficos página de Incidentes
 - Página de Integridade de Arquivos
+- Página de Detecção de Vulnerabilidades
 
 ## [v1.0.0]
 🚀 Lançamento inicial
