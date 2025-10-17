@@ -109,7 +109,7 @@ export default function Sidebar() {
                     </Link>
                 </li>
 
-                {/* <li className={clsx(
+                <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
                 )}>
@@ -117,11 +117,11 @@ export default function Sidebar() {
                         "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                         isOpen ? "justify-start" : "justify-center"
                     )}>
-                        
+                        {/* @ts-ignore */}
                         <VscSearchFuzzy />
                         {isOpen && <span>Detecção de Vulnerabilidades</span>}
                     </Link>
-                </li> */}
+                </li>
 
                 <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",

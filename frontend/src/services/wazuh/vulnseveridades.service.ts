@@ -30,15 +30,16 @@ export async function getVulnSeveridades(): Promise<VulnSeveridades> {
 
   const data = await response.json();
 
-  // agora acessa dentro de aggregations
-  const aggs = data?.aggregations ?? {};
+  // 🔹 Caminho real dos dados
+  const buckets = data?.aggregations?.severity?.buckets ?? {};
+  const total = data?.aggregations?.total?.doc_count ?? 0;
 
   return {
-    critical: aggs.Critical ?? 0,
-    high: aggs.High ?? 0,
-    medium: aggs.Medium ?? 0,
-    low: aggs.Low ?? 0,
-    pending: aggs.Pending ?? 0,
-    total: aggs.Total ?? 0,
+    critical: buckets.Critical?.doc_count ?? 0,
+    high: buckets.High?.doc_count ?? 0,
+    medium: buckets.Medium?.doc_count ?? 0,
+    low: buckets.Low?.doc_count ?? 0,
+    pending: buckets.Pending?.doc_count ?? 0,
+    total,
   };
 }
