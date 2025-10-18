@@ -14,10 +14,11 @@ import { RiQuestionLine, RiProgress5Line } from "react-icons/ri";
 import { FaLockOpen, FaRegCheckCircle, FaSort } from "react-icons/fa";
 import { HiLockClosed } from "react-icons/hi";
 import { IoStopCircleOutline } from "react-icons/io5";
-import { MdOutlineGppBad, MdOutlineHealthAndSafety } from "react-icons/md";
+import { MdOutlineGppBad, MdOutlineHealthAndSafety} from "react-icons/md";
 import { GrTroubleshoot } from "react-icons/gr";
 import { TbMessageReport } from "react-icons/tb";
 import { VscError } from "react-icons/vsc";
+import { FiRotateCcw } from "react-icons/fi";
 
 import {
   normaliza,
@@ -229,6 +230,7 @@ export default function Incidentes() {
   const [irisUrl, setIrisUrl] = useState("");
   const [tenantOwner, setTenantOwner] = useState("");
   const [filtroOrigem, setFiltroOrigem] = useState<"abertos" | "fechados" | "atribuidos" | "nao_atribuidos" | null>(null);
+  const [chartResetKey, setChartResetKey] = useState(0);
 
   // Quando dados forem carregados, aplica o expandido via querystring
   useEffect(() => {
@@ -368,18 +370,18 @@ export default function Incidentes() {
   const abertos = baseTabela.filter(i =>
     (i.state_name || "").toLowerCase() === "open" || ""
   );
-  
+
   const fechados = baseTabela.filter(i =>
     (i.state_name || "").toLowerCase() === "closed"
   );
-  
+
   const atribuidos = baseTabela.filter(i =>
     normaliza(extractOwner(i)) === normaliza(tenantOwner)
   );
-  
+
   const naoAtribuidos = baseTabela.filter(i =>
     normaliza(extractOwner(i)) !== normaliza(tenantOwner)
-  );  
+  );
 
   useEffect(() => {
     const resumo = baseTabela.reduce((acc, i) => {
@@ -395,8 +397,25 @@ export default function Incidentes() {
   return (
     <LayoutModel titulo="Incidentes">
       {/* Gráficos resumo */}
+
+      <div className="flex justify-end mt-5 mb-3 px-6">
+        <button
+          onClick={() => {
+            setFiltroSeveridade(null);
+            setFiltroOrigem(null);
+            setChartResetKey((k) => k + 1); // 🔁 força recriação dos gráficos
+          }}
+          className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"
+        >
+          {/* @ts-ignore */}
+          <FiRotateCcw className="w-4 h-4" />
+          Limpar filtros
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <GraficoDonutIncidentes
+          key={`abertos-${chartResetKey}`}
           titulo={<span className="flex items-center gap-1">
             {/* @ts-ignore */}
             <FaLockOpen className="text-gray-400" /> Incidentes abertos</span>}
@@ -414,6 +433,7 @@ export default function Incidentes() {
         />
 
         <GraficoDonutIncidentes
+          key={`fechados-${chartResetKey}`}
           titulo={<span className="flex items-center gap-1">
             {/* @ts-ignore */}
             <HiLockClosed className="text-gray-400" /> Incidentes fechados</span>}
@@ -431,6 +451,7 @@ export default function Incidentes() {
         />
 
         <GraficoDonutIncidentes
+          key={`atribuidos-${chartResetKey}`}
           titulo={<span className="flex items-center gap-1">
             {/* @ts-ignore */}
             <FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos</span>}
@@ -448,6 +469,7 @@ export default function Incidentes() {
         />
 
         <GraficoDonutIncidentes
+          key={`naoatribuidos-${chartResetKey}`}
           titulo={<span className="flex items-center gap-1">
             {/* @ts-ignore */}
             <VscError className="text-gray-400" /> Incidentes não atribuídos</span>}
