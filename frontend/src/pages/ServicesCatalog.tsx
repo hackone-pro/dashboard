@@ -1,5 +1,6 @@
 // src/pages/ServicesCatalog.tsx
 
+import { Link } from "react-router-dom";
 import LayoutModel from '../componentes/LayoutModel';
 
 import { GoShieldLock } from "react-icons/go";
@@ -37,7 +38,12 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Tráfego Seguro e Controle de Acesso</p>
                             <p className="text-sm text-gray-400 font-thin">Tráfego seguro e visibilidade de aplicações.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/trafego-seguro"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                        >
+                            Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -110,7 +116,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Defesa de Endpoints (EDR/XDR)</p>
                             <p className="text-sm text-gray-400 font-thin">Detecção e Resposta avançada em dispositivos.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/defesa-endpoints"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -183,7 +193,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Identidade e Acesso</p>
                             <p className="text-sm text-gray-400 font-thin">Controle de Identidade,  Autenticação e Acessos.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/identidade-e-acesso"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -248,7 +262,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Vulnerabilidades</p>
                             <p className="text-sm text-gray-400 font-thin">Exposição de sistemas a falhas conhecidas.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/vulnerabilidades"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -321,7 +339,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Proteção de Aplicações Web (WAF/WAAP)</p>
                             <p className="text-sm text-gray-400 font-thin">Defesa contra ataques Web e APIs.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/protecao-de-aplicacoes"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -394,7 +416,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Proteção de Dados</p>
                             <p className="text-sm text-gray-400 font-thin">Prevenção contra vazamento de informações.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/protecao-de-dados"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -467,7 +493,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Teste de Intrusão (Pentest)</p>
                             <p className="text-sm text-gray-400 font-thin">Teste de intrusão em ambientes críticos.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/teste-de-intrusao"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -532,7 +562,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Monitoria</p>
                             <p className="text-sm text-gray-400 font-thin">Monitoramento do ambiente.</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/monitoria"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
@@ -597,7 +631,11 @@ export default function ServicesCatalog() {
                             <p className="text-md text-white font-normal">Cloud Security</p>
                             <p className="text-sm text-gray-400 font-thin">Análise das vulnerabilidades e alertas em cloud</p>
                         </div>
-                        <button className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300">Acessar Serviço →</button>
+                        <Link
+                            to="/service/cloud-security"
+                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                                Acessar Serviço →
+                        </Link>
                     </header>
 
 
