@@ -32,7 +32,7 @@ export default function ServiceModel() {
     const pageTitle = `CSC - ${serviceTitle}`;
 
     // 🔹 Link do botão (pode ser dinâmico depois)
-    const buttonLink = `/agendar/${nome}`;
+    const buttonLink = `https://calendly.com/securityone/catalogo-de-servicos-de-ciberseguranca`;
 
     return (
         <LayoutModel titulo={pageTitle}>
@@ -566,13 +566,13 @@ export default function ServiceModel() {
                         </p>
 
                         <div className="flex justify-center gap-4">
-                            <Link
-                                // to={buttonLink}
-                                to={"#"}
+                            <a
+                                href={buttonLink}
+                                target="_blank"
                                 className="bg-[#744CD8] hover:bg-[#8B5CF6] text-white px-6 py-2 rounded-lg text-sm font-medium transition-all"
                             >
                                 Quero Agendar Agora
-                            </Link>
+                            </a>
                         </div>
                     </div>
                 </div>
