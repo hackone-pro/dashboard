@@ -27,23 +27,29 @@ export default function ServicesCatalog() {
                 {/* CARD 1 */}
                 <div className="cards rounded-2xl flex flex-col justify-between">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <GoShieldLock className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Tráfego Seguro e Controle de Acesso</p>
+                            <GoShieldLock className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+                            <Link
+                                to="/service/trafego-seguro"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+                            <p className="text-lg text-white font-normal">Tráfego Seguro e Controle de Acesso</p>
                             <p className="text-sm text-gray-400 font-thin">Tráfego seguro e visibilidade de aplicações.</p>
                         </div>
-                        <Link
-                            to="/service/trafego-seguro"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
-                        >
-                            Acessar Serviço →
-                        </Link>
+
                     </header>
 
 
@@ -80,13 +86,13 @@ export default function ServicesCatalog() {
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">560</span> <br />
                                 Tentativas de intrusão por severidade <br />
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-4 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
 
@@ -95,7 +101,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/donut.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain px-3"
+                                    className="py-5 w-[220px] object-contain px-3"
                                 />
                             </div>
                         </div>
@@ -105,22 +111,30 @@ export default function ServicesCatalog() {
                 {/* CARD 2 */}
                 <div className="cards rounded-2xl flex flex-col justify-between">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <PiShareNetworkDuotone className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Defesa de Endpoints (EDR/XDR)</p>
+                            <PiShareNetworkDuotone className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+                            <Link
+                                to="/service/defesa-endpoints"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+
+                            <p className="text-lg text-white font-normal">Defesa de Endpoints (EDR/XDR)</p>
                             <p className="text-sm text-gray-400 font-thin">Detecção e Resposta avançada em dispositivos.</p>
                         </div>
-                        <Link
-                            to="/service/defesa-endpoints"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
-                                Acessar Serviço →
-                        </Link>
+
                     </header>
 
 
@@ -147,7 +161,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/grafico-line2.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full h-[88px] object-contain"
+                                    className="py-5 w-full object-contain"
                                 />
                             </div>
                         </div>
@@ -157,13 +171,13 @@ export default function ServicesCatalog() {
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">1.065</span> <br />
                                 Incidentes detectados por gravidade <br />
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-4 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
 
@@ -172,7 +186,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/barras2.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain px-3"
+                                    className="py-5 w-[220px] object-contain px-3"
                                 />
                             </div>
                         </div>
@@ -182,23 +196,34 @@ export default function ServicesCatalog() {
                 {/* CARD 3 */}
                 <div className="cards rounded-2xl flex flex-col justify-between">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <HiOutlineIdentification className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Identidade e Acesso</p>
-                            <p className="text-sm text-gray-400 font-thin">Controle de Identidade,  Autenticação e Acessos.</p>
-                        </div>
-                        <Link
-                            to="/service/identidade-e-acesso"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
+                            <HiOutlineIdentification className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+
+                            <Link
+                                to="/service/identidade-e-acesso"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:bg-[#6a01bb] "
+                            >
                                 Acessar Serviço →
-                        </Link>
+                            </Link>
+                        </div>
+
+                        {/* Bloco de textos em full width abaixo */}
+                        <div className="mt-3">
+                            <p className="text-lg text-white font-normal">Identidade e Acesso</p>
+                            <p className="text-sm text-gray-400 font-thin">
+                                Controle de Identidade, Autenticação e Acessos.
+                            </p>
+                        </div>
                     </header>
+
 
 
                     <div className="flex flex-col gap-4 mt-4 py-5">
@@ -210,7 +235,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/barras.jpg"
                                     alt="Barras"
-                                    className="py-5 w-full object-contain"
+                                    className="py-5 w-full h- object-contain"
                                 />
                             </div>
 
@@ -251,22 +276,28 @@ export default function ServicesCatalog() {
                 {/* CARD 4 */}
                 <div className="cards rounded-2xl flex flex-col justify-between">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <AiOutlineAim className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Vulnerabilidades</p>
+                            <AiOutlineAim className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+                            <Link
+                                to="/service/vulnerabilidades"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+                            <p className="text-lg text-white font-normal">Vulnerabilidades</p>
                             <p className="text-sm text-gray-400 font-thin">Exposição de sistemas a falhas conhecidas.</p>
                         </div>
-                        <Link
-                            to="/service/vulnerabilidades"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
-                                Acessar Serviço →
-                        </Link>
                     </header>
 
 
@@ -303,13 +334,13 @@ export default function ServicesCatalog() {
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">560</span> <br />
                                 Vulnerabilidades por severidade <br />
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-4 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
 
@@ -318,7 +349,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/donut.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain px-3"
+                                    className="py-5 w-[220px] object-contain px-3"
                                 />
                             </div>
                         </div>
@@ -328,22 +359,30 @@ export default function ServicesCatalog() {
                 {/* CARD 5 */}
                 <div className="cards rounded-2xl flex flex-col justify-between">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <CiGlobe className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Proteção de Aplicações Web (WAF/WAAP)</p>
+                            <CiGlobe className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+
+                            <Link
+                                to="/service/protecao-de-aplicacoes"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+                            <p className="text-lg text-white font-normal">Proteção de Aplicações Web (WAF/WAAP)</p>
                             <p className="text-sm text-gray-400 font-thin">Defesa contra ataques Web e APIs.</p>
                         </div>
-                        <Link
-                            to="/service/protecao-de-aplicacoes"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
-                                Acessar Serviço →
-                        </Link>
+
                     </header>
 
 
@@ -380,13 +419,13 @@ export default function ServicesCatalog() {
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">Top 5</span> <br />
                                 Principais ataques bloqueados <br />
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-4 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
 
@@ -395,7 +434,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/injections-top5.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain px-3"
+                                    className="py-5 w-[220px] object-contain px-3"
                                 />
                             </div>
                         </div>
@@ -405,22 +444,29 @@ export default function ServicesCatalog() {
                 {/* CARD 6 */}
                 <div className="cards rounded-2xl flex flex-col justify-between">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <BsDatabaseLock className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Proteção de Dados</p>
+                            <BsDatabaseLock className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+
+                            <Link
+                                to="/service/protecao-de-dados"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+                            <p className="text-lg text-white font-normal">Proteção de Dados</p>
                             <p className="text-sm text-gray-400 font-thin">Prevenção contra vazamento de informações.</p>
                         </div>
-                        <Link
-                            to="/service/protecao-de-dados"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
-                                Acessar Serviço →
-                        </Link>
                     </header>
 
 
@@ -457,13 +503,13 @@ export default function ServicesCatalog() {
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">340</span> <br />
                                 Incidentes de vazamento por nível <br />
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-4 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
-                                <div className="flex gap-3 flex-wrap text-[10px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
-                                    <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
+                                <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
 
@@ -472,7 +518,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/donut-incidentes.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain px-3"
+                                    className="py-5 w-[220px] object-contain px-3"
                                 />
                             </div>
                         </div>
@@ -482,22 +528,28 @@ export default function ServicesCatalog() {
                 {/* CARD 7 */}
                 <div className="cards rounded-2xl flex flex-col justify-start">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <PiLockKeyLight className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Teste de Intrusão (Pentest)</p>
+                            <PiLockKeyLight className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+                            <Link
+                                to="/service/teste-de-intrusao"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+                            <p className="text-lg text-white font-normal">Teste de Intrusão (Pentest)</p>
                             <p className="text-sm text-gray-400 font-thin">Teste de intrusão em ambientes críticos.</p>
                         </div>
-                        <Link
-                            to="/service/teste-de-intrusao"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
-                                Acessar Serviço →
-                        </Link>
                     </header>
 
 
@@ -506,11 +558,11 @@ export default function ServicesCatalog() {
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">Vetores</span> <br />
-                                Principais vetores de exploração <br />
+                                Principais vetores <br /> de exploração <br />
                                 <img
                                     src="/assets/img/vetores.jpg"
                                     alt="Barras"
-                                    className="py-5 w-full object-contain"
+                                    className="py-5 pt-6 w-[210px] object-contain"
                                 />
                             </div>
 
@@ -524,7 +576,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/vetores-severidade.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain"
+                                    className="py-5 w-[200px] object-contain"
                                 />
                             </div>
                         </div>
@@ -551,22 +603,29 @@ export default function ServicesCatalog() {
                 {/* CARD 8 */}
                 <div className="cards rounded-2xl flex flex-col justify-start">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <TbHeartRateMonitor className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Monitoria</p>
+                            <TbHeartRateMonitor className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+
+                            <Link
+                                to="/service/monitoria"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+                            <p className="text-lg text-white font-normal">Monitoria</p>
                             <p className="text-sm text-gray-400 font-thin">Monitoramento do ambiente.</p>
                         </div>
-                        <Link
-                            to="/service/monitoria"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
-                                Acessar Serviço →
-                        </Link>
                     </header>
 
 
@@ -579,7 +638,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/barras-firewall.jpg"
                                     alt="Barras"
-                                    className="py-5 w-full object-contain"
+                                    className="py-5 w-[220px] object-contain"
                                 />
                             </div>
 
@@ -593,7 +652,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/barras-cpu.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain"
+                                    className="py-5 w-[220px] object-contain"
                                 />
                             </div>
                         </div>
@@ -602,7 +661,7 @@ export default function ServicesCatalog() {
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">VPN</span> <br />
-                                Status e volume de tráfego por VPN <br />
+                                Status e volume de tráfego<br /> por VPN <br />
                             </div>
 
                             {/* Coluna 2 */}
@@ -620,22 +679,29 @@ export default function ServicesCatalog() {
                 {/* CARD 9 */}
                 <div className="cards rounded-2xl flex flex-col justify-between">
                     <header
-                        className="flex justify-between items-start p-5 rounded-t-xl relative overflow-hidden"
+                        className="p-5 rounded-t-xl relative overflow-hidden"
                         style={{
-                            background: "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
+                            background:
+                                "radial-gradient(circle at top left, rgba(64, 32, 105, 1) 0%, rgba(30, 10, 49, 1) 48%, rgba(10, 6, 23, 1) 87%)",
                         }}
                     >
-                        <div>
+                        {/* Linha superior: ícone à esquerda, botão à direita */}
+                        <div className="flex items-start justify-between">
                             {/* @ts-ignore */}
-                            <TbCloudLock className="w-[40px] h-[40px] text-[#744CD8] mb-3" />
-                            <p className="text-md text-white font-normal">Cloud Security</p>
+                            <TbCloudLock className="w-[40px] h-[40px] text-[#744CD8] flex-shrink-0" />
+
+                            <Link
+                                to="/service/cloud-security"
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300"
+                            >
+                                Acessar Serviço →
+                            </Link>
+                        </div>
+                        <div className="mt-3">
+                            {/* @ts-ignore */}
+                            <p className="text-lg text-white font-normal">Cloud Security</p>
                             <p className="text-sm text-gray-400 font-thin">Análise das vulnerabilidades e alertas em cloud</p>
                         </div>
-                        <Link
-                            to="/service/cloud-security"
-                            className="px-2 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300">
-                                Acessar Serviço →
-                        </Link>
                     </header>
 
 
@@ -644,11 +710,11 @@ export default function ServicesCatalog() {
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">Shadow IT</span> <br />
-                                Aplicações em uso e nível de risco <br />
+                                Aplicações em uso e nível<br /> de risco 
                                 <img
                                     src="/assets/img/shadow-it.jpg"
                                     alt="Barras"
-                                    className="py-5 w-full object-contain"
+                                    className="py-5 w-[200px] object-contain"
                                 />
                             </div>
 
@@ -662,7 +728,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/dispositivos.jpg"
                                     alt="Gráfico Line"
-                                    className="py-5 w-full object-contain"
+                                    className="py-5 w-[220px] object-contain"
                                 />
                             </div>
                         </div>
@@ -671,7 +737,7 @@ export default function ServicesCatalog() {
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">Intercloud</span> <br />
-                                Top fluxos bloqueados por origem → destino <br />
+                                Top fluxos bloqueados por<br /> origem → destino <br />
                             </div>
 
                             {/* Coluna 2 */}
