@@ -53,7 +53,7 @@ export default function ServicesCatalog() {
                     </header>
 
 
-                    <div className="flex flex-col gap-4 mt-4 py-5">
+                    <div className="flex flex-col gap-8 mt-4 py-5">
                         <div className="flex justify-between border-b border-[#cacaca33]">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
@@ -81,7 +81,7 @@ export default function ServicesCatalog() {
                             </div>
                         </div>
 
-                        <div className="flex justify-between py-3">
+                        <div className="flex justify-between pb-5">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">560</span> <br />
@@ -138,7 +138,7 @@ export default function ServicesCatalog() {
                     </header>
 
 
-                    <div className="flex flex-col gap-4 mt-4 py-5">
+                    <div className="flex flex-col gap-8 py-6">
                         <div className="flex justify-between border-b border-[#cacaca33]">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
@@ -147,7 +147,7 @@ export default function ServicesCatalog() {
                                 <img
                                     src="/assets/img/top5.jpg"
                                     alt="Barras"
-                                    className="py-5 w-[180px] object-contain"
+                                    className="py-5 w-[200px] object-contain"
                                 />
                             </div>
 
@@ -166,7 +166,7 @@ export default function ServicesCatalog() {
                             </div>
                         </div>
 
-                        <div className="flex justify-between py-3">
+                        <div className="flex justify-between pb-5">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">1.065</span> <br />
@@ -209,7 +209,7 @@ export default function ServicesCatalog() {
 
                             <Link
                                 to="/service/identidade-e-acesso"
-                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:bg-[#6a01bb] "
+                                className="px-3 py-2 btn card text-[11px] text-white rounded-md transition-all duration-300 hover:text-purple-300 "
                             >
                                 Acessar Serviço →
                             </Link>
