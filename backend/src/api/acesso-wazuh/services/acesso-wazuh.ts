@@ -76,8 +76,8 @@ function customerFilter(clientName: string) {
 // helper para checar IP privado
 function isPrivateIp(ip: string) {
   return /^10\./.test(ip) ||
-         /^192\.168\./.test(ip) ||
-         /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
+    /^192\.168\./.test(ip) ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
 }
 
 /* ==================== FUNÇÕES ==================== */
@@ -193,13 +193,13 @@ export async function buscarTopAgentes(tenant, dias) {
     dias === "todos"
       ? { match_all: {} }
       : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
           },
-        };
+        },
+      };
 
   const body = {
     size: 0,
@@ -272,10 +272,10 @@ export async function buscarTopAgentes(tenant, dias) {
           item.key >= 0 && item.key <= 6
             ? 0.2
             : item.key <= 11
-            ? 0.6
-            : item.key <= 14
-            ? 0.87
-            : 1.0;
+              ? 0.6
+              : item.key <= 14
+                ? 0.87
+                : 1.0;
         return acc + item.doc_count * peso;
       }, 0) / (total || 1);
 
@@ -313,13 +313,13 @@ export async function buscarTopAgentesCis(tenant, dias) {
     dias === "todos"
       ? null
       : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
           },
-        };
+        },
+      };
 
   const body = {
     size: 0,
@@ -407,7 +407,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             },
           },
         ],
-        filter: [{ range: { "rule.level": { gte: 1, lte:15 } } }],
+        filter: [{ range: { "rule.level": { gte: 1, lte: 15 } } }],
       },
     },
     aggs: {
@@ -509,7 +509,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
         origens: (b.origens?.buckets ?? []).map((o) => {
           const loc = o.location?.hits?.hits?.[0]?._source?.GeoLocation?.location;
           const ipOrigem = o.key;
-        
+
           return {
             ip: ipOrigem,
             total: o.doc_count,
@@ -521,7 +521,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             servico: o.servico?.buckets?.[0]?.key || null,
             interface: o.interface?.buckets?.[0]?.key || null,
           };
-        }),        
+        }),
       };
     }),
   ];
@@ -549,16 +549,7 @@ export async function buscarVulnSeveridades(tenant: any) {
           { match_phrase: { customer: clientName } }
           // ❌ removido o "status: Solved"
         ],
-        filter: [
-          {
-            range: {
-              "@timestamp": {
-                gte: "now-30d",
-                lte: "now"
-              }
-            }
-          }
-        ]
+        filter: []
       }
     },
     aggs: {
@@ -616,8 +607,15 @@ export async function buscarVulnSeveridades(tenant: any) {
     }
   );
 
-  const buckets = response.data?.aggregations?.severity?.buckets || {};
-  const total = response.data?.aggregations?.total?.doc_count || 0;
+  const buckets =
+    response.data?.aggregations?.severity?.buckets ??
+    response.data?.severity?.buckets ??
+    {};
+
+  const total =
+    response.data?.aggregations?.total?.doc_count ??
+    response.data?.total?.doc_count ??
+    0;
 
   return {
     Pending: buckets.Pending?.doc_count || 0,
@@ -640,26 +638,26 @@ export async function buscarTopVulnerabilidades(
 
   const by = opts?.by ?? "cve";
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "30"; // padrão 30 dias
+  const dias = opts?.dias ?? "todos"; // padrão 30 dias
 
   // 🔹 Corrigido para campos reais no Wazuh
   const field =
     by === "package"
       ? "data.vulnerability.package.name"
       : by === "agent"
-      ? "agent.name"
-      : "data.vulnerability.cve";
+        ? "agent.name"
+        : "data.vulnerability.cve";
 
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now"
-            }
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now"
           }
         }
+      }
       : { match_all: {} };
 
   const body: any = {
@@ -677,7 +675,8 @@ export async function buscarTopVulnerabilidades(
         must: [
           { match_phrase: { location: "vulnerability-detector" } },
           { match_phrase: { customer: clientName } },
-          { match_phrase: { "data.vulnerability.status": "Solved" } }
+          // status opcional, se quiser incluir só solucionadas:
+          // { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
         filter: [timeFilter]
       }
@@ -726,18 +725,18 @@ export async function buscarTopOSVulnerabilidades(
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "30"; // padrão 30 dias
+  const dias = opts?.dias ?? "todos"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now"
-            }
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now"
           }
         }
+      }
       : { match_all: {} };
 
   // 1️⃣ Etapa 1 — Buscar vulnerabilidades e coletar agent.id
@@ -748,7 +747,7 @@ export async function buscarTopOSVulnerabilidades(
         must: [
           { match_phrase: { location: "vulnerability-detector" } },
           { match_phrase: { customer: clientName } },
-          { match_phrase: { "data.vulnerability.status": "Solved" } }
+          // { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
         filter: [timeFilter]
       }
@@ -855,18 +854,18 @@ export async function buscarTopAgentesVulnerabilidades(
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "30"; // padrão 30 dias
+  const dias = opts?.dias ?? "todos"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now"
-            }
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now"
           }
         }
+      }
       : { match_all: {} };
 
   const body: any = {
@@ -884,7 +883,7 @@ export async function buscarTopAgentesVulnerabilidades(
         must: [
           { match_phrase: { location: "vulnerability-detector" } },
           { match_phrase: { customer: clientName } },
-          { match_phrase: { "data.vulnerability.status": "Solved" } }
+          // { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
         filter: [timeFilter]
       }
@@ -938,18 +937,18 @@ export async function buscarTopPackagesVulnerabilidades(
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const size = Number(opts?.size ?? 5);
-  const dias = opts?.dias ?? "30"; // padrão 30 dias
+  const dias = opts?.dias ?? "todos"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now"
-            }
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now"
           }
         }
+      }
       : { match_all: {} };
 
   const body: any = {
@@ -967,7 +966,7 @@ export async function buscarTopPackagesVulnerabilidades(
         must: [
           { match_phrase: { location: "vulnerability-detector" } },
           { match_phrase: { customer: clientName } },
-          { match_phrase: { "data.vulnerability.status": "Solved" } }
+          // { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
         filter: [timeFilter]
       }
@@ -1022,18 +1021,18 @@ export async function buscarTopScoresVulnerabilidades(
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const size = Number(opts?.size ?? 10); // padrão 10
-  const dias = opts?.dias ?? "30"; // padrão 30 dias
+  const dias = opts?.dias ?? "todos"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now"
-            }
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now"
           }
         }
+      }
       : { match_all: {} };
 
   const body: any = {
@@ -1051,7 +1050,7 @@ export async function buscarTopScoresVulnerabilidades(
         must: [
           { match_phrase: { location: "vulnerability-detector" } },
           { match_phrase: { customer: clientName } },
-          { match_phrase: { "data.vulnerability.status": "Solved" } }
+          // { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
         filter: [timeFilter]
       }
@@ -1093,18 +1092,18 @@ export async function buscarVulnerabilidadesPorAno(
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  const dias = opts?.dias ?? "30"; // padrão 30 dias
+  const dias = opts?.dias ?? "todos"; // padrão 30 dias
 
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now"
-            }
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now"
           }
         }
+      }
       : { match_all: {} };
 
   const body: any = {
@@ -1121,7 +1120,7 @@ export async function buscarVulnerabilidadesPorAno(
         must: [
           { match_phrase: { location: "vulnerability-detector" } },
           { match_phrase: { customer: clientName } },
-          { match_phrase: { "data.vulnerability.status": "Solved" } }
+          // { match_phrase: { "data.vulnerability.status": "Solved" } }
         ],
         filter: [timeFilter]
       }
@@ -1270,13 +1269,13 @@ export async function buscarEventosSummary(
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
           },
-        }
+        },
+      }
       : null;
 
   const body: any = {
@@ -1349,13 +1348,13 @@ export async function buscarRuleDistribution(
   const timeFilter =
     dias !== "todos"
       ? {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${dias}d`,
+            lte: "now",
           },
-        }
+        },
+      }
       : null;
 
   const body: any = {
