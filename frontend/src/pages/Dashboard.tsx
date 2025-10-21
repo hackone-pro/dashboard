@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getSeveridadeWazuh } from "../services/wazuh/severidade.service";
+import { getRiskLevel } from "../services/wazuh/risklevel.service";
 
 import LayoutModel from "../componentes/LayoutModel";
 import GeoHitsMap from '../componentes/graficos/GeoHitsMap';
@@ -38,18 +38,12 @@ export default function Dashboard() {
 
     useEffect(() => {
         async function carregarDados() {
-            const dados = await getSeveridadeWazuh();
-            const { baixo, medio, alto, critico, total } = dados;
-            const risco =
-                total > 0
-                    ? ((baixo * 0.2 + medio * 0.6 + alto * 0.87 + critico * 1.0) / total) *
-                    100
-                    : 0;
-            setIndiceRisco(risco);
+          const dados = await getRiskLevel("1"); // sempre 24h
+          setIndiceRisco(dados.indiceRisco);
         }
         carregarDados();
-    }, []);
-
+      }, []);
+      
     return (
         <LayoutModel titulo="Home">
             <section className="grid grid-cols-12 gap-3 mb-8 items-start">

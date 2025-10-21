@@ -1,23 +1,21 @@
-// src/componentes/wazuh/TopAgentsCisCard.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTopAgentsCis, TopAgentCisItem } from "../../../services/wazuh/topagentscis";
 
 interface TopAgentsCisCardProps {
   dias: string; // 👈 vem do RiskLevel (global)
+  onChangeFiltro?: (valor: string | null) => void; // 👈 notifica o pai (opcional)
 }
 
-export default function TopAgentsCisCard({ dias }: TopAgentsCisCardProps) {
-  const [filtroDias, setFiltroDias] = useState<string>(dias); // 👈 começa com global
+export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisCardProps) {
+  const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
+  const diasEfetivo = filtroLocal || dias; // 👈 prioridade local
+
   const [itens, setItens] = useState<TopAgentCisItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
 
-  // se o global mudar, atualiza também (a menos que usuário escolha manualmente)
-  useEffect(() => {
-    setFiltroDias(dias);
-  }, [dias]);
-
+  // 🔹 Busca dados conforme filtro efetivo
   useEffect(() => {
     let ativo = true;
     async function fetchData() {
@@ -25,7 +23,7 @@ export default function TopAgentsCisCard({ dias }: TopAgentsCisCardProps) {
         setCarregando(true);
         setErro(null);
         setAnimReady(false);
-        const data = await getTopAgentsCis(filtroDias); // 👈 usa filtro interno
+        const data = await getTopAgentsCis(diasEfetivo);
         if (!ativo) return;
         setItens(data);
         setTimeout(() => ativo && setAnimReady(true), 50);
@@ -40,7 +38,7 @@ export default function TopAgentsCisCard({ dias }: TopAgentsCisCardProps) {
     return () => {
       ativo = false;
     };
-  }, [filtroDias]);
+  }, [diasEfetivo]);
 
   const lista = useMemo(
     () => [...itens].sort((a, b) => b.score_cis_percent - a.score_cis_percent),
@@ -67,9 +65,15 @@ export default function TopAgentsCisCard({ dias }: TopAgentsCisCardProps) {
         <h3 className="text-white font-semibold text-sm">Auditoria CIS - Top Servidores</h3>
         <select
           className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
-          value={filtroDias}
-          onChange={(e) => setFiltroDias(e.target.value)}
+          value={filtroLocal || dias}
+          onChange={(e) => {
+            const val = e.target.value;
+            const novoValor = val === dias ? null : val;
+            setFiltroLocal(novoValor);
+            onChangeFiltro?.(novoValor); // 👈 notifica o RiskLevel
+          }}
         >
+          <option value={dias}>Usar global ({dias} dias)</option>
           <option value="1">24 horas</option>
           <option value="2">48 horas</option>
           <option value="7">7 dias</option>
