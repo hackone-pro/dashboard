@@ -3,6 +3,9 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.3.0.2]
+- Filtro de Incidentes
+  
 ## [v1.3.0.1]
 - Mapa de Geolocalização de origens de ataques
 - Criação da Página de Cadastro de Usuários
