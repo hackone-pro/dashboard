@@ -73,7 +73,7 @@ export default {
 
       // 🔹 Impede deletar a si mesmo
       if (targetUser.id === fullUser.id) {
-        throw new Error("Você não pode deletar a si mesmo");
+        throw new Error("Você não pode deletar seu próprio usuário!");
       }
 
       // 🔹 Executa o delete
