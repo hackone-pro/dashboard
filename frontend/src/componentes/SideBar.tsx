@@ -101,7 +101,7 @@ export default function Sidebar() {
                         <TbChartInfographic className="text-[18px]" />
                         {isOpen && (
                             <div className="flex justify-between items-center w-full pr-2">
-                                <span>NG SOC</span>
+                                <span>Next Gereration SOC</span>
                                 <svg
                                     className={clsx(
                                         "w-3 h-3 transform transition-transform duration-300",
@@ -138,12 +138,12 @@ export default function Sidebar() {
                                 // @ts-ignore
                                 { to: "/archives-integrity", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Integridade de Arquivos" },
                             ].map((item, idx) => (
-                                <li key={idx}>
+                                <li key={idx} className="py-1">
                                     <Link
                                         to={item.to}
                                         className={clsx(
                                             "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
-                                            "hover:bg-[#4B06DD]/20 hover:text-purple-300"
+                                            "hover:bg-[#4B06DD]/20 hover:text-purple-300 border-1 border-[#282335]"
                                         )}
                                     >
                                         {item.icon}
@@ -174,7 +174,7 @@ export default function Sidebar() {
                             <ul className="space-y-2">
                                 <li>
                                     <Link
-                                        to="/risk-level"
+                                        to="/service/trafego-seguro"
                                         className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
                                     >
                                         {/* @ts-ignore */}
@@ -183,7 +183,7 @@ export default function Sidebar() {
                                 </li>
                                 <li>
                                     <Link
-                                        to="/incidentes"
+                                        to="/service/defesa-endpoints"
                                         className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
                                     >
                                         {/* @ts-ignore */}
@@ -192,29 +192,65 @@ export default function Sidebar() {
                                 </li>
                                 <li>
                                     <Link
-                                        to="/threat-map"
+                                        to="/service/identidade-e-acesso"
                                         className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
                                     >
                                         {/* @ts-ignore */}
-                                        <CiMap className="text-[16px]" /> Threat Map
+                                        <HiOutlineIdentification className="text-[16px]" /> Identidade e Acesso
                                     </Link>
                                 </li>
                                 <li>
                                     <Link
-                                        to="/vulnerabilities-detections"
+                                        to="/service/vulnerabilidades"
                                         className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
                                     >
                                         {/* @ts-ignore */}
-                                        <VscSearchFuzzy className="text-[16px]" /> Detecção de Vulnerabilidades
+                                        <AiOutlineAim className="text-[16px]" /> Vulnerabilidades
                                     </Link>
                                 </li>
                                 <li>
                                     <Link
-                                        to="/archives-integrity"
+                                        to="/service/protecao-de-aplicacoes"
                                         className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
                                     >
                                         {/* @ts-ignore */}
-                                        <VscFileSymlinkDirectory className="text-[16px]" /> Integridade de Arquivos
+                                        <CiGlobe className="text-[16px]" /> Proteção de Aplicações Web
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        to="/service/protecao-de-dados"
+                                        className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <BsDatabaseLock className="text-[16px]" /> Proteção de Dados
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        to="/service/teste-de-intrusao"
+                                        className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <PiLockKeyLight className="text-[16px]" /> Teste de Intrusão
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        to="/service/monitoria"
+                                        className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <TbHeartRateMonitor className="text-[16px]" /> Monitoria
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        to="/service/cloud-security"
+                                        className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <TbCloudLock className="text-[16px]" /> Cloud Security
                                     </Link>
                                 </li>
                             </ul>
@@ -267,7 +303,7 @@ export default function Sidebar() {
                                     to="/services-catalog"
                                     className="flex-1 text-[15px] hover:text-purple-400 transition-colors"
                                 >
-                                    Catálogo de Serviços
+                                    Catálogo de Serviços de Cibersegurança
                                 </Link>
 
                                 {/* BOTÃO DA SETA */}
@@ -300,7 +336,7 @@ export default function Sidebar() {
                     <div
                         className={clsx(
                             "overflow-hidden transition-all duration-500 ease-in-out",
-                            isOpen && isCatalogOpen ? "max-h-100 opacity-100 mt-2" : "max-h-0 opacity-0"
+                            isOpen && isCatalogOpen ? "max-h-150 opacity-100 mt-2" : "max-h-0 opacity-0"
                         )}
                     >
                         <ul className=" pr-2 space-y-1 text-sm text-gray-300">
@@ -324,12 +360,12 @@ export default function Sidebar() {
                                 // @ts-ignore
                                 { to: "/service/cloud-security", icon: <TbCloudLock className="text-[16px]" />, label: "Cloud Security" },
                             ].map((item, idx) => (
-                                <li key={idx}>
+                                <li key={idx} className="py-1">
                                     <Link
                                         to={item.to}
                                         className={clsx(
                                             "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
-                                            "hover:bg-[#4B06DD]/20 hover:text-purple-300"
+                                            "hover:bg-[#4B06DD]/20 hover:text-purple-300 border-1 border-[#282335]"
                                         )}
                                     >
                                         {item.icon}
