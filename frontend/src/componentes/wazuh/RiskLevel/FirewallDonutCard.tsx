@@ -72,7 +72,7 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
             value={filtroLocal || dias}
             onChange={(e) => {
               const val = e.target.value;
-              const novoValor = val === "1" ? null : val;
+              const novoValor = val === dias ? null : val;
               setFiltroLocal(novoValor);
               onChangeFiltro?.(novoValor);
             }}
