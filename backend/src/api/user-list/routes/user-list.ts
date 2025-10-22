@@ -24,5 +24,13 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "POST",
+      path: "/acesso/user/resend/:id",
+      handler: "user-list.reenviarConvite",
+      config: {
+        policies: [],
+      },
+    },
   ],
 };

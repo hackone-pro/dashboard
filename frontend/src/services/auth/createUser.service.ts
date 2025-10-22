@@ -6,7 +6,6 @@ export interface CreateUserPayload {
   nome: string;
   email: string;
   username: string;
-  password: string;
   owner_name_iris: string;
 }
 
@@ -29,11 +28,17 @@ export async function createUser(
     body: JSON.stringify(payload),
   });
 
-  const data = await res.json();
+  const json = await res.json().catch(() => ({}));
 
+  // 🔹 Captura a mensagem de erro real do Strapi, independente do formato
   if (!res.ok) {
-    throw new Error(data?.error?.message || "Erro ao criar usuário.");
+    const msg =
+      json?.message ||
+      json?.error?.message ||
+      json?.error ||
+      "Erro ao criar usuário";
+    throw new Error(msg);
   }
 
-  return data;
+  return json;
 }
