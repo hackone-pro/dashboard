@@ -73,7 +73,6 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisC
             onChangeFiltro?.(novoValor); // 👈 notifica o RiskLevel
           }}
         >
-          <option value={dias}>Usar global ({dias} dias)</option>
           <option value="1">24 horas</option>
           <option value="2">48 horas</option>
           <option value="7">7 dias</option>
