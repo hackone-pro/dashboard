@@ -17,6 +17,11 @@ import {
   buscarTopUsers
 } from '../services/acesso-wazuh';
 
+import {
+  buscarCasos,
+  buscarIncidentesIris, // 👈 novo
+} from "../../acesso-iris/services/acesso-iris";
+
 export default {
   async severidade(ctx) {
     try {
@@ -221,9 +226,9 @@ export default {
           return {
             origem: {
               ip: o.ip,
-              pais: o.pais || null,    
+              pais: o.pais || null,
               cidade: o.cidade || null,
-              lat: o.lat ?? null,      
+              lat: o.lat ?? null,
               lng: o.lng ?? null,
               srcport: o.srcport ?? null,
               servico: o.servico ?? null,
@@ -243,7 +248,7 @@ export default {
             total: o.total,
             severidades: dest.severidades,
           };
-          
+
         });
       });
 
@@ -591,39 +596,40 @@ export default {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
 
-      // 🔹 Global (fallback)
+      // 🔹 Filtros
       const diasGlobal = ctx.query.dias || "1";
-
-      // 🔹 Overrides individuais
       const diasFirewall = ctx.query.firewall || diasGlobal;
       const diasAgentes = ctx.query.agentes || diasGlobal;
       const diasSeveridade = ctx.query.severidade || diasGlobal;
+      const diasIris = ctx.query.iris || diasGlobal;
 
+      // 🔹 Tenant ativo do usuário
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: { users_permissions_users: { id: userId }, ativa: true },
         populate: ["users_permissions_users"],
       });
 
-      if (!tenant || tenant.length === 0) {
+      if (!tenant || tenant.length === 0)
         return ctx.notFound("Tenant não encontrado ou inativo");
-      }
 
       const tenantData = tenant[0];
 
-      // 🔹 Buscar dados de cada fonte, já respeitando os filtros individuais
-      const [fw, agentes, severidade] = await Promise.all([
+      // 🔹 Buscar dados de todas as fontes
+      const [fw, agentes, severidade, iris] = await Promise.all([
         buscarTopGeradoresFirewall(tenantData, diasFirewall),
         buscarTopAgentes(tenantData, diasAgentes),
         buscarSeveridadeIndexer(tenantData, diasSeveridade),
+        buscarIncidentesIris(tenantData, diasIris, ctx.state.user), // ✅ IRIS real
       ]);
 
-      // 🔹 Somar severidades
-      let baixo = severidade.baixo,
-        medio = severidade.medio,
-        alto = severidade.alto,
-        critico = severidade.critico,
-        total = severidade.total;
+      // 🔹 Inicializa totais
+      let baixo = severidade.baixo || 0;
+      let medio = severidade.medio || 0;
+      let alto = severidade.alto || 0;
+      let critico = severidade.critico || 0;
+      let total = severidade.total || 0;
 
+      // 🔹 Firewall
       fw.forEach((item) => {
         baixo += item.severidade.baixo;
         medio += item.severidade.medio;
@@ -632,6 +638,7 @@ export default {
         total += item.total;
       });
 
+      // 🔹 Agentes
       agentes.forEach((agente) => {
         agente.severidades.forEach((s) => {
           if (s.key <= 6) baixo += s.doc_count;
@@ -642,25 +649,41 @@ export default {
         });
       });
 
-      // 🔹 Calcular índice global
+      // 🔹 IRIS (incidentes)
+      if (iris && typeof iris === "object") {
+        baixo += iris.baixo || 0;
+        medio += iris.medio || 0;
+        alto += iris.alto || 0;
+        critico += iris.critico || 0;
+        total += iris.total || 0;
+      }
+
+      // 🔹 Calcular índice global ponderado
       const risco =
         total > 0
-          ? ((baixo * 0.2 + medio * 0.6 + alto * 0.87 + critico * 1.0) / total) *
-          100
+          ? ((baixo * 0.2 + medio * 0.6 + alto * 0.80 + critico * 1.0) / total) * 100
           : 0;
+
+      // 🔹 Log detalhado para depuração
+      strapi.log.info(
+        `🧩 RiskLevel (${diasGlobal}d): FW=${fw.length}, Agentes=${agentes.length}, IRIS=${iris.total || 0}, Severidade.total=${severidade.total || 0}`
+      );
 
       return ctx.send({
         severidades: { baixo, medio, alto, critico, total },
         indiceRisco: parseFloat(risco.toFixed(2)),
-
-        // 👇 útil pra debug
-        filtrosUsados: { diasGlobal, diasFirewall, diasAgentes, diasSeveridade },
+        filtrosUsados: {
+          diasGlobal,
+          diasFirewall,
+          diasAgentes,
+          diasSeveridade,
+          diasIris,
+        },
       });
     } catch (error) {
-      console.error("Erro ao calcular risk level:", error);
-      return ctx.internalServerError("Erro ao calcular risk level");
+      console.error("❌ Erro ao calcular RiskLevel:", error);
+      return ctx.internalServerError("Erro ao calcular RiskLevel");
     }
   }
-
 
 }
