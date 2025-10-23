@@ -101,7 +101,7 @@ export default function Sidebar() {
                         <TbChartInfographic className="text-[18px]" />
                         {isOpen && (
                             <div className="flex justify-between items-center w-full pr-2">
-                                <span>Next Gereration SOC</span>
+                                <span>Next Generation SOC</span>
                                 <svg
                                     className={clsx(
                                         "w-3 h-3 transform transition-transform duration-300",
@@ -173,7 +173,7 @@ export default function Sidebar() {
                         >
                             <ul className="space-y-2">
                                 <li>
-                                    <li style={{ color: "#fff"}} className='text-white uppercase border-b-2 border-[#282335] pb-2'>Next Geretation SOC</li>
+                                    <li style={{ color: "#fff"}} className='text-white uppercase border-b-2 border-[#282335] pb-2'>Next Generation SOC</li>
                                     <Link
                                         to="/risk-level"
                                         className="flex items-center gap-3 px-2 py-1 pt-2 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
