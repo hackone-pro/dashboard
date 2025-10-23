@@ -18,7 +18,7 @@ export default function ServicesCatalog() {
             {/* Header */}
             <section className="p-6 rounded-2xl shadow-lg mb-3 flex justify-between items-center">
                 <h2 className="text-white text-2xl">
-                    CSC - Catálogo de Serviço de Cibersegurança
+                    CSC - Catálogo de Serviços de Cibersegurança
                 </h2>
             </section>
 
