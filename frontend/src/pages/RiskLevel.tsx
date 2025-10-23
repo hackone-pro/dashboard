@@ -23,6 +23,9 @@ export default function RiskLevel() {
   const [totalAlertas, setTotalAlertas] = useState<number>(0);
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [carregando, setCarregando] = useState<boolean>(true);
+  const [diasIris, setDiasIris] = useState<string | null>(null);
+  const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
+
 
   // 🔹 Atualiza o Gauge com base em todos os filtros combinados
   useEffect(() => {
@@ -36,6 +39,7 @@ export default function RiskLevel() {
           ...(diasAgentes ? { agentes: diasAgentes } : {}),
           ...(diasSeveridade ? { severidade: diasSeveridade } : {}),
           ...(diasCis ? { cis: diasCis } : {}),
+          ...(diasIris ? { iris: diasIris } : {}),
         }).toString();
 
         const res = await fetch(
@@ -58,7 +62,7 @@ export default function RiskLevel() {
     }
 
     carregar();
-  }, [dias, diasFirewall, diasAgentes, diasSeveridade, diasCis]); // 👈 adiciona o CIS aqui
+  }, [dias, diasFirewall, diasAgentes, diasSeveridade, diasCis, diasIris]); // 👈 adiciona o CIS aqui
 
   return (
     <LayoutModel titulo="Risk Level">
@@ -78,7 +82,7 @@ export default function RiskLevel() {
 
           <div className="flex items-center gap-3 flex-wrap">
             <h3 className="text-white text-base font-semibold">
-              {formatador.format(totalAlertas)} alertas totais
+              {formatador.format(totalAlertas + totalIncidentes)} alertas totais
             </h3>
 
             {/* 🔹 Select global */}
@@ -154,7 +158,12 @@ export default function RiskLevel() {
 
           <div className="flex-1">
             <div className="cards rounded-xl p-6 shadow-md h-full">
-              <FluxoIncidentes token={token || ""} />
+              <FluxoIncidentes
+                token={token || ""}
+                diasGlobal={dias}
+                onChangeFiltro={setDiasIris}
+                onUpdateTotais={setTotalIncidentes}
+              />
             </div>
           </div>
         </div>
