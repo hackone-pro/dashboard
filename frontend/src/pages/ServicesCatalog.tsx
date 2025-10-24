@@ -1,7 +1,10 @@
 // src/pages/ServicesCatalog.tsx
 
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom";
 import LayoutModel from '../componentes/LayoutModel';
+import Contador from "../componentes/Contador";
+import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
 
 import { GoShieldLock } from "react-icons/go";
 import { PiShareNetworkDuotone, PiLockKeyLight } from "react-icons/pi";
@@ -12,6 +15,55 @@ import { BsDatabaseLock } from "react-icons/bs";
 import { TbHeartRateMonitor, TbCloudLock } from "react-icons/tb";
 
 export default function ServicesCatalog() {
+
+    function BarraPreenchimentoSimples() {
+        const [animReady, setAnimReady] = useState(false)
+        const slots = 25 // número total de barras
+
+        useEffect(() => {
+            const timeout = setTimeout(() => setAnimReady(true), 100)
+            return () => clearTimeout(timeout)
+        }, [])
+
+        return (
+            <div className="flex gap-[3px] items-end py-5 w-full">
+                {Array.from({ length: slots }).map((_, i) => (
+                    <div
+                        key={i}
+                        className={`w-[6px] h-3 rounded-xs transition-all duration-500`}
+                        style={{
+                            backgroundColor: animReady ? "#744CD8" : "#2b2b3a",
+                            opacity: animReady ? 1 : 0,
+                            transitionDelay: `${i * 40}ms`,
+                        }}
+                    />
+                ))}
+            </div>
+        )
+    }
+
+    function CardDonut() {
+        // 🔹 Dados estáticos fictícios
+        const labels = ["Crítico", "Alto", "Médio", "Baixo"]
+        const series = [50, 90, 120, 300] // porcentagem ou quantidade
+        const cores = ["#F914AD", "#A855F7", "#6366F1", "#1DD69A"]
+
+        const tooltipExtra = [
+            { label: "Crítico", info: "45" },
+            { label: "Alto", info: "30" },
+            { label: "Médio", info: "15" },
+            { label: "Baixo", info: "10" },
+        ]
+        return (
+
+            <GraficoDonutSimples
+                labels={labels}
+                series={series}
+                cores={cores}
+                height={180}
+            />
+        )
+    }
 
     return (
         <LayoutModel titulo="CSC">
@@ -57,13 +109,14 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between border-b border-[#cacaca33]">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">96%</span> <br />
-                                Taxa de Tráfego Bloqueado <br />
-                                <img
-                                    src="/assets/img/barras.jpg"
-                                    alt="Barras"
-                                    className="py-5 w-full object-contain"
-                                />
+                                <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
+                                    <span className="flex items-baseline">
+                                        <Contador valor={96} color="text-[#744CD8]" className="text-3xl" suffix="%" />
+                                    </span>
+                                    <br />
+                                    Taxa de Tráfego Bloqueado
+                                    <BarraPreenchimentoSimples />
+                                </div>
                             </div>
 
                             {/* Divisor vertical */}
@@ -71,7 +124,10 @@ export default function ServicesCatalog() {
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">12,5 tb/dia</span> <br />
+                                <span className="flex items-baseline">
+                                    <Contador valor="12,5" decimals={1} color="text-[#744CD8]" className="text-3xl" />
+                                    <span className="text-[#744CD8] text-3xl ml-1">tb/dia</span>
+                                </span> <br />
                                 Tráfego analisado <br />
                                 <img
                                     src="/assets/img/grafico-line.jpg"
@@ -84,25 +140,46 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between pb-5">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">560</span> <br />
+                                <Contador valor={560} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Tentativas de intrusão por severidade <br />
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500 pr-[9px]"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <img
-                                    src="/assets/img/donut.jpg"
-                                    alt="Gráfico Line"
-                                    className="py-5 w-[220px] object-contain px-3"
-                                />
+                                <div className="flex items-center justify-between gap-4">
+                                    {/* 🔹 Gráfico Donut */}
+                                    <div className="flex-shrink-0 w-[180px] h-[180px]">
+                                        <CardDonut />
+                                    </div>
+
+                                    {/* 🔹 Texto ao lado */}
+                                    <div className="flex flex-col text-xs text-gray-500 flex-grow">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span>
+                                            <span>50</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span>
+                                            <span>90</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span>
+                                            <span>120</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span>
+                                            <span>300</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -156,7 +233,7 @@ export default function ServicesCatalog() {
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">1.254</span> <br />
+                                <Contador valor={1.254} decimals={3} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Endpoints monitorados <br />
                                 <img
                                     src="/assets/img/grafico-line2.jpg"
@@ -169,14 +246,14 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between pb-5">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">1.065</span> <br />
+                                <Contador valor={1.065} decimals={3} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Incidentes detectados por gravidade <br />
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500 pr-[9px]"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
@@ -230,13 +307,9 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between border-b border-[#cacaca33]">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">96%</span> <br />
+                                <Contador valor={96} decimals={0} color="text-[#744CD8]" className="text-3xl" suffix="%" />  <br />
                                 Tentativas de acesso mal-sucedidas <br />
-                                <img
-                                    src="/assets/img/barras.jpg"
-                                    alt="Barras"
-                                    className="py-5 w-full h- object-contain"
-                                />
+                                <BarraPreenchimentoSimples />
                             </div>
 
                             {/* Divisor vertical */}
@@ -244,7 +317,7 @@ export default function ServicesCatalog() {
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">5.200</span> <br />
+                                <Contador valor={5.200} decimals={3} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Logins monitorados/dia <br />
                                 <img
                                     src="/assets/img/grafico-line2.jpg"
@@ -319,7 +392,7 @@ export default function ServicesCatalog() {
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">430</span> <br />
+                                <Contador valor={430} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Vulnerabilidades detectadas <br />
                                 <img
                                     src="/assets/img/grafico-line.jpg"
@@ -332,25 +405,46 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between py-3">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">560</span> <br />
+                                <Contador valor={560} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Vulnerabilidades por severidade <br />
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500 pr-[9px]"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <img
-                                    src="/assets/img/donut.jpg"
-                                    alt="Gráfico Line"
-                                    className="py-5 w-[220px] object-contain px-3"
-                                />
+                                <div className="flex items-center justify-between gap-4">
+                                    {/* 🔹 Gráfico Donut */}
+                                    <div className="flex-shrink-0 w-[180px] h-[180px]">
+                                        <CardDonut />
+                                    </div>
+
+                                    {/* 🔹 Texto ao lado */}
+                                    <div className="flex flex-col text-xs text-gray-500 flex-grow">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span>
+                                            <span>50</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span>
+                                            <span>90</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span>
+                                            <span>120</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span>
+                                            <span>300</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -390,13 +484,9 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between border-b border-[#cacaca33]">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">92%</span> <br />
+                                <Contador valor={92} color="text-[#744CD8]" className="text-3xl" suffix="%" /> <br />
                                 Taxa de bloqueio <br />
-                                <img
-                                    src="/assets/img/barras.jpg"
-                                    alt="Barras"
-                                    className="py-5 w-full object-contain"
-                                />
+                                <BarraPreenchimentoSimples />
                             </div>
 
                             {/* Divisor vertical */}
@@ -404,7 +494,7 @@ export default function ServicesCatalog() {
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">1500</span> <br />
+                                <Contador valor={1500} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Requisições bloqueadas/dia <br />
                                 <img
                                     src="/assets/img/grafico-line.jpg"
@@ -424,7 +514,7 @@ export default function ServicesCatalog() {
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500 pr-[9px]"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
@@ -474,13 +564,9 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between border-b border-[#cacaca33]">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">87%</span> <br />
+                                <Contador valor={87} color="text-[#744CD8]" className="text-3xl" suffix="%" /> <br />
                                 Conformidade em políticas <br />
-                                <img
-                                    src="/assets/img/barras.jpg"
-                                    alt="Barras"
-                                    className="py-5 w-full object-contain"
-                                />
+                                <BarraPreenchimentoSimples />
                             </div>
 
                             {/* Divisor vertical */}
@@ -488,7 +574,10 @@ export default function ServicesCatalog() {
 
                             {/* Coluna 2 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">2.1 tb</span> <br />
+                                <span className="flex items-baseline">
+                                    <Contador valor="2,1" decimals={1} color="text-[#744CD8]" className="text-3xl" />
+                                    <span className="text-[#744CD8] text-3xl ml-1"> tb</span>
+                                </span> <br />
                                 Dados monitorados <br />
                                 <img
                                     src="/assets/img/grafico-line.jpg"
@@ -501,14 +590,14 @@ export default function ServicesCatalog() {
                         <div className="flex justify-between py-3">
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
-                                <span className="text-[#744CD8] text-3xl">340</span> <br />
+                                <Contador valor={340} color="text-[#744CD8]" className="text-3xl" /> <br />
                                 Incidentes de vazamento por nível <br />
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-4 text-gray-400">
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio</div>
                                 </div>
                                 <div className="flex gap-3 flex-wrap text-[12px] mt-2 text-gray-400">
-                                    <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
+                                    <div className="flex items-center gap-1 text-gray-500 pr-[9px]"><span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto</div>
                                     <div className="flex items-center gap-1 text-gray-500"><span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico</div>
                                 </div>
                             </div>
@@ -710,7 +799,7 @@ export default function ServicesCatalog() {
                             {/* Coluna 1 */}
                             <div className="flex-1 flex flex-col text-left text-gray-300 pl-4">
                                 <span className="text-[#744CD8] text-3xl">Shadow IT</span> <br />
-                                Aplicações em uso e nível<br /> de risco 
+                                Aplicações em uso e nível<br /> de risco
                                 <img
                                     src="/assets/img/shadow-it.jpg"
                                     alt="Barras"
