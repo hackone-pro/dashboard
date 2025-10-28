@@ -44,6 +44,12 @@
     },
     "wazuh_client_name": {
       "type": "string"
+    },
+    "user_multi_tenants": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-multi-tenant.user-multi-tenant",
+      "mappedBy": "tenant"
     }
   }
 }

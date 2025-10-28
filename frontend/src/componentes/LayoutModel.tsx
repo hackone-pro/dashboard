@@ -2,6 +2,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "./SideBar";
+import TenantSelector from "./TenantSelector";
 import { logout } from "../utils/auth";
 import { toastSuccess } from "../utils/toast";
 import { FiLogOut } from "react-icons/fi";
@@ -64,6 +65,10 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
           </div>
 
           <div className="flex items-center gap-3">
+
+            {/* 🔹 Seletor de Tenant */}
+            <TenantSelector />
+
             {/* WhatsApp */}
             <a
               href="https://hackone.com.br/consultoria-aberturachamado" // substitua pelo número real

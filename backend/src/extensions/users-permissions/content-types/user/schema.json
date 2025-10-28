@@ -95,6 +95,12 @@
       "relation": "manyToOne",
       "target": "api::user-role.user-role",
       "inversedBy": "users"
+    },
+    "user_multi_tenants": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-multi-tenant.user-multi-tenant",
+      "mappedBy": "users_permissions_user"
     }
   }
 }

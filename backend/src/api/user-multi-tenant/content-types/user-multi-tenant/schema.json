@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_multi_tenants",
+  "info": {
+    "singularName": "user-multi-tenant",
+    "pluralName": "user-multi-tenants",
+    "displayName": "User Multi Tenant"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "role": {
+      "type": "enumeration",
+      "enum": [
+        "admin"
+      ]
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant",
+      "inversedBy": "user_multi_tenants"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "user_multi_tenants"
+    }
+  }
+}
