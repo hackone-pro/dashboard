@@ -1,29 +1,41 @@
+// src/components/wazuh/TopAgentsCard.tsx
 import { useEffect, useState } from "react";
 import { getTopAgents, TopAgentItem } from "../../../services/wazuh/topagents.service";
+import { useTenant } from "../../../context/TenantContext"; // 👈 integração tenant
 
 interface TopAgentsCardProps {
-  dias: string; // 👈 vem do RiskLevel (global)
-  onChangeFiltro?: (valor: string | null) => void; // 👈 novo (já existe na sua versão)
+  dias: string;
+  onChangeFiltro?: (valor: string | null) => void;
 }
 
 export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardProps) {
+  const { tenantAtivo } = useTenant(); // 👈 reage à troca de tenant
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-  const diasEfetivo = filtroLocal || dias; // 👈 prioridade local
+  const diasEfetivo = filtroLocal || dias;
 
   const [agentes, setAgentes] = useState<TopAgentItem[]>([]);
-  const [carregando, setCarregando] = useState<boolean>(true);
+  const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // 🔹 Busca os dados conforme o filtro efetivo
   useEffect(() => {
+    if (!tenantAtivo) return; // evita chamada sem tenant
+
     let ativo = true;
     async function fetchData() {
       try {
         setCarregando(true);
         setErro(null);
+
+        const inicio = Date.now();
         const data = await getTopAgents(diasEfetivo);
         if (!ativo) return;
-        setAgentes(data);
+
+        const elapsed = Date.now() - inicio;
+        const delay = Math.max(500 - elapsed, 0); // ⏳ delay suave
+
+        setTimeout(() => {
+          if (ativo) setAgentes(data);
+        }, delay);
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao buscar top agentes");
@@ -31,18 +43,23 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
         if (ativo) setCarregando(false);
       }
     }
+
     fetchData();
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo]); // 👈 refaz a busca sempre que mudar o filtro efetivo
+  }, [diasEfetivo, tenantAtivo]);
 
   return (
-    <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300">
-      <div className="flex justify-between items-center mb-5">
+    <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300 relative">
+      {/* 🔹 Overlay de carregamento visual opcional */}
+      {carregando && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-10 rounded-2xl" />
+      )}
+
+      <div className="flex justify-between items-center mb-5 relative z-20">
         <h3 className="text-sm text-white">Top Hosts</h3>
 
-        {/* 🔹 Select interno com opção "Usar global" */}
         <select
           className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
           value={filtroLocal || dias}
@@ -50,7 +67,7 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
             const val = e.target.value;
             const novoValor = val === dias ? null : val;
             setFiltroLocal(novoValor);
-            onChangeFiltro?.(novoValor); // 👈 notifica o RiskLevel
+            onChangeFiltro?.(novoValor);
           }}
         >
           <option value="1">24 horas</option>
@@ -63,21 +80,20 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
       </div>
 
       {erro && (
-        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-2">
+        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-2 relative z-20">
           {erro}
         </div>
       )}
 
+      {/* 🦴 Skeleton animado */}
       {carregando ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-10 bg-[#ffffff0a] rounded-md" />
-            </div>
+            <div key={i} className="cards animate-pulse bg-[#ffffff0a] h-10 rounded-md" />
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative z-20">
           <table className="w-full text-sm text-gray-300 border-collapse py-3">
             <thead>
               <tr className="text-xs text-gray-400 top-agents">

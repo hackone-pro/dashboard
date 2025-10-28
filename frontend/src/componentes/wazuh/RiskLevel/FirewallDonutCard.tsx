@@ -1,6 +1,8 @@
+// src/components/wazuh/FirewallDonutCard.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTopFirewalls, TopFirewallItem } from "../../../services/wazuh/topfirewall.service";
 import GraficoDonut from "../../graficos/GraficoDonut";
+import { useTenant } from "../../../context/TenantContext"; // 👈 integração tenant
 
 interface FirewallDonutCardProps {
   dias: string;
@@ -8,6 +10,8 @@ interface FirewallDonutCardProps {
 }
 
 export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonutCardProps) {
+  const { tenantAtivo } = useTenant(); // 👈 reage à troca de tenant
+
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
   const diasEfetivo = filtroLocal || dias;
 
@@ -16,23 +20,31 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
   const [erro, setErro] = useState<string | null>(null);
   const [idxSelecionado, setIdxSelecionado] = useState<number | null>(null);
 
-  // 🔹 Reage quando o filtro global muda
+  // 🔹 Sincroniza o filtro global
   useEffect(() => {
-    // se o usuário não escolheu um filtro local, atualiza automaticamente
-    if (!filtroLocal) {
-      setFiltroLocal(null);
-    }
+    if (!filtroLocal) setFiltroLocal(null);
   }, [dias]);
 
+  // 🔹 Busca dados (tenant + filtro)
   useEffect(() => {
+    if (!tenantAtivo) return; // 🚫 só busca com tenant ativo
     let ativo = true;
+
     async function fetch() {
       try {
         setCarregando(true);
         setErro(null);
+
+        const inicio = Date.now();
         const res = await getTopFirewalls(diasEfetivo);
         if (!ativo) return;
-        setDados(res);
+
+        const elapsed = Date.now() - inicio;
+        const delay = Math.max(500 - elapsed, 0);
+
+        setTimeout(() => {
+          if (ativo) setDados(res);
+        }, delay);
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar dados de firewall");
@@ -40,11 +52,12 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
         if (ativo) setCarregando(false);
       }
     }
+
     fetch();
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo]);
+  }, [diasEfetivo, tenantAtivo]);
 
   const { baixo, medio, alto, critico, total } = useMemo(() => {
     const agg = { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };
@@ -63,8 +76,14 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
   const cores = ["#F914AD", "#A855F7", "#6366F1", "#1DD69A"];
 
   return (
-    <div className="mb-4">
-      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between">
+    <div className="mb-4 relative">
+      {/* Overlay de carregamento translúcido */}
+      {carregando && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-xl z-10" />
+      )}
+
+      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between relative z-20">
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm text-white">Alertas de Firewall</h3>
           <select
@@ -86,12 +105,14 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
           </select>
         </div>
 
+        {/* Erro */}
         {erro && (
           <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-3">
             {erro}
           </div>
         )}
 
+        {/* 🦴 Skeleton animado */}
         {carregando ? (
           <div className="w-full h-52 rounded-xl bg-[#ffffff0a] animate-pulse" />
         ) : total === 0 ? (
@@ -108,6 +129,7 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
           />
         )}
 
+        {/* Legenda interativa */}
         <div className="flex gap-3 flex-wrap mt-4 text-[10px] text-gray-400 text-xs justify-center">
           {labels.map((lb, i) => {
             const ativo = idxSelecionado === i;

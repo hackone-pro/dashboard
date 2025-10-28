@@ -4,6 +4,7 @@ import {
   getTopPackagesVulnerabilidades,
   TopPackageVulnerabilidade,
 } from "../../../services/wazuh/packagesvulnerabilidades.service";
+import { useTenant } from "../../../context/TenantContext"; // 👈 tenant global
 
 export type TopPackageVulnerabilidadeCardRef = {
   carregar: () => void;
@@ -13,13 +14,16 @@ const formatPt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
 
 const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRef>((props, ref) => {
+  const { tenantAtivo } = useTenant(); // 👈 obtém tenant ativo
   const [topPackages, setTopPackages] = useState<TopPackageVulnerabilidade[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
+    if (!tenantAtivo) return; // 🔹 evita chamada antes do tenant carregar
     setCarregando(true);
     try {
+      // 🔹 tenant tratado internamente no service
       const lista = await getTopPackagesVulnerabilidades(5, "todos");
       setTopPackages(lista);
       setErro(null);
@@ -32,13 +36,13 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [tenantAtivo]); // 👈 recarrega automaticamente ao trocar tenant
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
 
-  // 👉 se está carregando
+  // 🔹 Skeleton (carregando)
   if (carregando) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
@@ -59,7 +63,7 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
     );
   }
 
-  // 👉 se deu erro
+  // 🔹 Erro
   if (erro) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-red-400">
@@ -68,7 +72,7 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
     );
   }
 
-  // 👉 se não tem dados
+  // 🔹 Sem dados
   if (!topPackages.length) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-gray-400">
@@ -77,7 +81,7 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
     );
   }
 
-  // 👉 se tem dados
+  // 🔹 Dados carregados
   return (
     <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
       <div className="flex justify-between items-center mb-3">

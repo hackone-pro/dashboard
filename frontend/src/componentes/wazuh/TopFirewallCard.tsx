@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
 import { getTopFirewalls, TopFirewallItem } from "../../services/wazuh/topfirewall.service";
+import { useTenant } from "../../context/TenantContext";
 
 export default function TopFirewallCard() {
   const [firewalls, setFirewalls] = useState<TopFirewallItem[]>([]);
   const [dias, setDias] = useState("todos");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const { tenantAtivo } = useTenant();
 
   useEffect(() => {
+    if (!tenantAtivo) return;
+
     let ativo = true;
     async function fetchData() {
       try {
@@ -20,61 +24,60 @@ export default function TopFirewallCard() {
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao buscar top firewalls");
+        setFirewalls([]);
       } finally {
         if (ativo) setCarregando(false);
       }
     }
+
     fetchData();
-    return () => { ativo = false; };
-  }, [dias]);
+    return () => {
+      ativo = false;
+    };
+  }, [dias, tenantAtivo]);
 
   const categorias = useMemo(() => firewalls.map((fw) => fw.gerador), [firewalls]);
 
-  // Absolutos por severidade (para tooltip e base do cálculo)
-  const absBaixo   = firewalls.map((fw) => fw.severidade.baixo);
-  const absMedio   = firewalls.map((fw) => fw.severidade.medio);
-  const absAlto    = firewalls.map((fw) => fw.severidade.alto);
+  const absBaixo = firewalls.map((fw) => fw.severidade.baixo);
+  const absMedio = firewalls.map((fw) => fw.severidade.medio);
+  const absAlto = firewalls.map((fw) => fw.severidade.alto);
   const absCritico = firewalls.map((fw) => fw.severidade.critico);
+  const allZero = [absBaixo, absMedio, absAlto, absCritico].every((arr) =>
+    arr.every((v) => v === 0)
+  );
 
-  const allZero = [absBaixo, absMedio, absAlto, absCritico].every(arr => arr.every(v => v === 0));
-
-  // ---- VISUAL FLOOR (ex.: 1% mínimo para segmentos > 0) ----
-  const MIN_PCT = 1.0; // ajuste se quiser 0.8 / 1.2 etc.
-
+  const MIN_PCT = 1.0;
   function buildDisplaySeries() {
     const n = categorias.length;
     const dispBaixo = new Array(n).fill(0);
     const dispMedio = new Array(n).fill(0);
-    const dispAlto  = new Array(n).fill(0);
-    const dispCrit  = new Array(n).fill(0);
+    const dispAlto = new Array(n).fill(0);
+    const dispCrit = new Array(n).fill(0);
 
     for (let i = 0; i < n; i++) {
-      const vals = [absBaixo[i] || 0, absMedio[i] || 0, absAlto[i] || 0, absCritico[i] || 0];
+      const vals = [
+        absBaixo[i] || 0,
+        absMedio[i] || 0,
+        absAlto[i] || 0,
+        absCritico[i] || 0,
+      ];
       const total = vals.reduce((a, b) => a + b, 0);
-      if (total <= 0) {
-        dispBaixo[i] = 0; dispMedio[i] = 0; dispAlto[i] = 0; dispCrit[i] = 0;
-        continue;
-      }
+      if (total <= 0) continue;
 
-      // percentuais reais
-      let pct = vals.map(v => (v / total) * 100);
-
-      // aplica piso visual a quem for >0 e < MIN_PCT
+      let pct = vals.map((v) => (v / total) * 100);
       let extra = 0;
       for (let j = 0; j < pct.length; j++) {
         if (vals[j] > 0 && pct[j] > 0 && pct[j] < MIN_PCT) {
-          extra += (MIN_PCT - pct[j]);
+          extra += MIN_PCT - pct[j];
           pct[j] = MIN_PCT;
         }
       }
 
       if (extra > 0) {
-        // retira o "extra" do maior segmento (tipicamente Baixo)
         const idxMaior = vals.indexOf(Math.max(...vals));
         pct[idxMaior] = Math.max(0, pct[idxMaior] - extra);
       }
 
-      // correção fina para somar ~100
       const soma = pct.reduce((a, b) => a + b, 0);
       const diff = soma - 100;
       if (Math.abs(diff) > 0.01) {
@@ -82,27 +85,31 @@ export default function TopFirewallCard() {
         pct[idxMaior] = Math.max(0, pct[idxMaior] - diff);
       }
 
-      // guarda (ordem visual: Baixo -> Médio -> Alto -> Crítico)
       dispBaixo[i] = pct[0];
       dispMedio[i] = pct[1];
-      dispAlto[i]  = pct[2];
-      dispCrit[i]  = pct[3];
+      dispAlto[i] = pct[2];
+      dispCrit[i] = pct[3];
     }
 
     return { dispBaixo, dispMedio, dispAlto, dispCrit };
   }
 
-  const { dispBaixo, dispMedio, dispAlto, dispCrit } = useMemo(buildDisplaySeries, [categorias.join("|"), absBaixo, absMedio, absAlto, absCritico]);
+  const { dispBaixo, dispMedio, dispAlto, dispCrit } = useMemo(buildDisplaySeries, [
+    categorias.join("|"),
+    absBaixo,
+    absMedio,
+    absAlto,
+    absCritico,
+  ]);
 
-  // Séries para exibir (percentual com piso) ou fallback total
   const series = useMemo(() => {
     if (allZero) {
-      return [{ name: "Alertas", data: firewalls.map(fw => fw.total) }];
+      return [{ name: "Alertas", data: firewalls.map((fw) => fw.total) }];
     }
     return [
-      { name: "Baixo",   data: dispBaixo },
-      { name: "Médio",   data: dispMedio },
-      { name: "Alto",    data: dispAlto },
+      { name: "Baixo", data: dispBaixo },
+      { name: "Médio", data: dispMedio },
+      { name: "Alto", data: dispAlto },
       { name: "Crítico", data: dispCrit },
     ];
   }, [allZero, firewalls, dispBaixo, dispMedio, dispAlto, dispCrit]);
@@ -116,53 +123,35 @@ export default function TopFirewallCard() {
       stackType: isStacked ? "100%" : undefined,
       toolbar: { show: false },
       foreColor: "#99a1af",
-      animations: { enabled: true },
     },
-    plotOptions: {
-      bar: { horizontal: true, barHeight: "60%", borderRadius: 0 },
-    },
+    plotOptions: { bar: { horizontal: true, barHeight: "60%" } },
     stroke: { width: 2, colors: ["#0d0c22"] },
     dataLabels: { enabled: false },
     tooltip: {
       theme: "dark",
-      // tooltip com ABSOLUTOS reais (não os percentuais ajustados)
       custom: ({ dataPointIndex }) => {
         const name = categorias[dataPointIndex] || "";
-
         const vB = absBaixo[dataPointIndex] || 0;
         const vM = absMedio[dataPointIndex] || 0;
-        const vA = absAlto[dataPointIndex]  || 0;
+        const vA = absAlto[dataPointIndex] || 0;
         const vC = absCritico[dataPointIndex] || 0;
 
         return `
           <div style="background:#1b1530; padding:8px 10px; border-radius:8px; border:1px solid #2d2650; min-width:140px">
             <div style="color:#eae6ff; font-weight:600; margin-bottom:6px">${name}</div>
-            <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
-              <span style="display:inline-block;width:8px;height:8px;background:#EC4899;border-radius:9999px"></span>
-              <span style="color:#EC4899;">${vC.toLocaleString("pt-BR")}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
-              <span style="display:inline-block;width:8px;height:8px;background:#A855F7;border-radius:9999px"></span>
-              <span style="color:#A855F7;">${vA.toLocaleString("pt-BR")}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
-              <span style="display:inline-block;width:8px;height:8px;background:#6366F1;border-radius:9999px"></span>
-              <span style="color:#6366F1;">${vM.toLocaleString("pt-BR")}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
-              <span style="display:inline-block;width:8px;height:8px;background:#10B981;border-radius:9999px"></span>
-              <span style="color:#10B981;">${vB.toLocaleString("pt-BR")}</span>
-            </div>
+            <div style="color:#EC4899">Crítico: ${vC.toLocaleString("pt-BR")}</div>
+            <div style="color:#A855F7">Alto: ${vA.toLocaleString("pt-BR")}</div>
+            <div style="color:#6366F1">Médio: ${vM.toLocaleString("pt-BR")}</div>
+            <div style="color:#10B981">Baixo: ${vB.toLocaleString("pt-BR")}</div>
           </div>
         `;
       },
     },
     xaxis: {
       categories: categorias,
-      labels: { show: false, style: { colors: "#939393" } },
+      labels: { show: false },
       axisBorder: { show: false },
       axisTicks: { show: false },
-      min: 0,
     },
     yaxis: { labels: { show: true, style: { colors: "#99a1af" } } },
     legend: {
@@ -174,18 +163,15 @@ export default function TopFirewallCard() {
       borderColor: "#2c2c3a",
       strokeDashArray: 4,
       xaxis: { lines: { show: true } },
-      yaxis: { lines: { show: false } },
     },
-    // ordem visual (verde→azul→roxo→rosa)
     colors: ["#1DD69A", "#6366F1", "#A855F7", "#F914AD"],
     fill: { opacity: 1 },
-    states: { hover: { filter: { type: "none" } } },
   };
 
-  const chartKey = `tfw-${dias}-${categorias.join("|")}-${series.length}`;
+  const chartKey = `tfw-${dias}-${tenantAtivo?.id ?? "none"}`;
 
   return (
-    <div className="cards flex-grow p-6 rounded-2xl shadow-lg card-dashboard transition-all hover:-translate-y-1 hover:shadow-lg">
+    <div className="cards flex-grow p-6 rounded-2xl shadow-lg card-dashboard relative transition-all hover:-translate-y-1 hover:shadow-lg">
       <div className="grid grid-cols-12 mb-5">
         <div className="col-span-8">
           <h3 className="text-sm text-white">Top 5 Firewalls geradores de alertas</h3>
@@ -212,15 +198,20 @@ export default function TopFirewallCard() {
       )}
 
       {carregando ? (
-        <div className="w-full h-64 rounded-xl bg-[#ffffff0a] animate-pulse" />
+        // 🔹 Skeleton igual aos outros cards
+        <div className="flex flex-col gap-3 animate-pulse">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="h-4 w-40 bg-[#ffffff0a] rounded" />
+              <div className="h-3 w-20 bg-[#ffffff0a] rounded" />
+            </div>
+          ))}
+        </div>
       ) : firewalls.length === 0 ? (
         <div className="text-xs text-gray-400">Nenhum dado para exibir.</div>
       ) : (
         <Chart key={chartKey} options={options} series={series as any} type="bar" height={340} />
       )}
-
-      
     </div>
-    
   );
 }

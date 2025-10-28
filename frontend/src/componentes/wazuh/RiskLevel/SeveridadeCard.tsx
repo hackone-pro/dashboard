@@ -1,6 +1,7 @@
 // src/components/wazuh/SeveridadeCard.tsx
 import { useEffect, useState } from "react";
 import { getSeveridadeWazuh } from "../../../services/wazuh/severidade.service";
+import { useTenant } from "../../../context/TenantContext"; // 👈 integração multi-tenant
 
 type Nivel = "Crítico" | "Alto" | "Médio" | "Baixo";
 
@@ -9,6 +10,7 @@ interface SeveridadeCardProps {
 }
 
 export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
+  const { tenantAtivo } = useTenant();
   const [dados, setDados] = useState({
     critico: 0,
     alto: 0,
@@ -21,6 +23,8 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
   const [animReady, setAnimReady] = useState(false);
 
   useEffect(() => {
+    if (!tenantAtivo) return; // 🚫 só busca após tenant definido
+
     let ativo = true;
     async function fetchData() {
       try {
@@ -28,11 +32,19 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
         setErro(null);
         setAnimReady(false);
 
-        const r = await getSeveridadeWazuh(dias); // usa prop do pai (RiskLevel)
+        const inicio = Date.now();
+        const r = await getSeveridadeWazuh(dias);
         if (!ativo) return;
-        setDados(r);
 
-        setTimeout(() => ativo && setAnimReady(true), 50);
+        const elapsed = Date.now() - inicio;
+        const delay = Math.max(500 - elapsed, 0);
+
+        setTimeout(() => {
+          if (ativo) {
+            setDados(r);
+            setAnimReady(true);
+          }
+        }, delay);
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar severidade");
@@ -44,7 +56,7 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
     return () => {
       ativo = false;
     };
-  }, [dias]);
+  }, [dias, tenantAtivo]);
 
   const { critico, alto, medio, baixo, total } = dados;
 
@@ -69,8 +81,27 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
     { nivel: "Baixo", valor: baixo },
   ];
 
+  // 🦴 Skeleton loading animado (mantém grid e cards visuais)
   if (carregando) {
-    return <div className="text-xs text-gray-400">Carregando...</div>;
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch h-full">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="cards rounded-xl p-4 flex flex-col h-full space-y-3"
+          >
+            <div className="h-3 w-20 bg-[#ffffff12] rounded animate-pulse" />
+            <div className="h-6 w-16 bg-[#ffffff12] rounded animate-pulse" />
+            <div className="h-3 w-full bg-[#ffffff12] rounded animate-pulse" />
+            <div className="flex gap-1 mt-auto">
+              {Array.from({ length: 10 }).map((_, j) => (
+                <div key={j} className="w-1.5 h-2 bg-[#ffffff12] rounded animate-pulse" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (erro) {
@@ -85,7 +116,6 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch h-full">
       {itens.map((item, idx) => {
         const { corTexto, corBarra, corBadge } = getCfg(item.nivel);
-
         const ratio = total > 0 ? item.valor / total : 0;
         const percent = ratio * 100;
 
@@ -102,6 +132,7 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
                 {item.nivel}
               </span>
             </div>
+
             <div className="flex flex-col gap-2 mt-auto mb-2">
               <div className="flex items-center justify-between">
                 <div className="text-white text-2xl font-bold">
@@ -113,6 +144,7 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
                 </div>
               </div>
             </div>
+
             <div className="flex gap-1">
               {Array.from({ length: slots }).map((_, i) => (
                 <div
