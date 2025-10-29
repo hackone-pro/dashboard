@@ -605,7 +605,7 @@ export default function Configuracoes() {
 
                   <div>
                     <label className="block text-sm text-gray-300 mb-2">
-                      Owner Name (IRIS)
+                      Usuário no DFIR (IRIS)
                     </label>
                     <input
                       type="text"
