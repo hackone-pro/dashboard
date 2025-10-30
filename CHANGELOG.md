@@ -3,6 +3,12 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.4.0.2]
+- Convite por email (Cadastro de usuário)
+- Ajuste Risk Level
+- Criação da Página de Catálogo de Serviços
+- Nova disposição do menu e submenu
+
 ## [v1.3.0.2]
 - Filtro de Incidentes
   
