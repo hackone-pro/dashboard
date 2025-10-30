@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getSeveridadeWazuh } from "../services/wazuh/severidade.service";
+import { getRiskLevel } from "../services/wazuh/risklevel.service";
 import LayoutModel from "../componentes/LayoutModel";
 import GeoHitsMap from '../componentes/graficos/GeoHitsMap';
 import GraficoGauge from '../componentes/graficos/GraficoGauge';

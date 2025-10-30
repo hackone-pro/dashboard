@@ -1,29 +1,27 @@
-// src/componentes/wazuh/TopAgentsCard.tsx
 import { useEffect, useState } from "react";
 import { getTopAgents, TopAgentItem } from "../../../services/wazuh/topagents.service";
 
 interface TopAgentsCardProps {
   dias: string; // 👈 vem do RiskLevel (global)
+  onChangeFiltro?: (valor: string | null) => void; // 👈 novo (já existe na sua versão)
 }
 
-export default function TopAgentsCard({ dias }: TopAgentsCardProps) {
-  const [filtroDias, setFiltroDias] = useState<string>(dias); // 👈 começa pelo global
+export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardProps) {
+  const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
+  const diasEfetivo = filtroLocal || dias; // 👈 prioridade local
+
   const [agentes, setAgentes] = useState<TopAgentItem[]>([]);
   const [carregando, setCarregando] = useState<boolean>(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // sempre que o global mudar, atualiza o interno também (exceto se o usuário já mexeu no select)
-  useEffect(() => {
-    setFiltroDias(dias);
-  }, [dias]);
-
+  // 🔹 Busca os dados conforme o filtro efetivo
   useEffect(() => {
     let ativo = true;
     async function fetchData() {
       try {
         setCarregando(true);
         setErro(null);
-        const data = await getTopAgents(filtroDias);
+        const data = await getTopAgents(diasEfetivo);
         if (!ativo) return;
         setAgentes(data);
       } catch (e: any) {
@@ -37,17 +35,23 @@ export default function TopAgentsCard({ dias }: TopAgentsCardProps) {
     return () => {
       ativo = false;
     };
-  }, [filtroDias]); // 👈 agora busca pelo filtro local
+  }, [diasEfetivo]); // 👈 refaz a busca sempre que mudar o filtro efetivo
 
   return (
     <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300">
       <div className="flex justify-between items-center mb-5">
         <h3 className="text-sm text-white">Top Hosts</h3>
-        {/* 🔹 Select interno opcional */}
+
+        {/* 🔹 Select interno com opção "Usar global" */}
         <select
           className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
-          value={filtroDias}
-          onChange={(e) => setFiltroDias(e.target.value)}
+          value={filtroLocal || dias}
+          onChange={(e) => {
+            const val = e.target.value;
+            const novoValor = val === dias ? null : val;
+            setFiltroLocal(novoValor);
+            onChangeFiltro?.(novoValor); // 👈 notifica o RiskLevel
+          }}
         >
           <option value="1">24 horas</option>
           <option value="2">48 horas</option>
