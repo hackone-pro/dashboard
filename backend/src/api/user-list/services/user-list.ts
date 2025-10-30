@@ -12,26 +12,33 @@ export default {
           where: { id: user.id },
           populate: { tenant: true },
         });
-
+  
       if (!fullUser?.tenant) {
         throw new Error("Tenant não encontrado para este usuário");
       }
-
+  
       // 🔹 Busca todos os usuários do mesmo tenant
       const usuarios = await strapi.db
         .query("plugin::users-permissions.user")
         .findMany({
           where: { tenant: fullUser.tenant.id },
-          select: ["id", "nome", "email", "owner_name_iris"],
+          select: [
+            "id",
+            "nome",
+            "email",
+            "owner_name_iris",
+            "confirmed", // ✅ adicionado
+            "blocked",   // ✅ adicionado
+          ],
           orderBy: { nome: "asc" },
         });
-
+  
       return usuarios;
     } catch (err) {
       strapi.log.error("❌ Erro no service user-list:", err);
       throw err;
     }
-  },
+  },  
 
   async deletarUsuario(usuarioSolicitante, targetId) {
     try {
@@ -66,7 +73,7 @@ export default {
 
       // 🔹 Impede deletar a si mesmo
       if (targetUser.id === fullUser.id) {
-        throw new Error("Você não pode deletar a si mesmo");
+        throw new Error("Você não pode deletar seu próprio usuário!");
       }
 
       // 🔹 Executa o delete

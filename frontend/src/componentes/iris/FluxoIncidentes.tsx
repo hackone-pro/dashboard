@@ -15,19 +15,36 @@ interface Incidente {
 
 interface Props {
   token: string;
+  diasGlobal?: string;
+  onChangeFiltro?: (valor: string | null) => void;
+  onUpdateTotais?: (total: number) => void; // 👈 para enviar total ao RiskLevel
 }
 
-export default function FluxoIncidentesIris({ token }: Props) {
+export default function FluxoIncidentesIris({
+  token,
+  diasGlobal,
+  onChangeFiltro,
+  onUpdateTotais,
+}: Props) {
   const [series, setSeries] = useState<{ name: string; data: number[] }[]>([]);
   const [categoriasX, setCategoriasX] = useState<string[]>([]);
   const [totalAbertos, setTotalAbertos] = useState(0);
   const [totalAtribuidos, setTotalAtribuidos] = useState(0);
   const [totalCasos, setTotalCasos] = useState(0);
-  const [filtroDias, setFiltroDias] = useState(0); // 👈 0 = Todos
-  
+
+  const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
+  const diasEfetivo = filtroLocal || diasGlobal || "1"; // 👈 local > global > padrão
+
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
+
+  // 👇 sincroniza com o global (se não há local ativo)
+  useEffect(() => {
+    if (!filtroLocal && diasGlobal) {
+      setFiltroLocal(null);
+    }
+  }, [diasGlobal]);
 
   useEffect(() => {
     let ativo = true;
@@ -45,17 +62,18 @@ export default function FluxoIncidentesIris({ token }: Props) {
 
         const hoje = new Date();
         const limite = new Date();
-        limite.setDate(hoje.getDate() - (filtroDias || 0));
+        const nDias = diasEfetivo === "todos" ? 0 : Number(diasEfetivo);
+        if (nDias > 0) limite.setDate(hoje.getDate() - nDias);
 
         const parseUSDate = (mdy: string) => {
           const [mes, dia, ano] = mdy.split("/");
           return new Date(Number(ano), Number(mes) - 1, Number(dia));
         };
 
-        // Filtra por cliente e (se filtroDias > 0) recorta por período
+        // 🔹 Filtra por cliente e período
         const dataFiltrada = data.filter((c) => {
           if (c.client_name !== tenant.cliente_name) return false;
-          if (filtroDias === 0) return true; // Todos
+          if (nDias === 0) return true; // Todos
           const d = parseUSDate(c.case_open_date);
           return d >= limite && d <= hoje;
         });
@@ -69,8 +87,8 @@ export default function FluxoIncidentesIris({ token }: Props) {
         setTotalAbertos(abertos);
         setTotalAtribuidos(atribuidos);
         setTotalCasos(totalCliente);
-        
-        const agrupado = agruparPorDia(dataFiltrada, tenant.owner_name, filtroDias);
+
+        const agrupado = agruparPorDia(dataFiltrada, tenant.owner_name, nDias);
         setSeries(agrupado.series);
         setCategoriasX(agrupado.categoriasX);
 
@@ -84,28 +102,43 @@ export default function FluxoIncidentesIris({ token }: Props) {
     }
 
     fetch();
-    return () => { ativo = false; };
-  }, [token, filtroDias]);
+    return () => {
+      ativo = false;
+    };
+  }, [token, diasEfetivo]);
+
+  useEffect(() => {
+    onUpdateTotais?.(totalCasos);
+  }, [totalCasos]);
 
   const tituloPeriodo = useMemo(() => {
-    switch (filtroDias) {
-      case 0: return "todos os registros";
-      case 1: return "últimas 24h";
-      case 7: return "últimos 7 dias";
-      case 15: return "últimos 15 dias";
-      case 30: return "últimos 30 dias";
-      default: return "";
+    switch (diasEfetivo) {
+      case "todos":
+        return "todos os registros";
+      case "1":
+        return "últimas 24h";
+      case "7":
+        return "últimos 7 dias";
+      case "15":
+        return "últimos 15 dias";
+      case "30":
+        return "últimos 30 dias";
+      default:
+        return "";
     }
-  }, [filtroDias]);
+  }, [diasEfetivo]);
 
   return (
     <>
       <div className="flex justify-between items-start mb-4">
-        <div className={`transition-opacity duration-300 ${animReady ? "opacity-100" : "opacity-0"}`}>
+        <div
+          className={`transition-opacity duration-300 ${
+            animReady ? "opacity-100" : "opacity-0"
+          }`}
+        >
           <h3 className="text-sm text-white font-semibold mb-4">
             Controle de Incidentes
           </h3>
-          {/* <p className="text-[11px] text-gray-500 mb-3">{tituloPeriodo}</p> */}
 
           {carregando ? (
             <div className="flex gap-10">
@@ -153,17 +186,24 @@ export default function FluxoIncidentesIris({ token }: Props) {
           )}
         </div>
 
+        {/* 🔹 Select com filtro local e sincronização global */}
         <div className="min-w-fit">
           <select
             className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-            value={filtroDias}
-            onChange={(e) => setFiltroDias(Number(e.target.value))}
+            value={filtroLocal || diasEfetivo}
+            onChange={(e) => {
+              const val = e.target.value;
+              const novoValor = val === diasGlobal ? null : val;
+              setFiltroLocal(novoValor);
+              onChangeFiltro?.(novoValor);
+            }}
           >
-            <option value={0}>Todos</option>
-            <option value={1}>24 horas</option>
-            <option value={7}>7 dias</option>
-            <option value={15}>15 dias</option>
-            <option value={30}>30 dias</option>
+            <option value="1">24 horas</option>
+            <option value="2">48 horas</option>
+            <option value="7">7 dias</option>
+            <option value="15">15 dias</option>
+            <option value="30">30 dias</option>
+            <option value="todos">Todos</option>
           </select>
         </div>
       </div>
@@ -177,7 +217,11 @@ export default function FluxoIncidentesIris({ token }: Props) {
       {carregando ? (
         <div className="w-full h-52 rounded-xl bg-[#ffffff0a] animate-pulse" />
       ) : (
-        <div className={`transition-opacity duration-300 ${animReady ? "opacity-100" : "opacity-0"}`}>
+        <div
+          className={`transition-opacity duration-300 ${
+            animReady ? "opacity-100" : "opacity-0"
+          }`}
+        >
           <GraficoAreaSpline
             series={series}
             categoriasX={categoriasX}
@@ -213,7 +257,6 @@ function agruparPorDia(incidentes: Incidente[], ownerName: string, dias: number)
   let diasOrdenados: string[];
 
   if (dias === 0) {
-    // "Todos" → gera de min até hoje
     const todasDatas = [
       ...Object.keys(contagemAbertos),
       ...Object.keys(contagemAtribuidos),
@@ -226,11 +269,10 @@ function agruparPorDia(incidentes: Incidente[], ownerName: string, dias: number)
     diasOrdenados = [];
     let d = new Date(minData);
     while (d <= hoje) {
-      diasOrdenados.push(d.toISOString().slice(0, 10)); // yyyy-mm-dd
+      diasOrdenados.push(d.toISOString().slice(0, 10));
       d.setDate(d.getDate() + 1);
     }
   } else {
-    // Últimos N dias
     const hoje = new Date();
     diasOrdenados = Array.from({ length: dias }).map((_, i) => {
       const d = new Date(hoje);

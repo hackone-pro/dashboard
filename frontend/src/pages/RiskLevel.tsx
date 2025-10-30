@@ -1,4 +1,3 @@
-// src/pages/RiskLevel.tsx
 import { useEffect, useState } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import GraficoGauge from "../componentes/graficos/GraficoGauge";
@@ -7,24 +6,52 @@ import TopAgentsCard from "../componentes/wazuh/RiskLevel/TopAgentsCard";
 import TopAgentsCisCard from "../componentes/wazuh/RiskLevel/TopAgentsCisCard";
 import FirewallDonutCard from "../componentes/wazuh/RiskLevel/FirewallDonutCard";
 import FluxoIncidentes from "../componentes/iris/FluxoIncidentes";
-
 import { getToken } from "../utils/auth";
-import { getRiskLevel, RiskLevelResposta } from "../services/wazuh/risklevel.service";
+import { RiskLevelResposta } from "../services/wazuh/risklevel.service";
 
 export default function RiskLevel() {
   const token = getToken();
   const formatador = new Intl.NumberFormat("pt-BR");
 
-  const [dias, setDias] = useState<string>("1"); // 👈 filtro global
+  // 🔹 Filtros globais e individuais
+  const [dias, setDias] = useState<string>("1");
+  const [diasFirewall, setDiasFirewall] = useState<string | null>(null);
+  const [diasAgentes, setDiasAgentes] = useState<string | null>(null);
+  const [diasSeveridade, setDiasSeveridade] = useState<string | null>(null);
+  const [diasCis, setDiasCis] = useState<string | null>(null);
+
   const [totalAlertas, setTotalAlertas] = useState<number>(0);
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [carregando, setCarregando] = useState<boolean>(true);
+  const [diasIris, setDiasIris] = useState<string | null>(null);
+  const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
 
+
+  // 🔹 Atualiza o Gauge com base em todos os filtros combinados
   useEffect(() => {
     async function carregar() {
       try {
         setCarregando(true);
-        const dados: RiskLevelResposta = await getRiskLevel(dias);
+
+        const queryParams = new URLSearchParams({
+          dias,
+          ...(diasFirewall ? { firewall: diasFirewall } : {}),
+          ...(diasAgentes ? { agentes: diasAgentes } : {}),
+          ...(diasSeveridade ? { severidade: diasSeveridade } : {}),
+          ...(diasCis ? { cis: diasCis } : {}),
+          ...(diasIris ? { iris: diasIris } : {}),
+        }).toString();
+
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/acesso/wazuh/riskLevel?${queryParams}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (!res.ok) throw new Error("Falha ao buscar dados de risco");
+
+        const dados: RiskLevelResposta = await res.json();
         setTotalAlertas(dados.severidades.total);
         setIndiceRisco(dados.indiceRisco);
       } catch (err) {
@@ -33,8 +60,9 @@ export default function RiskLevel() {
         setCarregando(false);
       }
     }
+
     carregar();
-  }, [dias]);
+  }, [dias, diasFirewall, diasAgentes, diasSeveridade, diasCis, diasIris]); // 👈 adiciona o CIS aqui
 
   return (
     <LayoutModel titulo="Risk Level">
@@ -42,13 +70,19 @@ export default function RiskLevel() {
       <section className="cards p-6 rounded-2xl shadow-lg">
         <div className="flex flex-wrap justify-between items-start mb-6">
           <div className="flex flex-col">
-            <h2 className="text-white text-md font-medium"> Nível de alertas</h2>
+            <h2 className="text-white text-md font-medium">Nível de alertas</h2>
+            {/* <span className="text-xs text-gray-400 mt-1">
+              Filtros ativos: Global {dias}d
+              {diasFirewall && ` • Firewall ${diasFirewall}d`}
+              {diasAgentes && ` • Hosts ${diasAgentes}d`}
+              {diasCis && ` • CIS ${diasCis}d`}
+              {diasSeveridade && ` • Severidades ${diasSeveridade}d`}
+            </span> */}
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
             <h3 className="text-white text-base font-semibold">
-              <span className="text-white">{formatador.format(totalAlertas)} alertas totais</span>
-
+              {formatador.format(totalAlertas + totalIncidentes)} alertas totais
             </h3>
 
             {/* 🔹 Select global */}
@@ -72,7 +106,6 @@ export default function RiskLevel() {
           <div className="cards rounded-xl p-4 flex flex-col justify-center relative h-full">
             <GraficoGauge valor={Math.round(indiceRisco)} />
 
-            {/* 👇 Ícone central acima do gauge */}
             <img
               src="/assets/img/icon-risk.png"
               alt="Risco"
@@ -97,26 +130,40 @@ export default function RiskLevel() {
 
           {/* Severidade */}
           <div className="md:col-span-4 h-full">
-            <SeveridadeCard dias={dias} />
+            <SeveridadeCard dias={diasSeveridade || dias} />
           </div>
         </div>
       </section>
 
       {/* Bloco inferior com outros cards */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-8 items-stretch">
-        {/* Coluna 1 - Top 10 Agentes */}
-        <TopAgentsCard dias={dias} />
+        {/* Coluna 1 - Top Hosts */}
+        <TopAgentsCard
+          dias={diasAgentes || dias}
+          onChangeFiltro={setDiasAgentes}
+        />
 
         {/* Coluna 2 - Top CIS */}
-        <TopAgentsCisCard dias={dias} />
+        <TopAgentsCisCard
+          dias={diasCis || dias}
+          onChangeFiltro={setDiasCis}
+        />
 
         {/* Coluna 3 - Firewall + FluxoIncidentes */}
         <div className="flex flex-col h-full">
-          <FirewallDonutCard dias={dias} />
+          <FirewallDonutCard
+            dias={diasFirewall || dias}
+            onChangeFiltro={setDiasFirewall}
+          />
 
           <div className="flex-1">
             <div className="cards rounded-xl p-6 shadow-md h-full">
-              <FluxoIncidentes token={token || ""} />
+              <FluxoIncidentes
+                token={token || ""}
+                diasGlobal={dias}
+                onChangeFiltro={setDiasIris}
+                onUpdateTotais={setTotalIncidentes}
+              />
             </div>
           </div>
         </div>

@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { toastSuccess, toastError } from "../utils/toast";
+
+import { IoLockClosedOutline } from "react-icons/io5";
+import { FaRegCircleCheck } from "react-icons/fa6";
+
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -8,12 +12,40 @@ export default function ResetPassword() {
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordMessage, setPasswordMessage] = useState("");
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
 
   const token = searchParams.get("token");
+
+  // 🔹 Avaliar força da senha
+  const checkPasswordStrength = (value: string) => {
+    let strength = 0;
+    if (value.length >= 8) strength++;
+    if (/[A-Z]/.test(value)) strength++;
+    if (/[a-z]/.test(value)) strength++;
+    if (/\d/.test(value)) strength++;
+    if (/[@$!%*?&]/.test(value)) strength++;
+
+    setPasswordStrength(strength);
+
+    if (value.length === 0) {
+      setPasswordMessage("");
+    } else if (strength <= 2) {
+      setPasswordMessage("Senha fraca");
+    } else if (strength >= 3 && strength < 5) {
+      setPasswordMessage("Senha média");
+    } else if (strength === 5) {
+      setPasswordMessage("Senha forte");
+    }
+  };
+
+  useEffect(() => {
+    checkPasswordStrength(password);
+  }, [password]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +57,11 @@ export default function ResetPassword() {
 
     if (password !== confirmPassword) {
       toastError("As senhas não coincidem.");
+      return;
+    }
+
+    if (passwordStrength < 5) {
+      toastError("A senha deve atender a todos os requisitos listados.");
       return;
     }
 
@@ -44,16 +81,26 @@ export default function ResetPassword() {
       } else {
         toastError(data?.error || "Erro ao redefinir senha.");
       }
-    } catch (err) {
+    } catch {
       toastError("Erro de conexão com o servidor.");
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 Define cores de acordo com os níveis Fraca / Média / Forte
+  let strengthColor = "#2c2450"; // padrão (vazio)
+
+  if (passwordStrength <= 2) strengthColor = "#F914AD";       // Fraca (rosa)
+  else if (passwordStrength >= 3 && passwordStrength < 5) strengthColor = "#A855F7"; // Média (roxo)
+  else if (passwordStrength === 5) strengthColor = "#1DD69A"; // Forte (verde)
+
+  // 🔹 Calcula a largura da barra proporcionalmente
+  const strengthWidth = `${(passwordStrength / 5) * 100}%`;
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-[#0e0b1b]">
-      {/* Coluna ESQUERDA – bloco do formulário */}
+      {/* Coluna ESQUERDA – formulário */}
       <div className="relative flex items-center">
         <div className="absolute inset-0 bg-[#151026]" />
         <div
@@ -96,7 +143,7 @@ export default function ResetPassword() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Digite a nova senha"
-                  className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3 pr-12"
+                  className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3 pr-12 focus:ring-2 focus:ring-violet-500 outline-none"
                 />
                 <button
                   type="button"
@@ -139,6 +186,8 @@ export default function ResetPassword() {
                   )}
                 </button>
               </div>
+
+
             </div>
 
             {/* Confirmar senha */}
@@ -150,7 +199,7 @@ export default function ResetPassword() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   placeholder="Confirme a nova senha"
-                  className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3 pr-12"
+                  className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3 pr-12 focus:ring-2 focus:ring-violet-500 outline-none"
                 />
                 <button
                   type="button"
@@ -195,16 +244,145 @@ export default function ResetPassword() {
               </div>
             </div>
 
+            {/* Indicador de força */}
+            {password && (
+              <div className="mt-3">
+                <div className="w-full h-2 bg-[#2c2450] rounded-full overflow-hidden">
+                  <div
+                    className="h-2 transition-all duration-300 rounded-full"
+                    style={{
+                      width: strengthWidth,
+                      backgroundColor: strengthColor,
+                    }}
+                  />
+                </div>
+                <p
+                  className={`mt-1 text-xs transition-colors duration-300 ${passwordStrength <= 2
+                      ? "text-[#F914AD]" // Fraca (rosa)
+                      : passwordStrength >= 3 && passwordStrength < 5
+                        ? "text-[#A855F7]" // Média (roxo)
+                        : passwordStrength === 5
+                          ? "text-[#1DD69A]" // Forte (verde)
+                          : "text-gray-400"
+                    }`}
+                >
+                  {passwordMessage}
+                </p>
+              </div>
+            )}
+
+            {/* Requisitos de senha */}
+            {password && (
+              <div className="mt-4 text-xs text-gray-400 space-y-1">
+                {/* 🔹 Título dinâmico */}
+                <p
+                  className={`font-medium flex items-center gap-2 ${passwordStrength >= 5 ? "text-[#1DD69A]" : "text-gray-300"
+                    }`}
+                >
+                  {passwordStrength >= 5 ? (
+                    <>
+                      {/* @ts-ignore */}
+                      <FaRegCircleCheck /> Todos os requisitos atendidos!
+                    </>
+                  ) : (
+                    <>
+                      {/* @ts-ignore */}
+                      <IoLockClosedOutline /> Requisitos da senha
+                    </>
+                  )}
+                </p>
+
+                {/* 🔹 Lista de requisitos */}
+                <ul className="space-y-1 mt-2">
+                  <li
+                    className={`flex items-center gap-2 ${password.length >= 8 ? "text-[#1DD69A]" : "text-gray-500"
+                      }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor:
+                          password.length >= 8 ? "#22c55e" : "#4b5563",
+                      }}
+                    ></span>
+                    Mínimo de 8 caracteres
+                  </li>
+
+                  <li
+                    className={`flex items-center gap-2 ${/[A-Z]/.test(password) ? "text-[#1DD69A]" : "text-gray-500"
+                      }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: /[A-Z]/.test(password)
+                          ? "#22c55e"
+                          : "#4b5563",
+                      }}
+                    ></span>
+                    Pelo menos uma letra maiúscula
+                  </li>
+
+                  <li
+                    className={`flex items-center gap-2 ${/[a-z]/.test(password) ? "text-[#1DD69A]" : "text-gray-500"
+                      }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: /[a-z]/.test(password)
+                          ? "#22c55e"
+                          : "#4b5563",
+                      }}
+                    ></span>
+                    Pelo menos uma letra minúscula
+                  </li>
+
+                  <li
+                    className={`flex items-center gap-2 ${/\d/.test(password) ? "text-[#1DD69A]" : "text-gray-500"
+                      }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: /\d/.test(password)
+                          ? "#22c55e"
+                          : "#4b5563",
+                      }}
+                    ></span>
+                    Pelo menos um número
+                  </li>
+
+                  <li
+                    className={`flex items-center gap-2 ${/[@$!%*?&]/.test(password)
+                      ? "text-[#1DD69A]"
+                      : "text-gray-500"
+                      }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: /[@$!%*?&]/.test(password)
+                          ? "#22c55e"
+                          : "#4b5563",
+                      }}
+                    ></span>
+                    Um caractere especial (@, $, !, %, *, ? ou &)
+                  </li>
+                </ul>
+              </div>
+            )}
+
             {/* Botão */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 bg-gradient-to-r from-violet-600 to-indigo-500 hover:opacity-90 disabled:bg-gray-600"
+              className="w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 bg-gradient-to-r from-violet-600 to-indigo-500 hover:opacity-90 disabled:bg-gray-600 transition-all"
             >
               {loading ? "Redefinindo..." : "Redefinir senha"}
             </button>
 
-            {/* rodapé de links */}
+            {/* Rodapé */}
             <div className="text-xs text-gray-400 text-center">
               <Link
                 to="/login"

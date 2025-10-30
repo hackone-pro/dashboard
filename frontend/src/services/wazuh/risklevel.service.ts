@@ -14,7 +14,7 @@ export interface RiskLevelResposta {
   indiceRisco: number;
 }
 
-export async function getRiskLevel(dias: string | number = "7"): Promise<RiskLevelResposta> {
+export async function getRiskLevel(dias: string | number = "1"): Promise<RiskLevelResposta> {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 

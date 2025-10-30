@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 
 import { AiOutlineDelete } from "react-icons/ai";
-import { FaRegEdit } from "react-icons/fa";
+import { FaRegEdit, FaRegPaperPlane } from "react-icons/fa";
 
 import { toastSuccess, toastError } from "../utils/toast";
 import Swal from "sweetalert2";
@@ -12,7 +12,8 @@ import { createUser } from "../services/auth/createUser.service";
 import { getUserProfile } from "../services/auth/getUserProfile.service";
 import { getUserList } from "../services/auth/getUserList.service";
 import { deleteUser } from "../services/auth/deleteUser.service";
-import { updateUser } from "../services/auth/updateUser.service"
+import { updateUser } from "../services/auth/updateUser.service";
+import { resendInvite } from "../services/auth/resendInvite.service";
 
 type Aba = "senha" | "perfil";
 type Secao = "geral" | "usuarios";
@@ -76,6 +77,18 @@ export default function Configuracoes() {
 
     if (isAdmin) carregarUsuarios();
   }, [isAdmin]);
+
+  const recarregarUsuarios = async () => {
+    try {
+      setCarregandoUsuarios(true);
+      const data = await getUserList();
+      setUsuarios(data);
+    } catch (err: any) {
+      setErroUsuarios(err.message || "Erro ao carregar usuários");
+    } finally {
+      setCarregandoUsuarios(false);
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -321,132 +334,196 @@ export default function Configuracoes() {
                 <section className="cards rounded-2xl overflow-hidden">
                   {/* cabeçalho */}
                   <div className="grid grid-cols-12 px-5 py-4 bg-[#0A0617] text-sm text-gray-300 border-b border-[#1D1929]">
-                    <div className="col-span-4 text-left">Nome</div>
-                    <div className="col-span-5 text-left">E-mail</div>
+                    <div className="col-span-3 text-left">Nome</div>
+                    <div className="col-span-4 text-left">E-mail</div>
                     <div className="col-span-2 text-center">Usuário no DFIR (IRIS)</div>
-                    <div className="col-span-1 text-center">Ações</div> {/* 🔹 nova coluna */}
+                    <div className="col-span-2 text-center">Status</div> {/* 🟣 nova coluna */}
+                    <div className="col-span-1 text-center">Ações</div>
                   </div>
 
                   {/* corpo */}
                   {carregandoUsuarios ? (
-                    <div className="p-5 text-gray-400 text-sm">
-                      Carregando usuários...
-                    </div>
+                    <div className="p-5 text-gray-400 text-sm">Carregando usuários...</div>
                   ) : erroUsuarios ? (
                     <div className="p-5 text-red-400 text-sm">{erroUsuarios}</div>
                   ) : usuarios.length === 0 ? (
-                    <div className="p-5 text-gray-400 text-sm">
-                      Nenhum usuário encontrado.
-                    </div>
+                    <div className="p-5 text-gray-400 text-sm">Nenhum usuário encontrado.</div>
                   ) : (
                     <div className="divide-y divide-[#1D1929]">
-                      {usuarios.map((u) => (
-                        <div
-                          key={u.id}
-                          className="grid grid-cols-12 px-5 py-3 items-center hover:bg-[#ffffff07] transition-colors"
-                        >
-                          <div className="col-span-4 text-left text-gray-200 text-sm truncate">
-                            {u.nome || "—"}
-                          </div>
-                          <div className="col-span-5 text-left text-gray-400 text-sm truncate">
-                            {u.email}
-                          </div>
-                          <div className="col-span-2 text-center text-gray-300 text-sm">
-                            {u.owner_name_iris || "—"}
-                          </div>
+                      {usuarios.map((u) => {
+                        // 🔹 Lógica correta baseada nos campos do Strapi
+                        let statusTexto = "Convite em andamento";
+                        let statusCor = "text-yellow-400 bg-yellow-900/30";
 
-                          {/* 🔹 Coluna Ações */}
-                          <div className="col-span-1 flex justify-center gap-3">
-                            {/* ✏️ Botão editar */}
-                            <button
-                              onClick={async () => {
-                                const { value: formValues } = await Swal.fire({
-                                  title: "Editar Usuário",
-                                  html: `
-                                    <label class="block text-sm text-gray-300 my-2 text-left">Nome:</label>
-                                    <input id="swal-nome" class="w-full mb-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Nome" value="${u.nome || ""}">
-                                    <label class="block text-sm text-gray-300 my-2 text-left">Email:</label>
-                                    <input id="swal-email" type="email" class="w-full mb-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="E-mail" value="${u.email || ""}">
-                                    <label class="block text-sm text-gray-300 my-2 text-left">Usuário no DFIR (IRIS)</label>
-                                    <input id="swal-owner" class="w-full rounded-xl mb-2 bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Usuário no DFIR (IRIS)" value="${u.owner_name_iris || ""}">
-            `,
-                                  background: "#0A0617",
-                                  color: "#fff",
-                                  confirmButtonText: "Salvar Alteração ",
-                                  showCancelButton: true,
-                                  reverseButtons: true,
-                                  cancelButtonText: "Cancelar",
-                                  focusConfirm: false,
-                                  confirmButtonColor: "#7f22fe",
-                                  cancelButtonColor: "#6e7881",
-                                  preConfirm: () => {
-                                    return {
-                                      nome: (document.getElementById("swal-nome") as HTMLInputElement)?.value.trim(),
-                                      email: (document.getElementById("swal-email") as HTMLInputElement)?.value.trim(),
-                                      owner_name_iris: (document.getElementById("swal-owner") as HTMLInputElement)?.value.trim(),
-                                    };
-                                  },
-                                  customClass: {
-                                    popup: "rounded-2xl shadow-lg border border-[#3c2d6e]",
-                                  },
-                                });
+                        // Se estiver bloqueado manualmente
+                        if (u.blocked) {
+                          statusTexto = "Bloqueado";
+                          statusCor = "text-red-400 bg-red-900/30";
+                        }
+                        // Se estiver confirmado e não bloqueado
+                        else if (u.confirmed) {
+                          statusTexto = "Ativo";
+                          statusCor = "text-green-400 bg-green-900/30";
+                        }
 
-                                if (formValues) {
-                                  try {
-                                    const atualizado = await updateUser(u.id, formValues);
-                                    setUsuarios((prev) =>
-                                      prev.map((usr) => (usr.id === u.id ? { ...usr, ...formValues } : usr))
-                                    );
-                                    toastSuccess("Usuário atualizado com sucesso!");
-                                  } catch (err: any) {
-                                    toastError(err.message || "Erro ao atualizar usuário.");
+                        return (
+                          <div
+                            key={u.id}
+                            className="grid grid-cols-12 px-5 py-3 items-center hover:bg-[#ffffff07] transition-colors"
+                          >
+                            <div className="col-span-3 text-left text-gray-200 text-sm truncate">
+                              {u.nome || "—"}
+                            </div>
+                            <div className="col-span-4 text-left text-gray-400 text-sm truncate">
+                              {u.email}
+                            </div>
+                            <div className="col-span-2 text-center text-gray-300 text-sm">
+                              {u.owner_name_iris || "—"}
+                            </div>
+
+                            {/* 🔹 Coluna Status */}
+                            <div className="col-span-2 text-center">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium ${statusCor}`}
+                              >
+                                {statusTexto}
+                              </span>
+                            </div>
+
+                            {/* 🔹 Coluna Ações */}
+                            <div className="col-span-1 flex justify-center gap-3">
+
+                              {!u.confirmed && (
+                                <button
+                                  onClick={async () => {
+                                    const confirm = await Swal.fire({
+                                      title: "Reenviar convite?",
+                                      text: `Deseja reenviar o e-mail de convite para ${u.email}?`,
+                                      icon: "question",
+                                      showCancelButton: true,
+                                      confirmButtonText: "Sim, reenviar",
+                                      cancelButtonText: "Cancelar",
+                                      reverseButtons: true,
+                                      background: "#1a1333",
+                                      color: "#fff",
+                                      confirmButtonColor: "#7f22fe",
+                                      cancelButtonColor: "#6e7881",
+                                      customClass: {
+                                        popup: "rounded-2xl shadow-lg border border-[#3c2d6e]",
+                                      },
+                                    });
+
+                                    if (confirm.isConfirmed) {
+                                      try {
+                                        await resendInvite(u.id);
+                                        toastSuccess("Convite reenviado com sucesso!");
+                                      } catch (err: any) {
+                                        toastError(err.message || "Erro ao reenviar convite.");
+                                      }
+                                    }
+                                  }}
+                                  className="text-violet-500 hover:text-violet-300 transition-colors"
+                                  title="Reenviar convite"
+                                >
+                                  {/* @ts-ignore */}
+                                  <FaRegPaperPlane size={18} />
+                                </button>
+                              )}
+
+                              {/* ✏️ Botão editar */}
+                              <button
+                                onClick={async () => {
+                                  const { value: formValues } = await Swal.fire({
+                                    title: "Editar Usuário",
+                                    html: `
+                      <label class="block text-sm text-gray-300 my-2 text-left">Nome:</label>
+                      <input id="swal-nome" class="w-full mb-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Nome" value="${u.nome || ""}">
+                      <label class="block text-sm text-gray-300 my-2 text-left">Email:</label>
+                      <input id="swal-email" type="email" class="w-full mb-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="E-mail" value="${u.email || ""}">
+                      <label class="block text-sm text-gray-300 my-2 text-left">Usuário no DFIR (IRIS)</label>
+                      <input id="swal-owner" class="w-full rounded-xl mb-2 bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3" placeholder="Usuário no DFIR (IRIS)" value="${u.owner_name_iris || ""}">`,
+                                    background: "#0A0617",
+                                    color: "#fff",
+                                    confirmButtonText: "Salvar Alteração",
+                                    showCancelButton: true,
+                                    reverseButtons: true,
+                                    cancelButtonText: "Cancelar",
+                                    focusConfirm: false,
+                                    confirmButtonColor: "#7f22fe",
+                                    cancelButtonColor: "#6e7881",
+                                    preConfirm: () => {
+                                      return {
+                                        nome: (document.getElementById("swal-nome") as HTMLInputElement)?.value.trim(),
+                                        email: (document.getElementById("swal-email") as HTMLInputElement)?.value.trim(),
+                                        owner_name_iris: (document.getElementById("swal-owner") as HTMLInputElement)?.value.trim(),
+                                      };
+                                    },
+                                    customClass: {
+                                      popup: "rounded-2xl shadow-lg border border-[#3c2d6e]",
+                                    },
+                                  });
+
+                                  if (formValues) {
+                                    try {
+                                      const atualizado = await updateUser(u.id, formValues);
+                                      setUsuarios((prev) =>
+                                        prev.map((usr) =>
+                                          usr.id === u.id ? { ...usr, ...formValues } : usr
+                                        )
+                                      );
+                                      toastSuccess("Usuário atualizado com sucesso!");
+                                    } catch (err: any) {
+                                      toastError(err.message || "Erro ao atualizar usuário.");
+                                    }
                                   }
-                                }
-                              }}
-                              className="text-violet-500 hover:text-violet-300 transition-colors"
-                            >
-                              {/* @ts-ignore */}
-                              <FaRegEdit size={20} />
-                            </button>
+                                }}
+                                className="text-violet-500 hover:text-violet-300 transition-colors"
+                              >
+                                {/* @ts-ignore */}
+                                <FaRegEdit size={20} />
+                              </button>
 
-                            {/* 🗑️ Botão deletar */}
-                            <button
-                              onClick={async () => {
-                                const confirm = await Swal.fire({
-                                  title: "Tem certeza?",
-                                  text: `Deseja realmente excluir ${u.nome}?`,
-                                  icon: "warning",
-                                  showCancelButton: true,
-                                  confirmButtonText: "Sim, excluir",
-                                  cancelButtonText: "Cancelar",
-                                  reverseButtons: true,
-                                  background: "#1a1333",
-                                  color: "#fff",
-                                  confirmButtonColor: "#7f22fe",
-                                  cancelButtonColor: "#6e7881",
-                                  customClass: {
-                                    popup: "rounded-2xl shadow-lg border border-[#3c2d6e]",
-                                  },
-                                });
+                              {/* 🗑️ Botão deletar */}
+                              <button
+                                onClick={async () => {
+                                  const confirm = await Swal.fire({
+                                    title: "Tem certeza?",
+                                    text: `Deseja realmente excluir ${u.nome}?`,
+                                    icon: "warning",
+                                    showCancelButton: true,
+                                    confirmButtonText: "Sim, excluir",
+                                    cancelButtonText: "Cancelar",
+                                    reverseButtons: true,
+                                    background: "#1a1333",
+                                    color: "#fff",
+                                    confirmButtonColor: "#7f22fe",
+                                    cancelButtonColor: "#6e7881",
+                                    customClass: {
+                                      popup: "rounded-2xl shadow-lg border border-[#3c2d6e]",
+                                    },
+                                  });
 
-                                if (confirm.isConfirmed) {
-                                  try {
-                                    await deleteUser(u.id);
-                                    setUsuarios((prev) => prev.filter((item) => item.id !== u.id));
-                                    toastSuccess("Usuário excluído com sucesso!");
-                                  } catch (err: any) {
-                                    toastError(err.message || "Erro ao excluir usuário.");
+                                  if (confirm.isConfirmed) {
+                                    try {
+                                      await deleteUser(u.id);
+                                      setUsuarios((prev) =>
+                                        prev.filter((item) => item.id !== u.id)
+                                      );
+                                      toastSuccess("Usuário excluído com sucesso!");
+                                    } catch (err: any) {
+                                      toastError(err.message || "Erro ao excluir usuário.");
+                                    }
                                   }
-                                }
-                              }}
-                              className="text-violet-500 hover:text-red-400 transition-colors"
-                            >
-                              {/* @ts-ignore */}
-                              <AiOutlineDelete size={20} />
-                            </button>
+                                }}
+                                className="text-violet-500 hover:text-red-400 transition-colors"
+                              >
+                                {/* @ts-ignore */}
+                                <AiOutlineDelete size={20} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </section>
@@ -464,28 +541,44 @@ export default function Configuracoes() {
                     e.preventDefault();
                     try {
                       setLoadingCreate(true);
+
+                      // 🔹 Gera username automático
+                      const generatedUsername = nome
+                        .trim()
+                        .toLowerCase()
+                        .replace(/\s+/g, ".")
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "");
+
                       await createUser({
                         nome,
                         email,
-                        username,
-                        password,
+                        username: generatedUsername,
                         owner_name_iris,
                       });
-                      toastSuccess("Usuário criado com sucesso!");
+
+                      toastSuccess("Convite enviado com sucesso!");
+
+                      // 🔹 Limpa campos
                       setNome("");
                       setEmail("");
-                      setUsername("");
-                      setPassword("");
                       setOwnerNameIris("");
+
+                      // 🔹 Muda para aba de listagem
+                      setAbaUsuarios("lista");
+
+                      // 🔹 Recarrega manualmente a lista (sem depender do useEffect)
+                      await recarregarUsuarios();
                     } catch (err: any) {
                       toastError(err.message || "Erro ao criar usuário.");
                     } finally {
                       setLoadingCreate(false);
                     }
                   }}
+
+
                   className="space-y-5"
                 >
-                  {/* inputs iguais ao seu form */}
                   <div>
                     <label className="block text-sm text-gray-300 mb-2">Nome</label>
                     <input
@@ -506,32 +599,10 @@ export default function Configuracoes() {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">Username</label>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">Senha</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3 pr-12"
-                        required
-                      />
-                      <EyeButton
-                        visible={showPassword}
-                        toggle={() => setShowPassword((s) => !s)}
-                      />
-                    </div>
-                  </div>
+
+                  {/* 🔹 Campo username oculto (só pra controle interno, não exibido) */}
+                  <input type="hidden" value={username} readOnly />
+
                   <div>
                     <label className="block text-sm text-gray-300 mb-2">
                       Usuário no DFIR (IRIS)
@@ -544,14 +615,16 @@ export default function Configuracoes() {
                       required
                     />
                   </div>
+
                   <button
                     type="submit"
                     disabled={loadingCreate}
                     className="w-full rounded-xl py-3 font-medium text-white bg-gradient-to-r from-violet-600 to-indigo-500 hover:opacity-90 disabled:bg-gray-600"
                   >
-                    {loadingCreate ? "Criando usuário..." : "Criar Usuário"}
+                    {loadingCreate ? "Enviando convite..." : "Enviar Convite"}
                   </button>
                 </form>
+
               </div>
             )}
           </div>

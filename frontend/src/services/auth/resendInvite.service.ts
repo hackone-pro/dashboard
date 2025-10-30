@@ -2,28 +2,25 @@ import { getToken } from "../../utils/auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export async function deleteUser(userId: number) {
+export async function resendInvite(userId: number) {
   const token = getToken();
+
   if (!token) {
     throw new Error("Token não encontrado. Faça login novamente.");
   }
 
-  const res = await fetch(`${API_URL}/api/acesso/user/${userId}`, {
-    method: "DELETE",
+  const res = await fetch(`${API_URL}/api/acesso/user/resend/${userId}`, {
+    method: "POST", // 👈 importante
     headers: {
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
   });
 
   const data = await res.json();
 
-  // ✅ se o status HTTP for erro, pega a mensagem do Strapi corretamente
   if (!res.ok) {
-    const msg =
-      data?.error?.message ||
-      data?.message ||
-      "Erro ao excluir usuário.";
-    throw new Error(msg);
+    throw new Error(data?.error?.message || "Erro ao reenviar convite.");
   }
 
   return data;
