@@ -3,7 +3,11 @@ import { useTenant } from "../context/TenantContext";
 export default function TenantSelector() {
   const { tenants, tenantAtivo, trocarTenant, loading } = useTenant();
 
+  // 🔹 Enquanto carrega, não renderiza nada
   if (loading) return null;
+
+  // 🔹 Se o usuário só tem 1 tenant (ou nenhum), não mostra o select
+  if (!tenants || tenants.length <= 1) return null;
 
   return (
     <select

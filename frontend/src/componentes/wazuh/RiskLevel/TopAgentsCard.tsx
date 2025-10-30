@@ -1,29 +1,46 @@
 import { useEffect, useState } from "react";
 import { getTopAgents, TopAgentItem } from "../../../services/wazuh/topagents.service";
+import { useTenant } from "../../../context/TenantContext"; // 👈 novo
 
 interface TopAgentsCardProps {
-  dias: string; // 👈 vem do RiskLevel (global)
-  onChangeFiltro?: (valor: string | null) => void; // 👈 novo (já existe na sua versão)
+  dias: string;
+  onChangeFiltro?: (valor: string | null) => void;
 }
 
 export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardProps) {
+  const { tenantAtivo } = useTenant(); // 👈 tenant global
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-  const diasEfetivo = filtroLocal || dias; // 👈 prioridade local
+  const diasEfetivo = filtroLocal || dias;
 
   const [agentes, setAgentes] = useState<TopAgentItem[]>([]);
   const [carregando, setCarregando] = useState<boolean>(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [animReady, setAnimReady] = useState(false);
 
-  // 🔹 Busca os dados conforme o filtro efetivo
   useEffect(() => {
+    if (!tenantAtivo) return; // 👈 só executa após tenant estar carregado
+
     let ativo = true;
     async function fetchData() {
       try {
         setCarregando(true);
         setErro(null);
+        setAnimReady(false);
+
+        const inicio = Date.now();
         const data = await getTopAgents(diasEfetivo);
         if (!ativo) return;
-        setAgentes(data);
+
+        // delay mínimo de 500ms p/ suavizar transição
+        const elapsed = Date.now() - inicio;
+        const delay = Math.max(500 - elapsed, 0);
+
+        setTimeout(() => {
+          if (ativo) {
+            setAgentes(data);
+            setAnimReady(true);
+          }
+        }, delay);
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao buscar top agentes");
@@ -31,18 +48,25 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
         if (ativo) setCarregando(false);
       }
     }
+
     fetchData();
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo]); // 👈 refaz a busca sempre que mudar o filtro efetivo
+  }, [diasEfetivo, tenantAtivo]); // 👈 recarrega ao trocar tenant
 
   return (
-    <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300">
+    <div className="cards p-6 rounded-2xl shadow-lg flex-grow relative transition-all duration-300 overflow-hidden">
+      {/* Overlay de carregamento (tenant troca / atualização) */}
+      {carregando && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20">
+          Atualizando agentes...
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-5">
         <h3 className="text-sm text-white">Top Hosts</h3>
 
-        {/* 🔹 Select interno com opção "Usar global" */}
         <select
           className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
           value={filtroLocal || dias}
@@ -50,7 +74,7 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
             const val = e.target.value;
             const novoValor = val === dias ? null : val;
             setFiltroLocal(novoValor);
-            onChangeFiltro?.(novoValor); // 👈 notifica o RiskLevel
+            onChangeFiltro?.(novoValor);
           }}
         >
           <option value="1">24 horas</option>
@@ -68,39 +92,23 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
         </div>
       )}
 
-      {carregando ? (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-10 bg-[#ffffff0a] rounded-md" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
+      {!carregando && (
+        <div className="overflow-x-auto transition-opacity duration-500" style={{ opacity: animReady ? 1 : 0 }}>
           <table className="w-full text-sm text-gray-300 border-collapse py-3">
             <thead>
-              <tr className="text-xs text-gray-400 top-agents">
+              <tr className="text-xs text-gray-400">
                 <th className="text-left w-[40%] pl-2 pb-3">Hosts</th>
                 <th className="w-[15%] text-center">
-                  <span className="text-pink-500 badge-pink badge rounded-md py-0.5 px-2">
-                    Crítico
-                  </span>
+                  <span className="text-pink-500 badge-pink badge rounded-md py-0.5 px-2">Crítico</span>
                 </th>
                 <th className="w-[15%] text-center">
-                  <span className="text-[#A855F7] badge-high badge rounded-md py-0.5 px-3">
-                    Alto
-                  </span>
+                  <span className="text-[#A855F7] badge-high badge rounded-md py-0.5 px-3">Alto</span>
                 </th>
                 <th className="w-[15%] text-center">
-                  <span className="text-[#6366F1] badge-darkpink badge rounded-md py-0.5 px-2">
-                    Médio
-                  </span>
+                  <span className="text-[#6366F1] badge-darkpink badge rounded-md py-0.5 px-2">Médio</span>
                 </th>
                 <th className="w-[15%] text-center">
-                  <span className="text-[#1DD69A] badge-green badge rounded-md py-0.5 px-2">
-                    Baixo
-                  </span>
+                  <span className="text-[#1DD69A] badge-green badge rounded-md py-0.5 px-2">Baixo</span>
                 </th>
               </tr>
             </thead>

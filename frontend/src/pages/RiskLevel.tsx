@@ -8,9 +8,11 @@ import FirewallDonutCard from "../componentes/wazuh/RiskLevel/FirewallDonutCard"
 import FluxoIncidentes from "../componentes/iris/FluxoIncidentes";
 import { getToken } from "../utils/auth";
 import { RiskLevelResposta } from "../services/wazuh/risklevel.service";
+import { useTenant } from "../context/TenantContext"; // 👈 novo
 
 export default function RiskLevel() {
   const token = getToken();
+  const { tenantAtivo } = useTenant(); // 👈 tenant global
   const formatador = new Intl.NumberFormat("pt-BR");
 
   // 🔹 Filtros globais e individuais
@@ -19,19 +21,24 @@ export default function RiskLevel() {
   const [diasAgentes, setDiasAgentes] = useState<string | null>(null);
   const [diasSeveridade, setDiasSeveridade] = useState<string | null>(null);
   const [diasCis, setDiasCis] = useState<string | null>(null);
+  const [diasIris, setDiasIris] = useState<string | null>(null);
 
   const [totalAlertas, setTotalAlertas] = useState<number>(0);
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [carregando, setCarregando] = useState<boolean>(true);
-  const [diasIris, setDiasIris] = useState<string | null>(null);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
+  const [erro, setErro] = useState<string | null>(null);
 
-
-  // 🔹 Atualiza o Gauge com base em todos os filtros combinados
+  // 🔹 Atualiza o Gauge com base em todos os filtros combinados e tenant ativo
   useEffect(() => {
+    if (!tenantAtivo) return; // 👈 só busca quando o tenant estiver definido
+
+    let ativo = true;
+
     async function carregar() {
       try {
         setCarregando(true);
+        setErro(null);
 
         const queryParams = new URLSearchParams({
           dias,
@@ -42,42 +49,57 @@ export default function RiskLevel() {
           ...(diasIris ? { iris: diasIris } : {}),
         }).toString();
 
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/acesso/wazuh/riskLevel?${queryParams}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const API_URL = import.meta.env.VITE_API_URL;
+        const url = `${API_URL}/api/acesso/wazuh/riskLevel?${queryParams}`;
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (!res.ok) throw new Error("Falha ao buscar dados de risco");
 
         const dados: RiskLevelResposta = await res.json();
+        if (!ativo) return;
+
         setTotalAlertas(dados.severidades.total);
         setIndiceRisco(dados.indiceRisco);
-      } catch (err) {
+      } catch (err: any) {
+        if (!ativo) return;
         console.error("Erro ao carregar RiskLevel:", err);
+        setErro(err?.message || "Erro ao carregar Risk Level");
       } finally {
-        setCarregando(false);
+        if (ativo) setCarregando(false);
       }
     }
 
     carregar();
-  }, [dias, diasFirewall, diasAgentes, diasSeveridade, diasCis, diasIris]); // 👈 adiciona o CIS aqui
+    return () => {
+      ativo = false;
+    };
+  }, [
+    dias,
+    diasFirewall,
+    diasAgentes,
+    diasSeveridade,
+    diasCis,
+    diasIris,
+    tenantAtivo, // 👈 reage à troca de tenant
+  ]);
 
   return (
     <LayoutModel titulo="Risk Level">
+      {/* Overlay de carregamento */}
+      {carregando && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center text-gray-300 text-sm z-50">
+          Carregando dados de risco...
+        </div>
+      )}
+
       {/* Bloco principal com Gauge + Severidade */}
-      <section className="cards p-6 rounded-2xl shadow-lg">
+      <section className="cards p-6 rounded-2xl shadow-lg relative">
         <div className="flex flex-wrap justify-between items-start mb-6">
           <div className="flex flex-col">
             <h2 className="text-white text-md font-medium">Nível de alertas</h2>
-            {/* <span className="text-xs text-gray-400 mt-1">
-              Filtros ativos: Global {dias}d
-              {diasFirewall && ` • Firewall ${diasFirewall}d`}
-              {diasAgentes && ` • Hosts ${diasAgentes}d`}
-              {diasCis && ` • CIS ${diasCis}d`}
-              {diasSeveridade && ` • Severidades ${diasSeveridade}d`}
-            </span> */}
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -100,6 +122,12 @@ export default function RiskLevel() {
             </select>
           </div>
         </div>
+
+        {erro && (
+          <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-3">
+            {erro}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-stretch">
           {/* Gauge */}

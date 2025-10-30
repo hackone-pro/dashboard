@@ -14,11 +14,13 @@ import { RiQuestionLine, RiProgress5Line } from "react-icons/ri";
 import { FaLockOpen, FaRegCheckCircle, FaSort } from "react-icons/fa";
 import { HiLockClosed } from "react-icons/hi";
 import { IoStopCircleOutline } from "react-icons/io5";
-import { MdOutlineGppBad, MdOutlineHealthAndSafety} from "react-icons/md";
+import { MdOutlineGppBad, MdOutlineHealthAndSafety } from "react-icons/md";
 import { GrTroubleshoot } from "react-icons/gr";
 import { TbMessageReport } from "react-icons/tb";
 import { VscError } from "react-icons/vsc";
 import { FiRotateCcw } from "react-icons/fi";
+
+import { useTenant } from "../context/TenantContext";
 
 import {
   normaliza,
@@ -213,6 +215,7 @@ function ListaSkeleton() {
  * PÁGINA: INCIDENTES
  * ======================================= */
 export default function Incidentes() {
+  const { tenantAtivo } = useTenant();
   const token = getToken();
   const [dados, setDados] = useState<PageIncidente[]>([]);
   const [filtroDias, setFiltroDias] = useState(0);
@@ -231,6 +234,7 @@ export default function Incidentes() {
   const [tenantOwner, setTenantOwner] = useState("");
   const [filtroOrigem, setFiltroOrigem] = useState<"abertos" | "fechados" | "atribuidos" | "nao_atribuidos" | null>(null);
   const [chartResetKey, setChartResetKey] = useState(0);
+  const [animReady, setAnimReady] = useState(false);
 
   // Quando dados forem carregados, aplica o expandido via querystring
   useEffect(() => {
@@ -257,13 +261,17 @@ export default function Incidentes() {
 
   // Fetch dados
   useEffect(() => {
+    if (!tenantAtivo) return;
+
     let ativo = true;
     async function fetch() {
       try {
         setCarregando(true);
         setErro(null);
+        setAnimReady(false);
         setExpandido(null);
 
+        const inicio = Date.now();
         const tenant = await getTenant();
         setIrisUrl(tenant?.iris_url || "");
         setTenantOwner(tenant?.owner_name || "");
@@ -275,20 +283,23 @@ export default function Incidentes() {
         }
 
         const lista: PageIncidente[] = await getTodosCasos(token || "");
-
         const filtrado = filtrarPorDias(
           lista.filter(i => normaliza(extractIncidentClient(i)) === normaliza(tenant.cliente_name)),
           filtroDias
         );
-
         const baseLimpa = filtrado.filter(i => nivelDoIncidente(i) !== "Baixo" || i.severity?.toLowerCase() === "low");
-
         filtrado.sort((a, b) => Number(b.case_id) - Number(a.case_id));
 
-        if (ativo) {
-          setDados(baseLimpa);
-          setPage(1);
-        }
+        const elapsed = Date.now() - inicio;
+        const delay = Math.max(500 - elapsed, 0);
+
+        setTimeout(() => {
+          if (ativo) {
+            setDados(baseLimpa);
+            setPage(1);
+            setAnimReady(true);
+          }
+        }, delay);
       } catch (e: any) {
         console.error("[Incidentes] erro fetch", e);
         if (ativo) setErro(e?.message ?? "Erro ao carregar incidentes");
@@ -296,9 +307,10 @@ export default function Incidentes() {
         if (ativo) setCarregando(false);
       }
     }
+
     fetch();
     return () => { ativo = false; };
-  }, [token, filtroDias]);
+  }, [token, filtroDias, tenantAtivo]);
 
   // Paginação
   const total = dados.length;
@@ -397,239 +409,240 @@ export default function Incidentes() {
   return (
     <LayoutModel titulo="Incidentes">
       {/* Gráficos resumo */}
-
-      <div className="flex justify-end mt-5 mb-3 px-6">
-        <button
-          onClick={() => {
-            setFiltroSeveridade(null);
-            setFiltroOrigem(null);
-            setChartResetKey((k) => k + 1); // 🔁 força recriação dos gráficos
-          }}
-          className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"
-        >
-          {/* @ts-ignore */}
-          <FiRotateCcw className="w-4 h-4" />
-          Limpar filtros
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <GraficoDonutIncidentes
-          key={`abertos-${chartResetKey}`}
-          titulo={<span className="flex items-center gap-1">
-            {/* @ts-ignore */}
-            <FaLockOpen className="text-gray-400" /> Incidentes abertos</span>}
-          total={abertos.length}
-          valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
-          onFiltrarPorNivel={(nivel) => {
-            if (!nivel) {
+      <div className={`transition-opacity duration-500 ${animReady ? "opacity-100" : "opacity-0"}`}>
+        <div className="flex justify-end mt-5 mb-3 px-6">
+          <button
+            onClick={() => {
               setFiltroSeveridade(null);
               setFiltroOrigem(null);
-            } else {
-              setFiltroSeveridade(nivel);
-              setFiltroOrigem("abertos"); // ou "fechados"
-            }
-          }}
-        />
-
-        <GraficoDonutIncidentes
-          key={`fechados-${chartResetKey}`}
-          titulo={<span className="flex items-center gap-1">
+              setChartResetKey((k) => k + 1); // 🔁 força recriação dos gráficos
+            }}
+            className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"
+          >
             {/* @ts-ignore */}
-            <HiLockClosed className="text-gray-400" /> Incidentes fechados</span>}
-          total={fechados.length}
-          valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
-          onFiltrarPorNivel={(nivel) => {
-            if (filtroSeveridade === nivel && filtroOrigem === "fechados") {
-              setFiltroSeveridade(null);
-              setFiltroOrigem(null);
-            } else {
-              setFiltroSeveridade(nivel);
-              setFiltroOrigem("fechados");
-            }
-          }}
-        />
-
-        <GraficoDonutIncidentes
-          key={`atribuidos-${chartResetKey}`}
-          titulo={<span className="flex items-center gap-1">
-            {/* @ts-ignore */}
-            <FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos</span>}
-          total={atribuidos.length}
-          valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
-          onFiltrarPorNivel={(nivel) => {
-            if (!nivel) {
-              setFiltroSeveridade(null);
-              setFiltroOrigem(null);
-            } else {
-              setFiltroSeveridade(nivel);
-              setFiltroOrigem("atribuidos");
-            }
-          }}
-        />
-
-        <GraficoDonutIncidentes
-          key={`naoatribuidos-${chartResetKey}`}
-          titulo={<span className="flex items-center gap-1">
-            {/* @ts-ignore */}
-            <VscError className="text-gray-400" /> Incidentes não atribuídos</span>}
-          total={naoAtribuidos.length}
-          valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
-          onFiltrarPorNivel={(nivel) => {
-            if (!nivel) {
-              setFiltroSeveridade(null);
-              setFiltroOrigem(null);
-            } else {
-              setFiltroSeveridade(nivel);
-              setFiltroOrigem("nao_atribuidos");
-            }
-          }}
-        />
-      </div>
-
-      {/* Tabela */}
-      <section className="cards p-6 rounded-2xl shadow-lg">
-        {/* Header */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-          <div className="flex items-center gap-2">
-            {/* @ts-ignore */}
-            <GoGraph className="flex text-[#744CD8] size-[20px]" />
-            <h2 className="text-white">Incidentes — Nível de Detalhe</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="text-xs text-gray-400">
-              Intervalo:&nbsp;
-              <select
-                className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-                value={filtroDias}
-                onChange={e => setFiltroDias(Number(e.target.value))}
-              >
-                <option value={1}>Hoje</option>
-                <option value={7}>7 dias</option>
-                <option value={15}>15 dias</option>
-                <option value={30}>30 dias</option>
-                <option value={0}>Todos</option>
-              </select>
-            </label>
-            <div className="text-xs text-gray-400">
-              {total > 0 ? <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></> : <>Mostrando 0 de 0</>}
-            </div>
-            <div className="flex gap-2">
-              <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p - 1))} disabled={page <= 1}>← Anterior</button>
-              <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p + 1))} disabled={page >= totalPages}>Próxima →</button>
-            </div>
-          </div>
+            <FiRotateCcw className="w-4 h-4" />
+            Limpar filtros
+          </button>
         </div>
 
-        {/* Cabeçalho tabela */}
-        <div className="cards rounded-2xl overflow-hidden table-incidente">
-          <div className="grid grid-cols-12 px-5 py-5 bg-[#0A0617] text-xs text-gray-300">
-            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader label="ID" active={sortBy === "id"} dir={sortDir} onClick={() => setSortBy("id")} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <GraficoDonutIncidentes
+            key={`abertos-${chartResetKey}`}
+            titulo={<span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <FaLockOpen className="text-gray-400" /> Incidentes abertos</span>}
+            total={abertos.length}
+            valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
+            onFiltrarPorNivel={(nivel) => {
+              if (!nivel) {
+                setFiltroSeveridade(null);
+                setFiltroOrigem(null);
+              } else {
+                setFiltroSeveridade(nivel);
+                setFiltroOrigem("abertos"); // ou "fechados"
+              }
+            }}
+          />
+
+          <GraficoDonutIncidentes
+            key={`fechados-${chartResetKey}`}
+            titulo={<span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <HiLockClosed className="text-gray-400" /> Incidentes fechados</span>}
+            total={fechados.length}
+            valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
+            onFiltrarPorNivel={(nivel) => {
+              if (filtroSeveridade === nivel && filtroOrigem === "fechados") {
+                setFiltroSeveridade(null);
+                setFiltroOrigem(null);
+              } else {
+                setFiltroSeveridade(nivel);
+                setFiltroOrigem("fechados");
+              }
+            }}
+          />
+
+          <GraficoDonutIncidentes
+            key={`atribuidos-${chartResetKey}`}
+            titulo={<span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos</span>}
+            total={atribuidos.length}
+            valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
+            onFiltrarPorNivel={(nivel) => {
+              if (!nivel) {
+                setFiltroSeveridade(null);
+                setFiltroOrigem(null);
+              } else {
+                setFiltroSeveridade(nivel);
+                setFiltroOrigem("atribuidos");
+              }
+            }}
+          />
+
+          <GraficoDonutIncidentes
+            key={`naoatribuidos-${chartResetKey}`}
+            titulo={<span className="flex items-center gap-1">
+              {/* @ts-ignore */}
+              <VscError className="text-gray-400" /> Incidentes não atribuídos</span>}
+            total={naoAtribuidos.length}
+            valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
+            onFiltrarPorNivel={(nivel) => {
+              if (!nivel) {
+                setFiltroSeveridade(null);
+                setFiltroOrigem(null);
+              } else {
+                setFiltroSeveridade(nivel);
+                setFiltroOrigem("nao_atribuidos");
+              }
+            }}
+          />
+        </div>
+
+        {/* Tabela */}
+        <section className="cards p-6 rounded-2xl shadow-lg">
+          {/* Header */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {/* @ts-ignore */}
+              <GoGraph className="flex text-[#744CD8] size-[20px]" />
+              <h2 className="text-white">Incidentes — Nível de Detalhe</h2>
             </div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader label="Data" active={sortBy === "data"} dir={sortDir} onClick={() => setSortBy("data")} />
+            <div className="flex items-center gap-3">
+              <label className="text-xs text-gray-400">
+                Intervalo:&nbsp;
+                <select
+                  className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
+                  value={filtroDias}
+                  onChange={e => setFiltroDias(Number(e.target.value))}
+                >
+                  <option value={1}>Hoje</option>
+                  <option value={7}>7 dias</option>
+                  <option value={15}>15 dias</option>
+                  <option value={30}>30 dias</option>
+                  <option value={0}>Todos</option>
+                </select>
+              </label>
+              <div className="text-xs text-gray-400">
+                {total > 0 ? <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></> : <>Mostrando 0 de 0</>}
+              </div>
+              <div className="flex gap-2">
+                <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p - 1))} disabled={page <= 1}>← Anterior</button>
+                <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p + 1))} disabled={page >= totalPages}>Próxima →</button>
+              </div>
             </div>
-            <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">Descrição</div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader label="Severidade" active={sortBy === "severidade"} dir={sortDir} onClick={() => setSortBy("severidade")} />
-            </div>
-            <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
-              <SortableHeader label="Status" active={sortBy === "status"} dir={sortDir} onClick={() => setSortBy("status")} />
-            </div>
-            <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Ação</div>
           </div>
 
-          {/* Corpo */}
-          {carregando ? (
-            <ListaSkeleton />
-          ) : erro ? (
-            <div className="p-5 text-xs text-red-400 bg-red-950/30 border-t border-red-900">{erro}</div>
-          ) : linhas.length === 0 ? (
-            <div className="p-5 text-xs text-gray-400">Nenhum incidente encontrado.</div>
-          ) : (
-            <div className="divide-y divide-[#ffffff12]">
-              {linhas.map(inc => {
-                const id = inc.case_id;
-                const aberto = expandido === id;
-                const dataBR = inc.case_open_date;
-                const agenteOrigem = inc.case_name;
+          {/* Cabeçalho tabela */}
+          <div className="cards rounded-2xl overflow-hidden table-incidente">
+            <div className="grid grid-cols-12 px-5 py-5 bg-[#0A0617] text-xs text-gray-300">
+              <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
+                <SortableHeader label="ID" active={sortBy === "id"} dir={sortDir} onClick={() => setSortBy("id")} />
+              </div>
+              <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
+                <SortableHeader label="Data" active={sortBy === "data"} dir={sortDir} onClick={() => setSortBy("data")} />
+              </div>
+              <div className="col-span-4 text-center border-[#1D1929] border-r-2 text-[14px]">Descrição</div>
+              <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">
+                <SortableHeader label="Severidade" active={sortBy === "severidade"} dir={sortDir} onClick={() => setSortBy("severidade")} />
+              </div>
+              <div className="col-span-1 text-center border-[#1D1929] border-r-2 text-[14px]">
+                <SortableHeader label="Status" active={sortBy === "status"} dir={sortDir} onClick={() => setSortBy("status")} />
+              </div>
+              <div className="col-span-2 text-center border-[#1D1929] border-r-2 text-[14px]">Ação</div>
+            </div>
 
-                const nivelManual = detectarNivelPorNome(inc.case_name || "");
-                const nivel = nivelManual || mapNivelPorClassificationId(inc.classification_id as any);
-                const badge = getCorBadge(nivel);
-                const status = statusPT(inc.state_name);
+            {/* Corpo */}
+            {carregando ? (
+              <ListaSkeleton />
+            ) : erro ? (
+              <div className="p-5 text-xs text-red-400 bg-red-950/30 border-t border-red-900">{erro}</div>
+            ) : linhas.length === 0 ? (
+              <div className="p-5 text-xs text-gray-400">Nenhum incidente encontrado.</div>
+            ) : (
+              <div className="divide-y divide-[#ffffff12]">
+                {linhas.map(inc => {
+                  const id = inc.case_id;
+                  const aberto = expandido === id;
+                  const dataBR = inc.case_open_date;
+                  const agenteOrigem = inc.case_name;
 
-                const meta = getStatusMeta(inc.state_name);
-                const StatusIcon = meta.Icon;
+                  const nivelManual = detectarNivelPorNome(inc.case_name || "");
+                  const nivel = nivelManual || mapNivelPorClassificationId(inc.classification_id as any);
+                  const badge = getCorBadge(nivel);
+                  const status = statusPT(inc.state_name);
 
-                return (
-                  <div
-                    key={String(id)}
-                    id={`incidente-${id}`}
-                    className="group"
-                    data-case-id={String(id)}
-                  >
-                    {/* Linha */}
-                    <div className={`grid grid-cols-12 px-5 py-4 items-center ${aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"} transition-colors`}>
-                      <div className="col-span-1 text-center text-sm text-gray-400 truncate">
-                        {irisUrl ? (
-                          <a href={`${irisUrl}/case?cid=${id}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">#{id}</a>
-                        ) : <>#{id}</>}
-                      </div>
-                      <div className="col-span-2 text-center text-xs text-gray-400">{formatDateBR(dataBR)}</div>
-                      <div className="col-span-4 text-center text-xs text-gray-400 truncate">
-                        #{id} - {formatCaseName(agenteOrigem || "") || "—"}
-                      </div>
-                      <div className="col-span-2 text-center">
-                        <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>{sentenceCase(nivel)}</span>
-                      </div>
-                      <div className="col-span-1 text-center">
-                        <span className="inline-flex items-center justify-center gap-1 text-xs text-gray-400">
-                          {/* @ts-ignore */}
-                          <StatusIcon className={`w-4 h-4 ${meta.color}`} />{meta.label}
-                        </span>
-                      </div>
-                      <div className="col-span-2 flex justify-center">
-                        <button onClick={() => setExpandido(c => (c === id ? null : id))} className="px-3 py-1.5 btn hover:bg-purple-600 text-[12px] text-white rounded-md">
-                          {aberto ? "Recolher —" : "Ver detalhes  +"}
-                        </button>
-                      </div>
-                    </div>
+                  const meta = getStatusMeta(inc.state_name);
+                  const StatusIcon = meta.Icon;
 
-                    {/* Accordion */}
-                    {aberto && (
-                      <div className="px-5 py-5 bg-[#2a2250]">
-                        <div className="rounded-xl p-5 bg-[#1b1730] border border-[#3B2A70] space-y-5">
-                          <Secao titulo="Resumo">
-                            <Linha label="Título:" valor={`#${inc.case_id} - ${formatCaseName(inc.case_name)}`} />
-                            <div className="mt-2"><DescricaoFormatada texto={inc.case_description} /></div>
-                          </Secao>
-                          <Secao titulo="Propriedades">
-                            <Linha label="Cliente:" valor={extractIncidentClient(inc) || "—"} />
-                            <Linha label="Owner:" valor={extractOwner(inc) || "—"} />
-                            <Linha label="Aberto por:" valor={inc.opened_by || "—"} />
-                          </Secao>
-                          <Secao titulo="Datas">
-                            <Linha label="Abertura:" valor={inc.case_open_date || "—"} />
-                            <Linha label="Fechamento:" valor={inc.case_close_date || "—"} />
-                          </Secao>
-                          <Secao titulo="Classificação">
-                            <Linha label="Classification ID:" valor={(inc as any).classification_id != null ? String((inc as any).classification_id) : "—"} />
-                            <Linha label="Classification:" valor={(inc as any).classification || "—"} />
-                            <Linha label="Severidade (mapeada):" valor={sentenceCase(nivel)} />
-                            <Linha label="Status:" valor={status} />
-                          </Secao>
+                  return (
+                    <div
+                      key={String(id)}
+                      id={`incidente-${id}`}
+                      className="group"
+                      data-case-id={String(id)}
+                    >
+                      {/* Linha */}
+                      <div className={`grid grid-cols-12 px-5 py-4 items-center ${aberto ? "bg-[#2a2250]" : "hover:bg-[#ffffff07]"} transition-colors`}>
+                        <div className="col-span-1 text-center text-sm text-gray-400 truncate">
+                          {irisUrl ? (
+                            <a href={`${irisUrl}/case?cid=${id}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">#{id}</a>
+                          ) : <>#{id}</>}
+                        </div>
+                        <div className="col-span-2 text-center text-xs text-gray-400">{formatDateBR(dataBR)}</div>
+                        <div className="col-span-4 text-center text-xs text-gray-400 truncate">
+                          #{id} - {formatCaseName(agenteOrigem || "") || "—"}
+                        </div>
+                        <div className="col-span-2 text-center">
+                          <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>{sentenceCase(nivel)}</span>
+                        </div>
+                        <div className="col-span-1 text-center">
+                          <span className="inline-flex items-center justify-center gap-1 text-xs text-gray-400">
+                            {/* @ts-ignore */}
+                            <StatusIcon className={`w-4 h-4 ${meta.color}`} />{meta.label}
+                          </span>
+                        </div>
+                        <div className="col-span-2 flex justify-center">
+                          <button onClick={() => setExpandido(c => (c === id ? null : id))} className="px-3 py-1.5 btn hover:bg-purple-600 text-[12px] text-white rounded-md">
+                            {aberto ? "Recolher —" : "Ver detalhes  +"}
+                          </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
+
+                      {/* Accordion */}
+                      {aberto && (
+                        <div className="px-5 py-5 bg-[#2a2250]">
+                          <div className="rounded-xl p-5 bg-[#1b1730] border border-[#3B2A70] space-y-5">
+                            <Secao titulo="Resumo">
+                              <Linha label="Título:" valor={`#${inc.case_id} - ${formatCaseName(inc.case_name)}`} />
+                              <div className="mt-2"><DescricaoFormatada texto={inc.case_description} /></div>
+                            </Secao>
+                            <Secao titulo="Propriedades">
+                              <Linha label="Cliente:" valor={extractIncidentClient(inc) || "—"} />
+                              <Linha label="Owner:" valor={extractOwner(inc) || "—"} />
+                              <Linha label="Aberto por:" valor={inc.opened_by || "—"} />
+                            </Secao>
+                            <Secao titulo="Datas">
+                              <Linha label="Abertura:" valor={inc.case_open_date || "—"} />
+                              <Linha label="Fechamento:" valor={inc.case_close_date || "—"} />
+                            </Secao>
+                            <Secao titulo="Classificação">
+                              <Linha label="Classification ID:" valor={(inc as any).classification_id != null ? String((inc as any).classification_id) : "—"} />
+                              <Linha label="Classification:" valor={(inc as any).classification || "—"} />
+                              <Linha label="Severidade (mapeada):" valor={sentenceCase(nivel)} />
+                              <Linha label="Status:" valor={status} />
+                            </Secao>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
     </LayoutModel>
   );
 }
