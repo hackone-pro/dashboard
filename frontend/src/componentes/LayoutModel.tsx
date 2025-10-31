@@ -66,12 +66,13 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
           </div>
 
           {/* 🔹 Centro - TenantSelector centralizado */}
-          <div className="flex-1 flex justify-center">
+          {/* <div className="flex-1 flex justify-center">
             <TenantSelector />
-          </div>
+          </div> */}
 
           {/* 🔹 Direita - Botões */}
           <div className="flex items-center gap-3">
+            <TenantSelector />
             {/* WhatsApp */}
             <a
               href="https://hackone.com.br/consultoria-aberturachamado"
