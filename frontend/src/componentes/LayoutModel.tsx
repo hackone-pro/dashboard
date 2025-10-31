@@ -1,78 +1,125 @@
-import { useTenant } from "../context/TenantContext";
-import { GoArrowSwitch } from "react-icons/go";
-import { useEffect, useState } from "react";
-import { getUserProfile } from "../services/auth/getUserProfile.service";
+// src/componentes/LayoutModel.tsx
+import { ReactNode, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "./SideBar";
+import TenantSelector from "./TenantSelector";
+import { logout } from "../utils/auth";
+import { toastSuccess } from "../utils/toast";
+import { FiLogOut } from "react-icons/fi";
+import { AiFillSun, AiFillQuestionCircle } from "react-icons/ai";
+import { FaWhatsapp, FaMoon } from "react-icons/fa";
 
-export default function TenantSelector() {
-  const { tenants, tenantAtivo, trocarTenant, loading } = useTenant();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+interface LayoutModelProps {
+  children: ReactNode;
+  titulo?: string;
+}
 
-  // 🔹 Buscar papel do usuário logado
+export default function LayoutModel({ children, titulo }: LayoutModelProps) {
+  const navigate = useNavigate();
+  const [temaClaro, setTemaClaro] = useState<boolean | undefined>(undefined);
+
+  // Verificar tema salvo
   useEffect(() => {
-    async function fetchUserRole() {
-      try {
-        const perfil = await getUserProfile();
-        setIsAdmin(perfil?.role?.name === "admin"); // ajuste conforme o nome exato do role
-      } catch (error) {
-        setIsAdmin(false);
-      }
-    }
-    fetchUserRole();
+    const temaSalvo = localStorage.getItem("tema") === "claro";
+    setTemaClaro(temaSalvo);
+    document.body.classList.remove("tema-claro", "tema-escuro");
+    document.body.classList.add(temaSalvo ? "tema-claro" : "tema-escuro");
   }, []);
 
-  // 🔹 Enquanto carrega user ou tenants
-  if (loading || isAdmin === null) return null;
+  // Atualizar o título da aba do navegador
+  useEffect(() => {
+    if (titulo) {
+      document.title = `${titulo}`;
+    } else {
+      document.title = "Dashboard";
+    }
+  }, [titulo]);
 
-  // 🔹 Condição de exibição
-  if (!isAdmin || !tenants || tenants.length <= 1) return null;
+
+  // Alternar tema
+  const alternarTema = () => {
+    const novoTemaClaro = !temaClaro;
+    setTemaClaro(novoTemaClaro);
+    localStorage.setItem("tema", novoTemaClaro ? "claro" : "escuro");
+    document.body.classList.remove("tema-claro", "tema-escuro");
+    document.body.classList.add(novoTemaClaro ? "tema-claro" : "tema-escuro");
+  };
+
+  const handleLogout = () => {
+    logout();
+    toastSuccess("Logout realizado com sucesso!");
+    navigate("/login");
+  };
+
+  if (temaClaro === undefined) return null;
 
   return (
-    <div className="relative flex items-center gap-3 bg-[#1A1628] border border-[#2D2642] rounded-lg px-4 py-2 shadow-sm transition-all duration-300">
-      {/* @ts-ignore */}
-      <GoArrowSwitch className="text-purple-400 text-lg" />
+    <div className="flex">
+      <Sidebar />
 
-      {/* Label */}
-      <span className="text-sm text-gray-400">Selecione um tenant:</span>
+      <div className="flex-1 px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300">
+        {/* Header */}
+        <header className="flex items-center px-6 rounded-xl justify-between mb-4">
+          {/* 🔹 Esquerda - Título */}
+          <div className="flex items-center gap-2">
+            <h1 className="text-white text-2xl">{titulo}</h1>
+          </div>
 
-      {/* Select estilizado */}
-      <div className="relative">
-        <select
-          value={tenantAtivo?.id || ""}
-          onChange={(e) => trocarTenant(Number(e.target.value))}
-          className="
-            appearance-none
-            bg-[#1A1628]
-            text-gray-200
-            text-sm
-            pl-3 pr-8 py-1.5
-            rounded-md
-            border border-[#3A3154]
-            focus:outline-none focus:border-purple-500
-            transition-all
-            cursor-pointer
-          "
-        >
-          {tenants.map((t) => (
-            <option
-              key={t.id}
-              value={t.id}
-              className="bg-[#1D1929] text-gray-200"
+          {/* 🔹 Centro - TenantSelector centralizado */}
+          <div className="flex-1 flex justify-center">
+            <TenantSelector />
+          </div>
+
+          {/* 🔹 Direita - Botões */}
+          <div className="flex items-center gap-3">
+            {/* WhatsApp */}
+            <a
+              href="https://hackone.com.br/consultoria-aberturachamado"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex header items-center gap-2 text-gray-400 border hover:text-white border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
             >
-              {t.cliente_name}
-            </option>
-          ))}
-        </select>
+              {/* @ts-ignore */}
+              <FaWhatsapp className="text-gray-300 text-1xl" />
+              Suporte
+            </a>
 
-        {/* Setinha customizada */}
-        <svg
-          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
+            {/* Sair */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center header gap-2 text-gray-400 login border border-[#1D1929] hover:text-white px-4 py-2 rounded-md text-sm transition"
+            >
+              {/* @ts-ignore */}
+              <FiLogOut className="text-gray-300" />
+              Sair
+            </button>
+
+            {/* Toggle Tema */}
+            <button
+              onClick={alternarTema}
+              className={`w-15 h-9 toggle rounded-full border border-[#1D1929] cursor-pointer px-1 transition-all duration-300 ${temaClaro ? "bg-[#3b2a7054]" : "bg-[#161125]"
+                } flex items-center`}
+            >
+              <div
+                className={`w-8 h-8 box-icon rounded-full bg-white text-black toggle text-xs flex items-center justify-center shadow-md transition-all duration-300 transform ${temaClaro ? "translate-x-0" : "translate-x-5"
+                  }`}
+              >
+                {/* @ts-ignore */}
+                {temaClaro ? <AiFillSun /> : <FaMoon />}
+              </div>
+            </button>
+          </div>
+        </header>
+
+
+        {/* Conteúdo da página */}
+        {children}
+
+        {/* Rodapé */}
+        <footer className="text-right text-gray-500 text-xs mt-4">
+          Versão 1.4.0.2
+        </footer>
+
       </div>
     </div>
   );
