@@ -1,6 +1,7 @@
+// src/components/wazuh/TopAgentsCisCard.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTopAgentsCis, TopAgentCisItem } from "../../../services/wazuh/topagentscis";
-import { useTenant } from "../../../context/TenantContext"; // 👈 novo
+import { useTenant } from "../../../context/TenantContext";
 
 interface TopAgentsCisCardProps {
   dias: string;
@@ -8,7 +9,7 @@ interface TopAgentsCisCardProps {
 }
 
 export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisCardProps) {
-  const { tenantAtivo } = useTenant(); // 👈 tenant global
+  const { tenantAtivo } = useTenant();
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
   const diasEfetivo = filtroLocal || dias;
 
@@ -17,9 +18,8 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisC
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
 
-  // 🔹 Busca dados conforme filtro e tenant
   useEffect(() => {
-    if (!tenantAtivo) return; // 👈 só executa quando tenant disponível
+    if (!tenantAtivo) return;
 
     let ativo = true;
     async function fetchData() {
@@ -32,7 +32,6 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisC
         const data = await getTopAgentsCis(diasEfetivo);
         if (!ativo) return;
 
-        // delay mínimo de 500 ms para suavizar transição
         const elapsed = Date.now() - inicio;
         const delay = Math.max(500 - elapsed, 0);
 
@@ -54,7 +53,7 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisC
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo, tenantAtivo]); // 👈 reage à troca de tenant
+  }, [diasEfetivo, tenantAtivo]);
 
   const lista = useMemo(
     () => [...itens].sort((a, b) => b.score_cis_percent - a.score_cis_percent),
@@ -74,15 +73,48 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisC
     return { bar: "bg-[#FB35B91A]", text: "text-[#F914AD]", border: "border-[#FB35B933]" };
   };
 
+  // 🦴 Skeleton loading padronizado
+  if (carregando) {
+    return (
+      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <div className="h-4 w-48 bg-[#ffffff12] rounded animate-pulse" />
+          <div className="h-6 w-24 bg-[#ffffff12] rounded animate-pulse" />
+        </div>
+
+        <div className="flex gap-4 text-[10px] text-xs mb-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-[#ffffff12] rounded animate-pulse" />
+              <div className="h-3 w-10 bg-[#ffffff12] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="w-full h-8 rounded-md border border-[#ffffff1a] bg-[#ffffff08] animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col">
+        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2">
+          {erro}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col relative overflow-hidden">
-      {/* Overlay de atualização */}
-      {carregando && (
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20">
-          Atualizando CIS...
-        </div>
-      )}
-
       {/* Header com seletor interno */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-white font-semibold text-sm">Auditoria CIS - Top Servidores</h3>
@@ -127,42 +159,41 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisC
         </div>
       )}
 
-      {!carregando && (
-        <div
-          className="flex flex-col gap-3 transition-opacity duration-500"
-          style={{ opacity: animReady ? 1 : 0 }}
-        >
-          {lista.length === 0 ? (
-            <span className="text-xs text-gray-400 text-center py-4">
-              Sem dados para o período selecionado.
-            </span>
-          ) : (
-            lista.map((item, i) => {
-              const p = Math.max(0, Math.min(100, Math.round(item.score_cis_percent)));
-              const { bar, text, border } = getClassesPorScore(p);
+      {/* Conteúdo principal */}
+      <div
+        className="flex flex-col gap-3 transition-opacity duration-500"
+        style={{ opacity: animReady ? 1 : 0 }}
+      >
+        {lista.length === 0 ? (
+          <span className="text-xs text-gray-400 text-center py-4">
+            Sem dados para o período selecionado.
+          </span>
+        ) : (
+          lista.map((item, i) => {
+            const p = Math.max(0, Math.min(100, Math.round(item.score_cis_percent)));
+            const { bar, text, border } = getClassesPorScore(p);
 
-              return (
+            return (
+              <div
+                key={`${item.agent_name}-${i}`}
+                className={`w-full h-8 rounded-md border ${border} relative overflow-hidden`}
+              >
                 <div
-                  key={`${item.agent_name}-${i}`}
-                  className={`w-full h-8 rounded-md border ${border} relative overflow-hidden`}
-                >
-                  <div
-                    className={`h-full ${bar}`}
-                    style={{
-                      width: animReady ? `${p}%` : "0%",
-                      transition: "width 600ms ease",
-                    }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-between px-3 text-sm text-white">
-                    <span className="text-gray-400 truncate pr-2">{item.agent_name}</span>
-                    <span className={`${text}`}>{p}%</span>
-                  </div>
+                  className={`h-full ${bar}`}
+                  style={{
+                    width: animReady ? `${p}%` : "0%",
+                    transition: "width 600ms ease",
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center justify-between px-3 text-sm text-white">
+                  <span className="text-gray-400 truncate pr-2">{item.agent_name}</span>
+                  <span className={`${text}`}>{p}%</span>
                 </div>
-              );
-            })
-          )}
-        </div>
-      )}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

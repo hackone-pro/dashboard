@@ -12,14 +12,14 @@ type Totais = {
 
 export default function ThreatSeverityCard({
   className = "",
-  dias = "todos", // 👈 padrão
+  dias = "todos",
   topN = 5,
 }: {
   className?: string;
   dias?: string;
   topN?: number;
 }) {
-  const { tenantAtivo } = useTenant(); // 🔹 reage à troca de tenant
+  const { tenantAtivo } = useTenant(); // 👈 apenas como dependência
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [totais, setTotais] = useState<Totais>({
@@ -29,27 +29,25 @@ export default function ThreatSeverityCard({
     low: 0,
     total: 0,
   });
-  const [animReady, setAnimReady] = useState(false);
 
   useEffect(() => {
-    if (!tenantAtivo) return;
+    if (!tenantAtivo) return; // 🔹 só busca após o tenant carregar
 
-    let alive = true;
+    let ativo = true;
     (async () => {
       try {
         setLoading(true);
         setErro(null);
-        setAnimReady(false);
 
-        const inicio = Date.now();
+        // 🔹 o tenant é tratado internamente pelo service
         const paises = await getTopCountriesWithSeverity(dias, topN);
 
         const sums = paises.reduce(
           (acc, item) => {
-            acc.critical += item.severidades.critical || 0;
-            acc.high += item.severidades.high || 0;
-            acc.medium += item.severidades.medium || 0;
-            acc.low += item.severidades.low || 0;
+            acc.critical += item.severidades.critical;
+            acc.high += item.severidades.high;
+            acc.medium += item.severidades.medium;
+            acc.low += item.severidades.low;
             return acc;
           },
           { critical: 0, high: 0, medium: 0, low: 0 }
@@ -60,27 +58,20 @@ export default function ThreatSeverityCard({
           total: sums.critical + sums.high + sums.medium + sums.low,
         };
 
-        const elapsed = Date.now() - inicio;
-        const delay = Math.max(500 - elapsed, 0);
-
-        setTimeout(() => {
-          if (alive) {
-            setTotais(final);
-            setAnimReady(true);
-          }
-        }, delay);
+        if (!ativo) return;
+        setTotais(final);
       } catch (e: any) {
-        if (!alive) return;
+        if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar Threat Severity");
       } finally {
-        if (alive) setLoading(false);
+        if (ativo) setLoading(false);
       }
     })();
 
     return () => {
-      alive = false;
+      ativo = false;
     };
-  }, [dias, topN, tenantAtivo]);
+  }, [dias, topN, tenantAtivo]); // 👈 reagindo ao tenant ativo, sem passá-lo
 
   const fmt = useMemo(() => new Intl.NumberFormat("pt-BR"), []);
   const linhas = [
@@ -90,13 +81,9 @@ export default function ThreatSeverityCard({
     { nome: "Baixo", cor: "#1DD69A", valor: totais.low },
   ];
 
-  // 🔹 Loading skeleton
   if (loading) {
     return (
-      <div className={`relative cards rounded-xl p-4 shadow-md ${className}`}>
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20 rounded-xl">
-          Atualizando severidades...
-        </div>
+      <div className={`cards rounded-xl p-4 shadow-md ${className}`}>
         <div className="flex items-center justify-between mb-3">
           <div className="h-3 w-24 bg-[#ffffff14] rounded animate-pulse" />
         </div>
@@ -113,52 +100,31 @@ export default function ThreatSeverityCard({
     );
   }
 
-  // 🔹 Erro
   if (erro) {
     return (
       <div className={`cards rounded-xl p-4 shadow-md ${className}`}>
-        <p className="text-xs text-red-400 bg-red-950/30 border border-red-900 p-2 rounded">
-          {erro}
-        </p>
+        <p className="text-xs text-red-400">{erro}</p>
       </div>
     );
   }
 
-  // 🔹 Dados
   return (
-    <div className={`relative cards rounded-xl p-4 shadow-md mt-[10px] ${className}`}>
-      {loading && (
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20 rounded-xl">
-          Atualizando severidades...
-        </div>
-      )}
+    <div className={`cards rounded-xl p-4 shadow-md mt-[10px] ${className}`}>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs text-gray-300">Gravidade das Ameaças (Países)</h4>
+      </div>
 
-      <div
-        className={`transition-opacity duration-500 ${
-          animReady ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs text-gray-300">Gravidade das Ameaças (Países)</h4>
-        </div>
+      <div className="flex items-baseline gap-2 mb-4">
+        <span className="text-white text-2xl font-semibold">
+          {fmt.format(totais.total)}
+        </span>
+        <span className="text-gray-400 text-sm">Ameaças</span>
+      </div>
 
-        <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-white text-2xl font-semibold">
-            {fmt.format(totais.total)}
-          </span>
-          <span className="text-gray-400 text-sm">Ameaças</span>
-        </div>
-
-        <div className="space-y-2 text-sm">
-          {linhas.map((l) => (
-            <Linha
-              key={l.nome}
-              cor={l.cor}
-              nome={l.nome}
-              valor={fmt.format(l.valor)}
-            />
-          ))}
-        </div>
+      <div className="space-y-2 text-sm">
+        {linhas.map((l) => (
+          <Linha key={l.nome} cor={l.cor} nome={l.nome} valor={fmt.format(l.valor)} />
+        ))}
       </div>
     </div>
   );

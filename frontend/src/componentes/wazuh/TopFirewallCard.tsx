@@ -1,34 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
 import { getTopFirewalls, TopFirewallItem } from "../../services/wazuh/topfirewall.service";
-import { useTenant } from "../../context/TenantContext"; // 👈 novo import
+import { useTenant } from "../../context/TenantContext";
 
 export default function TopFirewallCard() {
   const [firewalls, setFirewalls] = useState<TopFirewallItem[]>([]);
   const [dias, setDias] = useState("todos");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-  const { tenantAtivo } = useTenant(); // 👈 pega tenant ativo
+  const { tenantAtivo } = useTenant();
 
   useEffect(() => {
-    if (!tenantAtivo) return; // só executa se tenant estiver definido
+    if (!tenantAtivo) return;
 
     let ativo = true;
     async function fetchData() {
       try {
         setCarregando(true);
         setErro(null);
-
-        const inicio = Date.now();
         const dados = await getTopFirewalls(dias);
         if (!ativo) return;
-
-        // delay mínimo de 500ms pra suavizar a transição
-        const elapsed = Date.now() - inicio;
-        const delay = Math.max(500 - elapsed, 0);
-        setTimeout(() => {
-          if (ativo) setFirewalls(dados.slice(0, 5)); // Top 5
-        }, delay);
+        setFirewalls(dados.slice(0, 5)); // Top 5
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao buscar top firewalls");
@@ -37,11 +29,12 @@ export default function TopFirewallCard() {
         if (ativo) setCarregando(false);
       }
     }
+
     fetchData();
     return () => {
       ativo = false;
     };
-  }, [dias, tenantAtivo]); // 👈 refaz o fetch quando o tenant muda
+  }, [dias, tenantAtivo]);
 
   const categorias = useMemo(() => firewalls.map((fw) => fw.gerador), [firewalls]);
 
@@ -49,26 +42,33 @@ export default function TopFirewallCard() {
   const absMedio = firewalls.map((fw) => fw.severidade.medio);
   const absAlto = firewalls.map((fw) => fw.severidade.alto);
   const absCritico = firewalls.map((fw) => fw.severidade.critico);
-  const allZero = [absBaixo, absMedio, absAlto, absCritico].every(arr => arr.every(v => v === 0));
+  const allZero = [absBaixo, absMedio, absAlto, absCritico].every((arr) =>
+    arr.every((v) => v === 0)
+  );
 
   const MIN_PCT = 1.0;
   function buildDisplaySeries() {
     const n = categorias.length;
     const dispBaixo = new Array(n).fill(0);
     const dispMedio = new Array(n).fill(0);
-    const dispAlto  = new Array(n).fill(0);
-    const dispCrit  = new Array(n).fill(0);
+    const dispAlto = new Array(n).fill(0);
+    const dispCrit = new Array(n).fill(0);
 
     for (let i = 0; i < n; i++) {
-      const vals = [absBaixo[i] || 0, absMedio[i] || 0, absAlto[i] || 0, absCritico[i] || 0];
+      const vals = [
+        absBaixo[i] || 0,
+        absMedio[i] || 0,
+        absAlto[i] || 0,
+        absCritico[i] || 0,
+      ];
       const total = vals.reduce((a, b) => a + b, 0);
       if (total <= 0) continue;
 
-      let pct = vals.map(v => (v / total) * 100);
+      let pct = vals.map((v) => (v / total) * 100);
       let extra = 0;
       for (let j = 0; j < pct.length; j++) {
         if (vals[j] > 0 && pct[j] > 0 && pct[j] < MIN_PCT) {
-          extra += (MIN_PCT - pct[j]);
+          extra += MIN_PCT - pct[j];
           pct[j] = MIN_PCT;
         }
       }
@@ -87,8 +87,8 @@ export default function TopFirewallCard() {
 
       dispBaixo[i] = pct[0];
       dispMedio[i] = pct[1];
-      dispAlto[i]  = pct[2];
-      dispCrit[i]  = pct[3];
+      dispAlto[i] = pct[2];
+      dispCrit[i] = pct[3];
     }
 
     return { dispBaixo, dispMedio, dispAlto, dispCrit };
@@ -96,17 +96,20 @@ export default function TopFirewallCard() {
 
   const { dispBaixo, dispMedio, dispAlto, dispCrit } = useMemo(buildDisplaySeries, [
     categorias.join("|"),
-    absBaixo, absMedio, absAlto, absCritico
+    absBaixo,
+    absMedio,
+    absAlto,
+    absCritico,
   ]);
 
   const series = useMemo(() => {
     if (allZero) {
-      return [{ name: "Alertas", data: firewalls.map(fw => fw.total) }];
+      return [{ name: "Alertas", data: firewalls.map((fw) => fw.total) }];
     }
     return [
-      { name: "Baixo",   data: dispBaixo },
-      { name: "Médio",   data: dispMedio },
-      { name: "Alto",    data: dispAlto },
+      { name: "Baixo", data: dispBaixo },
+      { name: "Médio", data: dispMedio },
+      { name: "Alto", data: dispAlto },
       { name: "Crítico", data: dispCrit },
     ];
   }, [allZero, firewalls, dispBaixo, dispMedio, dispAlto, dispCrit]);
@@ -120,7 +123,6 @@ export default function TopFirewallCard() {
       stackType: isStacked ? "100%" : undefined,
       toolbar: { show: false },
       foreColor: "#99a1af",
-      animations: { enabled: true },
     },
     plotOptions: { bar: { horizontal: true, barHeight: "60%" } },
     stroke: { width: 2, colors: ["#0d0c22"] },
@@ -131,7 +133,7 @@ export default function TopFirewallCard() {
         const name = categorias[dataPointIndex] || "";
         const vB = absBaixo[dataPointIndex] || 0;
         const vM = absMedio[dataPointIndex] || 0;
-        const vA = absAlto[dataPointIndex]  || 0;
+        const vA = absAlto[dataPointIndex] || 0;
         const vC = absCritico[dataPointIndex] || 0;
 
         return `
@@ -169,14 +171,7 @@ export default function TopFirewallCard() {
   const chartKey = `tfw-${dias}-${tenantAtivo?.id ?? "none"}`;
 
   return (
-    <div className="cards flex-grow p-6 rounded-2xl shadow-lg card-dashboard transition-all hover:-translate-y-1 hover:shadow-lg relative">
-      {/* Overlay de carregamento */}
-      {carregando && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center text-sm text-gray-300 z-50">
-          Carregando firewalls...
-        </div>
-      )}
-
+    <div className="cards flex-grow p-6 rounded-2xl shadow-lg card-dashboard relative transition-all hover:-translate-y-1 hover:shadow-lg">
       <div className="grid grid-cols-12 mb-5">
         <div className="col-span-8">
           <h3 className="text-sm text-white">Top 5 Firewalls geradores de alertas</h3>
@@ -202,11 +197,19 @@ export default function TopFirewallCard() {
         </div>
       )}
 
-      {!carregando && firewalls.length === 0 && !erro && (
+      {carregando ? (
+        // 🔹 Skeleton igual aos outros cards
+        <div className="flex flex-col gap-3 animate-pulse">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="h-4 w-40 bg-[#ffffff0a] rounded" />
+              <div className="h-3 w-20 bg-[#ffffff0a] rounded" />
+            </div>
+          ))}
+        </div>
+      ) : firewalls.length === 0 ? (
         <div className="text-xs text-gray-400">Nenhum dado para exibir.</div>
-      )}
-
-      {!carregando && firewalls.length > 0 && (
+      ) : (
         <Chart key={chartKey} options={options} series={series as any} type="bar" height={340} />
       )}
     </div>

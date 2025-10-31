@@ -1,6 +1,7 @@
+// src/components/wazuh/TopAgentsCard.tsx
 import { useEffect, useState } from "react";
 import { getTopAgents, TopAgentItem } from "../../../services/wazuh/topagents.service";
-import { useTenant } from "../../../context/TenantContext"; // 👈 novo
+import { useTenant } from "../../../context/TenantContext";
 
 interface TopAgentsCardProps {
   dias: string;
@@ -8,17 +9,17 @@ interface TopAgentsCardProps {
 }
 
 export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardProps) {
-  const { tenantAtivo } = useTenant(); // 👈 tenant global
+  const { tenantAtivo } = useTenant();
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
   const diasEfetivo = filtroLocal || dias;
 
   const [agentes, setAgentes] = useState<TopAgentItem[]>([]);
-  const [carregando, setCarregando] = useState<boolean>(true);
+  const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
 
   useEffect(() => {
-    if (!tenantAtivo) return; // 👈 só executa após tenant estar carregado
+    if (!tenantAtivo) return;
 
     let ativo = true;
     async function fetchData() {
@@ -31,7 +32,6 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
         const data = await getTopAgents(diasEfetivo);
         if (!ativo) return;
 
-        // delay mínimo de 500ms p/ suavizar transição
         const elapsed = Date.now() - inicio;
         const delay = Math.max(500 - elapsed, 0);
 
@@ -53,18 +53,72 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo, tenantAtivo]); // 👈 recarrega ao trocar tenant
+  }, [diasEfetivo, tenantAtivo]);
+
+  if (carregando) {
+    // 🦴 Skeleton: mantém o formato de tabela
+    return (
+      <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300">
+        <div className="flex justify-between items-center mb-5">
+          <div className="h-4 w-28 bg-[#ffffff12] rounded animate-pulse" />
+          <div className="h-6 w-24 bg-[#ffffff12] rounded animate-pulse" />
+        </div>
+
+        <div className="w-full">
+          <div className="flex text-xs text-gray-400 mb-3">
+            {["Hosts", "Crítico", "Alto", "Médio", "Baixo"].map((col, i) => (
+              <div
+                key={i}
+                className={`${
+                  i === 0 ? "w-[40%] text-left pl-2" : "w-[15%] text-center"
+                }`}
+              >
+                <div className="h-3 bg-[#ffffff12] rounded animate-pulse mx-auto w-16" />
+              </div>
+            ))}
+          </div>
+
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center border-b border-[#ffffff1e] py-2 animate-pulse"
+            >
+              <div className="w-[40%] pl-2">
+                <div className="h-3 bg-[#ffffff12] rounded w-20 mb-1" />
+                <div className="h-3 bg-[#ffffff12] rounded w-32" />
+              </div>
+              <div className="w-[15%] text-center">
+                <div className="h-3 bg-[#ffffff12] rounded w-6 mx-auto" />
+              </div>
+              <div className="w-[15%] text-center">
+                <div className="h-3 bg-[#ffffff12] rounded w-6 mx-auto" />
+              </div>
+              <div className="w-[15%] text-center">
+                <div className="h-3 bg-[#ffffff12] rounded w-6 mx-auto" />
+              </div>
+              <div className="w-[15%] text-center">
+                <div className="h-3 bg-[#ffffff12] rounded w-6 mx-auto" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300">
+        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2">
+          {erro}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="cards p-6 rounded-2xl shadow-lg flex-grow relative transition-all duration-300 overflow-hidden">
-      {/* Overlay de carregamento (tenant troca / atualização) */}
-      {carregando && (
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20">
-          Atualizando agentes...
-        </div>
-      )}
-
-      <div className="flex justify-between items-center mb-5">
+    <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300 relative">
+      <div className="flex justify-between items-center mb-5 relative z-20">
         <h3 className="text-sm text-white">Top Hosts</h3>
 
         <select
@@ -86,62 +140,62 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
         </select>
       </div>
 
-      {erro && (
-        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-2">
-          {erro}
-        </div>
-      )}
-
-      {!carregando && (
-        <div className="overflow-x-auto transition-opacity duration-500" style={{ opacity: animReady ? 1 : 0 }}>
-          <table className="w-full text-sm text-gray-300 border-collapse py-3">
-            <thead>
-              <tr className="text-xs text-gray-400">
-                <th className="text-left w-[40%] pl-2 pb-3">Hosts</th>
-                <th className="w-[15%] text-center">
-                  <span className="text-pink-500 badge-pink badge rounded-md py-0.5 px-2">Crítico</span>
-                </th>
-                <th className="w-[15%] text-center">
-                  <span className="text-[#A855F7] badge-high badge rounded-md py-0.5 px-3">Alto</span>
-                </th>
-                <th className="w-[15%] text-center">
-                  <span className="text-[#6366F1] badge-darkpink badge rounded-md py-0.5 px-2">Médio</span>
-                </th>
-                <th className="w-[15%] text-center">
-                  <span className="text-[#1DD69A] badge-green badge rounded-md py-0.5 px-2">Baixo</span>
-                </th>
+      <div className="overflow-x-auto relative z-20">
+        <table className="w-full text-sm text-gray-300 border-collapse py-3">
+          <thead>
+            <tr className="text-xs text-gray-400 top-agents">
+              <th className="text-left w-[40%] pl-2 pb-3">Hosts</th>
+              <th className="w-[15%] text-center">
+                <span className="text-pink-500 badge-pink badge rounded-md py-0.5 px-2">
+                  Crítico
+                </span>
+              </th>
+              <th className="w-[15%] text-center">
+                <span className="text-[#A855F7] badge-high badge rounded-md py-0.5 px-3">
+                  Alto
+                </span>
+              </th>
+              <th className="w-[15%] text-center">
+                <span className="text-[#6366F1] badge-darkpink badge rounded-md py-0.5 px-2">
+                  Médio
+                </span>
+              </th>
+              <th className="w-[15%] text-center">
+                <span className="text-[#1DD69A] badge-green badge rounded-md py-0.5 px-2">
+                  Baixo
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {agentes.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center text-xs text-gray-500 py-4">
+                  Nenhum agente encontrado
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {agentes.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center text-xs text-gray-500 py-4">
-                    Nenhum agente encontrado
+            ) : (
+              agentes.map((item, i) => (
+                <tr
+                  key={`${item.agent_name}-${i}`}
+                  className="hover:bg-[#ffffff12] transition-all border-b border-[#ffffff1e]"
+                >
+                  <td className="px-2 py-2">
+                    <div className="text-[11px] text-gray-400">
+                      {item.total_alertas.toLocaleString("pt-BR")} alertas
+                    </div>
+                    <div className="font-medium text-gray-200">{item.agent_name}</div>
                   </td>
+                  <td className="text-center">{item.severidade?.Crítico ?? 0}</td>
+                  <td className="text-center">{item.severidade?.Alto ?? 0}</td>
+                  <td className="text-center">{item.severidade?.Médio ?? 0}</td>
+                  <td className="text-center">{item.severidade?.Baixo ?? 0}</td>
                 </tr>
-              ) : (
-                agentes.map((item, i) => (
-                  <tr
-                    key={`${item.agent_name}-${i}`}
-                    className="hover:bg-[#ffffff12] transition-all border-b border-[#ffffff1e]"
-                  >
-                    <td className="px-2 py-2">
-                      <div className="text-[11px] text-gray-400">
-                        {item.total_alertas.toLocaleString("pt-BR")} alertas
-                      </div>
-                      <div className="font-medium text-gray-200">{item.agent_name}</div>
-                    </td>
-                    <td className="text-center">{item.severidade?.Crítico ?? 0}</td>
-                    <td className="text-center">{item.severidade?.Alto ?? 0}</td>
-                    <td className="text-center">{item.severidade?.Médio ?? 0}</td>
-                    <td className="text-center">{item.severidade?.Baixo ?? 0}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

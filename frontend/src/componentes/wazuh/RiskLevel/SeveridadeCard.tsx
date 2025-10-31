@@ -1,6 +1,7 @@
+// src/components/wazuh/SeveridadeCard.tsx
 import { useEffect, useState } from "react";
 import { getSeveridadeWazuh } from "../../../services/wazuh/severidade.service";
-import { useTenant } from "../../../context/TenantContext"; // 👈 novo import
+import { useTenant } from "../../../context/TenantContext"; // 👈 integração multi-tenant
 
 type Nivel = "Crítico" | "Alto" | "Médio" | "Baixo";
 
@@ -9,6 +10,7 @@ interface SeveridadeCardProps {
 }
 
 export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
+  const { tenantAtivo } = useTenant();
   const [dados, setDados] = useState({
     critico: 0,
     alto: 0,
@@ -19,10 +21,9 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
-  const { tenantAtivo } = useTenant(); // 👈 tenant global
 
   useEffect(() => {
-    if (!tenantAtivo) return; // só busca se houver tenant ativo
+    if (!tenantAtivo) return; // 🚫 só busca após tenant definido
 
     let ativo = true;
     async function fetchData() {
@@ -35,7 +36,6 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
         const r = await getSeveridadeWazuh(dias);
         if (!ativo) return;
 
-        // delay mínimo para suavizar transição
         const elapsed = Date.now() - inicio;
         const delay = Math.max(500 - elapsed, 0);
 
@@ -52,12 +52,11 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
         if (ativo) setCarregando(false);
       }
     }
-
     fetchData();
     return () => {
       ativo = false;
     };
-  }, [dias, tenantAtivo]); // 👈 reage à troca de tenant
+  }, [dias, tenantAtivo]);
 
   const { critico, alto, medio, baixo, total } = dados;
 
@@ -82,10 +81,25 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
     { nivel: "Baixo", valor: baixo },
   ];
 
+  // 🦴 Skeleton loading animado (mantém grid e cards visuais)
   if (carregando) {
     return (
-      <div className="flex items-center justify-center h-full text-xs text-gray-400 bg-[#0d0c22]/30 rounded-xl animate-pulse">
-        Carregando severidade...
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch h-full">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="cards rounded-xl p-4 flex flex-col h-full space-y-3"
+          >
+            <div className="h-3 w-20 bg-[#ffffff12] rounded animate-pulse" />
+            <div className="h-6 w-16 bg-[#ffffff12] rounded animate-pulse" />
+            <div className="h-3 w-full bg-[#ffffff12] rounded animate-pulse" />
+            <div className="flex gap-1 mt-auto">
+              {Array.from({ length: 10 }).map((_, j) => (
+                <div key={j} className="w-1.5 h-2 bg-[#ffffff12] rounded animate-pulse" />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -102,7 +116,6 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch h-full">
       {itens.map((item, idx) => {
         const { corTexto, corBarra, corBadge } = getCfg(item.nivel);
-
         const ratio = total > 0 ? item.valor / total : 0;
         const percent = ratio * 100;
 
@@ -112,14 +125,7 @@ export default function SeveridadeCard({ dias }: SeveridadeCardProps) {
           ratio > 0 ? Math.min(slots, Math.ceil(Math.pow(ratio, EASING) * slots)) : 0;
 
         return (
-          <div key={idx} className="cards rounded-xl p-4 flex flex-col h-full relative overflow-hidden">
-            {/* Overlay sutil durante troca de tenant */}
-            {carregando && (
-              <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20">
-                Atualizando...
-              </div>
-            )}
-
+          <div key={idx} className="cards rounded-xl p-4 flex flex-col h-full">
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs text-gray-400">Gravidade</span>
               <span className={`text-xs font-semibold ${corTexto} ${corBadge} badge rounded-md py-0.5`}>

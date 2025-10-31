@@ -60,18 +60,22 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
       <div className="flex-1 px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300">
         {/* Header */}
         <header className="flex items-center px-6 rounded-xl justify-between mb-4">
+          {/* 🔹 Esquerda - Título */}
           <div className="flex items-center gap-2">
             <h1 className="text-white text-2xl">{titulo}</h1>
           </div>
 
-          <div className="flex items-center gap-3">
-
-            {/* 🔹 Seletor de Tenant */}
+          {/* 🔹 Centro - TenantSelector centralizado */}
+          {/* <div className="flex-1 flex justify-center">
             <TenantSelector />
+          </div> */}
 
+          {/* 🔹 Direita - Botões */}
+          <div className="flex items-center gap-3">
+            <TenantSelector />
             {/* WhatsApp */}
             <a
-              href="https://hackone.com.br/consultoria-aberturachamado" // substitua pelo número real
+              href="https://hackone.com.br/consultoria-aberturachamado"
               target="_blank"
               rel="noopener noreferrer"
               className="flex header items-center gap-2 text-gray-400 border hover:text-white border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
@@ -94,14 +98,12 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             {/* Toggle Tema */}
             <button
               onClick={alternarTema}
-              className={`w-15 h-9 toggle rounded-full border border-[#1D1929] cursor-pointer px-1 transition-all duration-300 ${temaClaro ? 'bg-[#3b2a7054]' : 'bg-[#161125]'
+              className={`w-15 h-9 toggle rounded-full border border-[#1D1929] cursor-pointer px-1 transition-all duration-300 ${temaClaro ? "bg-[#3b2a7054]" : "bg-[#161125]"
                 } flex items-center`}
             >
               <div
-                className={`
-      w-8 h-8 box-icon rounded-full bg-white text-black toggle text-xs flex items-center justify-center shadow-md transition-all duration-300
-      transform ${temaClaro ? 'translate-x-0' : 'translate-x-5'}
-    `}
+                className={`w-8 h-8 box-icon rounded-full bg-white text-black toggle text-xs flex items-center justify-center shadow-md transition-all duration-300 transform ${temaClaro ? "translate-x-0" : "translate-x-5"
+                  }`}
               >
                 {/* @ts-ignore */}
                 {temaClaro ? <AiFillSun /> : <FaMoon />}
@@ -109,6 +111,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             </button>
           </div>
         </header>
+
 
         {/* Conteúdo da página */}
         {children}

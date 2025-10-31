@@ -1,8 +1,9 @@
+// src/components/iris/FluxoIncidentesIris.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTenant } from "../../services/wazuh/tenant.service";
 import { getTodosCasos } from "../../services/iris/cases.service";
 import GraficoAreaSpline from "../graficos/GraficoAreaSpline";
-import { useTenant } from "../../context/TenantContext"; // 👈 novo
+import { useTenant } from "../../context/TenantContext";
 
 interface Incidente {
   case_id: number;
@@ -27,7 +28,7 @@ export default function FluxoIncidentesIris({
   onChangeFiltro,
   onUpdateTotais,
 }: Props) {
-  const { tenantAtivo } = useTenant(); // 👈 pega tenant ativo
+  const { tenantAtivo } = useTenant();
   const [series, setSeries] = useState<{ name: string; data: number[] }[]>([]);
   const [categoriasX, setCategoriasX] = useState<string[]>([]);
   const [totalAbertos, setTotalAbertos] = useState(0);
@@ -41,12 +42,10 @@ export default function FluxoIncidentesIris({
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
 
-  // sincroniza filtro local com global
   useEffect(() => {
     if (!filtroLocal && diasGlobal) setFiltroLocal(null);
   }, [diasGlobal]);
 
-  // 🔹 busca dados do IRIS conforme tenant e filtro
   useEffect(() => {
     if (!tenantAtivo) return;
 
@@ -95,7 +94,7 @@ export default function FluxoIncidentesIris({
         setCategoriasX(agrupado.categoriasX);
 
         const elapsed = Date.now() - inicio;
-        const delay = Math.max(500 - elapsed, 0); // delay mínimo
+        const delay = Math.max(500 - elapsed, 0);
         setTimeout(() => ativo && setAnimReady(true), delay);
       } catch (e: any) {
         if (!ativo) return;
@@ -109,7 +108,7 @@ export default function FluxoIncidentesIris({
     return () => {
       ativo = false;
     };
-  }, [token, diasEfetivo, tenantAtivo]); // 👈 reage à troca de tenant
+  }, [token, diasEfetivo, tenantAtivo]);
 
   useEffect(() => {
     onUpdateTotais?.(totalCasos);
@@ -132,62 +131,85 @@ export default function FluxoIncidentesIris({
     }
   }, [diasEfetivo]);
 
-  return (
-    <div className="relative">
-      {/* Overlay durante atualização */}
-      {carregando && (
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20 rounded-xl">
-          Atualizando incidentes...
+  // 🦴 Skeleton animado (mantém estrutura e alinhamento)
+  if (carregando) {
+    return (
+      <div className="p-6 shadow-md h-full flex flex-col justify-between">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <div className="h-4 w-40 bg-[#ffffff12] rounded animate-pulse mb-3" />
+            <div className="flex gap-10">
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#A855F7]" />
+                  <span className="h-3 w-20 bg-[#ffffff12] rounded animate-pulse" />
+                </div>
+                <div className="h-6 w-20 rounded bg-[#ffffff12] animate-pulse" />
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#F914AD]" />
+                  <span className="h-3 w-24 bg-[#ffffff12] rounded animate-pulse" />
+                </div>
+                <div className="h-6 w-16 rounded bg-[#ffffff12] animate-pulse" />
+              </div>
+            </div>
+          </div>
+          <div className="h-6 w-24 bg-[#ffffff12] rounded animate-pulse" />
         </div>
-      )}
 
+        <div className="mt-6 h-52 rounded-md bg-[#ffffff08] animate-pulse" />
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col">
+        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2">
+          {erro}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="shadow-md h-full flex flex-col relative overflow-hidden">
       <div className="flex justify-between items-start mb-4">
         <div
-          className={`transition-opacity duration-300 ${animReady ? "opacity-100" : "opacity-0"}`}
+          className={`transition-opacity duration-300 ${
+            animReady ? "opacity-100" : "opacity-0"
+          }`}
         >
           <h3 className="text-sm text-white font-semibold mb-4">
             Controle de Incidentes
           </h3>
 
-          {carregando ? (
-            <div className="flex gap-10">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
-                  <span className="text-gray-400 text-sm">Casos abertos</span>
-                </div>
-                <div className="h-6 w-24 rounded bg-[#ffffff0a] animate-pulse" />
+          <div className="flex gap-10 text-sm">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span className="text-gray-400">Casos abertos</span>
               </div>
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-pink-400" />
-                  <span className="text-gray-400 text-sm">Casos atribuídos</span>
-                </div>
-                <div className="h-6 w-16 rounded bg-[#ffffff0a] animate-pulse" />
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-10 text-sm">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                  <span className="text-gray-400">Casos abertos</span>
-                </div>
-                <span className="text-white text-lg font-semibold">
-                  {totalAbertos}
-                  <span className="text-gray-500 text-base font-normal"> / {totalCasos}</span>
+              <span className="text-white text-lg font-semibold">
+                {totalAbertos}
+                <span className="text-gray-500 text-base font-normal">
+                  {" "}
+                  / {totalCasos}
                 </span>
-              </div>
-
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-pink-400"></span>
-                  <span className="text-gray-400">Casos atribuídos</span>
-                </div>
-                <span className="text-white text-lg font-semibold">{totalAtribuidos}</span>
-              </div>
+              </span>
             </div>
-          )}
+
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-pink-400"></span>
+                <span className="text-gray-400">Casos atribuídos</span>
+              </div>
+              <span className="text-white text-lg font-semibold">
+                {totalAtribuidos}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="min-w-fit">
@@ -217,20 +239,18 @@ export default function FluxoIncidentesIris({
         </div>
       )}
 
-      {!carregando && (
-        <div
-          className={`transition-opacity duration-500 ${
-            animReady ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <GraficoAreaSpline
-            series={series}
-            categoriasX={categoriasX}
-            cores={["#A855F7", "#EC4899"]}
-            hideXAxisLabels
-          />
-        </div>
-      )}
+      <div
+        className={`transition-opacity duration-500 ${
+          animReady ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <GraficoAreaSpline
+          series={series}
+          categoriasX={categoriasX}
+          cores={["#A855F7", "#EC4899"]}
+          hideXAxisLabels
+        />
+      </div>
     </div>
   );
 }
@@ -246,7 +266,8 @@ function agruparPorDia(incidentes: Incidente[], ownerName: string, dias: number)
 
   incidentes.forEach((incidente) => {
     const chave = toKey(incidente.case_open_date);
-    if (incidente.state_name === "Open") contagemAbertos[chave] = (contagemAbertos[chave] || 0) + 1;
+    if (incidente.state_name === "Open")
+      contagemAbertos[chave] = (contagemAbertos[chave] || 0) + 1;
     if (incidente.owner === ownerName)
       contagemAtribuidos[chave] = (contagemAtribuidos[chave] || 0) + 1;
   });

@@ -409,7 +409,7 @@ export default function Incidentes() {
   return (
     <LayoutModel titulo="Incidentes">
       {/* Gráficos resumo */}
-      <div className={`transition-opacity duration-500 ${animReady ? "opacity-100" : "opacity-0"}`}>
+      <div>
         <div className="flex justify-end mt-5 mb-3 px-6">
           <button
             onClick={() => {

@@ -1,6 +1,7 @@
 // src/components/wazuh/TopAgenteVulnerabilidadeCard.tsx
 import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { getTopAgentesVulnerabilidades, TopAgenteVulnerabilidade } from "../../../services/wazuh/agentesvulnerabilidades.service";
+import { useTenant } from "../../../context/TenantContext"; // 👈 tenant global
 
 export type TopAgenteVulnerabilidadeCardRef = {
   carregar: () => void;
@@ -10,13 +11,16 @@ const formatPt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
 
 const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef>((props, ref) => {
+  const { tenantAtivo } = useTenant(); // 👈 obtém tenant ativo
   const [topAgents, setTopAgents] = useState<TopAgenteVulnerabilidade[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
+    if (!tenantAtivo) return; // 🔹 evita chamada sem tenant
     setCarregando(true);
     try {
+      // 🔹 o tenant é tratado internamente no service
       const lista = await getTopAgentesVulnerabilidades(5, "todos");
       setTopAgents(lista);
       setErro(null);
@@ -29,12 +33,13 @@ const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef>
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [tenantAtivo]); // 👈 recarrega sempre que o tenant mudar
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
 
+  // 🔹 Skeleton (carregando)
   if (carregando) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
@@ -55,6 +60,7 @@ const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef>
     );
   }
 
+  // 🔹 Erro
   if (erro) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-red-400">
@@ -63,6 +69,7 @@ const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef>
     );
   }
 
+  // 🔹 Sem dados
   if (!topAgents.length) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-gray-400">
@@ -71,6 +78,7 @@ const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef>
     );
   }
 
+  // 🔹 Dados carregados
   return (
     <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
       <div className="flex justify-between items-center mb-3">

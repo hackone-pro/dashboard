@@ -1,7 +1,8 @@
+// src/components/wazuh/FirewallDonutCard.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTopFirewalls, TopFirewallItem } from "../../../services/wazuh/topfirewall.service";
 import GraficoDonut from "../../graficos/GraficoDonut";
-import { useTenant } from "../../../context/TenantContext"; // 👈 novo
+import { useTenant } from "../../../context/TenantContext";
 
 interface FirewallDonutCardProps {
   dias: string;
@@ -9,7 +10,7 @@ interface FirewallDonutCardProps {
 }
 
 export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonutCardProps) {
-  const { tenantAtivo } = useTenant(); // 👈 tenant global
+  const { tenantAtivo } = useTenant();
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
   const diasEfetivo = filtroLocal || dias;
 
@@ -19,7 +20,6 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
   const [idxSelecionado, setIdxSelecionado] = useState<number | null>(null);
   const [animReady, setAnimReady] = useState(false);
 
-  // 🔹 Reage a mudança de tenant ou filtro
   useEffect(() => {
     if (!tenantAtivo) return;
 
@@ -54,9 +54,8 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo, tenantAtivo]); // 👈 depende do tenant
+  }, [diasEfetivo, tenantAtivo]);
 
-  // 🔹 Agrega severidades
   const { baixo, medio, alto, critico, total } = useMemo(() => {
     const agg = { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };
     for (const it of dados) {
@@ -73,15 +72,43 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
   const series = [critico, alto, medio, baixo];
   const cores = ["#F914AD", "#A855F7", "#6366F1", "#1DD69A"];
 
+  // 🦴 Skeleton animado — mesmo padrão visual dos outros cards
+  if (carregando) {
+    return (
+      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between relative overflow-hidden">
+        <div className="flex justify-between items-center mb-4">
+          <div className="h-4 w-36 bg-[#ffffff12] rounded animate-pulse" />
+          <div className="h-6 w-24 bg-[#ffffff12] rounded animate-pulse" />
+        </div>
+
+        <div className="flex justify-center items-center my-6">
+          <div className="w-40 h-40 rounded-full border-4 border-[#ffffff12] animate-pulse" />
+        </div>
+
+        <div className="flex gap-3 flex-wrap mt-4 text-[10px] justify-center">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-[#ffffff12] rounded animate-pulse" />
+              <div className="h-3 w-10 bg-[#ffffff12] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between relative overflow-hidden">
+        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-3">
+          {erro}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-4 relative">
-      {/* Overlay de atualização */}
-      {carregando && (
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-gray-300 text-xs z-20 rounded-xl">
-          Atualizando firewalls...
-        </div>
-      )}
-
       <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between relative overflow-hidden transition-all">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm text-white">Alertas de Firewall</h3>
@@ -110,26 +137,24 @@ export default function FirewallDonutCard({ dias, onChangeFiltro }: FirewallDonu
           </div>
         )}
 
-        {!carregando && (
-          <div
-            className="transition-opacity duration-500"
-            style={{ opacity: animReady ? 1 : 0 }}
-          >
-            {total === 0 ? (
-              <div className="text-xs text-gray-400">Nenhum dado para exibir.</div>
-            ) : (
-              <GraficoDonut
-                labels={labels}
-                series={series}
-                cores={cores}
-                height={220}
-                descricaoTotal="Alertas de Firewall"
-                idxSelecionado={idxSelecionado}
-                onSelecionarIdx={setIdxSelecionado}
-              />
-            )}
-          </div>
-        )}
+        <div
+          className="transition-opacity duration-500"
+          style={{ opacity: animReady ? 1 : 0 }}
+        >
+          {total === 0 ? (
+            <div className="text-xs text-gray-400">Nenhum dado para exibir.</div>
+          ) : (
+            <GraficoDonut
+              labels={labels}
+              series={series}
+              cores={cores}
+              height={220}
+              descricaoTotal="Alertas de Firewall"
+              idxSelecionado={idxSelecionado}
+              onSelecionarIdx={setIdxSelecionado}
+            />
+          )}
+        </div>
 
         <div className="flex gap-3 flex-wrap mt-4 text-[10px] text-gray-400 text-xs justify-center">
           {labels.map((lb, i) => {
