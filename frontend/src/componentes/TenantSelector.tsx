@@ -3,18 +3,23 @@ import { useTenant } from "../context/TenantContext";
 export default function TenantSelector() {
   const { tenants, tenantAtivo, trocarTenant, loading } = useTenant();
 
-  if (loading) return null;
-  if (!tenantAtivo) return null;
+  if (loading || !tenantAtivo) {
+    return (
+      <div className="text-sm text-gray-500 animate-pulse">
+        Carregando organização...
+      </div>
+    );
+  }
 
   const isMultiTenant = tenants && tenants.length > 1;
 
-  // 🔹 Função para formatar o nome visualmente
+  // 🔹 Formata o nome visualmente
   const formatarNome = (nome: string) => {
     if (!nome) return "";
     return nome
-      .replace(/[-_]/g, " ") // remove hífens e underlines
+      .replace(/[-_]/g, " ")
       .toLowerCase()
-      .replace(/\b\w/g, (letra) => letra.toUpperCase()); // capitalize cada palavra
+      .replace(/\b\w/g, (letra) => letra.toUpperCase());
   };
 
   return (
@@ -34,6 +39,7 @@ export default function TenantSelector() {
               border border-[#1D1929]
               focus:outline-none focus:ring-2 focus:ring-purple-600
               hover:border-purple-500 transition-all cursor-pointer
+              bg-[#0f0f1a]
             "
           >
             {tenants.map((t) => (
@@ -67,6 +73,7 @@ export default function TenantSelector() {
           border border-[#1D1929]
           focus:outline-none focus:ring-2 focus:ring-purple-600
           hover:border-purple-500 transition-all
+          bg-[#0f0f1a]
           "
         >
           {formatarNome(tenantAtivo.cliente_name)}
