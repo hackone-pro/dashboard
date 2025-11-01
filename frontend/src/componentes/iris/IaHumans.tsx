@@ -82,7 +82,7 @@ export default function IaHumans({ token }: Props) {
   }, [token, filtroDias, tenantAtivo]);
 
   return (
-    <div className="p-6 rounded-2xl flex-grow transition-all duration-300">
+    <div className="rounded-2xl flex-grow transition-all duration-300">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-sm text-white">Tendência de Volume de Casos</h3>
 
