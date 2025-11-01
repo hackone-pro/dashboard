@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "custom_dashboards",
+  "info": {
+    "singularName": "custom-dashboard",
+    "pluralName": "custom-dashboards",
+    "displayName": "Custom Dashboard"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "layout": {
+      "type": "json"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "custom_dashboards"
+    }
+  }
+}

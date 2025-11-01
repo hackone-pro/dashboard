@@ -373,6 +373,40 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiCustomDashboardCustomDashboard
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'custom_dashboards';
+  info: {
+    displayName: 'Custom Dashboard';
+    pluralName: 'custom-dashboards';
+    singularName: 'custom-dashboard';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    is_default: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    layout: Schema.Attribute.JSON;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::custom-dashboard.custom-dashboard'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
 export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
   collectionName: 'tenants';
   info: {
@@ -949,6 +983,10 @@ export interface PluginUsersPermissionsUser
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    custom_dashboards: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::custom-dashboard.custom-dashboard'
+    >;
     email: Schema.Attribute.Email &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{
@@ -1008,6 +1046,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::custom-dashboard.custom-dashboard': ApiCustomDashboardCustomDashboard;
       'api::tenant.tenant': ApiTenantTenant;
       'api::user-multi-tenant.user-multi-tenant': ApiUserMultiTenantUserMultiTenant;
       'api::user-role.user-role': ApiUserRoleUserRole;
