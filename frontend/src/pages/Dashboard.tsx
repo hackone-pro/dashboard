@@ -66,12 +66,9 @@ export default function Dashboard() {
   // ✅ O retorno condicional vem *depois* de todos os hooks
   return (
     <LayoutModel titulo="Home">
-      {loading || !tenantAtivo ? (
-        <div className="flex items-center justify-center h-[80vh] text-gray-400 animate-fade-in">
-          <p>Carregando dados do tenant...</p>
-        </div>
-      ) : (
+      {loading || !tenantAtivo ? null : (
         <section className="grid grid-cols-12 gap-3 mb-8 items-start animate-fade-in">
+
           {/* COLUNA 1 */}
           <div className="col-span-3 h-full">
             <div className="flex flex-col h-full">

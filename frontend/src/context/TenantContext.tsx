@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { getTenants, changeTenant, Tenant } from "../services/tenant/tenant.service";
+import { useAuth } from "./AuthContext"; // ✅ usa o token reativo
 
 interface TenantContextType {
   tenantAtivo: Tenant | null;
@@ -16,11 +17,21 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
 
+  const { token } = useAuth(); // ✅ token agora é reativo
+
   useEffect(() => {
-    const carregar = async () => {
+    const carregarTenants = async () => {
+      if (!token) {
+        // 👇 se deslogou, limpa tudo
+        setTenants([]);
+        setTenantAtivo(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
         const data = await getTenants();
-
         const lista = data.tenantsAcessiveis || [];
         const ativo = data.tenantAtivo || lista[0] || null;
 
@@ -28,13 +39,15 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         setTenantAtivo(ativo);
       } catch (err) {
         console.error("Erro ao carregar tenants:", err);
+        setTenants([]);
+        setTenantAtivo(null);
       } finally {
         setLoading(false);
       }
     };
 
-    carregar();
-  }, []);
+    carregarTenants();
+  }, [token]); // ✅ reexecuta quando o token muda (login/logout)
 
   const trocarTenant = async (id: number) => {
     setSwitching(true);
@@ -43,6 +56,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     try {
       await changeTenant(id);
       const data = await getTenants();
+      setTenants(data.tenantsAcessiveis || []);
       setTenantAtivo(data.tenantAtivo);
     } catch (err) {
       console.error("Erro ao trocar tenant:", err);
