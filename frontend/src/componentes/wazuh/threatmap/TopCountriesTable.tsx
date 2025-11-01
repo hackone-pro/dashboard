@@ -4,47 +4,38 @@ import { guessCountryCode } from "../../../utils/countryUtils";
 import { useTenant } from "../../../context/TenantContext";
 
 type Props = {
-  dias?: string;               // "todos" | "1" | "7" | "15" | "30"
-  limit?: number;              // default 10
-  onTotalChange?: (n: number) => void; // devolve a soma p/ exibir no header
+  dias?: string;
+  limit?: number;
+  onTotalChange?: (n: number) => void;
 };
 
-export default function TopCountriesTable({ dias = "7", limit = 10, onTotalChange }: Props) {
+export default function TopCountriesTable({
+  dias = "7",
+  limit = 10,
+  onTotalChange,
+}: Props) {
+  const { tenantAtivo } = useTenant();
   const [items, setItems] = useState<PaisItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-  const [animReady, setAnimReady] = useState(false);
-  const { tenantAtivo } = useTenant(); // 👈 usado para refazer o fetch quando trocar tenant
 
   const fmt = useMemo(() => new Intl.NumberFormat("pt-BR"), []);
 
   useEffect(() => {
-    if (!tenantAtivo) return; // 👈 evita buscar antes do tenant estar definido
+    if (!tenantAtivo) return;
 
     let ativo = true;
-
     (async () => {
       try {
         setLoading(true);
         setErro(null);
-        setAnimReady(false);
 
-        const inicio = Date.now();
-        const data = await getTopPaises(dias); // o backend já usa tenant ativo
-        const top = data.slice(0, limit);
-
+        const data = await getTopPaises(dias);
         if (!ativo) return;
 
-        const elapsed = Date.now() - inicio;
-        const delay = Math.max(500 - elapsed, 0); // 👈 suaviza a transição
-        setTimeout(() => {
-          if (ativo) {
-            setItems(top);
-            setAnimReady(true);
-          }
-        }, delay);
-
+        const top = data.slice(0, limit);
         const total = top.reduce((acc, cur) => acc + (cur.total || 0), 0);
+        setItems(top);
         onTotalChange?.(total);
       } catch (e: any) {
         if (!ativo) return;
@@ -58,29 +49,33 @@ export default function TopCountriesTable({ dias = "7", limit = 10, onTotalChang
     return () => {
       ativo = false;
     };
-  }, [dias, limit, onTotalChange, tenantAtivo]); // 👈 reage à troca de tenant
+  }, [dias, limit, onTotalChange, tenantAtivo]);
 
   return (
-    <div className="relative transition-opacity duration-300" style={{ opacity: loading ? 0.6 : 1 }}>
+    <div className="relative overflow-hidden rounded-xl">
       <table className="w-full text-sm text-left text-gray-400">
         <tbody>
           {loading ? (
+            // 🔹 Skeleton igual ao TopAgentsCard
             Array.from({ length: limit }).map((_, i) => (
-              <tr key={`sk-${i}`}>
+              <tr key={`sk-${i}`} className="animate-pulse">
                 <td className="py-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-4 rounded bg-[#ffffff12] animate-pulse" />
-                    <div className="h-3 w-40 bg-[#ffffff12] rounded animate-pulse" />
+                    <div className="w-6 h-4 rounded bg-[#ffffff0a]" />
+                    <div className="h-3 w-40 bg-[#ffffff0a] rounded" />
                   </div>
                 </td>
                 <td className="py-2 text-right">
-                  <div className="h-3 w-12 bg-[#ffffff12] rounded animate-pulse ml-auto" />
+                  <div className="h-3 w-12 bg-[#ffffff0a] rounded ml-auto" />
                 </td>
               </tr>
             ))
           ) : erro ? (
             <tr>
-              <td colSpan={2} className="py-3 text-xs text-red-400">
+              <td
+                colSpan={2}
+                className="py-3 text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md"
+              >
                 {erro}
               </td>
             </tr>
@@ -91,14 +86,13 @@ export default function TopCountriesTable({ dias = "7", limit = 10, onTotalChang
               </td>
             </tr>
           ) : (
+            // 🔹 Dados normais, sem fade
             items.map((it, i) => {
               const code = guessCountryCode(it.pais);
               return (
                 <tr
                   key={i}
-                  className={`transition-opacity duration-300 ${
-                    animReady ? "opacity-100" : "opacity-0"
-                  }`}
+                  className="hover:bg-[#ffffff05] transition-colors border-b border-[#ffffff0d]"
                 >
                   <td className="py-2">
                     <div className="flex items-center gap-2">
@@ -114,7 +108,7 @@ export default function TopCountriesTable({ dias = "7", limit = 10, onTotalChang
                             className="block"
                           />
                         ) : (
-                          <span className="text-xs">🌐</span>
+                          <span className="text-xs text-gray-500">🌐</span>
                         )}
                       </div>
                       <span className="text-gray-300 truncate">{it.pais}</span>
@@ -129,11 +123,6 @@ export default function TopCountriesTable({ dias = "7", limit = 10, onTotalChang
           )}
         </tbody>
       </table>
-
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm text-xs text-gray-300">
-        </div>
-      )}
     </div>
   );
 }
