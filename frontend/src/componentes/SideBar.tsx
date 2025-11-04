@@ -5,6 +5,7 @@ import { PiNotebook, PiWarningLight, PiSkullLight, PiShareNetworkDuotone, PiLock
 import { HiOutlineBars3, HiOutlineIdentification } from "react-icons/hi2";
 import { VscSearchFuzzy, VscFileSymlinkDirectory } from "react-icons/vsc";
 import { TbChartInfographic, TbHeartRateMonitor, TbCloudLock } from "react-icons/tb";
+import { HiOutlineDocumentReport } from "react-icons/hi";
 import { GoShieldLock } from "react-icons/go";
 import { AiOutlineAim } from "react-icons/ai";
 import { BsDatabaseLock } from "react-icons/bs";
@@ -447,6 +448,13 @@ export default function Sidebar() {
                                     >
                                         {/* @ts-ignore */}
                                         <TbCloudLock className="text-[16px]" /> Cloud Security
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/reports" className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300">
+                                        {/* @ts-ignore */}
+                                        <HiOutlineDocumentReport />
+                                        {isOpen && <span>Relatórios</span>}
                                     </Link>
                                 </li>
                             </ul>
