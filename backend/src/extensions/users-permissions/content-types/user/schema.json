@@ -101,12 +101,6 @@
       "relation": "oneToMany",
       "target": "api::user-multi-tenant.user-multi-tenant",
       "mappedBy": "users_permissions_user"
-    },
-    "custom_dashboards": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::custom-dashboard.custom-dashboard",
-      "mappedBy": "users_permissions_user"
     }
   }
 }

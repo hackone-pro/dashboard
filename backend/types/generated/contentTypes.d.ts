@@ -382,13 +382,12 @@ export interface ApiCustomDashboardCustomDashboard
     singularName: 'custom-dashboard';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    is_default: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     layout: Schema.Attribute.JSON;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -400,10 +399,7 @@ export interface ApiCustomDashboardCustomDashboard
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    users_permissions_user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.String;
   };
 }
 
@@ -983,10 +979,6 @@ export interface PluginUsersPermissionsUser
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    custom_dashboards: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::custom-dashboard.custom-dashboard'
-    >;
     email: Schema.Attribute.Email &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{

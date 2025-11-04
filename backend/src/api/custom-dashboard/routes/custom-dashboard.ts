@@ -17,9 +17,9 @@ export default {
             },
         },
         {
-            method: "GET",
-            path: "/custom-dashboards/reset",
-            handler: "custom-dashboard.reset",
+            method: "PUT",
+            path: "/custom-dashboards/reset-me",
+            handler: "custom-dashboard.resetMe",
             config: {
                 policies: [],
             },

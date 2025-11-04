@@ -7,22 +7,15 @@
     "displayName": "Custom Dashboard"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
     "layout": {
       "type": "json"
     },
-    "is_default": {
-      "type": "boolean",
-      "default": false
-    },
-    "users_permissions_user": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "plugin::users-permissions.user",
-      "inversedBy": "custom_dashboards"
+    "user": {
+      "type": "string"
     }
   }
 }

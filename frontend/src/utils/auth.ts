@@ -1,18 +1,29 @@
 // src/utils/auth.ts
 
-export const login = (jwt: string) => {
-  localStorage.setItem('token', jwt)
+const TOKEN_KEY = "token";
+const USER_KEY = "user";
+
+// 🔹 Salva o token JWT
+export function setToken(jwt: string): void {
+  localStorage.setItem(TOKEN_KEY, jwt);
 }
 
-export const logout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+// 🔹 Lê o token JWT
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-export const isAuthenticated = () => {
-  return !!localStorage.getItem('token')
+// 🔹 Remove o token e dados de usuário
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
 }
 
-export const getToken = (): string | null => {
-  return localStorage.getItem('token');
-};
+// 🔹 Retorna se está autenticado
+export function isAuthenticated(): boolean {
+  return !!localStorage.getItem(TOKEN_KEY);
+}
+
+// 🔹 (Alias opcionais, caso outras partes do app usem)
+export const login = (jwt: string) => setToken(jwt);
+export const logout = () => clearToken();

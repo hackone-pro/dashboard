@@ -1,121 +1,136 @@
-/**
- * custom-dashboard controller
- */
+export default {
+  /**
+   * GET /api/custom-dashboards/me
+   */
+  async me(ctx) {
+    try {
+      const user = ctx.state.user;
+      if (!user) return ctx.unauthorized("Usuário não autenticado");
 
- export default {
-    /**
-     * GET /api/custom-dashboards/me
-     * Retorna o layout do usuário logado.
-     */
-    async me(ctx) {
-      try {
-        const user = ctx.state.user;
-        if (!user) return ctx.unauthorized("Usuário não autenticado");
-  
-        // 🔹 Busca layout do usuário
-        const userLayout = await strapi.db
-          .query("api::custom-dashboard.custom-dashboard")
-          .findOne({
-            where: { users_permissions_user: user.id },
-            select: ["id", "layout", "is_default"],
-          });
-  
-        if (userLayout) return ctx.send(userLayout);
-  
-        // 🔹 Se não existir, retorna layout padrão
-        const defaultLayout = await strapi.db
-          .query("api::custom-dashboard.custom-dashboard")
-          .findOne({
-            where: { is_default: true },
-            select: ["id", "layout", "is_default"],
-          });
-  
-        if (defaultLayout) return ctx.send(defaultLayout);
-  
-        return ctx.notFound("Nenhum layout encontrado (usuário ou padrão).");
-      } catch (err) {
-        strapi.log.error("❌ Erro em custom-dashboard.me:", err);
-        return ctx.internalServerError("Erro ao buscar layout do usuário");
+      const layout = await strapi.db.query("api::custom-dashboard.custom-dashboard").findOne({
+        where: { user: String(user.id) },
+      });
+
+      if (layout) return ctx.send(layout);
+
+      // Busca layout padrão global
+      const defaultLayout = await strapi.db.query("api::custom-dashboard.custom-dashboard").findOne({
+        where: { is_default: true },
+      });
+
+      if (defaultLayout) return ctx.send(defaultLayout);
+
+      return ctx.notFound("Nenhum layout encontrado.");
+    } catch (err) {
+      strapi.log.error("❌ Erro em custom-dashboard.me:", err);
+      return ctx.internalServerError("Erro ao buscar layout.");
+    }
+  },
+
+  /**
+   * PUT /api/custom-dashboards/me
+   */
+  async updateMe(ctx) {
+    try {
+      const user = ctx.state.user;
+      if (!user) return ctx.unauthorized("Usuário não autenticado");
+
+      const { layout } = ctx.request.body || {};
+      if (!layout || !Array.isArray(layout)) {
+        return ctx.badRequest("Campo 'layout' deve ser um array JSON válido.");
       }
-    },
-  
-    /**
-     * PUT /api/custom-dashboards/me
-     * Cria/atualiza o layout do usuário logado.
-     */
-    async updateMe(ctx) {
-      try {
-        const user = ctx.state.user;
-        if (!user) return ctx.unauthorized("Usuário não autenticado");
-  
-        const { layout } = ctx.request.body || {};
-        const isValidLayout =
-          layout && (Array.isArray(layout) || typeof layout === "object");
-  
-        if (!isValidLayout) {
-          return ctx.badRequest(
-            "Campo 'layout' é obrigatório e deve ser um JSON válido."
-          );
-        }
-  
-        // 🔹 Verifica se o usuário já possui layout salvo
-        const existing = await strapi.db
+
+      const userId = String(user.id);
+
+      strapi.log.info(`🟢 Salvando layout para user=${userId}`);
+
+      // 🔹 Verifica se o usuário já possui registro
+      const existing = await strapi.db
+        .query("api::custom-dashboard.custom-dashboard")
+        .findOne({
+          where: { user: userId },
+          select: ["id"],
+        });
+
+      if (existing) {
+        strapi.log.info(`✏️ Atualizando layout existente ID=${existing.id}`);
+        const updated = await strapi.db
           .query("api::custom-dashboard.custom-dashboard")
-          .findOne({
-            where: { users_permissions_user: user.id },
-            select: ["id"],
-          });
-  
-        if (existing) {
-          const updated = await strapi.db
-            .query("api::custom-dashboard.custom-dashboard")
-            .update({
-              where: { id: existing.id },
-              data: { layout, is_default: false },
-            });
-  
-          return ctx.send(updated);
-        }
-  
-        // 🔹 Cria novo layout
-        const created = await strapi.db
-          .query("api::custom-dashboard.custom-dashboard")
-          .create({
+          .update({
+            where: { id: existing.id },
             data: {
               layout,
-              is_default: false,
-              users_permissions_user: user.id,
+              user: userId,
             },
           });
-  
-        return ctx.send(created);
-      } catch (err) {
-        strapi.log.error("❌ Erro em custom-dashboard.updateMe:", err);
-        return ctx.internalServerError("Erro ao salvar layout do usuário");
+
+        strapi.log.info(`✅ Layout atualizado com sucesso`);
+        return ctx.send(updated);
       }
-    },
-  
-    /**
-     * GET /api/custom-dashboards/reset
-     * Retorna o layout padrão global (is_default=true).
-     */
-    async reset(ctx) {
-      try {
-        const defaultLayout = await strapi.db
-          .query("api::custom-dashboard.custom-dashboard")
-          .findOne({
-            where: { is_default: true },
-            select: ["id", "layout", "is_default"],
-          });
-  
-        if (!defaultLayout) {
-          return ctx.notFound("Layout padrão não encontrado.");
-        }
-  
-        return ctx.send(defaultLayout);
-      } catch (err) {
-        strapi.log.error("❌ Erro em custom-dashboard.reset:", err);
-        return ctx.internalServerError("Erro ao buscar layout padrão");
+
+      // 🔹 Caso não exista, cria novo
+      strapi.log.info(`➕ Criando novo layout para user=${userId}`);
+      const created = await strapi.db
+        .query("api::custom-dashboard.custom-dashboard")
+        .create({
+          data: {
+            layout,
+            user: userId,
+          },
+        });
+
+      strapi.log.info(`✅ Layout criado ID=${created.id}`);
+      return ctx.send(created);
+    } catch (err) {
+      strapi.log.error("❌ Erro em custom-dashboard.updateMe:", err);
+      return ctx.internalServerError("Erro ao salvar layout.");
+    }
+  },
+
+  /**
+   * PUT /api/custom-dashboards/reset-me
+   * Atualiza o layout do usuário para o padrão fixo (sem apagar nem recriar).
+   */
+  async resetMe(ctx) {
+    try {
+      const user = ctx.state.user;
+      if (!user) return ctx.unauthorized("Usuário não autenticado");
+
+      const userId = String(user.id);
+
+      // 🔹 Define o layout padrão fixo (igual ao do frontend)
+      const layoutPadrao = [
+        { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9 },
+        { i: "geo_map", x: 3, y: 0, w: 6, h: 13 },
+        { i: "top_paises", x: 9, y: 0, w: 3, h: 13 },
+        { i: "top_incidentes", x: 0, y: 10, w: 3, h: 18 },
+        { i: "ia_humans", x: 3, y: 12, w: 6, h: 14 },
+        { i: "top_firewalls", x: 9, y: 12, w: 3, h: 14 },
+      ];
+
+      // 🔹 Busca o registro existente do usuário
+      const existing = await strapi.db
+        .query("api::custom-dashboard.custom-dashboard")
+        .findOne({ where: { user: userId }, select: ["id"] });
+
+      if (!existing) {
+        strapi.log.warn(`⚠️ Nenhum layout encontrado para user=${userId}`);
+        return ctx.notFound("Layout do usuário não encontrado.");
       }
-    },
-  };  
+
+      // 🔹 Atualiza o layout atual com o padrão fixo
+      const updated = await strapi.db
+        .query("api::custom-dashboard.custom-dashboard")
+        .update({
+          where: { id: existing.id },
+          data: { layout: layoutPadrao, user: userId },
+        });
+
+      strapi.log.info(`🔄 Layout do user=${userId} restaurado para o padrão.`);
+      return ctx.send(updated);
+    } catch (err) {
+      strapi.log.error("❌ Erro em custom-dashboard.resetMe:", err);
+      return ctx.internalServerError("Erro ao restaurar layout padrão.");
+    }
+  }
+};

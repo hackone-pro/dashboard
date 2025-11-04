@@ -4,6 +4,8 @@ import { getTodosCasos } from "../../services/iris/cases.service";
 import { getTenant } from "../../services/wazuh/tenant.service";
 import { useTenant } from "../../context/TenantContext";
 
+import { GripVertical, Trash2 } from "lucide-react";
+
 interface Incidente {
   case_id: number;
   case_name: string;
@@ -82,13 +84,19 @@ export default function IaHumans({ token }: Props) {
   }, [token, filtroDias, tenantAtivo]);
 
   return (
-    <div className="p-6 rounded-2xl flex-grow transition-all duration-300">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-sm text-white">Tendência de Volume de Casos</h3>
+    <div className="rounded-2xl flex-grow transition-all duration-300">
+      <div className="flex items-center justify-between gap-2 cursor-default select-none mb-5">
 
-        {/* 🔹 Select de filtro */}
+        {/* Grupo do ícone + título */}
+        <div className="flex items-center gap-2">
+          {/* Ícone com drag-handle */}
+          <GripVertical size={18} className="text-white/50 hover:text-white transition" />
+          <h3 className="text-sm text-white">Tendência de Volume de Casos</h3>
+        </div>
+
+        {/* Botão à direita — agora clicável */}
         <select
-          className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
+          className="bg-[#0d0c22] text-white text-xs mr-10 px-2 py-1 rounded-sm border border-[#cacaca31]"
           value={filtroDias}
           onChange={(e) => setFiltroDias(Number(e.target.value))}
         >
@@ -176,10 +184,10 @@ function agruparPorDia(incidentes: Incidente[], dias: number) {
     dias === 0
       ? Array.from(new Set([...Object.keys(contagemIA), ...Object.keys(contagemHumanos)])).sort()
       : Array.from({ length: dias }).map((_, i) => {
-          const d = new Date(hoje);
-          d.setDate(hoje.getDate() - (dias - 1 - i));
-          return d.toISOString().slice(0, 10);
-        });
+        const d = new Date(hoje);
+        d.setDate(hoje.getDate() - (dias - 1 - i));
+        return d.toISOString().slice(0, 10);
+      });
 
   const categoriasX = diasOrdenados.map((d) => {
     const [ano, mes, dia] = d.split("-");

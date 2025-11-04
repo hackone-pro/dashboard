@@ -96,3 +96,20 @@ export async function resetDashboardLayout(): Promise<DashboardLayoutResponse> {
 
   return response.json();
 }
+
+export async function resetUserDashboardLayout(): Promise<void> {
+  const token = getToken();
+  const baseUrl = import.meta.env.VITE_API_URL;
+
+  const response = await fetch(`${baseUrl}/api/custom-dashboards/reset-me`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Erro ao restaurar layout padrão do usuário");
+  }
+}
