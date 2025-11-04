@@ -5,6 +5,8 @@ import { getTodosCasos } from "../../services/iris/cases.service";
 import { getTenant } from "../../services/wazuh/tenant.service";
 import { useTenant } from "../../context/TenantContext";
 
+import { GripVertical, Trash2 } from "lucide-react";
+
 interface Incidente {
     case_id: number;
     case_name: string;
@@ -73,6 +75,7 @@ export default function IaHumans({ token }: Props) {
                 setTotalIa(somaIa);
                 setTotalHumanos(somaHumanos);
 
+<<<<<<< HEAD
                 setTimeout(() => ativo && setAnimReady(true), 50);
             } catch (e: any) {
                 if (!ativo) return;
@@ -85,6 +88,32 @@ export default function IaHumans({ token }: Props) {
         fetch();
         return () => { ativo = false; };
     }, [token, filtroDias, tenantAtivo]);
+=======
+  return (
+    <div className="rounded-2xl flex-grow transition-all duration-300">
+      <div className="flex items-center justify-between gap-2 cursor-default select-none mb-5">
+
+        {/* Grupo do ícone + título */}
+        <div className="flex items-center gap-2">
+          {/* Ícone com drag-handle */}
+          <GripVertical size={18} className="text-white/50 hover:text-white transition" />
+          <h3 className="text-sm text-white">Tendência de Volume de Casos</h3>
+        </div>
+
+        {/* Botão à direita — agora clicável */}
+        <select
+          className="bg-[#0d0c22] text-white text-xs mr-10 px-2 py-1 rounded-sm border border-[#cacaca31]"
+          value={filtroDias}
+          onChange={(e) => setFiltroDias(Number(e.target.value))}
+        >
+          <option value={0}>Todos</option>
+          <option value={1}>24 horas</option>
+          <option value={7}>7 dias</option>
+          <option value={15}>15 dias</option>
+          <option value={30}>30 dias</option>
+        </select>
+      </div>
+>>>>>>> 61cf605 (feature: Estrutura Inicial Custom Dashboard)
 
     return (
         <>
@@ -213,6 +242,7 @@ function agruparPorDia(incidentes: Incidente[], dias: number) {
             new Set([...Object.keys(contagemIA), ...Object.keys(contagemHumanos)])
         ).sort();
     } else {
+<<<<<<< HEAD
         const hoje = new Date();
         diasOrdenados = Array.from({ length: dias }).map((_, i) => {
             const d = new Date(hoje);
@@ -220,6 +250,21 @@ function agruparPorDia(incidentes: Incidente[], dias: number) {
             return d.toISOString().slice(0, 10);
         });
     }
+=======
+      contagemHumanos[data] = (contagemHumanos[data] || 0) + 1;
+    }
+  });
+
+  const hoje = new Date();
+  const diasOrdenados =
+    dias === 0
+      ? Array.from(new Set([...Object.keys(contagemIA), ...Object.keys(contagemHumanos)])).sort()
+      : Array.from({ length: dias }).map((_, i) => {
+        const d = new Date(hoje);
+        d.setDate(hoje.getDate() - (dias - 1 - i));
+        return d.toISOString().slice(0, 10);
+      });
+>>>>>>> 61cf605 (feature: Estrutura Inicial Custom Dashboard)
 
     const categoriasX = diasOrdenados.map((d) => {
         const [ano, mes, dia] = d.split("-");
