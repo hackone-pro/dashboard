@@ -88,23 +88,19 @@ export default function Reports() {
         pdf.setFontSize(10);
         pdf.setTextColor("#bbbbbb");
         pdf.text(
-            "Lista dos ativos com maior volume de alertas de segurança registrados.",
+            "Lista os ativos com maior volume de alertas de segurança registrados. Essa visibilidade permite priorizar investigações em hosts potencialmente comprometidos, identificar tendências de ataques e otimizar a resposta a incidentes conforme o impacto operacional.",
             14,
-            28
-        );
-        pdf.text(
-            "Essa visibilidade permite priorizar investigações e otimizar a resposta a incidentes.",
-            14,
-            33
+            28,
+            { maxWidth: 180 }
         );
 
-        pdf.setTextColor("#999999");
-        pdf.setFontSize(8);
-        pdf.text(
-            `Tenant: ${relatorio.tenant}  |  Período: ${relatorio.periodo} dias  |  ${relatorio.data}`,
-            14,
-            47
-        );
+        // pdf.setTextColor("#999999");
+        // pdf.setFontSize(8);
+        // pdf.text(
+        //     `Tenant: ${relatorio.tenant}  |  Período: ${relatorio.periodo} dias  |  ${relatorio.data}`,
+        //     14,
+        //     47
+        // );
 
         const colunas = ["Host", "Alertas", "Crítico", "Alto", "Médio", "Baixo", "Score"];
         let linhas: any[][] = [];
@@ -122,10 +118,11 @@ export default function Reports() {
         }
 
         autoTable(pdf, {
-            startY: 55,
+            startY: 45,
             head: [colunas],
             body: linhas,
             theme: "grid",
+            pageBreak: "auto",
             styles: {
                 fillColor: "#1a1a1a",
                 textColor: "#ffffff",
@@ -158,18 +155,21 @@ export default function Reports() {
         // ========================================================
         // 🔹 Adiciona seção "Vulnerabilidade severidades" logo abaixo da tabela anterior
         // ========================================================
-        const proxY = (pdf as any).lastAutoTable?.finalY || 100;
+        const proxY = (pdf as any).lastAutoTable?.finalY
+            ? (pdf as any).lastAutoTable.finalY + 10
+            : 100;
 
-        pdf.setFontSize(14);
+        pdf.setFontSize(16);
         pdf.setTextColor("#ffffff");
-        pdf.text("Auditoria CIS – Top Servidores", 14, proxY + 20);
+        pdf.text("Nível de segurança dos servidores", 14, proxY + 10);
 
-        pdf.setFontSize(9);
+        pdf.setFontSize(10);
         pdf.setTextColor("#bbbbbb");
         pdf.text(
-            "Ranking dos agentes com maiores desvios nas políticas CIS (Center for Internet Security).",
+            "Exibe a avaliação do nível de proteção e conformidade dos servidores monitorados. Com base em políticas de segurança, patches aplicados e configurações avaliadas, o indicador mostra o grau de exposição de cada sistema e direciona esforços de correção.",
             14,
-            proxY + 27
+            proxY + 17,
+            { maxWidth: 180 }
         );
 
         try {
@@ -193,6 +193,7 @@ export default function Reports() {
                 head: [colunasCis],
                 body: linhasCis,
                 theme: "grid",
+                pageBreak: "auto",
                 styles: {
                     fillColor: "#1a1a1a",
                     textColor: "#ffffff",
@@ -231,7 +232,7 @@ export default function Reports() {
 
         // Continua logo abaixo da tabela anterior
         const startY = (pdf as any).lastAutoTable?.finalY
-            ? (pdf as any).lastAutoTable.finalY + 25
+            ? (pdf as any).lastAutoTable.finalY + 20
             : proxY + 60;
 
         pdf.setTextColor("#ffffff");
@@ -241,9 +242,10 @@ export default function Reports() {
         pdf.setFontSize(10);
         pdf.setTextColor("#bbbbbb");
         pdf.text(
-            "Resumo das vulnerabilidades detectadas por nível de severidade.",
+            "Mostra o total de vulnerabilidades identificadas, classificadas por criticidade (baixa, média, alta, crítica). Essa visão ajuda a mensurar o risco cibernético atual e priorizar correções com base na probabilidade de exploração e impacto sobre os ativos de negócio.",
             14,
-            startY + 8
+            startY + 8,
+            { maxWidth: 180 },
         );
 
 
@@ -275,61 +277,6 @@ export default function Reports() {
         pdf.setTextColor("#bbbbbb");
         pdf.setFontSize(10);
         pdf.text(`Total: ${vuln.total?.toLocaleString("pt-BR") ?? 0}`, 14, yBase + 20);
-
-
-        // ========================================================
-        // 🔹 Seção: Top OS Vulneráveis (logo abaixo da seção de vulnerabilidades)
-        // ========================================================
-        const startY_OS = yBase + 40; // espaço após a seção anterior
-
-        pdf.setTextColor("#ffffff");
-        pdf.setFontSize(16);
-        pdf.text("Top Sistemas Operacionais Vulneráveis", 14, startY_OS);
-
-        pdf.setFontSize(10);
-        pdf.setTextColor("#bbbbbb");
-        pdf.text(
-            "Lista dos sistemas operacionais com maior número de vulnerabilidades detectadas.",
-            14,
-            startY_OS + 8
-        );
-
-        try {
-            const topOS = await getTopOSVulnerabilidades(5, relatorio.periodo);
-
-            if (topOS.length > 0) {
-                const colunasOS = ["Sistema Operacional", "Total"];
-                const linhasOS = topOS.map((item) => [item.os, item.total]);
-
-                autoTable(pdf, {
-                    startY: startY_OS + 15,
-                    head: [colunasOS],
-                    body: linhasOS,
-                    theme: "grid",
-                    styles: {
-                        fillColor: "#1a1a1a",
-                        textColor: "#ffffff",
-                        lineColor: "#333333",
-                        lineWidth: 0.1,
-                        fontSize: 9,
-                    },
-                    headStyles: {
-                        fillColor: "#222222",
-                        textColor: "#ffffff",
-                    },
-                    alternateRowStyles: {
-                        fillColor: "#151515",
-                    },
-                });
-            } else {
-                pdf.setTextColor("#bbbbbb");
-                pdf.setFontSize(10);
-                pdf.text("Nenhum dado encontrado para este período.", 14, startY_OS + 25);
-            }
-        } catch (e) {
-            pdf.setTextColor("#ff5555");
-            pdf.text("Erro ao carregar dados de Top OS.", 14, startY_OS + 25);
-        }
 
 
 
@@ -387,6 +334,7 @@ export default function Reports() {
                 head: [colunasFim],
                 body: linhasFim,
                 theme: "grid",
+                pageBreak: "auto",
                 styles: {
                     fillColor: "#1a1a1a",
                     textColor: "#ffffff",
@@ -420,6 +368,89 @@ export default function Reports() {
             pdf.setFontSize(10);
             pdf.text("Erro ao carregar Integridade de Arquivos", 14, 40);
         }
+
+
+        // ========================================================
+        // 🔹 Top Sistemas Operacionais Vulneráveis
+        // ========================================================
+
+        const proxYOS = (pdf as any).lastAutoTable?.finalY || 100;
+
+        try {
+            const topOS = await getTopOSVulnerabilidades(5, relatorio.periodo);
+
+            // Ordena (caso necessário)
+            const top5OS = [...topOS].sort((a, b) => b.total - a.total).slice(0, 5);
+
+            const colunasOS = ["Sistema Operacional", "Total"];
+            const linhasOS = top5OS.map((item) => [item.os, item.total]);
+
+            // Cabeçalho da seção
+            pdf.setFontSize(14);
+            pdf.setTextColor("#ffffff");
+            pdf.text("Top Sistemas Operacionais Vulneráveis", 14, proxYOS + 20);
+
+            pdf.setFontSize(9);
+            pdf.setTextColor("#bbbbbb");
+            pdf.text(
+                "Lista dos sistemas operacionais com maior número de vulnerabilidades detectadas.",
+                14,
+                proxYOS + 27,
+                { maxWidth: 180 } // ✅ quebra automática
+            );
+
+            if (top5OS.length === 0) {
+                pdf.setTextColor("#bbbbbb");
+                pdf.setFontSize(10);
+                pdf.text(
+                    "Nenhum dado encontrado para este período",
+                    pageWidth / 2,
+                    proxYOS + 40,
+                    { align: "center" }
+                );
+            } else {
+                // Tabela
+                autoTable(pdf, {
+                    startY: proxYOS + 35,
+                    head: [colunasOS],
+                    body: linhasOS,
+                    theme: "grid",
+                    pageBreak: "auto",
+                    styles: {
+                        fillColor: "#1a1a1a",
+                        textColor: "#ffffff",
+                        lineColor: "#333333",
+                        lineWidth: 0.1,
+                        fontSize: 9,
+                    },
+                    headStyles: {
+                        fillColor: "#222222",
+                        textColor: "#ffffff",
+                    },
+                    alternateRowStyles: {
+                        fillColor: "#151515",
+                    },
+                    didDrawPage: (data) => {
+                        if (top5OS.length === 0) {
+                            const startY = data.cursor?.y || proxYOS + 45;
+                            pdf.setTextColor("#bbbbbb");
+                            pdf.setFontSize(10);
+                            pdf.text(
+                                "Nenhum dado encontrado para este período",
+                                pageWidth / 2,
+                                startY + 10,
+                                { align: "center" }
+                            );
+                        }
+                    },
+                });
+            }
+        } catch (e) {
+            pdf.setTextColor("#ff5555");
+            pdf.setFontSize(10);
+            pdf.text("Erro ao carregar dados de Top OS.", 14, proxYOS + 40);
+        }
+
 
 
         // ========================================================
@@ -459,6 +490,7 @@ export default function Reports() {
                 head: [colunasUsers],
                 body: linhasUsers,
                 theme: "grid",
+                pageBreak: "auto",
                 styles: {
                     fillColor: "#1a1a1a",
                     textColor: "#ffffff",
@@ -543,6 +575,7 @@ export default function Reports() {
                     head: [colunasAcoes],
                     body: linhasAcoes,
                     theme: "grid",
+                    pageBreak: "auto",
                     styles: {
                         fillColor: "#1a1a1a",
                         textColor: "#ffffff",
@@ -632,6 +665,7 @@ export default function Reports() {
                                 >
                                     {gerando ? "Gerando..." : "Gerar Relatório"}
                                 </button>
+                                
                             </div>
                         </div>
 
