@@ -9,6 +9,7 @@ export default [
       origin: [
         'http://localhost:5173',
         'http://10.0.77.1:3000',
+        'http://10.0.99.22:5678',
         'http://app2.securityone.ai:3000',
         'http://app2.securityone.ai',
         'http://lab.pod2.securityone.ai',

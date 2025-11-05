@@ -1,38 +1,48 @@
-import { buscarDadosReport } from "../services/reports";
+import { gerarRelatorioN8N, buscarDadosReport } from "../services/reports";
 
 export default {
-  async data(ctx) {
+  // 🔹 POST → dispara geração no n8n
+  async gerar(ctx) {
     try {
-      // 🔒 Autenticação obrigatória
       const user = ctx.state.user;
       if (!user) return ctx.unauthorized("Usuário não autenticado");
 
-      // 🔹 Busca o tenant do usuário logado
-      const fullUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { tenant: true },
-        });
+      const { customer, period } = ctx.request.body;
 
-      if (!fullUser?.tenant)
-        return ctx.notFound("Tenant não encontrado para este usuário");
+      if (!customer) return ctx.badRequest("Campo 'customer' é obrigatório");
 
-      // 🔹 Parâmetro opcional ?period=15
+      const resultado = await gerarRelatorioN8N(customer, period);
+
+      return ctx.send({
+        success: true,
+        message: "Relatório solicitado com sucesso",
+        response: resultado,
+      });
+    } catch (err: any) {
+      strapi.log.error("❌ Erro no controller reports.gerar:", err.message || err);
+      return ctx.internalServerError("Erro ao gerar relatório remoto.");
+    }
+  },
+
+  // 🔹 GET → obtém dados do relatório gerado
+  async data(ctx) {
+    try {
+      const user = ctx.state.user;
+      if (!user) return ctx.unauthorized("Usuário não autenticado");
+
+      const { cliente } = ctx.params;
       const { period } = ctx.query;
       const periodo = period || "15";
 
-      // 🔹 Busca os dados no serviço
-      const dados = await buscarDadosReport(periodo);
+      const dados = await buscarDadosReport(periodo, cliente);
 
-      // 🔹 Retorna o JSON completo
       return ctx.send({
-        tenant: fullUser.tenant.cliente_name || fullUser.tenant.name,
+        tenant: cliente,
         period: periodo,
         data: dados,
       });
     } catch (err: any) {
-      strapi.log.error("❌ Erro no controller acesso-report.data:", err.message || err);
+      strapi.log.error("❌ Erro no controller reports.data:", err.message || err);
       return ctx.internalServerError("Erro ao buscar dados do relatório remoto.");
     }
   },

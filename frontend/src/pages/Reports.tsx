@@ -10,6 +10,8 @@ import { getVulnSeveridades } from "../services/wazuh/vulnseveridades.service";
 import { getTopOSVulnerabilidades } from "../services/wazuh/topsovulnerabilidades.service";
 import { getTopUsers } from "../services/wazuh/topusers.service";
 import { getOvertimeEventos } from "../services/wazuh/overtimeeventos.service";
+import { getReportData } from "../services/reports/report.service";
+import { getToken } from "../utils/auth";
 
 
 interface RelatorioGerado {
@@ -151,6 +153,76 @@ export default function Reports() {
                 }
             },
         });
+
+        // ========================================================
+        // 🔹 Página: Top Acessos (URLs mais acessadas)
+        // ========================================================
+
+        try {
+            // 🔸 Busca os dados do relatório (sem token)
+            const dadosReport = await getReportData(relatorio.tenant, relatorio.periodo);
+
+            // 👉 Força ser a primeira página do relatório
+            pdf.addPage();
+            pdf.setFillColor("#0A0617");
+            pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
+
+            pdf.setTextColor("#ffffff");
+            pdf.setFontSize(16);
+            pdf.text("Top Acessos (URLs mais acessadas)", 14, 20);
+
+            pdf.setFontSize(10);
+            pdf.setTextColor("#bbbbbb");
+            pdf.text(
+                "URLs mais acessadas no período, com o total de ocorrências registradas nos logs de tráfego. Útil para identificar padrões de navegação e possíveis conexões anômalas.",
+                14,
+                28,
+                { maxWidth: 180 }
+            );
+
+            if (dadosReport?.topUrls?.length) {
+                // 🔹 Ordena e limita aos 10 principais
+                const topUrls = [...dadosReport.topUrls]
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+                const colunas = ["URL: Destino", "Ocorrências"];
+                const linhas = topUrls.map(([url, ocorrencias]) => [
+                    url,
+                    ocorrencias.toLocaleString("pt-BR"),
+                ]);
+
+                autoTable(pdf, {
+                    startY: 40,
+                    head: [colunas],
+                    body: linhas,
+                    theme: "grid",
+                    styles: {
+                        fillColor: "#1a1a1a",
+                        textColor: "#ffffff",
+                        lineColor: "#333333",
+                        lineWidth: 0.1,
+                        fontSize: 9,
+                    },
+                    headStyles: {
+                        fillColor: "#222222",
+                        textColor: "#ffffff",
+                    },
+                    alternateRowStyles: {
+                        fillColor: "#151515",
+                    },
+                });
+            } else {
+                pdf.setFontSize(10);
+                pdf.setTextColor("#bbbbbb");
+                pdf.text("Nenhum dado encontrado para este período", 14, 40);
+            }
+        } catch (err) {
+            pdf.setFontSize(10);
+            pdf.setTextColor("#ff5555");
+            pdf.text("Erro ao carregar dados de Top Acessos", 14, 40);
+        }
+
 
         // ========================================================
         // 🔹 Adiciona seção "Vulnerabilidade severidades" logo abaixo da tabela anterior
@@ -665,7 +737,7 @@ export default function Reports() {
                                 >
                                     {gerando ? "Gerando..." : "Gerar Relatório"}
                                 </button>
-                                
+
                             </div>
                         </div>
 
