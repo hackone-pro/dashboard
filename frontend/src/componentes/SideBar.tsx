@@ -450,13 +450,6 @@ export default function Sidebar() {
                                         <TbCloudLock className="text-[16px]" /> Cloud Security
                                     </Link>
                                 </li>
-                                <li>
-                                    <Link to="/reports" className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300">
-                                        {/* @ts-ignore */}
-                                        <HiOutlineDocumentReport />
-                                        {isOpen && <span>Relatórios</span>}
-                                    </Link>
-                                </li>
                             </ul>
                         </div>
                     )}
