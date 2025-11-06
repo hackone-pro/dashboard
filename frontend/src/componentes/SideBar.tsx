@@ -5,6 +5,7 @@ import { PiNotebook, PiWarningLight, PiSkullLight, PiShareNetworkDuotone, PiLock
 import { HiOutlineBars3, HiOutlineIdentification } from "react-icons/hi2";
 import { VscSearchFuzzy, VscFileSymlinkDirectory } from "react-icons/vsc";
 import { TbChartInfographic, TbHeartRateMonitor, TbCloudLock } from "react-icons/tb";
+import { HiOutlineDocumentReport } from "react-icons/hi";
 import { GoShieldLock } from "react-icons/go";
 import { AiOutlineAim } from "react-icons/ai";
 import { BsDatabaseLock } from "react-icons/bs";
