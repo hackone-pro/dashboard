@@ -5,6 +5,7 @@ import { getToken } from "../../utils/auth";
 export interface Tenant {
   id: number;
   cliente_name: string;
+  organizacao?: string; // ✅ novo campo opcional
 }
 
 export interface TenantResponse {

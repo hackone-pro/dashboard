@@ -2,7 +2,7 @@
  * user-multi-tenant controller
  */
 
-export default {
+ export default {
   /**
    * 🔹 Endpoint customizado: retorna os tenants do usuário autenticado
    * GET /api/user-multi-tenant/me
@@ -24,6 +24,11 @@ export default {
       return ctx.internalServerError("Erro ao buscar tenants do usuário");
     }
   },
+
+  /**
+   * 🔹 Troca o tenant ativo do usuário autenticado
+   * PATCH /api/user-multi-tenant/:id
+   */
   async trocarTenant(ctx) {
     try {
       const user = ctx.state.user;
@@ -52,12 +57,12 @@ export default {
         data: { tenant: Number(id) },
       });
 
-      // 🔹 Busca o tenant completo
+      // 🔹 Busca o tenant completo (agora incluindo 'organizacao')
       const tenantAtualizado = await strapi.db
         .query("api::tenant.tenant")
         .findOne({
           where: { id },
-          select: ["id", "cliente_name"],
+          select: ["id", "cliente_name", "organizacao"],
         });
 
       return ctx.send({
@@ -68,6 +73,5 @@ export default {
       strapi.log.error("❌ Erro ao trocar tenant:", err);
       return ctx.internalServerError("Erro ao trocar tenant");
     }
-  }
-
+  },
 };
