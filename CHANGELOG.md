@@ -2,9 +2,6 @@
 Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
-
-## [v1.5.1.2]
-- Página de Relatórios
   
 ## [v1.4.1.2]
 - Configuração Multi Tenant e Permissões
