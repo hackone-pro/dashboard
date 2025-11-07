@@ -89,7 +89,7 @@ export default function Reports() {
             const dadosReport = await getReportData(relatorio.tenant, relatorio.periodo);
 
             // 🔸 Fundo escuro (página inicial)
-            pdf.setFillColor("#0A0617");
+            pdf.setFillColor("#121212");
             pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
 
             // ========================================================
@@ -139,35 +139,131 @@ export default function Reports() {
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 10);
 
+                // 🔹 Donut usa apenas top 3
+                const top3 = topUrls.slice(0, 3);
+
                 const colunas = ["URL: Destino", "Ocorrências"];
                 const linhas = topUrls.map(([url, ocorrencias]) => [
                     url,
                     ocorrencias.toLocaleString("pt-BR"),
                 ]);
 
+                // ========================================================
+                // 🔹 Cria gráfico DONUT (fundo transparente e alta resolução)
+                // ========================================================
+                const div = document.createElement("div");
+                div.style.position = "absolute";
+                div.style.left = "-9999px";
+                div.style.top = "0";
+                div.style.background = "#121212";
+                div.style.boxShadow = "none";
+                div.style.border = "none";
+                document.body.appendChild(div);
+
+                // 🟢 Renderiza o gráfico 3× maior para exportar com nitidez
+                const chart = new ApexCharts(div, {
+                    chart: {
+                        type: "donut",
+                        width: 240,    // antes 80 → 3x maior
+                        height: 240,   // antes 80 → 3x maior
+                        background: "#121212",
+                        animations: { enabled: false },
+                        toolbar: { show: false },
+                    },
+                    theme: { mode: "dark" },
+                    series: top3.map(([_, ocorrencias]) => ocorrencias),
+                    labels: top3.map(([url]) => url),
+                    colors: ["#F914AD", "#6366F1", "#A855F7"],
+                    legend: { show: false },
+                    dataLabels: { enabled: false },
+                    stroke: { width: 0 },
+                    plotOptions: {
+                        pie: {
+                            donut: { size: "70%" },
+                        },
+                    },
+                });
+
+                await chart.render();
+
+                // 🔹 Remove qualquer fundo branco gerado pelo ApexCharts
+                div.querySelectorAll("svg, foreignObject").forEach((el) => {
+                    (el as HTMLElement).style.background = "transparent";
+                });
+
+                // 🟢 Exporta o gráfico já em alta resolução
+                const data = await chart.dataURI();
+
+                // ========================================================
+                // 🔹 Adiciona gráfico no PDF (lado esquerdo, tamanho real desejado)
+                // ========================================================
+                const xGraf = 14;
+                const yGraf = finalY;
+                const wGraf = 50;  // tamanho visual no PDF
+                const hGraf = 50;
+
+                if ("imgURI" in data) {
+                    // o PNG é 3x maior, mas é redimensionado aqui
+                    pdf.addImage(data.imgURI, "PNG", xGraf, yGraf, wGraf, hGraf);
+                }
+
+                // 🔹 Limpa elementos temporários
+                chart.destroy();
+                div.remove();
+
+
+                // ========================================================
+                // 🔹 Tabela ao lado do gráfico (estilo claro e limpo)
+                // ========================================================
                 autoTable(pdf, {
                     startY: finalY,
+                    margin: { left: 75 },
                     head: [colunas],
                     body: linhas,
                     theme: "grid",
                     styles: {
-                        fillColor: "#1a1a1a",
-                        textColor: "#ffffff",
-                        lineColor: "#333333",
-                        lineWidth: 0.1,
+                        fillColor: "#ffffff",        // fundo branco
+                        textColor: "#1e1e1e",        // texto escuro
+                        lineColor: "#e5e5e5",        // bordas suaves
+                        lineWidth: 0.2,
                         fontSize: 9,
+                        cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
                     },
                     headStyles: {
-                        fillColor: "#222222",
-                        textColor: "#ffffff",
+                        fillColor: "#f7f7f7",        // fundo levemente acinzentado no cabeçalho
+                        textColor: "#111111",        // texto mais forte
+                        lineColor: "#e5e5e5",
+                        fontStyle: "bold",
                     },
                     alternateRowStyles: {
-                        fillColor: "#151515",
+                        fillColor: "#fbfbfb",        // linhas alternadas quase brancas
                     },
+                    tableLineColor: "#dddddd",     // borda geral mais suave
+                    tableLineWidth: 0.1,
                 });
 
-                // Guarda posição final da tabela
-                finalY = (pdf as any).lastAutoTable?.finalY || finalY;
+
+
+
+                // Pega a posição final da tabela
+                finalY = (pdf as any).lastAutoTable?.finalY || finalY + 80;
+
+                // ========================================================
+                // 🔹 Legenda (Top 3 URLs) — abaixo do gráfico, uma por linha
+                // ========================================================
+                let legendY = yGraf + hGraf + 5; // começa logo após o gráfico
+                const legendX = 14; // mesma posição horizontal do gráfico
+                pdf.setFont("helvetica", "normal");
+                pdf.setFontSize(8);
+
+                top3.forEach(([url], i) => {
+                    const cor = ["#F914AD", "#6366F1", "#A855F7"][i % 3];
+                    pdf.setFillColor(cor);
+                    pdf.rect(legendX, legendY, 3.5, 3.5, "F");
+                    pdf.setTextColor("#bbbbbb");
+                    pdf.text(url, legendX + 6, legendY + 3);
+                    legendY += 6; // 🔸 avança verticalmente a cada item
+                });
             } else {
                 pdf.setFontSize(10);
                 pdf.setTextColor("#bbbbbb");
@@ -175,58 +271,136 @@ export default function Reports() {
                 finalY = finalY + 20;
             }
 
+
             // ========================================================
-            // 🔹 Sub-seção: Top Usuários — Atividade por Logs
+            // 🔹 Sub-seção: Top Usuários (agora com gráfico centralizado e legendas abaixo)
             // ========================================================
-            const topUsers = dadosReport?.topUsers
-                ? [...dadosReport.topUsers].sort((a, b) => b.logs - a.logs).slice(0, 10)
-                : [];
+            const topIps = dadosReport?.topIps || dadosReport?.output?.topIps || [];
 
             pdf.setFontSize(16);
             pdf.setTextColor("#ffffff");
-            pdf.text("Top Usuários", 14, finalY + 15);
+            pdf.text("Top Usuários", 14, finalY + 20);
 
             pdf.setFontSize(10);
             pdf.setTextColor("#bbbbbb");
             pdf.text(
                 "Aqui são exibidos os usuários com maior consumo de banda no período analisado. O objetivo é identificar comportamentos atípicos ou uso indevido dos recursos de rede, possibilitando intervenções preventivas ou ajustes de perfil de acesso. A correlação com políticas de uso aceitável reforça o alinhamento entre produtividade e segurança.",
                 14,
-                finalY + 25,
+                finalY + 28,
                 { maxWidth: 180 }
             );
-            
 
-            if (topUsers.length > 0) {
-                const colunasUsers = ["Usuário", "Total de Logs"];
-                const linhasUsers = topUsers.map((u) => [
-                    u.user || "N/A",
-                    u.logs.toLocaleString("pt-BR"),
-                ]);
+            if (topIps.length > 0) {
+                // 🔹 Pega os top 10 IPs
+                const top10Ips = [...topIps]
+                    .sort((a, b) => Number(b.total) - Number(a.total))
+                    .slice(0, 10);
 
-                autoTable(pdf, {
-                    startY: finalY + 42,
-                    head: [colunasUsers],
-                    body: linhasUsers,
-                    theme: "grid",
-                    styles: {
-                        fillColor: "#1a1a1a",
-                        textColor: "#ffffff",
-                        lineColor: "#333333",
-                        lineWidth: 0.1,
-                        fontSize: 9,
+                // 🔸 Total geral (em GB/TB)
+                const totalBytes = top10Ips.reduce((acc, item) => acc + (item.total || 0), 0);
+                let totalGBTexto = "";
+                if (totalBytes >= 1024 ** 4) totalGBTexto = `${Math.round(totalBytes / 1024 ** 4)} TB`;
+                else totalGBTexto = `${Math.round(totalBytes / 1024 ** 3)} GB`;
+
+                // ========================================================
+                // 🔹 Cria o gráfico DONUT centralizado
+                // ========================================================
+                const div = document.createElement("div");
+                div.style.position = "absolute";
+                div.style.left = "-9999px";
+                div.style.top = "0";
+                div.style.background = "#121212";
+                document.body.appendChild(div);
+
+                const chart = new ApexCharts(div, {
+                    chart: {
+                        type: "donut",
+                        width: 240,
+                        height: 240,
+                        background: "#121212",
+                        animations: { enabled: false },
+                        toolbar: { show: false },
                     },
-                    headStyles: {
-                        fillColor: "#222222",
-                        textColor: "#ffffff",
-                    },
-                    alternateRowStyles: {
-                        fillColor: "#151515",
+                    theme: { mode: "dark" },
+                    series: top10Ips.map((ip) => ip.total || 0),
+                    labels: top10Ips.map((ip) => ip.ip),
+                    colors: [
+                        "#F914AD", "#7C24FF", "#1492F9", "#F5E255", "#1DD69A",
+                        "#5EC059", "#D0592E", "#BE2A2C", "#FF89D8", "#35049E",
+                    ],
+                    legend: { show: false },
+                    dataLabels: { enabled: false },
+                    stroke: { width: 0 },
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: "75%",
+                                labels: {
+                                    show: true,
+                                    total: {
+                                        show: true,
+                                        label: "",
+                                        color: "#ffffff",
+                                        fontSize: "22px",
+                                        fontWeight: 700,
+                                        formatter: () => totalGBTexto,
+                                    },
+                                },
+                            },
+                        },
                     },
                 });
+
+                await chart.render();
+                const data = await chart.dataURI();
+
+                // ========================================================
+                // 🔹 Adiciona gráfico centralizado no PDF
+                // ========================================================
+                const wGraf = 45;
+                const hGraf = 45;
+                const xGraf = (pageWidth - wGraf) / 2; // centraliza horizontalmente
+                const yGraf = finalY + 45;
+
+                if ("imgURI" in data) {
+                    pdf.addImage(data.imgURI, "PNG", xGraf, yGraf, wGraf, hGraf);
+                }
+
+                chart.destroy();
+                div.remove();
+
+                // ========================================================
+                // 🔹 Legendas (IP + consumo) — 2 colunas abaixo do gráfico
+                // ========================================================
+                const startY = yGraf + hGraf + 8;
+                const colSpacing = 85; // distância horizontal entre colunas
+                const col1X = 30;
+                const col2X = col1X + colSpacing;
+                const lineHeight = 6;
+                const half = Math.ceil(top10Ips.length / 2);
+
+                pdf.setFont("helvetica", "normal");
+                pdf.setFontSize(8);
+
+                top10Ips.forEach((item, i) => {
+                    const cor = [
+                        "#F914AD", "#7C24FF", "#1492F9", "#F5E255", "#1DD69A",
+                        "#5EC059", "#D0592E", "#BE2A2C", "#FF89D8", "#35049E",
+                    ][i % 10];
+
+                    const colX = i < half ? col1X : col2X;
+                    const rowY = startY + (i % half) * lineHeight;
+
+                    pdf.setFillColor(cor);
+                    pdf.rect(colX, rowY, 3.5, 3.5, "F");
+                    pdf.setTextColor("#bbbbbb");
+                    pdf.text(`${item.ip} — ${item.fmt}`, colX + 6, rowY + 3);
+                });
+
             } else {
                 pdf.setFontSize(10);
                 pdf.setTextColor("#bbbbbb");
-                pdf.text("Nenhum dado de usuários encontrado para este período", 14, finalY + 40);
+                pdf.text("Nenhum dado encontrado para este período", 14, finalY + 40);
             }
         } catch (err) {
             pdf.setFontSize(10);
@@ -239,7 +413,7 @@ export default function Reports() {
         // 🔹 Página: Top Aplicações — Protocolos e Serviços
         // ========================================================
         pdf.addPage();
-        pdf.setFillColor("#0A0617");
+        pdf.setFillColor("#121212");
         pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
 
         // 🔸 Cabeçalho
@@ -280,7 +454,7 @@ export default function Reports() {
                         fillColor: "#1a1a1a",
                         textColor: "#ffffff",
                         lineColor: "#333333",
-                        lineWidth: 0.1,
+                        lineWidth: 0,
                         fontSize: 9,
                     },
                     headStyles: {
@@ -359,7 +533,7 @@ export default function Reports() {
                         fillColor: "#1a1a1a",
                         textColor: "#ffffff",
                         lineColor: "#333333",
-                        lineWidth: 0.1,
+                        lineWidth: 0,
                         fontSize: 9,
                     },
                     headStyles: {
@@ -399,7 +573,7 @@ export default function Reports() {
         // 🔹 Página: Top Usuários por Volume de Aplicação (dados reais)
         // ========================================================
         pdf.addPage();
-        pdf.setFillColor("#0A0617");
+        pdf.setFillColor("#121212");
         pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
 
         // 🔸 Cabeçalho
@@ -439,7 +613,7 @@ export default function Reports() {
                         fillColor: "#1a1a1a",
                         textColor: "#ffffff",
                         lineColor: "#333333",
-                        lineWidth: 0.1,
+                        lineWidth: 0,
                         fontSize: 9,
                     },
                     headStyles: {
@@ -502,7 +676,7 @@ export default function Reports() {
                         fillColor: "#1a1a1a",
                         textColor: "#ffffff",
                         lineColor: "#333333",
-                        lineWidth: 0.1,
+                        lineWidth: 0,
                         fontSize: 9,
                     },
                     headStyles: {
@@ -526,14 +700,14 @@ export default function Reports() {
 
 
         // ========================================================
-        // 🔹 Página: Risk Level (Gauge de Severidade + Vulnerabilidades)
+        // 🔹 Página: Risk Level + Top Hosts por Nível de Alertas
         // ========================================================
         try {
             console.log("🔹 Iniciando Risk Level...");
             const severidade = await getSeveridadeWazuh(relatorio.periodo);
             console.log("✅ Severidade:", severidade);
 
-            // 🧮 Calcula índice de risco — fórmula igual ao backend
+            // 🧮 Calcula índice de risco — mesma fórmula do backend
             const indiceRisco = Math.min(
                 100,
                 Math.round(
@@ -555,11 +729,12 @@ export default function Reports() {
                             ? "#A855F7"
                             : "#F914AD";
 
-            // 👉 Cria nova página do relatório
+            // 👉 Cria página principal
             pdf.addPage();
-            pdf.setFillColor("#0A0617");
+            pdf.setFillColor("#121212");
             pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
 
+            // 🔹 Cabeçalho principal
             pdf.setTextColor("#ffffff");
             pdf.setFontSize(16);
             pdf.text("Risk Level", 14, 20);
@@ -573,12 +748,12 @@ export default function Reports() {
                 { maxWidth: 180 }
             );
 
-            // ⚙️ Cria gráfico radial temporário (com fundo escuro e preenchimento visível)
+            // ⚙️ Cria gauge de risco
             const div = document.createElement("div");
             div.style.position = "absolute";
             div.style.left = "-9999px";
             div.style.top = "0";
-            div.style.background = "#0A0617";
+            div.style.background = "#121212";
             div.style.padding = "20px";
             document.body.appendChild(div);
 
@@ -587,7 +762,7 @@ export default function Reports() {
                     type: "radialBar",
                     height: 250,
                     width: 250,
-                    background: "#0A0617",
+                    background: "#121212",
                     animations: { enabled: false },
                 },
                 series: [indiceRisco],
@@ -595,7 +770,7 @@ export default function Reports() {
                     radialBar: {
                         startAngle: -120,
                         endAngle: 120,
-                        hollow: { size: "70%", background: "#0A0617" },
+                        hollow: { size: "70%", background: "#121212" },
                         track: { background: "#1e1e2d", strokeWidth: "100%", margin: 0 },
                         dataLabels: {
                             name: { show: false },
@@ -614,40 +789,29 @@ export default function Reports() {
                     gradient: {
                         shade: "dark",
                         type: "horizontal",
-                        shadeIntensity: 0.5,
                         gradientToColors: [cor],
-                        inverseColors: false,
-                        opacityFrom: 1,
-                        opacityTo: 1,
                         stops: [0, 100],
                     },
                     colors: [cor],
                 },
                 stroke: { lineCap: "round" },
-                labels: ["Nível de Risco"],
             });
 
             await chart.render();
             const data = await chart.dataURI();
-
-            // 📊 Renderiza o gauge no PDF
             const xGraf = 70;
             const yGraf = 45;
             const wGraf = 70;
             const hGraf = 50;
-
             if ("imgURI" in data) {
                 pdf.addImage(data.imgURI, "PNG", xGraf, yGraf, wGraf, hGraf);
             }
-
             chart.destroy();
             div.remove();
 
-            // ========================================================
-            // 🔹 Legenda logo abaixo do gráfico
-            // ========================================================
+            // 🔹 Legenda abaixo do gráfico
             const yBase = yGraf + hGraf + 8;
-            pdf.setFontSize(10);
+            pdf.setFontSize(8);
             pdf.setTextColor("#cccccc");
 
             const legendas = [
@@ -657,251 +821,83 @@ export default function Reports() {
                 { cor: "#F914AD", nome: "Crítico" },
             ];
 
-            const legendaTotalWidth = legendas.length * 25;
-            let x = xGraf + wGraf / 2 - legendaTotalWidth / 2;
-
+            let xLeg = xGraf + wGraf / 2 - (legendas.length * 20) / 2;
             legendas.forEach((leg) => {
                 pdf.setFillColor(leg.cor);
-                pdf.rect(x, yBase, 3.5, 3.5, "F");
-                pdf.setTextColor("#bbbbbb");
-                pdf.text(leg.nome, x + 6, yBase + 3);
-                x += 25;
+                pdf.rect(xLeg, yBase, 3.5, 3.5, "F");
+                pdf.text(leg.nome, xLeg + 6, yBase + 3);
+                xLeg += 20;
             });
 
             // ========================================================
-            // 🔹 Seção: Detecção de Vulnerabilidades (mesma página)
+            // 🔹 Seção: Top Hosts por Nível de Alertas (mesma página)
             // ========================================================
-            const vuln = await getVulnSeveridades();
-            const startY = yBase + 25;
+            const yTopHosts = yBase + 25;
 
             pdf.setTextColor("#ffffff");
             pdf.setFontSize(16);
-            pdf.text("Detecção de Vulnerabilidades", 14, startY);
+            pdf.text("Top Hosts por Nível de Alertas", 14, yTopHosts);
 
             pdf.setFontSize(10);
             pdf.setTextColor("#bbbbbb");
             pdf.text(
-                "Mostra o total de vulnerabilidades identificadas, classificadas por criticidade (baixa, média, alta, crítica). Essa visão ajuda a mensurar o risco cibernético atual e priorizar correções com base na probabilidade de exploração e impacto sobre os ativos de negócio.",
+                "Lista os ativos com maior volume de alertas de segurança registrados. Essa visibilidade permite priorizar investigações em hosts potencialmente comprometidos, identificar tendências de ataques e otimizar a resposta a incidentes conforme o impacto operacional.",
                 14,
-                startY + 8,
+                yTopHosts + 8,
                 { maxWidth: 180 }
             );
 
-            // ========================================================
-            // 🔸 Estilo similar ao dashboard (centralizado e compacto)
-            // ========================================================
+            const colunas = ["Host", "Crítico", "Alto", "Médio", "Baixo", "Total"];
+            let linhas: any[][] = [];
 
-            // 📊 Total de alertas
-            const yInfo = startY + 30;
-            pdf.setFontSize(10);
-            pdf.setTextColor("#bbbbbb");
-            pdf.text(
-                `Alertas totais: ${vuln.total?.toLocaleString("pt-BR") ?? 0}`,
-                14,
-                yInfo
-            );
-
-            // 🎨 Legenda compacta colorida
-            const legendasDec = [
-                { nome: "Baixo", cor: "#1DD69A" },
-                { nome: "Médio", cor: "#6366F1" },
-                { nome: "Alto", cor: "#A855F7" },
-                { nome: "Crítico", cor: "#F914AD" },
-            ];
-
-            let xLegend = 14;
-            const yLegend = yInfo + 8;
-
-            pdf.setFontSize(10);
-            legendasDec.forEach((leg) => {
-                pdf.setFillColor(leg.cor);
-                pdf.rect(xLegend, yLegend - 3, 3.5, 3.5, "F");
-                pdf.setTextColor("#bbbbbb");
-                pdf.text(leg.nome, xLegend + 6, yLegend);
-                xLegend += 25;
-            });
-
-            // 🔸 Define cores e layout
-            const severidades = [
-                { nome: "Severidade Crítica", valor: vuln.critical, cor: "#F914AD" },
-                { nome: "Severidade Alta", valor: vuln.high, cor: "#A855F7" },
-                { nome: "Severidade Média", valor: vuln.medium, cor: "#6366F1" },
-                { nome: "Severidade Baixa", valor: vuln.low, cor: "#1DD69A" },
-                { nome: "Pendentes (Avaliação)", valor: vuln.pending, cor: "#BBBBBB" },
-            ];
-
-            // 🔸 Layout centralizado e espaçamento proporcional
-            const yBlocos = yLegend + 20; // espaço entre legenda e números
-            const boxWidth = 25;
-            const spacing = 10;
-            const totalWidth = severidades.length * (boxWidth + spacing);
-            const xStart = (pageWidth - totalWidth) / 2; // 🔹 centraliza horizontalmente
-
-
-            pdf.setFontSize(20);
-            severidades.forEach((s, i) => {
-                const xPos = xStart + i * (boxWidth + spacing);
-
-                // Número grande colorido
-                pdf.setTextColor(s.cor);
-                pdf.text(
-                    `${vuln.total ? s.valor.toLocaleString("pt-BR") : 0}`,
-                    xPos,
-                    yBlocos
-                );
-
-                // Nome da severidade logo abaixo
-                pdf.setFontSize(10);
-                pdf.setTextColor("#cccccc");
-                pdf.text(s.nome, xPos, yBlocos + 7);
-
-                // Restaura o tamanho da fonte para o próximo número
-                pdf.setFontSize(20);
-            });
-
-            pdf.setTextColor("#bbbbbb");
-            pdf.setFontSize(10);
-
-        } catch (err) {
-            pdf.setFontSize(10);
-            pdf.setTextColor("#ff5555");
-            pdf.text("Erro ao carregar Risk Level / Vulnerabilidades", 14, 40);
-        }
-
-
-
-        // ========================================================
-        // 🔹 Página 2: Top Hosts por nível de alertas
-        // ========================================================
-
-        pdf.addPage(); // 👉 nova página para Top Hosts
-        pdf.setFillColor("#0A0617");
-        pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
-
-        // 🔸 Cabeçalho
-        pdf.setTextColor("#ffffff");
-        pdf.setFontSize(16);
-        pdf.text("TOP Hosts por nível de alertas", 14, 20);
-
-        pdf.setFontSize(10);
-        pdf.setTextColor("#bbbbbb");
-        pdf.text(
-            "Lista os ativos com maior volume de alertas de segurança registrados. Essa visibilidade permite priorizar investigações em hosts potencialmente comprometidos, identificar tendências de ataques e otimizar a resposta a incidentes conforme o impacto operacional.",
-            14,
-            28,
-            { maxWidth: 180 }
-        );
-
-        const colunas = ["Host", "Alertas", "Crítico", "Alto", "Médio", "Baixo", "Score"];
-        let linhas: any[][] = [];
-
-        if (relatorio.dados.length > 0) {
-            linhas = relatorio.dados.map((item) => [
-                item.agent_name,
-                item.total_alertas,
-                item.severidade.Crítico,
-                item.severidade.Alto,
-                item.severidade.Médio,
-                item.severidade.Baixo,
-                `${item.score}%`,
-            ]);
-        }
-
-        autoTable(pdf, {
-            startY: 45,
-            head: [colunas],
-            body: linhas,
-            theme: "grid",
-            pageBreak: "auto",
-            styles: {
-                fillColor: "#1a1a1a",
-                textColor: "#ffffff",
-                lineColor: "#333333",
-                lineWidth: 0.1,
-                fontSize: 9,
-            },
-            headStyles: {
-                fillColor: "#222222",
-                textColor: "#ffffff",
-            },
-            alternateRowStyles: {
-                fillColor: "#151515",
-            },
-            didDrawPage: (data) => {
-                if (relatorio.dados.length === 0) {
-                    const startY = data.cursor?.y || 60;
-                    pdf.setTextColor("#bbbbbb");
-                    pdf.setFontSize(10);
-                    pdf.text(
-                        "Nenhum dado encontrado para este período",
-                        pageWidth / 2,
-                        startY + 10,
-                        { align: "center" }
-                    );
-                }
-            },
-        });
-
-
-        // ========================================================
-        // 🔹 Adiciona seção "Vulnerabilidade severidades" logo abaixo da tabela anterior
-        // ========================================================
-        const proxY = (pdf as any).lastAutoTable?.finalY
-            ? (pdf as any).lastAutoTable.finalY + 10
-            : 100;
-
-        pdf.setFontSize(16);
-        pdf.setTextColor("#ffffff");
-        pdf.text("Nível de segurança dos servidores", 14, proxY + 10);
-
-        pdf.setFontSize(10);
-        pdf.setTextColor("#bbbbbb");
-        pdf.text(
-            "Exibe a avaliação do nível de proteção e conformidade dos servidores monitorados. Com base em políticas de segurança, patches aplicados e configurações avaliadas, o indicador mostra o grau de exposição de cada sistema e direciona esforços de correção.",
-            14,
-            proxY + 17,
-            { maxWidth: 180 }
-        );
-
-        try {
-            let topCIS: TopAgentCisItem[] = await getTopAgentsCis(relatorio.periodo);
-
-            topCIS = topCIS.sort((a, b) => b.score_cis_percent - a.score_cis_percent);
-
-            const colunasCis = ["Agente", "Eventos", "Score CIS (%)"];
-            let linhasCis: any[][] = [];
-
-            if (topCIS.length > 0) {
-                linhasCis = topCIS.map((item) => [
+            if (relatorio.dados.length > 0) {
+                linhas = relatorio.dados.map((item) => [
                     item.agent_name,
-                    item.total_eventos,
-                    `${item.score_cis_percent}%`,
+                    item.severidade.Crítico,
+                    item.severidade.Alto,
+                    item.severidade.Médio,
+                    item.severidade.Baixo,
+                    item.total_alertas,
                 ]);
             }
 
             autoTable(pdf, {
-                startY: proxY + 33,
-                head: [colunasCis],
-                body: linhasCis,
+                startY: yTopHosts + 25,
+                head: [colunas],
+                body: linhas,
                 theme: "grid",
-                pageBreak: "auto",
                 styles: {
                     fillColor: "#1a1a1a",
                     textColor: "#ffffff",
                     lineColor: "#333333",
-                    lineWidth: 0.1,
+                    lineWidth: 0,
                     fontSize: 9,
+                    halign: "center",
                 },
-                headStyles: {
-                    fillColor: "#222222",
-                    textColor: "#ffffff",
-                },
-                alternateRowStyles: {
-                    fillColor: "#151515",
+                headStyles: { fillColor: "#222222" },
+                alternateRowStyles: { fillColor: "#151515" },
+                didParseCell: (data) => {
+                    if (data.section === "body") {
+                        const c = data.column.index;
+                        switch (c) {
+                            case 1:
+                                data.cell.styles.textColor = "#F914AD";
+                                break;
+                            case 2:
+                                data.cell.styles.textColor = "#A855F7";
+                                break;
+                            case 3:
+                                data.cell.styles.textColor = "#6366F1";
+                                break;
+                            case 4:
+                                data.cell.styles.textColor = "#1DD69A";
+                                break;
+                        }
+                    }
                 },
                 didDrawPage: (data) => {
-                    if (topCIS.length === 0) {
-                        const startY = data.cursor?.y || proxY + 45;
+                    if (relatorio.dados.length === 0) {
+                        const startY = data.cursor?.y || yTopHosts + 40;
                         pdf.setTextColor("#bbbbbb");
                         pdf.setFontSize(10);
                         pdf.text(
@@ -913,10 +909,294 @@ export default function Reports() {
                     }
                 },
             });
-        } catch (e) {
+
+        } catch (err) {
+            pdf.setFontSize(10);
             pdf.setTextColor("#ff5555");
-            pdf.text("Erro ao carregar dados CIS", 14, proxY + 40);
+            pdf.text("Erro ao carregar Risk Level / Top Hosts", 14, 40);
         }
+
+        // ========================================================
+        // 🔹 Página: Detecção de Vulnerabilidades + Segurança dos Servidores + Top OS
+        // ========================================================
+        try {
+            const vuln = await getVulnSeveridades();
+
+            // 👉 Cria nova página única para todas as 3 seções
+            pdf.addPage();
+            pdf.setFillColor("#121212");
+            pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
+
+            // ========================================================
+            // 🔹 1. Detecção de Vulnerabilidades (com legendas e índices centralizados)
+            // ========================================================
+            pdf.setTextColor("#ffffff");
+            pdf.setFontSize(16);
+            pdf.text("Detecção de Vulnerabilidades", 14, 20);
+
+            pdf.setFontSize(10);
+            pdf.setTextColor("#bbbbbb");
+            pdf.text(
+                "Mostra o total de vulnerabilidades identificadas, classificadas por criticidade (baixa, média, alta, crítica). Essa visão ajuda a mensurar o risco cibernético atual e priorizar correções com base na probabilidade de exploração e impacto sobre os ativos de negócio.",
+                14,
+                28,
+                { maxWidth: 180 }
+            );
+
+            // 🔹 Total de alertas
+            pdf.setFontSize(10);
+            pdf.setTextColor("#bbbbbb");
+            pdf.text(
+                `Alertas totais: ${vuln.total?.toLocaleString("pt-BR") ?? 0}`,
+                14,
+                45
+            );
+
+            // ========================================================
+            // 🔸 Legenda compacta colorida
+            // ========================================================
+            const legendasDec = [
+                { nome: "Baixo", cor: "#1DD69A" },
+                { nome: "Médio", cor: "#6366F1" },
+                { nome: "Alto", cor: "#A855F7" },
+                { nome: "Crítico", cor: "#F914AD" },
+                { nome: "Pendentes", cor: "#BBBBBB" },
+            ];
+
+            let xLegend = 14;
+            const yLegend = 53;
+
+            pdf.setFontSize(8);
+            legendasDec.forEach((leg) => {
+                pdf.setFillColor(leg.cor);
+                pdf.rect(xLegend, yLegend - 3, 3.5, 3.5, "F");
+                pdf.setTextColor("#bbbbbb");
+                pdf.text(leg.nome, xLegend + 6, yLegend);
+                xLegend += 25;
+            });
+
+            // ========================================================
+            // 🔸 Blocos de severidades (centralizados)
+            // ========================================================
+            const severidades = [
+                { nome: "Severidade Crítica", valor: vuln.critical, cor: "#F914AD" },
+                { nome: "Severidade Alta", valor: vuln.high, cor: "#A855F7" },
+                { nome: "Severidade Média", valor: vuln.medium, cor: "#6366F1" },
+                { nome: "Severidade Baixa", valor: vuln.low, cor: "#1DD69A" },
+                { nome: "Pendentes (Avaliação)", valor: vuln.pending, cor: "#BBBBBB" },
+            ];
+
+            // 🔹 Centraliza os blocos horizontalmente
+            const yStart = yLegend + 20;
+            const boxWidth = 25;
+            const spacing = 25;
+            const perRow = 3; // 3 na primeira linha, 2 na segunda
+
+            pdf.setFontSize(30);
+
+            const totalRows = Math.ceil(severidades.length / perRow);
+
+            for (let row = 0; row < totalRows; row++) {
+                const startIndex = row * perRow;
+                const endIndex = Math.min(startIndex + perRow, severidades.length);
+                const rowItems = severidades.slice(startIndex, endIndex);
+
+                // 🔹 Calcula centralização de cada linha
+                const totalWidth = rowItems.length * (boxWidth + spacing);
+                const xStart = (pageWidth - totalWidth) / 2;
+                const yRow = yStart + row * 25;
+
+                rowItems.forEach((s, i) => {
+                    const xPos = xStart + i * (boxWidth + spacing);
+
+                    // Número grande colorido
+                    pdf.setTextColor(s.cor);
+                    const numero = `${vuln.total ? s.valor.toLocaleString("pt-BR") : 0}`;
+                    const numeroWidth = pdf.getTextWidth(numero);
+                    pdf.text(numero, xPos + boxWidth / 2 - numeroWidth / 2, yRow);
+
+                    // Nome da severidade logo abaixo
+                    pdf.setFontSize(10);
+                    pdf.setTextColor("#cccccc");
+                    const labelWidth = pdf.getTextWidth(s.nome);
+                    pdf.text(s.nome, xPos + boxWidth / 2 - labelWidth / 2, yRow + 7);
+
+                    pdf.setFontSize(30); // restaura
+                });
+            }
+            // 👉 Define ponto para a próxima seção
+            const startCIS_Y = yStart + totalRows * 25 + 8;
+
+            // ========================================================
+            // 🔹 2. Nível de Segurança dos Servidores
+            // ========================================================
+            pdf.setFontSize(16);
+            pdf.setTextColor("#ffffff");
+            pdf.text("Nível de Segurança dos Servidores", 14, startCIS_Y);
+
+            pdf.setFontSize(10);
+            pdf.setTextColor("#bbbbbb");
+            pdf.text(
+                "Exibe a avaliação do nível de proteção e conformidade dos servidores monitorados. Com base em políticas de segurança, patches aplicados e configurações avaliadas, o indicador mostra o grau de exposição de cada sistema e direciona esforços de correção.",
+                14,
+                startCIS_Y + 8,
+                { maxWidth: 180 }
+            );
+
+            let endCIS_Y = startCIS_Y + 25;
+
+            try {
+                let topCIS: TopAgentCisItem[] = await getTopAgentsCis(relatorio.periodo);
+                topCIS = topCIS.sort((a, b) => b.score_cis_percent - a.score_cis_percent).slice(0, 10);
+
+                // 🔸 Legendas coloridas
+                const legendas = [
+                    { nome: "Baixo", cor: "#1DD69A" },
+                    { nome: "Médio", cor: "#6366F1" },
+                    { nome: "Alto", cor: "#A855F7" },
+                    { nome: "Crítico", cor: "#F914AD" },
+                ];
+
+                let xLegenda = 14;
+                const yLegenda = startCIS_Y + 25;
+                pdf.setFontSize(8);
+                legendas.forEach((leg) => {
+                    pdf.setFillColor(leg.cor);
+                    pdf.rect(xLegenda, yLegenda - 3, 3.5, 3.5, "F");
+                    pdf.setTextColor("#bbbbbb");
+                    pdf.text(leg.nome, xLegenda + 6, yLegenda);
+                    xLegenda += 28;
+                });
+
+                // 🔸 Barras CIS
+                const barStartY = yLegenda + 10;
+                const barHeight = 5;
+                let currentY = barStartY;
+                const margemEsquerda = 14;
+                const barStartX = margemEsquerda + 45;
+                const barWidth = pageWidth - barStartX - 35;
+
+                pdf.setFont("helvetica", "normal");
+                pdf.setFontSize(9);
+
+                const getCoresPorScore = (p: number) => {
+                    if (p < 30) return { cor: "#1DD69A", texto: "#1DD69A" };
+                    if (p < 40) return { cor: "#6366F1", texto: "#6366F1" };
+                    if (p <= 75) return { cor: "#A855F7", texto: "#A855F7" };
+                    return { cor: "#F914AD", texto: "#F914AD" };
+                };
+
+                topCIS.forEach((item) => {
+                    const score = Math.max(0, Math.min(100, Math.round(item.score_cis_percent)));
+                    const agente = item.agent_name || "N/A";
+                    const { cor, texto } = getCoresPorScore(score);
+
+                    pdf.setTextColor("#bbbbbb");
+                    pdf.text(agente, 14, currentY + 4);
+
+                    pdf.setFillColor("#1a1a1a");
+                    pdf.rect(barStartX, currentY, barWidth, barHeight, "F");
+
+                    const filledWidth = (score / 100) * barWidth;
+                    pdf.setFillColor(cor);
+                    pdf.rect(barStartX, currentY, filledWidth, barHeight, "F");
+
+                    pdf.setTextColor(texto);
+                    pdf.text(`${score}%`, barStartX + barWidth + 8, currentY + 4);
+
+                    currentY += 9;
+                });
+
+                if (topCIS.length === 0) {
+                    pdf.setFontSize(10);
+                    pdf.setTextColor("#bbbbbb");
+                    pdf.text("Nenhum dado encontrado para este período", 14, barStartY + 10);
+                }
+
+                endCIS_Y = currentY + 10;
+            } catch (e) {
+                pdf.setTextColor("#ff5555");
+                pdf.setFontSize(10);
+                pdf.text("Erro ao carregar dados CIS", 14, startCIS_Y + 40);
+                endCIS_Y = startCIS_Y + 60;
+            }
+
+            // ========================================================
+            // 🔹 3. Top Sistemas Operacionais Vulneráveis (abaixo do CIS)
+            // ========================================================
+            const startY_OS = endCIS_Y + 5;
+
+            try {
+                let topOS = await getTopOSVulnerabilidades(5, relatorio.periodo || "todos");
+
+                if (!Array.isArray(topOS) || topOS.length === 0) {
+                    const fallback = await getTopOSVulnerabilidades(5, "todos");
+                    if (Array.isArray(fallback) && fallback.length > 0) topOS = fallback;
+                }
+
+                const top5OS = [...(topOS || [])]
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 5);
+
+                pdf.setFontSize(16);
+                pdf.setTextColor("#ffffff");
+                pdf.text("Top 5 Sistemas Operacionais Detectados", 14, startY_OS);
+
+                pdf.setFontSize(10);
+                pdf.setTextColor("#bbbbbb");
+                pdf.text(
+                    "Apresenta os sistemas operacionais predominantes no ambiente, permitindo entender o perfil tecnológico e avaliar riscos associados a versões desatualizadas ou fora de suporte. Serve como base para estratégias de padronização e atualização de sistemas.",
+                    14,
+                    startY_OS + 7,
+                    { maxWidth: 180 }
+                );
+
+                if (!top5OS.length) {
+                    pdf.setTextColor("#bbbbbb");
+                    pdf.setFontSize(10);
+                    pdf.text(
+                        "Nenhum dado encontrado para este período",
+                        pageWidth / 2,
+                        startY_OS + 20,
+                        { align: "center" }
+                    );
+                } else {
+                    const colunasOS = ["Sistema Operacional", "Total"];
+                    const linhasOS = top5OS.map((item) => [item.os, item.total]);
+
+                    autoTable(pdf, {
+                        startY: startY_OS + 18,
+                        head: [colunasOS],
+                        body: linhasOS,
+                        theme: "grid",
+                        pageBreak: "auto",
+                        styles: {
+                            fillColor: "#1a1a1a",
+                            textColor: "#ffffff",
+                            lineColor: "#333333",
+                            fontSize: 9,
+                        },
+                        headStyles: {
+                            fillColor: "#222222",
+                            textColor: "#ffffff",
+                        },
+                        alternateRowStyles: {
+                            fillColor: "#151515",
+                        },
+                    });
+                }
+            } catch (e) {
+                pdf.setTextColor("#ff5555");
+                pdf.setFontSize(10);
+                pdf.text("Erro ao carregar dados de Top OS.", 14, startY_OS + 40);
+            }
+
+        } catch (err) {
+            pdf.setFontSize(10);
+            pdf.setTextColor("#ff5555");
+            pdf.text("Erro ao carregar Detecção / CIS / OS", 14, 40);
+        }
+
 
 
         // ========================================================
@@ -927,7 +1207,7 @@ export default function Reports() {
         pdf.addPage();
 
         // Fundo escuro da nova página
-        pdf.setFillColor("#0A0617");
+        pdf.setFillColor("#121212");
         pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
 
         try {
@@ -957,14 +1237,15 @@ export default function Reports() {
             // Cabeçalho da nova página
             pdf.setFontSize(16);
             pdf.setTextColor("#ffffff");
-            pdf.text("Integridade de Arquivos", 14, 20);
+            pdf.text("Top Hosts por Alteração de Arquivos", 14, 20);
 
             pdf.setFontSize(10);
             pdf.setTextColor("#bbbbbb");
             pdf.text(
-                "Ativos com maiores alterações detectadas (arquivos modificados, adicionados ou deletados).",
+                "Indica os servidores com maior número de modificações de arquivos monitorados. Essa métrica ajuda a detectar alterações não autorizadas, possíveis tentativas de intrusão e mudanças não rastreadas em sistemas críticos.",
                 14,
-                28
+                28,
+                { maxWidth: 180 }
             );
 
             // Tabela
@@ -978,7 +1259,7 @@ export default function Reports() {
                     fillColor: "#1a1a1a",
                     textColor: "#ffffff",
                     lineColor: "#333333",
-                    lineWidth: 0.1,
+                    lineWidth: 0,
                     fontSize: 9,
                 },
                 headStyles: {
@@ -1010,87 +1291,12 @@ export default function Reports() {
 
 
         // ========================================================
-        // 🔹 Top Sistemas Operacionais Vulneráveis
-        // ========================================================
-        const startY_OS =
-            (pdf as any).lastAutoTable?.finalY
-                ? (pdf as any).lastAutoTable.finalY + 20
-                : 100;
-
-        try {
-            // 🔸 se o backend retornar vazio por período específico, tenta "todos"
-            let topOS = await getTopOSVulnerabilidades(5, relatorio.periodo || "todos");
-
-            if (!Array.isArray(topOS) || topOS.length === 0) {
-                const fallback = await getTopOSVulnerabilidades(5, "todos");
-                if (Array.isArray(fallback) && fallback.length > 0) topOS = fallback;
-            }
-
-            // 🔸 limita e ordena top 5
-            const top5OS = [...(topOS || [])]
-                .sort((a, b) => b.total - a.total)
-                .slice(0, 5);
-
-            pdf.setFontSize(16);
-            pdf.setTextColor("#ffffff");
-            pdf.text("Top Sistemas Operacionais Vulneráveis", 14, startY_OS);
-
-            pdf.setFontSize(10);
-            pdf.setTextColor("#bbbbbb");
-            pdf.text(
-                "Lista dos sistemas operacionais com maior número de vulnerabilidades detectadas.",
-                14,
-                startY_OS + 7,
-                { maxWidth: 180 }
-            );
-
-            if (!top5OS.length) {
-                pdf.setTextColor("#bbbbbb");
-                pdf.setFontSize(10);
-                pdf.text(
-                    "Nenhum dado encontrado para este período",
-                    pageWidth / 2,
-                    startY_OS + 20,
-                    { align: "center" }
-                );
-            } else {
-                const colunasOS = ["Sistema Operacional", "Total"];
-                const linhasOS = top5OS.map((item) => [item.os, item.total]);
-
-                autoTable(pdf, {
-                    startY: startY_OS + 12,
-                    head: [colunasOS],
-                    body: linhasOS,
-                    theme: "grid",
-                    pageBreak: "auto",
-                    styles: {
-                        fillColor: "#1a1a1a",
-                        textColor: "#ffffff",
-                        lineColor: "#333333",
-                        lineWidth: 0.1,
-                        fontSize: 9,
-                    },
-                    headStyles: {
-                        fillColor: "#222222",
-                        textColor: "#ffffff",
-                    },
-                    alternateRowStyles: {
-                        fillColor: "#151515",
-                    },
-                });
-            }
-        } catch (e) {
-            pdf.setTextColor("#ff5555");
-            pdf.setFontSize(10);
-            pdf.text("Erro ao carregar dados de Top OS.", 14, startY_OS + 40);
-        }
-
-        // ========================================================
-        // 🔹 Top Usuários (User Activity)
+        // 🔹 TOP Hosts alterados por origem da alteração
         // ========================================================
         const startY_Users =
             (pdf as any).lastAutoTable?.finalY
                 ? (pdf as any).lastAutoTable.finalY + 20
+                // @ts-ignore
                 : startY_OS + 60;
 
         try {
@@ -1107,14 +1313,15 @@ export default function Reports() {
 
             pdf.setFontSize(16);
             pdf.setTextColor("#ffffff");
-            pdf.text("Top Usuários", 14, startY_Users);
+            pdf.text("Top Hosts Alterados por Origem da Alteração", 14, startY_Users);
 
             pdf.setFontSize(10);
             pdf.setTextColor("#bbbbbb");
             pdf.text(
-                "Usuários mais frequentes em eventos de segurança, agrupados por host e agente.",
+                "Apresenta a origem das alterações (usuário, processo ou sistema) em cada host afetado. Essa visibilidade apoia auditorias forenses e garante rastreabilidade das ações, reforçando o controle de integridade e conformidade com normas de segurança.",
                 14,
-                startY_Users + 7
+                startY_Users + 7,
+                { maxWidth: 180 }
             );
 
             if (top10Users.length === 0) {
@@ -1128,7 +1335,7 @@ export default function Reports() {
                 );
             } else {
                 autoTable(pdf, {
-                    startY: startY_Users + 12,
+                    startY: startY_Users + 20,
                     head: [colunasUsers],
                     body: linhasUsers,
                     theme: "grid",
@@ -1137,7 +1344,7 @@ export default function Reports() {
                         fillColor: "#1a1a1a",
                         textColor: "#ffffff",
                         lineColor: "#333333",
-                        lineWidth: 0.1,
+                        lineWidth: 0,
                         fontSize: 9,
                     },
                     headStyles: {
@@ -1159,12 +1366,11 @@ export default function Reports() {
         // 🔹 Distribuição de Ações (Overtime Events)
         // ========================================================
 
-        // 👉 adiciona nova página antes desta seção
-        pdf.addPage();
-        pdf.setFillColor("#0A0617");
-        pdf.rect(0, 0, pageWidth, pdf.internal.pageSize.getHeight(), "F");
-
-        const startY_Acoes = 20;
+        // 👉 em vez de adicionar nova página, continuamos após a anterior
+        const startY_Acoes =
+            (pdf as any).lastAutoTable?.finalY
+                ? (pdf as any).lastAutoTable.finalY + 25 // pequeno espaçamento abaixo da tabela anterior
+                : startY_Users + 40;
 
         try {
             const overtime = await getOvertimeEventos(relatorio.periodo);
@@ -1179,12 +1385,12 @@ export default function Reports() {
 
             pdf.setFontSize(16);
             pdf.setTextColor("#ffffff");
-            pdf.text("Distribuição de Ações", 14, startY_Acoes);
+            pdf.text("Resumo de Ações nos Arquivos", 14, startY_Acoes);
 
             pdf.setFontSize(10);
             pdf.setTextColor("#bbbbbb");
             pdf.text(
-                "Principais ações registradas nos eventos de segurança, agrupadas por tipo e volume.",
+                "Consolida o total de arquivos adicionados, modificados e deletados em um período, permitindo avaliar o nível de atividade sobre dados sensíveis. É uma métrica relevante para monitorar comportamentos anômalos e incidentes relacionados à integridade da informação.",
                 14,
                 startY_Acoes + 8,
                 { maxWidth: 180 }
@@ -1207,7 +1413,7 @@ export default function Reports() {
                 ]);
 
                 autoTable(pdf, {
-                    startY: startY_Acoes + 13,
+                    startY: startY_Acoes + 20,
                     head: [colunasAcoes],
                     body: linhasAcoes,
                     theme: "grid",
@@ -1216,7 +1422,7 @@ export default function Reports() {
                         fillColor: "#1a1a1a",
                         textColor: "#ffffff",
                         lineColor: "#333333",
-                        lineWidth: 0.1,
+                        lineWidth: 0,
                         fontSize: 9,
                     },
                     headStyles: {
@@ -1233,7 +1439,6 @@ export default function Reports() {
             pdf.setFontSize(10);
             pdf.text("Erro ao carregar Distribuição de Ações", 14, startY_Acoes + 40);
         }
-
 
         // 🔹 Rodapé (corrigido TS)
         const totalPages = (pdf as any).internal.getNumberOfPages();

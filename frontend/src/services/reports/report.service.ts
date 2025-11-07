@@ -20,6 +20,7 @@ export type ReportUser = {
 export type ReportIp = {
   ip: string;
   fmt: string;
+  total?: number;
 };
 
 export type ReportTabelaResumo = {
@@ -37,9 +38,13 @@ export type ReportData = {
   topUrls: ReportTopUrl[];
   topUsers?: ReportUser[];
   topIps?: ReportIp[];
-  topApps?: ReportTopApp[]; // ✅ agora incluído
+  topApps?: ReportTopApp[];
   topCats?: ReportTopCat[];
   tabelaResumo?: ReportTabelaResumo[];
+  output?: {
+    topIps?: ReportIp[];
+    tabelaResumo?: ReportTabelaResumo[];
+  };
 };
 
 // 🔹 URL base da API Strapi
