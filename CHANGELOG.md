@@ -5,6 +5,7 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
   
 ## [v1.4.1.2]
 - Configuração Multi Tenant e Permissões
+- Página de Relatórios
 
 ## [v1.4.0.2]
 - Convite por email (Cadastro de usuário)
