@@ -50,6 +50,9 @@
       "relation": "oneToMany",
       "target": "api::user-multi-tenant.user-multi-tenant",
       "mappedBy": "tenant"
+    },
+    "organizacao": {
+      "type": "string"
     }
   }
 }

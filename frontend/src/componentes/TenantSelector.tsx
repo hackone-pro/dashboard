@@ -13,15 +13,6 @@ export default function TenantSelector() {
 
   const isMultiTenant = tenants && tenants.length > 1;
 
-  // 🔹 Formata o nome visualmente
-  const formatarNome = (nome: string) => {
-    if (!nome) return "";
-    return nome
-      .replace(/[-_]/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (letra) => letra.toUpperCase());
-  };
-
   return (
     <div className="relative flex items-center gap-3 rounded-lg py-2 transition-all duration-300">
       <span className="text-sm text-gray-400">Organização:</span>
@@ -48,7 +39,7 @@ export default function TenantSelector() {
                 value={t.id}
                 className="bg-[#1D1929] text-gray-200"
               >
-                {formatarNome(t.cliente_name)}
+                {t.organizacao || t.cliente_name}
               </option>
             ))}
           </select>
@@ -76,7 +67,7 @@ export default function TenantSelector() {
           bg-[#0f0f1a]
           "
         >
-          {formatarNome(tenantAtivo.cliente_name)}
+          {tenantAtivo.organizacao || tenantAtivo.cliente_name}
         </div>
       )}
     </div>
