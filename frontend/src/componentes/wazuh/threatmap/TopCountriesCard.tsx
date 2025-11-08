@@ -2,12 +2,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getTopPaises, PaisItem } from "../../../services/wazuh/toppaises.service";
 import { guessCountryCode } from "../../../utils/countryUtils";
+import { useTenant } from "../../../context/TenantContext"; // 👈 tenant global
 
 type Props = { titulo?: string };
 
-export default function TopCountriesCard({ titulo = "Top países que mais originam ataques" }: Props) {
-  const LIMIT = 5; // 👈 mostrar só 5
+export default function TopCountriesCard({
+  titulo = "Top países que mais originam ataques",
+}: Props) {
+  const LIMIT = 5; // mostrar só 5
   const MIN_BAR_PCT = 6; // piso visual p/ barras pequenas
+  const { tenantAtivo } = useTenant(); // 👈 pega tenant do contexto
 
   const [dias, setDias] = useState<string>("todos");
   const [items, setItems] = useState<PaisItem[]>([]);
@@ -15,12 +19,17 @@ export default function TopCountriesCard({ titulo = "Top países que mais origin
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!tenantAtivo) return; // 🔹 evita rodar sem tenant
+
     let ativo = true;
     async function fetchData() {
       try {
         setLoading(true);
         setErro(null);
-        const data = await getTopPaises(dias); // service pode devolver até 10
+
+        // 🔹 o tenant é tratado internamente no service (via getTenant ou header)
+        const data = await getTopPaises(dias);
+
         if (!ativo) return;
         setItems(data);
       } catch (e: any) {
@@ -30,9 +39,12 @@ export default function TopCountriesCard({ titulo = "Top países que mais origin
         if (ativo) setLoading(false);
       }
     }
+
     fetchData();
-    return () => { ativo = false; };
-  }, [dias]);
+    return () => {
+      ativo = false;
+    };
+  }, [dias, tenantAtivo]); // 👈 recarrega ao trocar tenant
 
   const itemsToShow = useMemo(() => items.slice(0, LIMIT), [items]);
   const max = useMemo(() => Math.max(...itemsToShow.map((i) => i.total), 1), [itemsToShow]);
@@ -42,7 +54,9 @@ export default function TopCountriesCard({ titulo = "Top países que mais origin
     <div className="cards rounded-xl p-4 pb-8 shadow-md w-full">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-white text-sm pb-3">{titulo}</h3>
-        {/* <select
+        {/* 
+        🔹 Mantido o select comentado, mas pode ser reativado no futuro
+        <select
           className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#3B2A70] outline-none"
           value={dias}
           onChange={(e) => setDias(e.target.value)}
@@ -52,7 +66,8 @@ export default function TopCountriesCard({ titulo = "Top países que mais origin
           <option value="7">7 dias</option>
           <option value="15">15 dias</option>
           <option value="30">30 dias</option>
-        </select> */}
+        </select> 
+        */}
       </div>
 
       {loading ? (
@@ -109,7 +124,8 @@ export default function TopCountriesCard({ titulo = "Top países que mais origin
                       className="h-full rounded-r transition-[width] duration-500"
                       style={{
                         width: `${pct}%`,
-                        background: "linear-gradient(90deg, #6A55DC 0%, #8B5CF6 45%, #EC4899 100%)",
+                        background:
+                          "linear-gradient(90deg, #6A55DC 0%, #8B5CF6 45%, #EC4899 100%)",
                       }}
                       title={`${it.pais}: ${fmt.format(it.total)} (${rawPct.toFixed(2)}%)`}
                     />

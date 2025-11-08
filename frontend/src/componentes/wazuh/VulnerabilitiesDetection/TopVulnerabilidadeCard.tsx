@@ -1,6 +1,7 @@
 // src/components/wazuh/TopVulnerabilidadeCard.tsx
 import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { getTopVulnerabilidades, TopVulnerabilidade } from "../../../services/wazuh/topseveridades.service";
+import { useTenant } from "../../../context/TenantContext"; // 👈 tenant global
 
 export type TopVulnerabilidadeCardRef = {
   carregar: () => void;
@@ -10,13 +11,16 @@ const formatPt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
 
 const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef>((props, ref) => {
+  const { tenantAtivo } = useTenant(); // 👈 obtém tenant ativo
   const [topVulns, setTopVulns] = useState<TopVulnerabilidade[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
+    if (!tenantAtivo) return; // 🔹 evita buscar sem tenant
     setCarregando(true);
     try {
+      // 🔹 tenant tratado internamente pelo service (igual outros)
       const lista = await getTopVulnerabilidades("cve", 5, "todos");
       setTopVulns(lista);
       setErro(null);
@@ -29,13 +33,13 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef>((props, ref
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [tenantAtivo]); // 👈 recarrega automaticamente ao trocar tenant
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
 
-  // 👉 se está carregando, mostra skeleton (igual DistribuicaoAcoesCard)
+  // 🔹 Skeleton (carregando)
   if (carregando) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
@@ -56,7 +60,7 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef>((props, ref
     );
   }
 
-  // 👉 se deu erro
+  // 🔹 Erro
   if (erro) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-red-400">
@@ -65,7 +69,7 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef>((props, ref
     );
   }
 
-  // 👉 se não tem dados
+  // 🔹 Sem dados
   if (!topVulns.length) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-gray-400">
@@ -74,7 +78,7 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef>((props, ref
     );
   }
 
-  // 👉 se tem dados
+  // 🔹 Dados normais
   return (
     <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
       <div className="flex justify-between items-center mb-3">
@@ -89,9 +93,7 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef>((props, ref
             className="flex justify-between items-center text-sm text-gray-300 hover:text-white transition-colors border-b border-white/5 pb-1"
           >
             <span className="truncate font-medium text-gray-400">{item.key}</span>
-            <span className="font-medium text-gray-400">
-              {formatPt(item.total)}
-            </span>
+            <span className="font-medium text-gray-400">{formatPt(item.total)}</span>
           </li>
         ))}
       </ul>

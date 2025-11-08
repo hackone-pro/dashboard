@@ -1,14 +1,16 @@
+// src/components/iris/FluxoIncidentesIris.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTenant } from "../../services/wazuh/tenant.service";
 import { getTodosCasos } from "../../services/iris/cases.service";
 import GraficoAreaSpline from "../graficos/GraficoAreaSpline";
+import { useTenant } from "../../context/TenantContext";
 
 interface Incidente {
   case_id: number;
   case_name: string;
   case_description: string;
-  case_open_date: string; // "MM/DD/YYYY"
-  state_name: string;     // "Open" ...
+  case_open_date: string;
+  state_name: string;
   owner: string;
   client_name: string;
 }
@@ -17,7 +19,7 @@ interface Props {
   token: string;
   diasGlobal?: string;
   onChangeFiltro?: (valor: string | null) => void;
-  onUpdateTotais?: (total: number) => void; // 👈 para enviar total ao RiskLevel
+  onUpdateTotais?: (total: number) => void;
 }
 
 export default function FluxoIncidentesIris({
@@ -26,6 +28,7 @@ export default function FluxoIncidentesIris({
   onChangeFiltro,
   onUpdateTotais,
 }: Props) {
+  const { tenantAtivo } = useTenant();
   const [series, setSeries] = useState<{ name: string; data: number[] }[]>([]);
   const [categoriasX, setCategoriasX] = useState<string[]>([]);
   const [totalAbertos, setTotalAbertos] = useState(0);
@@ -33,28 +36,27 @@ export default function FluxoIncidentesIris({
   const [totalCasos, setTotalCasos] = useState(0);
 
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-  const diasEfetivo = filtroLocal || diasGlobal || "1"; // 👈 local > global > padrão
+  const diasEfetivo = filtroLocal || diasGlobal || "1";
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
 
-  // 👇 sincroniza com o global (se não há local ativo)
   useEffect(() => {
-    if (!filtroLocal && diasGlobal) {
-      setFiltroLocal(null);
-    }
+    if (!filtroLocal && diasGlobal) setFiltroLocal(null);
   }, [diasGlobal]);
 
   useEffect(() => {
-    let ativo = true;
+    if (!tenantAtivo) return;
 
+    let ativo = true;
     async function fetch() {
       try {
         setCarregando(true);
         setErro(null);
         setAnimReady(false);
 
+        const inicio = Date.now();
         const tenant = await getTenant();
         const response = await getTodosCasos(token);
         // @ts-ignore
@@ -70,10 +72,9 @@ export default function FluxoIncidentesIris({
           return new Date(Number(ano), Number(mes) - 1, Number(dia));
         };
 
-        // 🔹 Filtra por cliente e período
         const dataFiltrada = data.filter((c) => {
           if (c.client_name !== tenant.cliente_name) return false;
-          if (nDias === 0) return true; // Todos
+          if (nDias === 0) return true;
           const d = parseUSDate(c.case_open_date);
           return d >= limite && d <= hoje;
         });
@@ -92,7 +93,9 @@ export default function FluxoIncidentesIris({
         setSeries(agrupado.series);
         setCategoriasX(agrupado.categoriasX);
 
-        setTimeout(() => ativo && setAnimReady(true), 50);
+        const elapsed = Date.now() - inicio;
+        const delay = Math.max(500 - elapsed, 0);
+        setTimeout(() => ativo && setAnimReady(true), delay);
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar dados do IRIS");
@@ -105,7 +108,7 @@ export default function FluxoIncidentesIris({
     return () => {
       ativo = false;
     };
-  }, [token, diasEfetivo]);
+  }, [token, diasEfetivo, tenantAtivo]);
 
   useEffect(() => {
     onUpdateTotais?.(totalCasos);
@@ -128,8 +131,50 @@ export default function FluxoIncidentesIris({
     }
   }, [diasEfetivo]);
 
+  // 🦴 Skeleton animado (mantém estrutura e alinhamento)
+  if (carregando) {
+    return (
+      <div className="p-6 shadow-md h-full flex flex-col justify-between">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <div className="h-4 w-40 bg-[#ffffff12] rounded animate-pulse mb-3" />
+            <div className="flex gap-10">
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#A855F7]" />
+                  <span className="h-3 w-20 bg-[#ffffff12] rounded animate-pulse" />
+                </div>
+                <div className="h-6 w-20 rounded bg-[#ffffff12] animate-pulse" />
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#F914AD]" />
+                  <span className="h-3 w-24 bg-[#ffffff12] rounded animate-pulse" />
+                </div>
+                <div className="h-6 w-16 rounded bg-[#ffffff12] animate-pulse" />
+              </div>
+            </div>
+          </div>
+          <div className="h-6 w-24 bg-[#ffffff12] rounded animate-pulse" />
+        </div>
+
+        <div className="mt-6 h-52 rounded-md bg-[#ffffff08] animate-pulse" />
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col">
+        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2">
+          {erro}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div className="shadow-md h-full flex flex-col relative overflow-hidden">
       <div className="flex justify-between items-start mb-4">
         <div
           className={`transition-opacity duration-300 ${
@@ -140,53 +185,33 @@ export default function FluxoIncidentesIris({
             Controle de Incidentes
           </h3>
 
-          {carregando ? (
-            <div className="flex gap-10">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
-                  <span className="text-gray-400 text-sm">Casos abertos</span>
-                </div>
-                <div className="h-6 w-24 rounded bg-[#ffffff0a] animate-pulse" />
+          <div className="flex gap-10 text-sm">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span className="text-gray-400">Casos abertos</span>
               </div>
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-pink-400" />
-                  <span className="text-gray-400 text-sm">Casos atribuídos</span>
-                </div>
-                <div className="h-6 w-16 rounded bg-[#ffffff0a] animate-pulse" />
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-10 text-sm">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                  <span className="text-gray-400">Casos abertos</span>
-                </div>
-                <span className="text-white text-lg font-semibold">
-                  {totalAbertos}
-                  <span className="text-gray-500 text-base font-normal">
-                    {" "}
-                    / {totalCasos}
-                  </span>
+              <span className="text-white text-lg font-semibold">
+                {totalAbertos}
+                <span className="text-gray-500 text-base font-normal">
+                  {" "}
+                  / {totalCasos}
                 </span>
-              </div>
+              </span>
+            </div>
 
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-pink-400"></span>
-                  <span className="text-gray-400">Casos atribuídos</span>
-                </div>
-                <span className="text-white text-lg font-semibold">
-                  {totalAtribuidos}
-                </span>
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-pink-400"></span>
+                <span className="text-gray-400">Casos atribuídos</span>
               </div>
+              <span className="text-white text-lg font-semibold">
+                {totalAtribuidos}
+              </span>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* 🔹 Select com filtro local e sincronização global */}
         <div className="min-w-fit">
           <select
             className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
@@ -214,23 +239,19 @@ export default function FluxoIncidentesIris({
         </div>
       )}
 
-      {carregando ? (
-        <div className="w-full h-52 rounded-xl bg-[#ffffff0a] animate-pulse" />
-      ) : (
-        <div
-          className={`transition-opacity duration-300 ${
-            animReady ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <GraficoAreaSpline
-            series={series}
-            categoriasX={categoriasX}
-            cores={["#A855F7", "#EC4899"]}
-            hideXAxisLabels
-          />
-        </div>
-      )}
-    </>
+      <div
+        className={`transition-opacity duration-500 ${
+          animReady ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <GraficoAreaSpline
+          series={series}
+          categoriasX={categoriasX}
+          cores={["#A855F7", "#EC4899"]}
+          hideXAxisLabels
+        />
+      </div>
+    </div>
   );
 }
 
@@ -245,35 +266,26 @@ function agruparPorDia(incidentes: Incidente[], ownerName: string, dias: number)
 
   incidentes.forEach((incidente) => {
     const chave = toKey(incidente.case_open_date);
-
-    if (incidente.state_name === "Open") {
+    if (incidente.state_name === "Open")
       contagemAbertos[chave] = (contagemAbertos[chave] || 0) + 1;
-    }
-    if (incidente.owner === ownerName) {
+    if (incidente.owner === ownerName)
       contagemAtribuidos[chave] = (contagemAtribuidos[chave] || 0) + 1;
-    }
   });
 
-  let diasOrdenados: string[];
+  const hoje = new Date();
+  let diasOrdenados: string[] = [];
 
   if (dias === 0) {
-    const todasDatas = [
-      ...Object.keys(contagemAbertos),
-      ...Object.keys(contagemAtribuidos),
-    ];
+    const todasDatas = [...Object.keys(contagemAbertos), ...Object.keys(contagemAtribuidos)];
     const minData = todasDatas.length
       ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
       : new Date();
-    const hoje = new Date();
-
-    diasOrdenados = [];
     let d = new Date(minData);
     while (d <= hoje) {
       diasOrdenados.push(d.toISOString().slice(0, 10));
       d.setDate(d.getDate() + 1);
     }
   } else {
-    const hoje = new Date();
     diasOrdenados = Array.from({ length: dias }).map((_, i) => {
       const d = new Date(hoje);
       d.setDate(hoje.getDate() - (dias - 1 - i));

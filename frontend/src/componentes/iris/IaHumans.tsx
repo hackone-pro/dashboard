@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import GraficoAreaSpline from "../graficos/GraficoAreaSpline";
 import { getTodosCasos } from "../../services/iris/cases.service";
 import { getTenant } from "../../services/wazuh/tenant.service";
+import { useTenant } from "../../context/TenantContext";
 
 interface Incidente {
     case_id: number;
@@ -30,8 +31,10 @@ export default function IaHumans({ token }: Props) {
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState<string | null>(null);
     const [animReady, setAnimReady] = useState(false);
+    const { tenantAtivo } = useTenant();
 
     useEffect(() => {
+        if (!tenantAtivo) return;
         let ativo = true;
 
         async function fetch() {
@@ -81,7 +84,7 @@ export default function IaHumans({ token }: Props) {
 
         fetch();
         return () => { ativo = false; };
-    }, [token, filtroDias]);
+    }, [token, filtroDias, tenantAtivo]);
 
     return (
         <>

@@ -397,11 +397,16 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
       'api::tenant.tenant'
     > &
       Schema.Attribute.Private;
+    organizacao: Schema.Attribute.String;
     owner_name: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    user_multi_tenants: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-multi-tenant.user-multi-tenant'
+    >;
     users_permissions_users: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::users-permissions.user'
@@ -410,6 +415,41 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
     wazuh_password: Schema.Attribute.String & Schema.Attribute.Private;
     wazuh_url: Schema.Attribute.String;
     wazuh_username: Schema.Attribute.String;
+  };
+}
+
+export interface ApiUserMultiTenantUserMultiTenant
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'user_multi_tenants';
+  info: {
+    displayName: 'User Multi Tenant';
+    pluralName: 'user-multi-tenants';
+    singularName: 'user-multi-tenant';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    ativo: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-multi-tenant.user-multi-tenant'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    role: Schema.Attribute.Enumeration<['admin']>;
+    tenant: Schema.Attribute.Relation<'manyToOne', 'api::tenant.tenant'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -942,6 +982,10 @@ export interface PluginUsersPermissionsUser
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    user_multi_tenants: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-multi-tenant.user-multi-tenant'
+    >;
     user_role: Schema.Attribute.Relation<
       'manyToOne',
       'api::user-role.user-role'
@@ -966,6 +1010,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::tenant.tenant': ApiTenantTenant;
+      'api::user-multi-tenant.user-multi-tenant': ApiUserMultiTenantUserMultiTenant;
       'api::user-role.user-role': ApiUserRoleUserRole;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

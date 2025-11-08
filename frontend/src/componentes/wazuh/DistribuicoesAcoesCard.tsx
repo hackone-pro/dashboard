@@ -2,21 +2,24 @@
 import { forwardRef, useImperativeHandle, useState, useEffect, useMemo } from "react";
 import { getOvertimeEventos, OvertimeEventos } from "../../services/wazuh/overtimeeventos.service";
 import GraficoDonutSimples from "../graficos/GraficoDonutSimples";
+import { useTenant } from "../../context/TenantContext";
 
 export type DistribuicaoAcoesCardRef = {
   carregar: () => void;
 };
 
 const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) => {
+  const { tenantAtivo } = useTenant();
   const [data, setData] = useState<OvertimeEventos | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
+    if (!tenantAtivo) return;
     try {
       setCarregando(true);
       setErro(null);
-      const res = await getOvertimeEventos("todos"); // 👈 força filtro "todos"
+      const res = await getOvertimeEventos("todos");
       setData(res);
     } catch (err: any) {
       setErro(err.message ?? "Erro ao carregar dados");
@@ -27,13 +30,12 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [tenantAtivo]);
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
 
-  // 👉 Calcula o total de cada ação e pega só o Top 5
   const top5 = useMemo(() => {
     if (!data) return [];
     const totais = data.datasets.map((ds) => ({
@@ -44,8 +46,7 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
   }, [data]);
 
   const labels = top5.map((r) => r.label || "Desconhecido");
-  const series = top5.map((r) => Number.isFinite(r.value) ? r.value : 0);
-
+  const series = top5.map((r) => (Number.isFinite(r.value) ? r.value : 0));
   const cores = ["#6A55DC", "#1DD69A", "#EC4899", "#FACC15", "#3B82F6"];
 
   if (erro) {
@@ -57,16 +58,31 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
   }
 
   if (carregando) {
-    return <div className="w-full h-52 rounded-xl bg-[#ffffff0a] animate-pulse" />;
+    return (
+      <div className="flex items-center">
+        <div className="w-[220px] h-[220px] rounded-full bg-[#ffffff0a] animate-pulse" />
+        <div className="flex flex-col gap-2 ml-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-xs bg-[#ffffff14] animate-pulse" />
+              <div className="h-3 w-24 bg-[#ffffff14] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!series.length || series.every((v) => v === 0)) {
-    return <div className="flex items-center justify-center w-full h-52 text-xs text-gray-400">Nenhum dado para exibir.</div>;
+    return (
+      <div className="flex items-center justify-center w-full h-52 text-xs text-gray-400">
+        Nenhum dado para exibir.
+      </div>
+    );
   }
 
   return (
     <div className="flex items-center">
-      {/* Donut */}
       <div>
         <GraficoDonutSimples
           labels={labels}
@@ -76,8 +92,7 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
         />
       </div>
 
-      {/* Legenda */}
-      <div className="flex flex-col gap-2 text-xs text-gray-400">
+      <div className="flex flex-col gap-2 text-xs text-gray-400 ml-6">
         {labels.map((label, i) => (
           <div key={i} className="flex items-center gap-2">
             <span

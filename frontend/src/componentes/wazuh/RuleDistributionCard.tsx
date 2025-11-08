@@ -2,21 +2,24 @@
 import { forwardRef, useImperativeHandle, useState, useEffect, useMemo } from "react";
 import { getRuleDistribution, RuleDistribution } from "../../services/wazuh/ruledistribution.service";
 import GraficoDonutSimples from "../graficos/GraficoDonutSimples";
+import { useTenant } from "../../context/TenantContext";
 
 export type RuleDistributionCardRef = {
   carregar: () => void;
 };
 
 const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) => {
+  const { tenantAtivo } = useTenant();
   const [dados, setDados] = useState<RuleDistribution>({ labels: [], values: [] });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
+    if (!tenantAtivo) return;
     try {
       setCarregando(true);
       setErro(null);
-      const res = await getRuleDistribution("todos"); // default: 7 dias
+      const res = await getRuleDistribution("todos");
       setDados(res);
     } catch (e: any) {
       setErro(e?.message ?? "Erro ao carregar distribuição de regras");
@@ -27,13 +30,12 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [tenantAtivo]);
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
 
-  // Top 5 regras
   const top5 = useMemo(() => {
     const pares = dados.labels.map((label, i) => ({
       label,
@@ -44,12 +46,7 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
 
   const labels = top5.map((r) => r.label || "Desconhecido");
   const series = top5.map((r) => r.value);
-
-  // Paleta fixa para 5 regras
   const cores = ["#78350F", "#A16207", "#EAB308", "#854D0E", "#B45309"];
-
-
-
 
   if (erro) {
     return (
@@ -60,7 +57,19 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
   }
 
   if (carregando) {
-    return <div className="w-full h-52 rounded-xl bg-[#ffffff0a] animate-pulse" />;
+    return (
+      <div className="flex items-center">
+        <div className="w-[220px] h-[220px] rounded-full bg-[#ffffff0a] animate-pulse" />
+        <div className="flex flex-col gap-2 ml-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-xs bg-[#ffffff14] animate-pulse" />
+              <div className="h-3 w-24 bg-[#ffffff14] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (series.length === 0) {
@@ -69,13 +78,11 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
 
   return (
     <div className="flex items-center">
-      {/* Donut */}
       <div>
         <GraficoDonutSimples labels={labels} series={series} cores={cores} height={220} />
       </div>
 
-      {/* Legenda */}
-      <div className="flex flex-col gap-2 text-xs text-gray-400">
+      <div className="flex flex-col gap-2 text-xs text-gray-400 ml-6">
         {labels.map((label, i) => (
           <div key={i} className="flex items-center gap-2">
             <span

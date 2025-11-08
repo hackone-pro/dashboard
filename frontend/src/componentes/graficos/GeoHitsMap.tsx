@@ -11,6 +11,8 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 
+import { useTenant } from "../../context/TenantContext"; // 👈 import do contexto
+
 type GeoHitsMapProps = {
   height?: number | string;
   dias?: "1" | "7" | "15" | "30" | "todos";
@@ -80,6 +82,7 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
   const [flows, setFlows] = useState<Flow[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const { tenantAtivo } = useTenant();
 
   const darkTiles = useMemo(
     () => "https://{s}.basemaps.cartocdn.com/spotify_dark/{z}/{x}/{y}{r}.png",
@@ -88,33 +91,46 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
 
   // fetch
   useEffect(() => {
+    if (!tenantAtivo) return;
+
     let ativo = true;
     (async () => {
       try {
         setCarregando(true);
         setErro(null);
+
+        const inicio = Date.now();
         const API_URL = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem("token");
 
         const url = new URL(`${API_URL}/api/acesso/wazuh/top-paises-geo`);
         if (dias) url.searchParams.set("dias", dias);
 
-        const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data: { flows: Flow[] } = await res.json();
         if (!ativo) return;
-        setFlows(data.flows || []);
+
+        const elapsed = Date.now() - inicio;
+        const delay = Math.max(500 - elapsed, 0); // tempo mínimo p/ transição suave
+        setTimeout(() => {
+          if (ativo) setFlows(data.flows || []);
+        }, delay);
       } catch (e: any) {
         if (ativo) setErro(e?.message || "Erro ao carregar pontos do mapa");
       } finally {
         if (ativo) setCarregando(false);
       }
     })();
+
     return () => {
       ativo = false;
     };
-  }, [dias]);
+  }, [dias, tenantAtivo]); // 👈 reage também à troca de tenant
+
 
   // prepara pontos para ajustar bounds
   const allPoints = useMemo(() => {

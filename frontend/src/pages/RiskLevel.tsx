@@ -8,31 +8,32 @@ import FirewallDonutCard from "../componentes/wazuh/RiskLevel/FirewallDonutCard"
 import FluxoIncidentes from "../componentes/iris/FluxoIncidentes";
 import { getToken } from "../utils/auth";
 import { RiskLevelResposta } from "../services/wazuh/risklevel.service";
+import { useTenant } from "../context/TenantContext";
 
 export default function RiskLevel() {
   const token = getToken();
+  const { tenantAtivo } = useTenant(); // 👈 tenant só refaz o Gauge
   const formatador = new Intl.NumberFormat("pt-BR");
 
-  // 🔹 Filtros globais e individuais
+  // 🔹 Filtros
   const [dias, setDias] = useState<string>("1");
   const [diasFirewall, setDiasFirewall] = useState<string | null>(null);
   const [diasAgentes, setDiasAgentes] = useState<string | null>(null);
   const [diasSeveridade, setDiasSeveridade] = useState<string | null>(null);
   const [diasCis, setDiasCis] = useState<string | null>(null);
+  const [diasIris, setDiasIris] = useState<string | null>(null);
 
+  // 🔹 Totais
   const [totalAlertas, setTotalAlertas] = useState<number>(0);
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
-  const [carregando, setCarregando] = useState<boolean>(true);
-  const [diasIris, setDiasIris] = useState<string | null>(null);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
 
-
-  // 🔹 Atualiza o Gauge com base em todos os filtros combinados
+  // 🔹 Atualiza SOMENTE o Gauge
   useEffect(() => {
+    if (!tenantAtivo) return;
+
     async function carregar() {
       try {
-        setCarregando(true);
-
         const queryParams = new URLSearchParams({
           dias,
           ...(diasFirewall ? { firewall: diasFirewall } : {}),
@@ -55,14 +56,20 @@ export default function RiskLevel() {
         setTotalAlertas(dados.severidades.total);
         setIndiceRisco(dados.indiceRisco);
       } catch (err) {
-        console.error("Erro ao carregar RiskLevel:", err);
-      } finally {
-        setCarregando(false);
+        console.error("❌ Erro ao carregar RiskLevel:", err);
       }
     }
 
     carregar();
-  }, [dias, diasFirewall, diasAgentes, diasSeveridade, diasCis, diasIris]); // 👈 adiciona o CIS aqui
+  }, [
+    tenantAtivo, // 👈 dispara recarregamento do Gauge
+    dias,
+    diasFirewall,
+    diasAgentes,
+    diasSeveridade,
+    diasCis,
+    diasIris,
+  ]);
 
   return (
     <LayoutModel titulo="Risk Level">
@@ -71,13 +78,6 @@ export default function RiskLevel() {
         <div className="flex flex-wrap justify-between items-start mb-6">
           <div className="flex flex-col">
             <h2 className="text-white text-md font-medium">Nível de alertas</h2>
-            {/* <span className="text-xs text-gray-400 mt-1">
-              Filtros ativos: Global {dias}d
-              {diasFirewall && ` • Firewall ${diasFirewall}d`}
-              {diasAgentes && ` • Hosts ${diasAgentes}d`}
-              {diasCis && ` • CIS ${diasCis}d`}
-              {diasSeveridade && ` • Severidades ${diasSeveridade}d`}
-            </span> */}
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -102,7 +102,7 @@ export default function RiskLevel() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-stretch">
-          {/* Gauge */}
+          {/* 🔹 Gauge sem efeito de loading */}
           <div className="cards rounded-xl p-4 flex flex-col justify-center relative h-full">
             <GraficoGauge valor={Math.round(indiceRisco)} />
 
@@ -128,34 +128,20 @@ export default function RiskLevel() {
             </div>
           </div>
 
-          {/* Severidade */}
+          {/* 🔹 Severidade */}
           <div className="md:col-span-4 h-full">
             <SeveridadeCard dias={diasSeveridade || dias} />
           </div>
         </div>
       </section>
 
-      {/* Bloco inferior com outros cards */}
+      {/* Bloco inferior com os outros cards */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-8 items-stretch">
-        {/* Coluna 1 - Top Hosts */}
-        <TopAgentsCard
-          dias={diasAgentes || dias}
-          onChangeFiltro={setDiasAgentes}
-        />
+        <TopAgentsCard dias={diasAgentes || dias} onChangeFiltro={setDiasAgentes} />
+        <TopAgentsCisCard dias={diasCis || dias} onChangeFiltro={setDiasCis} />
 
-        {/* Coluna 2 - Top CIS */}
-        <TopAgentsCisCard
-          dias={diasCis || dias}
-          onChangeFiltro={setDiasCis}
-        />
-
-        {/* Coluna 3 - Firewall + FluxoIncidentes */}
         <div className="flex flex-col h-full">
-          <FirewallDonutCard
-            dias={diasFirewall || dias}
-            onChangeFiltro={setDiasFirewall}
-          />
-
+          <FirewallDonutCard dias={diasFirewall || dias} onChangeFiltro={setDiasFirewall} />
           <div className="flex-1">
             <div className="cards rounded-xl p-6 shadow-md h-full">
               <FluxoIncidentes

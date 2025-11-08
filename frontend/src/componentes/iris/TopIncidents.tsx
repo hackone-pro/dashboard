@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { getTenant } from "../../services/wazuh/tenant.service";
 import { getTodosCasos } from "../../services/iris/cases.service";
 
+import { useTenant } from "../../context/TenantContext";
+
 interface Incidente {
     case_id: number;
     case_name: string;
@@ -27,6 +29,8 @@ export default function TopIncidentes({ token }: Props) {
     const [erro, setErro] = useState<string | null>(null);
     const [animReady, setAnimReady] = useState(false);
 
+    const { tenantAtivo, loading } = useTenant();
+
     const formatDateBR = (dateStr: string): string => {
         if (!dateStr) return "";
         const [mes, dia, ano] = dateStr.split("/");
@@ -34,6 +38,8 @@ export default function TopIncidentes({ token }: Props) {
     };
 
     useEffect(() => {
+        if (loading || !tenantAtivo) return; // 👈 evita executar antes do tenant carregar
+
         let ativo = true;
 
         async function fetch() {
@@ -42,6 +48,7 @@ export default function TopIncidentes({ token }: Props) {
                 setErro(null);
                 setAnimReady(false);
 
+                // 🔹 carrega tenant e incidentes novamente
                 const tenant = await getTenant();
                 if (!ativo) return;
                 setIrisUrl(tenant.iris_url);
@@ -54,7 +61,7 @@ export default function TopIncidentes({ token }: Props) {
                 const limite = new Date();
                 limite.setDate(hoje.getDate() - filtroDias);
 
-                // filtra por cliente (+ período se filtroDias > 0)
+                // filtra os incidentes do tenant atual
                 const filtrado = data.filter((incidente) => {
                     const [mes, dia, ano] = incidente.case_open_date.split("/");
                     const dataIncidente = new Date(`${ano}-${mes}-${dia}`);
@@ -62,13 +69,9 @@ export default function TopIncidentes({ token }: Props) {
                     if (filtroDias === 0) {
                         return incidente.client_name === tenant.cliente_name;
                     }
-                    return (
-                        dataIncidente >= limite &&
-                        incidente.client_name === tenant.cliente_name
-                    );
+                    return dataIncidente >= limite && incidente.client_name === tenant.cliente_name;
                 });
 
-                // ordena por data desc e pega somente os 7 mais recentes
                 const ordenado = filtrado.sort((a, b) => b.case_id - a.case_id);
 
                 if (!ativo) return;
@@ -86,7 +89,7 @@ export default function TopIncidentes({ token }: Props) {
         return () => {
             ativo = false;
         };
-    }, [token, filtroDias]);
+    }, [token, filtroDias, tenantAtivo]);
 
     const getCorBadge = (nivel: string) => {
         switch (nivel) {

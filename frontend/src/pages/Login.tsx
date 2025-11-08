@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toastSuccess, toastError } from "../utils/toast";
-import { login } from "../utils/auth";
-import { loginAttempt } from "../services/auth/loginAttemps.service"; 
+import { loginAttempt } from "../services/auth/loginAttemps.service";
+import { useAuth } from "../context/AuthContext"; // 👈 novo import
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,17 +11,23 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     try {
       const data = await loginAttempt(email, senha);
-
+  
+      // ✅ salva token e atualiza o contexto reativamente
       login(data.jwt);
+  
+      // ✅ salva user normalmente
       localStorage.setItem("user", JSON.stringify(data.user));
+  
+      // ✅ lembra email (se marcado)
       if (remember) localStorage.setItem("remember_email", email);
-
+  
       toastSuccess("Login realizado com sucesso!");
       navigate("/dashboard");
     } catch (err: any) {

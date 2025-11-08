@@ -2,21 +2,24 @@
 import { forwardRef, useImperativeHandle, useEffect, useState, useMemo } from "react";
 import { getTopAgents, TopAgentItem } from "../../services/wazuh/topagents.service";
 import GraficoDonutSimples from "../graficos/GraficoDonutSimples";
+import { useTenant } from "../../context/TenantContext";
 
 export type TopAgentsDonutCardRef = {
   carregar: () => void;
 };
 
 const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
+  const { tenantAtivo } = useTenant();
   const [dados, setDados] = useState<TopAgentItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
+    if (!tenantAtivo) return;
     try {
       setCarregando(true);
       setErro(null);
-      const res = await getTopAgents("todos"); // 👈 default
+      const res = await getTopAgents("todos");
       setDados(res);
     } catch (e: any) {
       setErro(e?.message ?? "Erro ao carregar dados de agentes");
@@ -27,13 +30,12 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [tenantAtivo]);
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
 
-  // 👉 Pega só os Top 5
   const top5 = useMemo(() => {
     return [...dados].sort((a, b) => b.total_alertas - a.total_alertas).slice(0, 5);
   }, [dados]);
@@ -41,7 +43,6 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
   const labels = top5.map((a) => a.agente || a.agent_name || "Desconhecido");
   const series = top5.map((a) => a.total_alertas);
 
-  // 👉 Extra para o tooltip
   const tooltipExtra = top5.reduce((acc, a) => {
     const nome = a.agente || a.agent_name || "Desconhecido";
     acc[nome] = {
@@ -52,10 +53,7 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
     return acc;
   }, {} as Record<string, { modified: number; added: number; deleted: number }>);
 
-  // Paleta fixa para 5 agentes
   const cores = ["#6B7280", "#A8A29E", "#D6D3D1", "#78716C", "#57534E"];
-
-
 
   if (erro) {
     return (
@@ -66,7 +64,19 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
   }
 
   if (carregando) {
-    return <div className="w-full h-52 rounded-xl bg-[#ffffff0a] animate-pulse" />;
+    return (
+      <div className="flex items-center">
+        <div className="w-[220px] h-[220px] rounded-full bg-[#ffffff0a] animate-pulse" />
+        <div className="flex flex-col gap-2 ml-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-xs bg-[#ffffff14] animate-pulse" />
+              <div className="h-3 w-24 bg-[#ffffff14] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (series.length === 0) {
@@ -75,19 +85,17 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((props, ref) => {
 
   return (
     <div className="flex items-center">
-      {/* Donut */}
       <div>
         <GraficoDonutSimples
           labels={labels}
           series={series}
           cores={cores}
           height={220}
-          tooltipExtra={tooltipExtra} // 👈 passa os extras
+          tooltipExtra={tooltipExtra}
         />
       </div>
 
-      {/* Legenda ao lado */}
-      <div className="flex flex-col gap-2 text-xs text-gray-400">
+      <div className="flex flex-col gap-2 text-xs text-gray-400 ml-6">
         {labels.map((label, i) => (
           <div key={i} className="flex items-center gap-2">
             <span

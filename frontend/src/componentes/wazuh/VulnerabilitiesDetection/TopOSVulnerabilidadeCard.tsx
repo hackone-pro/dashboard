@@ -1,6 +1,7 @@
 // src/components/wazuh/TopOSVulnerabilidadeCard.tsx
 import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { getTopOSVulnerabilidades, TopOSVulnerabilidade } from "../../../services/wazuh/topsovulnerabilidades.service";
+import { useTenant } from "../../../context/TenantContext"; // 👈 tenant global
 
 export type TopOSVulnerabilidadeCardRef = {
   carregar: () => void;
@@ -10,13 +11,16 @@ const formatPt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
 
 const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef>((props, ref) => {
+  const { tenantAtivo } = useTenant(); // 👈 obtém tenant atual
   const [topSo, setTopSo] = useState<TopOSVulnerabilidade[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
+    if (!tenantAtivo) return; // 🔹 evita executar sem tenant carregado
     setCarregando(true);
     try {
+      // 🔹 tenant tratado internamente pelo service
       const lista = await getTopOSVulnerabilidades(5, "todos");
       setTopSo(lista);
       setErro(null);
@@ -29,13 +33,13 @@ const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef>((props,
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [tenantAtivo]); // 👈 recarrega automaticamente ao trocar tenant
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
 
-  // 👉 se está carregando, mostra skeleton
+  // 🔹 Skeleton
   if (carregando) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
@@ -56,7 +60,7 @@ const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef>((props,
     );
   }
 
-  // 👉 se deu erro
+  // 🔹 Erro
   if (erro) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-red-400">
@@ -65,7 +69,7 @@ const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef>((props,
     );
   }
 
-  // 👉 se não tem dados
+  // 🔹 Sem dados
   if (!topSo.length) {
     return (
       <div className="cards rounded-xl p-4 flex flex-col justify-center items-center relative h-full text-xs text-gray-400">
@@ -74,7 +78,7 @@ const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef>((props,
     );
   }
 
-  // 👉 se tem dados
+  // 🔹 Dados carregados
   return (
     <div className="cards rounded-xl p-4 flex flex-col justify-start relative h-full">
       <div className="flex justify-between items-center mb-3">
