@@ -3,6 +3,8 @@ import Chart from "react-apexcharts";
 import { getTopFirewalls, TopFirewallItem } from "../../services/wazuh/topfirewall.service";
 import { useTenant } from "../../context/TenantContext";
 
+import { GripVertical, Trash2 } from "lucide-react";
+
 export default function TopFirewallCard() {
   const [firewalls, setFirewalls] = useState<TopFirewallItem[]>([]);
   const [dias, setDias] = useState("todos");
@@ -171,24 +173,24 @@ export default function TopFirewallCard() {
   const chartKey = `tfw-${dias}-${tenantAtivo?.id ?? "none"}`;
 
   return (
-    <div className="cards flex-grow p-6 rounded-2xl shadow-lg card-dashboard relative transition-all hover:-translate-y-1 hover:shadow-lg">
-      <div className="grid grid-cols-12 mb-5">
-        <div className="col-span-8">
+    <div className="cards flex-grow p-6 rounded-2xl shadow-lg card-dashboard relative hover:shadow-lg">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2 drag-handle cursor-grab active:cursor-grabbing select-none">
+          <GripVertical size={18} className="text-white/50 hover:text-white transition" />
           <h3 className="text-sm text-white">Top 5 Firewalls geradores de alertas</h3>
         </div>
-        <div className="col-span-4 flex items-center justify-end">
-          <select
-            className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#1D1929]"
-            value={dias}
-            onChange={(e) => setDias(e.target.value)}
-          >
-            <option value="todos">Todos</option>
-            <option value="1">24 horas</option>
-            <option value="7">7 dias</option>
-            <option value="15">15 dias</option>
-            <option value="30">30 dias</option>
-          </select>
-        </div>
+
+        <select
+          className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#1D1929]"
+          value={dias}
+          onChange={(e) => setDias(e.target.value)}
+        >
+          <option value="todos">Todos</option>
+          <option value="1">24 horas</option>
+          <option value="7">7 dias</option>
+          <option value="15">15 dias</option>
+          <option value="30">30 dias</option>
+        </select>
       </div>
 
       {erro && (

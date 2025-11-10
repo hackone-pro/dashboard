@@ -25,6 +25,8 @@ import WidgetMenu from "../componentes/dashboard/WidgetMenu";
 import { useTenant } from "../context/TenantContext";
 import { getDashboardLayout, WidgetLayout, resetUserDashboardLayout } from "../services/dashboard/dashboardLayout.service";
 
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+
 import Swal from "sweetalert2";
 
 const GridLayout = WidthProvider(GridLayoutBase);
@@ -263,7 +265,7 @@ export default function Dashboard() {
 
     ),
     ia_humans: (
-      <div className="cards p-6 rounded-2xl shadow-lg h-full">
+      <div className="cards p-4 rounded-2xl shadow-lg h-full flex flex-col">
         <IaHumans token={token || ""} />
       </div>
     ),
@@ -341,83 +343,116 @@ export default function Dashboard() {
       </div>
       <div className="relative">
         {/* 🔹 GRID sempre renderiza, mesmo se estiver carregando */}
-        <GridLayout
-          className={`layout ${loadingDashboard || loading}`}
-          cols={12}
-          rowHeight={30}
-          width={1600}
-          layout={layout}
-          compactType="vertical"
-          preventCollision={false}
-          isDraggable
-          isResizable
-          autoSize
-          draggableHandle=".drag-handle" // ✅ só arrasta se clicar nessa área
-          onLayoutChange={(newLayout) => {
-            setLayout(newLayout as WidgetLayout[]);
-            salvarLayoutDebounced(newLayout as WidgetLayout[]);
+        <DragDropContext
+          onDragEnd={(result: DropResult) => {
+            if (!result.destination) return;
+
+            const { source, destination, draggableId } = result;
+
+            // 🔹 Quando o item vem do menu lateral e é solto na dashboard
+            if (source.droppableId === "widgetsMenu" && destination.droppableId === "dashboard") {
+              handleAddWidget(draggableId);
+            }
           }}
         >
-          {layout.map((item) => (
-            <div
-              key={item.i}
-              className="rounded-2xl overflow-hidden relative group"
-              style={{
-                background: "rgba(30, 30, 40, 0.9)",
-                border: "1px solid rgba(255,255,255,0.05)",
-              }}
-            >
-              {/* Botão de opções (3 pontinhos) */}
-              <div className="absolute top-3.5 right-2 z-20">
-                <WidgetMenu onRemove={() => removerWidget(item.i)} />
+          {/* Tudo o que já existe na sua dashboard: o GridLayout e o painel lateral */}
+          <Droppable droppableId="dashboard">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                <GridLayout
+                  className={`layout ${loadingDashboard || loading}`}
+                  cols={12}
+                  rowHeight={30}
+                  width={1600}
+                  layout={layout}
+                  compactType="vertical"
+                  preventCollision={false}
+                  isDraggable
+                  isResizable
+                  autoSize
+                  draggableHandle=".drag-handle"
+                  onLayoutChange={(newLayout) => {
+                    setLayout(newLayout as WidgetLayout[]);
+                    salvarLayoutDebounced(newLayout as WidgetLayout[]);
+                  }}
+                >
+                  {layout.map((item) => (
+                    <div
+                      key={item.i}
+                      className="rounded-2xl overflow-hidden relative group"
+                      style={{
+                        background: "rgba(30, 30, 40, 0.9)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <div className="absolute top-3.5 right-2 z-20">
+                        <WidgetMenu onRemove={() => removerWidget(item.i)} />
+                      </div>
+                      {widgetMap[item.i] || (
+                        <div className="text-gray-400 text-sm text-center p-4">
+                          Widget desconhecido: <strong>{item.i}</strong>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {provided.placeholder}
+                </GridLayout>
               </div>
+            )}
+          </Droppable>
 
-              {widgetMap[item.i] || (
-                <div className="text-gray-400 text-sm text-center p-4">
-                  Widget desconhecido: <strong>{item.i}</strong>
-                </div>
-              )}
-            </div>
-          ))}
-        </GridLayout>
-
-        {/* Painel lateral de widgets */}
-        <div
-          className={`fixed top-0 right-0 h-full w-[320px] bg-[#1D1929] shadow-2xl border-l border-[#2a2540] transform transition-transform duration-300 z-[9998]
+          {/* painel lateral de widgets */}
+          <div
+            className={`fixed top-0 right-0 h-full w-[320px] bg-[#1D1929] shadow-2xl border-l border-[#2a2540] transform transition-transform duration-300 z-[9998]
     ${sidebarOpen ? "translate-x-0" : "translate-x-full"}`}
-        >
-          <div className="flex items-center justify-between p-4 border-b border-[#2a2540]">
-            <h2 className="text-white text-sm font-semibold">Adicionar widget</h2>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="p-4 space-y-3 text-gray-300">
-            <p className="text-xs text-gray-400 mb-2">Widgets disponíveis:</p>
-
-            {[
-              { id: "grafico_risco", label: "Nível de Risco" },
-              { id: "geo_map", label: "Mapa de Ataques" },
-              { id: "top_paises", label: "Top Países" },
-              { id: "ia_humans", label: "IA Humans" },
-              { id: "top_incidentes", label: "Top Incidentes" },
-              { id: "top_firewalls", label: "Top Firewalls" },
-              { id: "widget_teste", label: "Widget Teste" },
-            ].map((w) => (
+          >
+            <div className="flex items-center justify-between p-4 border-b border-[#2a2540]">
+              <h2 className="text-white text-sm font-semibold">Adicionar widget</h2>
               <button
-                key={w.id}
-                onClick={() => handleAddWidget(w.id)}
-                className="w-full text-left px-3 py-2 rounded-md bg-[#2a2540] hover:bg-[#3b3360] text-sm transition-all"
+                onClick={() => setSidebarOpen(false)}
+                className="text-gray-400 hover:text-white"
               >
-                {w.label}
+                ✕
               </button>
-            ))}
+            </div>
+
+            <div className="p-4 space-y-3 text-gray-300">
+              <p className="text-xs text-gray-400 mb-2">Widgets disponíveis:</p>
+
+              <Droppable droppableId="widgetsMenu">
+                {(provided) => (
+                  <div ref={provided.innerRef} {...provided.droppableProps}>
+                    {[
+                      { id: "grafico_risco", label: "Nível de Risco" },
+                      { id: "geo_map", label: "Mapa de Ataques" },
+                      { id: "top_paises", label: "Top Países" },
+                      { id: "ia_humans", label: "IA Humans" },
+                      { id: "top_incidentes", label: "Top Incidentes" },
+                      { id: "top_firewalls", label: "Top Firewalls" },
+                      { id: "widget_teste", label: "Widget Teste" },
+                    ].map((w, index) => (
+                      <Draggable key={w.id} draggableId={w.id} index={index}>
+                        {(provided) => (
+                          <button
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="w-full text-left px-3 py-2 rounded-md bg-[#2a2540] hover:bg-[#3b3360] text-sm transition-all mb-2"
+                          >
+                            {w.label}
+                          </button>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+
           </div>
-        </div>
+        </DragDropContext>
+
 
         {resettingLayout && (
           <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] z-[9999] text-gray-300">

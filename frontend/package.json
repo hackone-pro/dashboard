@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
+    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.2.0",
     "@south-paw/react-vector-maps": "^3.2.0",
     "apexcharts": "^5.2.0",
