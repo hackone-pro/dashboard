@@ -90,17 +90,19 @@ export default function IaHumans({ token }: Props) {
     }, [token, filtroDias, tenantAtivo]);
 =======
   return (
-    <div className="rounded-2xl flex-grow transition-all duration-300">
-      <div className="flex items-center justify-between gap-2 cursor-default select-none mb-5">
-
+    <div className="flex flex-col h-full w-full bg-transparent">
+      {/* Cabeçalho fixo */}
+      <div className="flex items-center justify-between gap-2 cursor-default select-none mb-3">
         {/* Grupo do ícone + título */}
         <div className="flex items-center gap-2">
-          {/* Ícone com drag-handle */}
-          <GripVertical size={18} className="text-white/50 hover:text-white transition" />
+          <GripVertical
+            size={18}
+            className="drag-handle cursor-grab active:cursor-grabbing text-white/50 hover:text-white transition"
+          />
           <h3 className="text-sm text-white">Tendência de Volume de Casos</h3>
         </div>
 
-        {/* Botão à direita — agora clicável */}
+        {/* Filtro de dias */}
         <select
           className="bg-[#0d0c22] text-white text-xs mr-10 px-2 py-1 rounded-sm border border-[#cacaca31]"
           value={filtroDias}
@@ -115,6 +117,7 @@ export default function IaHumans({ token }: Props) {
       </div>
 >>>>>>> 61cf605 (feature: Estrutura Inicial Custom Dashboard)
 
+<<<<<<< HEAD
     return (
         <>
             <div className="flex justify-between items-start mb-4">
@@ -217,6 +220,65 @@ export default function IaHumans({ token }: Props) {
             )}
         </>
     );
+=======
+      {/* Conteúdo com rolagem */}
+      <div className="flex-grow overflow-y-auto pr-2">
+        {erro && (
+          <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-2">
+            {erro}
+          </div>
+        )}
+
+        {carregando ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-8">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="animate-pulse flex flex-col items-center">
+                  <div className="h-3 w-20 bg-[#ffffff10] rounded mb-2" />
+                  <div className="h-5 w-8 bg-[#ffffff10] rounded" />
+                </div>
+              ))}
+            </div>
+
+            <div className="h-52 bg-[#ffffff10] rounded-xl animate-pulse" />
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-8 text-sm mb-4">
+              <div className="flex flex-col items-center">
+                <span className="text-gray-400 mb-1">IA vs Humanos</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                  <span className="text-gray-400">IA</span>
+                </div>
+                <span className="text-white text-lg font-semibold">{totalIa}</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-pink-400"></span>
+                  <span className="text-gray-400">Humanos</span>
+                </div>
+                <span className="text-white text-lg font-semibold">{totalHumanos}</span>
+              </div>
+            </div>
+
+            {/* Gráfico responsivo */}
+            <div className="h-[240px]">
+              <GraficoAreaSpline
+                series={series}
+                categoriasX={categoriasX}
+                cores={["#744CD8", "#ED35FB"]}
+                hideXAxisLabels
+              />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+>>>>>>> 9a98553 (Estrutura 2 - Custom Dashboard)
 }
 
 /** Agrupa por dia; para "Todos" (dias=0) usa apenas as datas existentes nos incidentes */
