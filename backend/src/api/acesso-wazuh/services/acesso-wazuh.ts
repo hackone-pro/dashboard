@@ -140,17 +140,34 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  // 🔍 Filtro de tempo
   const timeFilter =
     dias === "todos"
       ? { match_all: {} }
       : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
 
+  // ✅ Novo filtro de cliente (com suporte a .keyword)
+  const customerFilter = {
+    bool: {
+      should: [
+        { term: { "data.customer": clientName } },
+        { term: { "data.customer.keyword": clientName } },
+        { term: { "customer": clientName } },
+        { term: { "customer.keyword": clientName } },
+        { term: { "fields.customer": clientName } },
+        { term: { "fields.customer.keyword": clientName } }
+      ],
+      minimum_should_match: 1,
+    },
+  };
+
+  // 🧩 Corpo da requisição
   const body = {
     size: 0,
-    query: { bool: { must: [customerFilter(clientName), timeFilter] } },
+    query: { bool: { must: [customerFilter, timeFilter] } },
     aggs: {
       top_geradores: {
-        terms: { field: "data.devname", size: 8, order: { _count: "desc" } },
+        terms: { field: "data.devname.keyword", size: 8, order: { _count: "desc" } },
         aggs: {
           severidade: {
             range: {
@@ -168,19 +185,30 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     },
   };
 
+  // 🌐 Chamada à API Wazuh Indexer
   const response = await axios.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
-    { headers: authHeader(tenant), httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
   );
 
+  // 📊 Formatação do retorno
   return (response.data?.aggregations?.top_geradores?.buckets || []).map((b) => {
     const sev = b.severidade?.buckets || [];
-    const get = (k: string) => sev.find((x: any) => x.key === k)?.doc_count || 0;
+    const get = (k: string) =>
+      sev.find((x: any) => x.key === k)?.doc_count || 0;
     return {
       gerador: b.key,
       total: b.doc_count,
-      severidade: { baixo: get("Low"), medio: get("Medium"), alto: get("High"), critico: get("Critical") },
+      severidade: {
+        baixo: get("Low"),
+        medio: get("Medium"),
+        alto: get("High"),
+        critico: get("Critical"),
+      },
     };
   });
 }
