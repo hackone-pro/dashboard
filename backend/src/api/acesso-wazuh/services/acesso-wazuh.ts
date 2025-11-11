@@ -140,13 +140,11 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  // 🔍 Filtro de tempo
   const timeFilter =
     dias === "todos"
       ? { match_all: {} }
       : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
 
-  // ✅ Novo filtro de cliente (com suporte a .keyword)
   const customerFilter = {
     bool: {
       should: [
@@ -161,13 +159,13 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     },
   };
 
-  // 🧩 Corpo da requisição
-  const body = {
+  // função auxiliar para criar body com campo de agregação variável
+  const buildBody = (devnameField) => ({
     size: 0,
     query: { bool: { must: [customerFilter, timeFilter] } },
     aggs: {
       top_geradores: {
-        terms: { field: "data.devname.keyword", size: 8, order: { _count: "desc" } },
+        terms: { field: devnameField, size: 8, order: { _count: "desc" } },
         aggs: {
           severidade: {
             range: {
@@ -183,23 +181,34 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
         },
       },
     },
-  };
+  });
 
-  // 🌐 Chamada à API Wazuh Indexer
-  const response = await axios.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
-    body,
-    {
+  const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
+
+  // 🟢 1. Tenta com data.devname
+  let body = buildBody("data.devname");
+  let response = await axios.post(baseURL, body, {
+    headers: authHeader(tenant),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  });
+
+  let buckets = response.data?.aggregations?.top_geradores?.buckets || [];
+
+  // 🔄 2. Se não houver resultados, tenta com data.devname.keyword
+  if (buckets.length === 0) {
+    body = buildBody("data.devname.keyword");
+    response = await axios.post(baseURL, body, {
       headers: authHeader(tenant),
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    }
-  );
+    });
+    buckets = response.data?.aggregations?.top_geradores?.buckets || [];
+  }
 
   // 📊 Formatação do retorno
-  return (response.data?.aggregations?.top_geradores?.buckets || []).map((b) => {
+  return buckets.map((b) => {
     const sev = b.severidade?.buckets || [];
-    const get = (k: string) =>
-      sev.find((x: any) => x.key === k)?.doc_count || 0;
+    const get = (k: string) => sev.find((x: any) => x.key === k)?.doc_count || 0;
+
     return {
       gerador: b.key,
       total: b.doc_count,
@@ -212,6 +221,7 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     };
   });
 }
+
 
 export async function buscarTopAgentes(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
