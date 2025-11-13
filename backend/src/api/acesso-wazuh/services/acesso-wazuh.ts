@@ -95,7 +95,16 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
     size: 0,
     query: {
       bool: {
-        must: [customerFilter(clientName), timeFilter],
+        must: [
+          {
+            bool: {
+              should: [
+                { term: { "customer.keyword": clientName } }
+              ]
+            }
+          },
+          timeFilter,
+        ],
       },
     },
     aggs: {
