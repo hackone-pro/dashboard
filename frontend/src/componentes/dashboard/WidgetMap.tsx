@@ -5,6 +5,7 @@ import TopIncidentesCard from "../iris/TopIncidents";
 import IaHumans from "../iris/IaHumans";
 import TopFirewallCard from "../wazuh/TopFirewallCard";
 import TopCountriesTable from "../wazuh/threatmap/TopCountriesTable";
+import TopAgentsCard from "../wazuh/RiskLevel/TopAgentsCard"; 
 import { JSX } from "react";
 
 export function getWidgetMap(
@@ -107,6 +108,10 @@ export function getWidgetMap(
       <div className="cards p-4 rounded-2xl shadow-lg h-full flex flex-col">
         <IaHumans token={token || ""} />
       </div>
+    ),
+
+    top_agentes: (
+      <TopAgentsCard dias="1" isWidget={true}  />   // 24h por padrão, pode mudar
     ),
   };
 }

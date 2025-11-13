@@ -1,15 +1,17 @@
 // src/components/wazuh/TopAgentsCard.tsx
 import { useEffect, useState } from "react";
 import { getTopAgents, TopAgentItem } from "../../../services/wazuh/topagents.service";
-import { useTenant } from "../../../context/TenantContext"; // 👈 integração tenant
+import { useTenant } from "../../../context/TenantContext";
+import { GripVertical } from "lucide-react";
 
 interface TopAgentsCardProps {
   dias: string;
   onChangeFiltro?: (valor: string | null) => void;
+  isWidget?: boolean; // 👈 MOSTRAR DRAG SOMENTE NA DASHBOARD
 }
 
-export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardProps) {
-  const { tenantAtivo } = useTenant(); // 👈 reage à troca de tenant
+export default function TopAgentsCard({ dias, onChangeFiltro, isWidget = false }: TopAgentsCardProps) {
+  const { tenantAtivo } = useTenant();
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
   const diasEfetivo = filtroLocal || dias;
 
@@ -18,7 +20,7 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!tenantAtivo) return; // evita chamada sem tenant
+    if (!tenantAtivo) return;
 
     let ativo = true;
     async function fetchData() {
@@ -31,7 +33,7 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
         if (!ativo) return;
 
         const elapsed = Date.now() - inicio;
-        const delay = Math.max(500 - elapsed, 0); // ⏳ delay suave
+        const delay = Math.max(500 - elapsed, 0);
 
         setTimeout(() => {
           if (ativo) setAgentes(data);
@@ -52,16 +54,33 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
 
   return (
     <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300 relative">
-      {/* 🔹 Overlay de carregamento visual opcional */}
+      
+      {/* 🔹 Overlay de carregamento */}
       {carregando && (
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-10 rounded-2xl" />
       )}
 
+      {/* 🔹 HEADER — agora sempre tem título, mas drag só no widget */}
       <div className="flex justify-between items-center mb-5 relative z-20">
-        <h3 className="text-sm text-white">Top Hosts</h3>
 
+        {/* 🔸 Esquerda = drag (se widget) + título (sempre) */}
+        <div className="flex items-center gap-2">
+          {isWidget && (
+            <GripVertical
+              size={18}
+              className="drag-handle cursor-grab active:cursor-grabbing text-white/50 hover:text-white transition"
+            />
+          )}
+
+          {/* 🔹 TÍTULO SEMPRE PRESENTE */}
+          <h3 className="text-sm text-white">Top Hosts</h3>
+        </div>
+
+        {/* 🔸 Direita = select do filtro (com espaçamento só na dashboard) */}
         <select
-          className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
+          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
+            ${isWidget ? "mr-8" : ""} 
+          `}
           value={filtroLocal || dias}
           onChange={(e) => {
             const val = e.target.value;
@@ -77,15 +96,17 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
           <option value="30">30 dias</option>
           <option value="todos">Todos</option>
         </select>
+
       </div>
 
+      {/* 🔹 Erro */}
       {erro && (
         <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-2 relative z-20">
           {erro}
         </div>
       )}
 
-      {/* 🦴 Skeleton animado */}
+      {/* 🔹 Conteúdo */}
       {carregando ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -120,6 +141,7 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
                 </th>
               </tr>
             </thead>
+
             <tbody>
               {agentes.length === 0 ? (
                 <tr>

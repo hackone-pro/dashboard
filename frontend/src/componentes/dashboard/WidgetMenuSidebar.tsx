@@ -92,13 +92,13 @@ export default function WidgetMenuSidebar({
               </div>
 
               {/* 🟢 Mostra o preview visual do gauge */}
-              {isGauge && !jaAdicionado && (
+              {/* {isGauge && !jaAdicionado && (
                 <div className="flex justify-center mt-2">
                   <div className="w-[90px] h-[90px] scale-90 opacity-90 pointer-events-none">
                     <GraficoGauge valor={Math.round(indiceRisco)} />
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
           );
         })}
