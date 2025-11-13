@@ -545,3 +545,39 @@ header button.toggle{
   border-right: 2px solid rgb(255 255 255 / 40%) !important;
   border-bottom: 2px solid rgb(255 255 255 / 40%) !important;
 }
+
+.react-grid-placeholder {
+  background: rgba(128, 90, 213, 0.2) !important; /* Roxo translúcido */
+  border: 2px dashed rgba(167, 139, 250, 0.8) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 15px rgba(167, 139, 250, 0.4) !important;
+  transition: all 0.2s ease-in-out !important;
+  z-index: 999 !important;
+}
+
+.react-grid-placeholder::after {
+  content: "Solte aqui";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* 🔹 Remove o texto "Widget" do elemento temporário criado pelo react-grid-layout
+   quando arrastamos algo do menu lateral (drop novo) */
+   .react-grid-item[data-grid-id="__dropping-elem__"],
+   .react-grid-item.__dropping-elem__,
+   .react-grid-placeholder.__dropping-elem__ {
+     color: transparent !important;
+     font-size: 0 !important;
+     overflow: hidden !important;
+     background: rgba(139, 92, 246, 0.15) !important; /* fundo suave */
+     border: 2px dashed rgba(167, 139, 250, 0.8) !important;
+     border-radius: 12px !important;
+     z-index: 999 !important;
+   }
+   
