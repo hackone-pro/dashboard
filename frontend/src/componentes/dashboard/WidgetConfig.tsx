@@ -14,5 +14,6 @@ export interface WidgetConfig {
     { id: "top_incidentes", label: "Top Incidentes", w: 3, h: 18 },
     { id: "ia_humans", label: "IA Humans", w: 6, h: 14 },
     { id: "top_firewalls", label: "Top Firewalls", w: 3, h: 14 },
+    { id: "top_agentes", label: "Top Hosts", w: 3, h: 14 },
   ];
   

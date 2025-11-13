@@ -2,13 +2,15 @@
 import { useEffect, useState } from "react";
 import { getTopAgents, TopAgentItem } from "../../../services/wazuh/topagents.service";
 import { useTenant } from "../../../context/TenantContext";
+import { GripVertical } from "lucide-react";
 
 interface TopAgentsCardProps {
   dias: string;
   onChangeFiltro?: (valor: string | null) => void;
+  isWidget?: boolean; // 👈 MOSTRAR DRAG SOMENTE NA DASHBOARD
 }
 
-export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardProps) {
+export default function TopAgentsCard({ dias, onChangeFiltro, isWidget = false }: TopAgentsCardProps) {
   const { tenantAtivo } = useTenant();
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
   const diasEfetivo = filtroLocal || dias;
@@ -118,11 +120,33 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
 
   return (
     <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300 relative">
-      <div className="flex justify-between items-center mb-5 relative z-20">
-        <h3 className="text-sm text-white">Top Hosts</h3>
+      
+      {/* 🔹 Overlay de carregamento */}
+      {carregando && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-10 rounded-2xl" />
+      )}
 
+      {/* 🔹 HEADER — agora sempre tem título, mas drag só no widget */}
+      <div className="flex justify-between items-center mb-5 relative z-20">
+
+        {/* 🔸 Esquerda = drag (se widget) + título (sempre) */}
+        <div className="flex items-center gap-2">
+          {isWidget && (
+            <GripVertical
+              size={18}
+              className="drag-handle cursor-grab active:cursor-grabbing text-white/50 hover:text-white transition"
+            />
+          )}
+
+          {/* 🔹 TÍTULO SEMPRE PRESENTE */}
+          <h3 className="text-sm text-white">Top Hosts</h3>
+        </div>
+
+        {/* 🔸 Direita = select do filtro (com espaçamento só na dashboard) */}
         <select
-          className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
+          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
+            ${isWidget ? "mr-8" : ""} 
+          `}
           value={filtroLocal || dias}
           onChange={(e) => {
             const val = e.target.value;
@@ -138,64 +162,82 @@ export default function TopAgentsCard({ dias, onChangeFiltro }: TopAgentsCardPro
           <option value="30">30 dias</option>
           <option value="todos">Todos</option>
         </select>
+
       </div>
 
-      <div className="overflow-x-auto relative z-20">
-        <table className="w-full text-sm text-gray-300 border-collapse py-3">
-          <thead>
-            <tr className="text-xs text-gray-400 top-agents">
-              <th className="text-left w-[40%] pl-2 pb-3">Hosts</th>
-              <th className="w-[15%] text-center">
-                <span className="text-pink-500 badge-pink badge rounded-md py-0.5 px-2">
-                  Crítico
-                </span>
-              </th>
-              <th className="w-[15%] text-center">
-                <span className="text-[#A855F7] badge-high badge rounded-md py-0.5 px-3">
-                  Alto
-                </span>
-              </th>
-              <th className="w-[15%] text-center">
-                <span className="text-[#6366F1] badge-darkpink badge rounded-md py-0.5 px-2">
-                  Médio
-                </span>
-              </th>
-              <th className="w-[15%] text-center">
-                <span className="text-[#1DD69A] badge-green badge rounded-md py-0.5 px-2">
-                  Baixo
-                </span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {agentes.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center text-xs text-gray-500 py-4">
-                  Nenhum agente encontrado
-                </td>
+      {/* 🔹 Erro */}
+      {erro && (
+        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-2 relative z-20">
+          {erro}
+        </div>
+      )}
+
+      {/* 🔹 Conteúdo */}
+      {carregando ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="cards animate-pulse bg-[#ffffff0a] h-10 rounded-md" />
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto relative z-20">
+          <table className="w-full text-sm text-gray-300 border-collapse py-3">
+            <thead>
+              <tr className="text-xs text-gray-400 top-agents">
+                <th className="text-left w-[40%] pl-2 pb-3">Hosts</th>
+                <th className="w-[15%] text-center">
+                  <span className="text-pink-500 badge-pink badge rounded-md py-0.5 px-2">
+                    Crítico
+                  </span>
+                </th>
+                <th className="w-[15%] text-center">
+                  <span className="text-[#A855F7] badge-high badge rounded-md py-0.5 px-3">
+                    Alto
+                  </span>
+                </th>
+                <th className="w-[15%] text-center">
+                  <span className="text-[#6366F1] badge-darkpink badge rounded-md py-0.5 px-2">
+                    Médio
+                  </span>
+                </th>
+                <th className="w-[15%] text-center">
+                  <span className="text-[#1DD69A] badge-green badge rounded-md py-0.5 px-2">
+                    Baixo
+                  </span>
+                </th>
               </tr>
-            ) : (
-              agentes.map((item, i) => (
-                <tr
-                  key={`${item.agent_name}-${i}`}
-                  className="hover:bg-[#ffffff12] transition-all border-b border-[#ffffff1e]"
-                >
-                  <td className="px-2 py-2">
-                    <div className="text-[11px] text-gray-400">
-                      {item.total_alertas.toLocaleString("pt-BR")} alertas
-                    </div>
-                    <div className="font-medium text-gray-200">{item.agent_name}</div>
+            </thead>
+
+            <tbody>
+              {agentes.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center text-xs text-gray-500 py-4">
+                    Nenhum agente encontrado
                   </td>
-                  <td className="text-center">{item.severidade?.Crítico ?? 0}</td>
-                  <td className="text-center">{item.severidade?.Alto ?? 0}</td>
-                  <td className="text-center">{item.severidade?.Médio ?? 0}</td>
-                  <td className="text-center">{item.severidade?.Baixo ?? 0}</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                agentes.map((item, i) => (
+                  <tr
+                    key={`${item.agent_name}-${i}`}
+                    className="hover:bg-[#ffffff12] transition-all border-b border-[#ffffff1e]"
+                  >
+                    <td className="px-2 py-2">
+                      <div className="text-[11px] text-gray-400">
+                        {item.total_alertas.toLocaleString("pt-BR")} alertas
+                      </div>
+                      <div className="font-medium text-gray-200">{item.agent_name}</div>
+                    </td>
+                    <td className="text-center">{item.severidade?.Crítico ?? 0}</td>
+                    <td className="text-center">{item.severidade?.Alto ?? 0}</td>
+                    <td className="text-center">{item.severidade?.Médio ?? 0}</td>
+                    <td className="text-center">{item.severidade?.Baixo ?? 0}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
