@@ -1,50 +1,51 @@
-import { useState, useRef, useEffect } from "react";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { EllipsisVertical, Trash2 } from "lucide-react";
 
 interface WidgetMenuProps {
-  onRemove?: () => void;
+  onRemove: () => void | Promise<void>;
 }
 
 export default function WidgetMenu({ onRemove }: WidgetMenuProps) {
   const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
-  // Fecha o menu ao clicar fora
+  // 🔹 Fecha o menu ao clicar fora
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         setOpen(false);
       }
-    };
+    }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative inline-block text-left z-50" ref={ref}>
       {/* Botão de 3 pontinhos */}
       <button
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={() => setOpen((prev) => !prev)}
-        className="p-3 rounded-md hover:bg-white/10 text-gray-300 hover:text-white transition"
+        onClick={() => setOpen(!open)}
+        className="p-1.5 text-gray-400 hover:text-white transition rounded-md hover:bg-[#2a2540]"
+        title="Opções do widget"
       >
-        <MoreVertical size={16} />
+        <EllipsisVertical size={18} />
       </button>
 
       {/* Dropdown */}
       {open && (
         <div
-          className="absolute right-0 mt-2 w-40 bg-[#1E1E2A] border border-white/10 rounded-md shadow-lg z-50 py-1"
-          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute right-0 mt-1 w-44 origin-top-right bg-[#2a2540] border border-[#3b3360] rounded-lg shadow-lg ring-1 ring-black/5 focus:outline-none animate-fadeIn"
+          style={{ zIndex: 9999 }}
         >
           <button
             onClick={() => {
               setOpen(false);
-              onRemove?.();
+              onRemove();
             }}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 w-full text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-[#3b3360] transition-all rounded-md"
           >
-            <Trash2 size={14} className="text-red-400" /> Remover widget
+            <Trash2 size={16} className="text-red-400" />
+            Remover widget
           </button>
         </div>
       )}
