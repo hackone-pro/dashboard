@@ -6,7 +6,7 @@ import LayoutModel from "../componentes/LayoutModel";
 import GeoHitsMap from "../componentes/graficos/GeoHitsMap";
 import GraficoGauge from "../componentes/graficos/GraficoGauge";
 import { getToken } from "../utils/auth";
-import { getSeveridadeWazuh } from "../services/wazuh/severidade.service";
+import { getRiskLevel } from "../services/wazuh/risklevel.service";
 
 import TopIncidentesCard from "../componentes/iris/TopIncidents";
 import IaHumans from "../componentes/iris/IaHumans";
@@ -33,31 +33,23 @@ export default function Dashboard() {
   // ✅ Hook sempre executa
   useEffect(() => {
     if (!tenantAtivo) return;
-
+  
     let ativo = true;
+  
     const carregarDados = async () => {
       try {
-        const inicio = Date.now();
-        const dados = await getSeveridadeWazuh();
-        const { baixo, medio, alto, critico, total } = dados;
-
-        const risco =
-          total > 0
-            ? ((baixo * 0.2 + medio * 0.6 + alto * 0.87 + critico * 1.0) / total) * 100
-            : 0;
-
-        const elapsed = Date.now() - inicio;
-        const delay = Math.max(600 - elapsed, 0);
-        setTimeout(() => {
-          if (ativo) setIndiceRisco(risco);
-        }, delay);
-      } catch (err) {
-        console.error("Erro ao carregar severidades:", err);
+        const dados = await getRiskLevel("1"); // use o mesmo período da RiskLevel
+        if (ativo) {
+          setIndiceRisco(dados.indiceRisco);
+        }
+      } catch (error) {
+        console.error("❌ Erro ao buscar RiskLevel:", error);
         if (ativo) setIndiceRisco(0);
       }
     };
-
+  
     carregarDados();
+  
     return () => {
       ativo = false;
     };
