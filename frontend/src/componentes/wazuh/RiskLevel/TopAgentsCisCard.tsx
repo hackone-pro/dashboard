@@ -1,15 +1,18 @@
 // src/components/wazuh/TopAgentsCisCard.tsx
 import { useEffect, useMemo, useState } from "react";
 import { getTopAgentsCis, TopAgentCisItem } from "../../../services/wazuh/topagentscis";
-import { useTenant } from "../../../context/TenantContext";
+import { useTenant } from "../../../context/TenantContext"; // 👈 integração tenant
+import { GripVertical } from "lucide-react";
 
 interface TopAgentsCisCardProps {
   dias: string;
   onChangeFiltro?: (valor: string | null) => void;
+  isWidget?: boolean;
 }
 
-export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisCardProps) {
-  const { tenantAtivo } = useTenant();
+export default function TopAgentsCisCard({ dias, onChangeFiltro, isWidget = false }: TopAgentsCisCardProps) {
+  const { tenantAtivo } = useTenant(); // 👈 reage à troca de tenant
+
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
   const diasEfetivo = filtroLocal || dias;
 
@@ -113,13 +116,28 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro }: TopAgentsCisC
     );
   }
 
-  return (
-    <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col relative overflow-hidden">
-      {/* Header com seletor interno */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-white font-semibold text-sm">Auditoria CIS - Top Servidores</h3>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4 relative z-20">
+
+        {/* Título + drag-handle somente na dashboard */}
+        <div className="flex items-center gap-2">
+          {isWidget && (
+            <GripVertical
+              size={18}
+              className="drag-handle cursor-grab active:cursor-grabbing text-white/50 hover:text-white transition"
+            />
+          )}
+
+          <h3 className="text-white font-semibold text-sm">
+            Auditoria CIS - Top Servidores
+          </h3>
+        </div>
+
+        {/* Select */}
         <select
-          className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]"
+          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
+    ${isWidget ? "mr-8" : ""}
+  `}
           value={filtroLocal || dias}
           onChange={(e) => {
             const val = e.target.value;

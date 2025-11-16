@@ -5,8 +5,20 @@ import TopIncidentesCard from "../iris/TopIncidents";
 import IaHumans from "../iris/IaHumans";
 import TopFirewallCard from "../wazuh/TopFirewallCard";
 import TopCountriesTable from "../wazuh/threatmap/TopCountriesTable";
-import TopAgentsCard from "../wazuh/RiskLevel/TopAgentsCard"; 
-import { JSX } from "react";
+import TopAgentsCard from "../wazuh/RiskLevel/TopAgentsCard";
+import TopAgentsCisCard from "../wazuh/RiskLevel/TopAgentsCisCard";
+import FirewallDonutCard from "../wazuh/RiskLevel/FirewallDonutCard";
+import SeveridadeCard from "../wazuh/RiskLevel/SeveridadeCard";
+import FluxoIncidentesIris from "../iris/FluxoIncidentes";
+import TopVulnerabilidadeCard, { TopVulnerabilidadeCardRef } from '../wazuh/VulnerabilitiesDetection/TopVulnerabilidadeCard';
+import VulnSeveridadeCard, { VulnSeveridadeCardRef } from "../wazuh/VulnerabilitiesDetection/VulnServeridadeCard";
+import TopOSVulnerabilidadeCard, { TopOSVulnerabilidadeCardRef } from "../wazuh/VulnerabilitiesDetection/TopOSVulnerabilidadeCard";
+import TopAgenteVulnerabilidadeCard, { TopAgenteVulnerabilidadeCardRef } from "../wazuh/VulnerabilitiesDetection/TopAgenteVulnerabilidadeCard";
+import TopPackageVulnerabilidadeCard, { TopPackageVulnerabilidadeCardRef } from "../wazuh/VulnerabilitiesDetection/TopPackageVulnerabilidadeCard";
+import TopScoreVulnerabilidadeCard, { TopScoreVulnerabilidadeCardRef } from "../wazuh/VulnerabilitiesDetection/TopScoreVulnerabilidadeCard";
+import TopOSGraficoCard, { TopOSGraficoCardRef } from "../wazuh/VulnerabilitiesDetection/TopOSGraficoCard";
+import AnoVulnerabilidadeCard, { AnoVulnerabilidadeCardRef } from "../wazuh/VulnerabilitiesDetection/AnoVulnerabilidadeCard";
+import { JSX, useRef } from "react";
 
 export function getWidgetMap(
   navigate: (path: string) => void,
@@ -14,6 +26,15 @@ export function getWidgetMap(
   indiceRisco: number,
   setTotalAtaques: (total: number) => void
 ): Record<string, JSX.Element> {
+  const vulnseveridadeRef = useRef<VulnSeveridadeCardRef>(null);
+  const topvulnerabilidadeRef = useRef<TopVulnerabilidadeCardRef>(null);
+  const topvosulnerabilidadeRef = useRef<TopOSVulnerabilidadeCardRef>(null);
+  const topagentevulnerabilidadeRef = useRef<TopAgenteVulnerabilidadeCardRef>(null);
+  const toppackagevulnerabilidadeRef = useRef<TopPackageVulnerabilidadeCardRef>(null);
+  const toppscorevulnerabilidadeRef = useRef<TopScoreVulnerabilidadeCardRef>(null);
+  const toposgraficovulnerabilidadeRef = useRef<TopOSGraficoCardRef>(null);
+  const anovulnerabilidadeRef = useRef<AnoVulnerabilidadeCardRef>(null);
+
   return {
     // ✅ Nível de Risco (mantido completo com legenda e botão)
     grafico_risco: (
@@ -111,7 +132,37 @@ export function getWidgetMap(
     ),
 
     top_agentes: (
-      <TopAgentsCard dias="1" isWidget={true}  />   // 24h por padrão, pode mudar
+      <TopAgentsCard dias="1" isWidget={true} />   // 24h por padrão, pode mudar
     ),
+
+    top_agentes_cis: (
+      <TopAgentsCisCard dias="1" isWidget={true} />   // 24h por padrão, pode mudar
+    ),
+
+    top_alertas_firewall: (
+      <FirewallDonutCard dias="1" isWidget={true} />   // 24h por padrão, pode mudar
+    ),
+
+    severidade_card: (
+      <SeveridadeCard dias="1" isWidget={true} />   // 24h por padrão, pode mudar
+    ),
+
+    controle_incidentes: (
+      <FluxoIncidentesIris
+        token={token}
+        diasGlobal="1" 
+        isWidget={true}
+      />
+    ),
+
+    //Detecção de Vuilnerabilidades
+    vulnerabilidade_severidade: (<VulnSeveridadeCard ref={vulnseveridadeRef} isWidget={true} />),
+    top_vulnerabilidades: (<TopVulnerabilidadeCard ref={topvulnerabilidadeRef} isWidget={true} />),
+    top_5_os: (<TopOSVulnerabilidadeCard ref={topvosulnerabilidadeRef} isWidget={true} />),
+    top_5_agentes: (<TopAgenteVulnerabilidadeCard ref={topagentevulnerabilidadeRef} isWidget={true} />),
+    top_5_pacotes: (<TopPackageVulnerabilidadeCard ref={toppackagevulnerabilidadeRef} isWidget={true} />),
+    top_score_vulnerabilidades: (<TopScoreVulnerabilidadeCard ref={toppscorevulnerabilidadeRef} isWidget={true} />),
+    top_os_grafico: (<TopOSGraficoCard ref={toposgraficovulnerabilidadeRef} isWidget={true} />),
+    ano_vulnerabilidade: (<AnoVulnerabilidadeCard ref={anovulnerabilidadeRef} isWidget={true} />),
   };
 }

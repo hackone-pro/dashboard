@@ -212,6 +212,7 @@ export default function Dashboard() {
           autoSize
           isDroppable
           draggableHandle=".drag-handle"
+          maxRows={200}
           onDrop={(layout, layoutItem, event) => {
             const e = event as DragEvent;
             const id = e.dataTransfer?.getData("text/plain");
