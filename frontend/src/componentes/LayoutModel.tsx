@@ -96,7 +96,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             </button>
 
             {/* Toggle Tema */}
-            <button
+            {/* <button
               onClick={alternarTema}
               className={`w-15 h-9 toggle rounded-full border border-[#1D1929] cursor-pointer px-1 transition-all duration-300 ${temaClaro ? "bg-[#3b2a7054]" : "bg-[#161125]"
                 } flex items-center`}
@@ -105,10 +105,9 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                 className={`w-8 h-8 box-icon rounded-full bg-white text-black toggle text-xs flex items-center justify-center shadow-md transition-all duration-300 transform ${temaClaro ? "translate-x-0" : "translate-x-5"
                   }`}
               >
-                {/* @ts-ignore */}
                 {temaClaro ? <AiFillSun /> : <FaMoon />}
               </div>
-            </button>
+            </button> */}
           </div>
         </header>
 
