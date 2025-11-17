@@ -199,9 +199,9 @@ export default {
     try {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
-
-      const dias = ctx.query.dias || "7"; // "1","7","15","30","todos"
-
+  
+      const dias = ctx.query.dias || "7";
+  
       const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
         filters: {
           users_permissions_users: { id: userId },
@@ -209,56 +209,55 @@ export default {
         },
         populate: ["users_permissions_users"],
       });
-
+  
       if (!tenant || tenant.length === 0) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-
+  
       const tenantData = tenant[0];
       const resultado = await buscarTopPaisesAtaque(tenantData, dias);
-
-      // Filtra apenas destinos (IPs atacados)
+  
+      // Pegamos apenas os "destinos"
       const destinos = resultado.filter((p: any) => p.tipo === "destino");
-
-      // Cada origem dentro do destino gera um "flow"
+  
+      // Criamos os flows juntando ORIGEM → DESTINO
       const flows = destinos.flatMap((dest: any) => {
-        return (dest.origens || []).map((o: any) => {
-          // Origem ainda precisa resolver coordenadas (se você não tem GeoLocation.src configurado)
-          return {
-            origem: {
-              ip: o.ip,
-              pais: o.pais || null,
-              cidade: o.cidade || null,
-              lat: o.lat ?? null,
-              lng: o.lng ?? null,
-              srcport: o.srcport ?? null,
-              servico: o.servico ?? null,
-              interface: o.interface ?? null,
-            },
-            destino: {
-              ip: dest.destino,
-              pais: dest.pais || null,
-              cidade: dest.cidade || null,
-              lat: dest.lat ?? null,
-              lng: dest.lng ?? null,
-              agente: dest.agente || null,
-              dstintf: dest.dstintf || null,
-              dstport: dest.dstport || null,
-              devname: dest.devname || null,
-            },
-            total: o.total,
-            severidades: dest.severidades,
-          };
-
-        });
+        return (dest.origens || []).map((o: any) => ({
+          origem: {
+            ip: o.ip,
+            pais: o.pais ?? null,
+            city: o.city ?? null,
+            region: o.region ?? null,
+            lat: o.lat ?? null,
+            lng: o.lng ?? null,
+            srcport: o.srcport ?? null,
+            servico: o.servico ?? null,
+            interface: o.interface ?? null,
+          },
+          destino: {
+            ip: dest.destino,
+            pais: dest.pais ?? null,
+            city: dest.city ?? null,
+            region: dest.region ?? null,
+            lat: dest.lat ?? null,
+            lng: dest.lng ?? null,
+            agente: dest.agente ?? null,
+            dstintf: dest.dstintf ?? null,
+            dstport: dest.dstport ?? null,
+            devname: dest.devname ?? null,
+          },
+          total: o.total,
+          severidades: dest.severidades,
+        }));
       });
-
+  
       return ctx.send({ flows });
     } catch (error) {
       console.error("Erro ao buscar fluxos de ataque:", error);
       return ctx.internalServerError("Erro ao consultar fluxos de ataque");
     }
   },
+  
 
   async vulnSeveridades(ctx) {
     try {
