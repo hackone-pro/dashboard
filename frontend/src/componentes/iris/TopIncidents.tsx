@@ -5,6 +5,8 @@ import { getTodosCasos } from "../../services/iris/cases.service";
 
 import { useTenant } from "../../context/TenantContext";
 
+import { GripVertical, Trash2 } from "lucide-react";
+
 interface Incidente {
     case_id: number;
     case_name: string;
@@ -214,11 +216,15 @@ export default function TopIncidentes({ token }: Props) {
     };
 
     return (
-        <div className="cards mt-3 p-6 rounded-2xl shadow-lg flex-grow hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+        <div className="cards p-6 rounded-2xl shadow-lg flex-grow">
             <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm text-white">Últimos Incidentes</h3>
+                <div className="flex items-center gap-2 drag-handle cursor-grab active:cursor-grabbing select-none">
+                    <GripVertical size={18} className="text-white/50 hover:text-white transition" />
+                    <h3 className="text-sm text-white">Últimos Incidentes</h3>
+                </div>
+
                 <select
-                    className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
+                    className="bg-[#0d0c22] text-white mr-5 text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
                     value={filtroDias}
                     onChange={(e) => setFiltroDias(Number(e.target.value))}
                 >

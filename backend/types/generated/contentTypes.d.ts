@@ -373,6 +373,36 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiCustomDashboardCustomDashboard
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'custom_dashboards';
+  info: {
+    displayName: 'Custom Dashboard';
+    pluralName: 'custom-dashboards';
+    singularName: 'custom-dashboard';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    layout: Schema.Attribute.JSON;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::custom-dashboard.custom-dashboard'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.String;
+  };
+}
+
 export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
   collectionName: 'tenants';
   info: {
@@ -1009,6 +1039,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::custom-dashboard.custom-dashboard': ApiCustomDashboardCustomDashboard;
       'api::tenant.tenant': ApiTenantTenant;
       'api::user-multi-tenant.user-multi-tenant': ApiUserMultiTenantUserMultiTenant;
       'api::user-role.user-role': ApiUserRoleUserRole;

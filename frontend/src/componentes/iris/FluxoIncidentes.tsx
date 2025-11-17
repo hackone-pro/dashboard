@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { getTodosCasos } from "../../services/iris/cases.service";
 import GraficoAreaSpline from "../graficos/GraficoAreaSpline";
 import { useTenant } from "../../context/TenantContext";
+import { GripVertical } from "lucide-react";
 
 interface Incidente {
   case_id: number;
   case_name: string;
   case_description: string;
-  case_open_date: string; // "MM/DD/YYYY"
+  case_open_date: string;
   state_name: string;
   owner: string;
   client_name: string;
@@ -18,6 +19,7 @@ interface Props {
   diasGlobal?: string;
   onChangeFiltro?: (valor: string | null) => void;
   onUpdateTotais?: (total: number) => void;
+  isWidget?: boolean; // 👈 novo
 }
 
 export default function FluxoIncidentesIris({
@@ -25,8 +27,10 @@ export default function FluxoIncidentesIris({
   diasGlobal,
   onChangeFiltro,
   onUpdateTotais,
+  isWidget = false,
 }: Props) {
-  const { tenantAtivo } = useTenant(); // 👈 tenant ativo do contexto
+  const { tenantAtivo } = useTenant();
+
   const [series, setSeries] = useState<{ name: string; data: number[] }[]>([]);
   const [categoriasX, setCategoriasX] = useState<string[]>([]);
   const [totalAbertos, setTotalAbertos] = useState(0);
@@ -39,14 +43,12 @@ export default function FluxoIncidentesIris({
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // 🔹 sincroniza filtro global/local
   useEffect(() => {
     if (!filtroLocal && diasGlobal) setFiltroLocal(null);
   }, [diasGlobal]);
 
-  // 🔹 Recarrega dados quando tenant muda
   useEffect(() => {
-    if (!tenantAtivo) return; // evita rodar sem tenant
+    if (!tenantAtivo) return;
     let ativo = true;
 
     async function fetch() {
@@ -69,7 +71,6 @@ export default function FluxoIncidentesIris({
           return new Date(Number(ano), Number(mes) - 1, Number(dia));
         };
 
-        // 🔹 Filtra conforme tenant ativo
         const dataFiltrada = data.filter((c) => {
           //@ts-ignore
           if (c.client_name !== tenantAtivo.cliente_name) return false;
@@ -90,10 +91,12 @@ export default function FluxoIncidentesIris({
         setTotalAbertos(abertos);
         setTotalAtribuidos(atribuidos);
         setTotalCasos(totalCliente);
+
         //@ts-ignore
         const agrupado = agruparPorDia(dataFiltrada, tenantAtivo.owner_name, nDias);
         setSeries(agrupado.series);
         setCategoriasX(agrupado.categoriasX);
+
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar dados do IRIS");
@@ -103,64 +106,41 @@ export default function FluxoIncidentesIris({
     }
 
     fetch();
-    return () => {
-      ativo = false;
-    };
-  }, [token, diasEfetivo, tenantAtivo]); // 👈 agora reage ao tenant ativo
+    return () => { ativo = false };
+  }, [token, diasEfetivo, tenantAtivo]);
 
-  // 🔹 envia total para o RiskLevel
   useEffect(() => {
     onUpdateTotais?.(totalCasos);
   }, [totalCasos]);
 
   return (
-    <>
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-sm text-white font-semibold mb-4">Controle de Incidentes</h3>
+    <div
+      className={`rounded-xl shadow-md h-full flex flex-col relative overflow-hidden
+      ${isWidget ? "p-6" : "p-0"}
+    `}
+    >
 
-          {carregando ? (
-            <div className="flex gap-10">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
-                  <span className="text-gray-400 text-sm">Casos abertos</span>
-                </div>
-                <div className="h-6 w-20 bg-[#ffffff0a] rounded-md animate-pulse" />
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-pink-400" />
-                  <span className="text-gray-400 text-sm">Casos atribuídos</span>
-                </div>
-                <div className="h-6 w-16 bg-[#ffffff0a] rounded-md animate-pulse" />
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-10 text-sm">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
-                  <span className="text-gray-400">Casos abertos</span>
-                </div>
-                <span className="text-white text-lg font-semibold">
-                  {totalAbertos}
-                  <span className="text-gray-500 text-base font-normal"> / {totalCasos}</span>
-                </span>
-              </div>
+      {/* HEADER */}
+      <div className="flex justify-between items-start mb-4 relative z-20">
 
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-pink-400" />
-                  <span className="text-gray-400">Casos atribuídos</span>
-                </div>
-                <span className="text-white text-lg font-semibold">{totalAtribuidos}</span>
-              </div>
-            </div>
+        {/* Título + drag só na dashboard */}
+        <div className="flex items-center gap-2">
+          {isWidget && (
+            <>
+              <GripVertical
+                size={18}
+                className="drag-handle cursor-grab active:cursor-grabbing text-white/50 hover:text-white"
+              />
+
+            </>
           )}
+          <h3 className="text-sm text-white font-semibold">
+            Controle de Incidentes
+          </h3>
         </div>
 
-        <div className="min-w-fit">
+        {/* Select permanece SEM mudanças */}
+        <div className={`${isWidget ? "mr-8" : ""}`}>
           <select
             className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
             value={filtroLocal || diasEfetivo}
@@ -181,12 +161,40 @@ export default function FluxoIncidentesIris({
         </div>
       </div>
 
+      {/* ERRO */}
       {erro && (
         <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-3">
           {erro}
         </div>
       )}
 
+      {/* BLOCO DE DADOS */}
+      {carregando ? (
+        <div className="w-full h-20 bg-[#ffffff0a] rounded-xl animate-pulse mb-4" />
+      ) : (
+        <div className="flex gap-10 text-sm mb-4">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-purple-400" />
+              <span className="text-gray-400">Casos abertos</span>
+            </div>
+            <span className="text-white text-lg font-semibold">
+              {totalAbertos}
+              <span className="text-gray-500 text-base font-normal"> / {totalCasos}</span>
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-pink-400" />
+              <span className="text-gray-400">Casos atribuídos</span>
+            </div>
+            <span className="text-white text-lg font-semibold">{totalAtribuidos}</span>
+          </div>
+        </div>
+      )}
+
+      {/* GRÁFICO */}
       {carregando ? (
         <div className="w-full h-52 bg-[#ffffff0a] rounded-xl animate-pulse" />
       ) : (
@@ -197,7 +205,8 @@ export default function FluxoIncidentesIris({
           hideXAxisLabels
         />
       )}
-    </>
+
+    </div>
   );
 }
 
@@ -225,24 +234,24 @@ function agruparPorDia(incidentes: Incidente[], ownerName: string, dias: number)
   const diasOrdenados =
     dias === 0
       ? (() => {
-          const todasDatas = [
-            ...Object.keys(contagemAbertos),
-            ...Object.keys(contagemAtribuidos),
-          ];
-          const minData = todasDatas.length
-            ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
-            : new Date();
-          const arr: string[] = [];
-          for (let d = new Date(minData); d <= hoje; d.setDate(d.getDate() + 1)) {
-            arr.push(d.toISOString().slice(0, 10));
-          }
-          return arr;
-        })()
+        const todasDatas = [
+          ...Object.keys(contagemAbertos),
+          ...Object.keys(contagemAtribuidos),
+        ];
+        const minData = todasDatas.length
+          ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
+          : new Date();
+        const arr: string[] = [];
+        for (let d = new Date(minData); d <= hoje; d.setDate(d.getDate() + 1)) {
+          arr.push(d.toISOString().slice(0, 10));
+        }
+        return arr;
+      })()
       : Array.from({ length: dias }).map((_, i) => {
-          const d = new Date(hoje);
-          d.setDate(hoje.getDate() - (dias - 1 - i));
-          return d.toISOString().slice(0, 10);
-        });
+        const d = new Date(hoje);
+        d.setDate(hoje.getDate() - (dias - 1 - i));
+        return d.toISOString().slice(0, 10);
+      });
 
   const categoriasX = diasOrdenados.map((d) => {
     const [ano, mes, dia] = d.split("-");

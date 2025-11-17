@@ -1,49 +1,93 @@
-// src/pages/Dashboard.tsx
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { WidthProvider } from "react-grid-layout";
+import GridLayoutBase from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import { FaPlus } from "react-icons/fa6";
+
+import Swal from "sweetalert2";
+
 import LayoutModel from "../componentes/LayoutModel";
-import GeoHitsMap from "../componentes/graficos/GeoHitsMap";
-import GraficoGauge from "../componentes/graficos/GraficoGauge";
-import { getToken } from "../utils/auth";
+import WidgetMenuSidebar from "../componentes/dashboard/WidgetMenuSidebar";
+import { widgetsConfig } from "../componentes/dashboard/WidgetConfig";
+import { getWidgetMap } from "../componentes/dashboard/WidgetMap";
+import WidgetMenu from "../componentes/dashboard/WidgetMenu";
+
+import {
+  getDashboardLayout,
+  saveDashboardLayout,
+  resetUserDashboardLayout,
+  WidgetLayout,
+} from "../services/dashboard/dashboardLayout.service";
 import { getRiskLevel } from "../services/wazuh/risklevel.service";
-
-import TopIncidentesCard from "../componentes/iris/TopIncidents";
-import IaHumans from "../componentes/iris/IaHumans";
-import TopFirewallCard from "../componentes/wazuh/TopFirewallCard";
-import TopCountriesTable from "../componentes/wazuh/threatmap/TopCountriesTable";
-
+import { getToken } from "../utils/auth";
 import { useTenant } from "../context/TenantContext";
 
-function getNivelExposicao(percentual: number) {
-  if (percentual < 40) return { label: "Baixo", badge: "badge-green" };
-  if (percentual < 73.5) return { label: "Médio", badge: "badge-darkpink" };
-  if (percentual < 93.5) return { label: "Alto", badge: "badge-high" };
-  return { label: "Crítico", badge: "badge-pink" };
+const GridLayout = WidthProvider(GridLayoutBase);
+
+// 🧩 Gera o layout padrão com base no arquivo WidgetConfig
+function gerarLayoutPadrao(): WidgetLayout[] {
+  return widgetsConfig.map((w, index) => ({
+    i: w.id,
+    x: 0,
+    y: index * 10,
+    w: w.w,
+    h: w.h,
+  }));
 }
 
 export default function Dashboard() {
   const token = getToken();
   const navigate = useNavigate();
-  const [indiceRisco, setIndiceRisco] = useState(0);
-  const [totalAtaques, setTotalAtaques] = useState(0);
-  const fmt = useMemo(() => new Intl.NumberFormat("pt-BR"), []);
   const { tenantAtivo, loading } = useTenant();
 
-  // ✅ Hook sempre executa
+  const [indiceRisco, setIndiceRisco] = useState(0);
+  const [totalAtaques, setTotalAtaques] = useState(0);
+  const [layout, setLayout] = useState<WidgetLayout[]>([]);
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [resettingLayout, setResettingLayout] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [draggingFromSidebar, setDraggingFromSidebar] = useState(false);
+
+  // 🔹 Carrega layout (do banco ou padrão)
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarLayout() {
+      try {
+        const data = await getDashboardLayout();
+        if (ativo) {
+          setLayout(data?.layout?.length ? data.layout : gerarLayoutPadrao());
+        }
+      } catch (err) {
+        console.error("❌ Erro ao carregar layout:", err);
+        if (ativo) setLayout(gerarLayoutPadrao());
+      } finally {
+        setTimeout(() => {
+          if (ativo) setLoadingDashboard(false);
+        }, 300);
+      }
+    }
+
+    carregarLayout();
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  // 🔹 Busca índice de risco
   useEffect(() => {
     if (!tenantAtivo) return;
   
     let ativo = true;
-  
+
     const carregarDados = async () => {
       try {
-        const dados = await getRiskLevel("1"); // use o mesmo período da RiskLevel
-        if (ativo) {
-          setIndiceRisco(dados.indiceRisco);
-        }
-      } catch (error) {
-        console.error("❌ Erro ao buscar RiskLevel:", error);
+        const dados = await getRiskLevel("1"); // padrão 24h
+        if (ativo) setIndiceRisco(dados.indiceRisco);
+      } catch {
         if (ativo) setIndiceRisco(0);
       }
     };
@@ -55,100 +99,208 @@ export default function Dashboard() {
     };
   }, [tenantAtivo]);
 
-  // ✅ O retorno condicional vem *depois* de todos os hooks
+  // 🔹 Função de debounce genérica
+  function debounce<T extends (...args: any[]) => void>(fn: T, delay = 1000) {
+    let timeout: NodeJS.Timeout;
+    return (...args: Parameters<T>) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  // 🔹 Salvamento automático com debounce
+  const salvarLayoutDebounced = useMemo(
+    () =>
+      debounce(async (newLayout: WidgetLayout[]) => {
+        try {
+          await saveDashboardLayout(newLayout);
+        } catch (err) {
+          console.error("❌ Erro ao salvar layout:", err);
+        }
+      }, 1000),
+    []
+  );
+
+  // 🔹 Remove widget e atualiza no backend
+  async function removerWidget(id: string) {
+    try {
+      const novoLayout = layout.filter((item) => item.i !== id);
+      setLayout(novoLayout);
+      await saveDashboardLayout(novoLayout);
+    } catch (err) {
+      console.error("❌ Erro ao remover widget:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Erro ao atualizar layout",
+        text: "Ocorreu um problema ao salvar a remoção no servidor.",
+        confirmButtonColor: "#7e22ce",
+        background: "#1f1f2b",
+        color: "#fff",
+      });
+    }
+  }
+
+  // 🔹 Mapa de widgets (JSX)
+  const widgetMap = getWidgetMap(navigate, token || "", indiceRisco, setTotalAtaques);
+
   return (
     <LayoutModel titulo="Home">
-      {loading || !tenantAtivo ? null : (
-        <section className="grid grid-cols-12 gap-3 mb-8 items-start animate-fade-in">
+      {/* 🔹 Botões de ação */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={async () => {
+            const result = await Swal.fire({
+              title: "Restaurar layout padrão?",
+              text: "Isso substituirá o layout atual pelos widgets padrão.",
+              icon: "warning",
+              showCancelButton: true,
+              confirmButtonColor: "#7e22ce",
+              cancelButtonColor: "#6b7280",
+              confirmButtonText: "Sim, restaurar",
+              cancelButtonText: "Cancelar",
+              background: "#1f1f2b",
+              color: "#fff",
+            });
 
-          {/* COLUNA 1 */}
-          <div className="col-span-3 h-full">
-            <div className="flex flex-col h-full">
-              <div className="cards relative overflow-hidden risk-light-effect h-[340px] p-6 rounded-2xl shadow-lg flex flex-col gap-4 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-                <div className="flex justify-between items-center relative z-[9999]">
-                  <div className="flex items-center gap-1 text-sm text-white relative group">
-                    <span>Nível de Risco</span>
-                  </div>
-                </div>
+            if (result.isConfirmed) {
+              try {
+                setResettingLayout(true);
+                await resetUserDashboardLayout();
+                const data = await getDashboardLayout();
+                setLayout(data?.layout?.length ? data.layout : gerarLayoutPadrao());
+              } catch (err) {
+                Swal.fire({
+                  icon: "error",
+                  title: "Erro!",
+                  text: "Não foi possível restaurar o layout padrão.",
+                  confirmButtonColor: "#7e22ce",
+                  background: "#1f1f2b",
+                  color: "#fff",
+                });
+              } finally {
+                setTimeout(() => setResettingLayout(false), 600);
+              }
+            }
+          }}
+          className="px-3 py-2 hover:bg-purple-700 border border-purple-700 text-white rounded-md text-sm shadow-sm mr-3"
+        >
+          Redefinir para layout padrão
+        </button>
 
-                <div className="grid grid-cols-12 items-center gap-3 relative">
-                  <div className="col-span-12 flex justify-center relative">
-                    <GraficoGauge valor={Number.isFinite(indiceRisco) ? Math.round(indiceRisco) : 0} />
-                    <img
-                      src="/assets/img/icon-risk.png"
-                      alt="Risco"
-                      className="absolute z-20 w-6 h-6 top-1/2 left-1/2 -translate-x-1/2 -translate-y-[72%] pointer-events-none"
-                    />
-                  </div>
-                </div>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex items-center gap-2 px-3 py-2 bg-purple-700 hover:bg-purple-800 border border-purple-700 text-white rounded-md text-sm shadow-sm mr-3"
+        >
+          {/* @ts-ignore */}
+          <FaPlus />
+          <span>Adicionar widgets</span>
+        </button>
+      </div>
 
-                <div className="flex items-center justify-between text-[10px] mt-2 text-gray-400 w-full">
-                  <div className="flex gap-3 flex-wrap">
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => navigate("/risk-level")}
-                    className="px-2 py-1 card btn hover:bg-purple-600 text-white rounded-md transition-all duration-300"
-                  >
-                    Acessar →
-                  </button>
-                </div>
+      {/* 🔹 Grid principal */}
+      <div className="relative">
+        <GridLayout
+          className={`layout react-grid-layout ${loadingDashboard || loading}`}
+          cols={12}
+          rowHeight={30}
+          width={1600}
+          layout={layout}
+          compactType="vertical"
+          preventCollision={false}
+          isDraggable
+          isResizable
+          autoSize
+          isDroppable
+          draggableHandle=".drag-handle"
+          maxRows={200}
+          onDrop={(layout, layoutItem, event) => {
+            const e = event as DragEvent;
+            const id = e.dataTransfer?.getData("text/plain");
+            if (!id) return;
+            if (layout.some((item) => item.i === id)) return;
+
+            const cleaned = layout.filter((item) => item.i !== "__dropping-elem__");
+            const config = widgetsConfig.find((w) => w.id === id);
+
+            const novoWidget: WidgetLayout = {
+              i: id,
+              x: layoutItem?.x ?? 0,
+              y: layoutItem?.y ?? Infinity,
+              w: config?.w ?? 3,
+              h: config?.h ?? 10,
+            };
+
+            const novoLayout = [...cleaned, novoWidget];
+            setLayout(novoLayout);
+            saveDashboardLayout(novoLayout);
+            setDraggingFromSidebar(false);
+          }}
+          onLayoutChange={(newLayout) => {
+            setLayout(newLayout as WidgetLayout[]);
+            salvarLayoutDebounced(newLayout as WidgetLayout[]);
+          }}
+        >
+          {layout.map((item) => (
+            <div key={item.i} className="rounded-2xl overflow-hidden relative group">
+              <div className="absolute top-3.5 right-2 z-20">
+                <WidgetMenu onRemove={() => removerWidget(item.i)} /> {/* ✅ CORRETO */}
               </div>
+              {widgetMap[item.i] || (
+                <div className="text-gray-400 text-sm text-center p-4">
+                  Widget desconhecido: <strong>{item.i}</strong>
+                </div>
+              )}
+            </div>
+          ))}
+        </GridLayout>
 
-              <TopIncidentesCard token={token || ""} />
+        {/* 🔹 Indicação de drop ativo */}
+        {draggingFromSidebar && (
+          <div className="absolute inset-0 z-[9997] border-4 border-dashed border-purple-600/60 rounded-2xl bg-purple-900/10 pointer-events-none transition-all duration-300">
+            <div className="flex items-center justify-center h-full text-purple-300 text-sm font-medium">
+              Solte o widget aqui para adicionar à dashboard
             </div>
           </div>
+        )}
 
-          {/* COLUNA 2 */}
-          <div className="col-span-6 h-full">
-            <div className="flex flex-col h-full">
-              <div className="cards inverse flex-grow p-2 md:p-6 rounded-2xl shadow-lg card-dashboard mb-3">
-                <div className="flex justify-between items-center mb-5">
-                  <h3 className="text-sm text-white">Mapa de Ataque</h3>
-                  <button
-                    onClick={() => navigate("/threat-map")}
-                    className="px-2 py-1 btn card text-[11px] text-white rounded-md transition-all duration-300"
-                  >
-                    Ver mapa completo →
-                  </button>
-                </div>
-                <GeoHitsMap />
-              </div>
+        {/* 🔹 Menu lateral de widgets */}
+        <WidgetMenuSidebar
+          layout={layout}
+          indiceRisco={indiceRisco}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          setDraggingFromSidebar={setDraggingFromSidebar}
+        />
 
-              <div className="cards relative overflow-hidden glow-bottom p-6 rounded-2xl shadow-lg card-dashboard transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-                <IaHumans token={token || ""} />
-              </div>
-            </div>
+        {/* 🔹 Overlay de reset */}
+        {resettingLayout && (
+          <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] z-[9999] text-gray-300">
+            <svg
+              className="animate-spin text-purple-400 mb-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              width="50"
+              height="50"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+            <p>Restaurando dashboard padrão...</p>
           </div>
-
-          {/* COLUNA 3 */}
-          <div className="col-span-3 h-full">
-            <div className="flex flex-col h-full">
-              <div className="cards flex-grow p-6 rounded-2xl h-115 shadow-lg card-dashboard mb-3 transition-all hover:-translate-y-1 hover:shadow-lg">
-                <div className="grid grid-cols-12 mb-5">
-                  <div className="col-span-12">
-                    <h3 className="text-sm text-white">Top 10 países de origem de ataque</h3>
-                  </div>
-                </div>
-                <TopCountriesTable dias="todos" limit={10} onTotalChange={setTotalAtaques} />
-              </div>
-
-              <TopFirewallCard />
-            </div>
-          </div>
-        </section>
-      )}
+        )}
+      </div>
     </LayoutModel>
   );
 }

@@ -116,18 +116,30 @@ body.tema-escuro a.outline{
   border: 1px solid #1D1929;
 }
 
-.cards {
-  background-color: #161125;
+.cards, .react-grid-item {
+  background-color: #161125 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  overflow: hidden !important;
+}
+
+.react-grid-item > div, .react-grid-item > div:hover{
+  box-shadow: none;
 }
 
 .cards.inverse{
-  background-color: transparent;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  background-color: transparent !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
 }
 
 .cards:hover {
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
+}
+
+.cards.custom{
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .h2 {
@@ -257,10 +269,6 @@ header button.toggle{
 
 /*----------------------------------------------------------*/
 
-.cards{
-  background-color: #161125;
-  border:2px solid #1D1929;
-}
 
 .leaflet-right .leaflet-control {
   margin-right: 10px !important;
@@ -519,3 +527,57 @@ header button.toggle{
   }
 }
 
+
+/*react-grid*/
+
+.layout > div {
+  border-radius: 12px;
+  background: rgba(30, 30, 40, 0.9);
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  right: 5px !important;
+  bottom: 5px !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-right: 2px solid rgb(255 255 255 / 40%) !important;
+  border-bottom: 2px solid rgb(255 255 255 / 40%) !important;
+}
+
+.react-grid-placeholder {
+  background: rgba(128, 90, 213, 0.2) !important; /* Roxo translúcido */
+  border: 2px dashed rgba(167, 139, 250, 0.8) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 15px rgba(167, 139, 250, 0.4) !important;
+  transition: all 0.2s ease-in-out !important;
+  z-index: 999 !important;
+}
+
+.react-grid-placeholder::after {
+  content: "Solte aqui";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* 🔹 Remove o texto "Widget" do elemento temporário criado pelo react-grid-layout
+   quando arrastamos algo do menu lateral (drop novo) */
+   .react-grid-item[data-grid-id="__dropping-elem__"],
+   .react-grid-item.__dropping-elem__,
+   .react-grid-placeholder.__dropping-elem__ {
+     color: transparent !important;
+     font-size: 0 !important;
+     overflow: hidden !important;
+     background: rgba(139, 92, 246, 0.15) !important; /* fundo suave */
+     border: 2px dashed rgba(167, 139, 250, 0.8) !important;
+     border-radius: 12px !important;
+     z-index: 999 !important;
+   }
+   
