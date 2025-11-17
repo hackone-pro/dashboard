@@ -51,7 +51,7 @@ const AnoVulnerabilidadeCard = forwardRef<AnoVulnerabilidadeCardRef, Props>(
     if (carregando) {
       return (
         <div
-          className={`rounded-xl shadow-md flex flex-col justify-start h-full bg-[#1D1929]
+          className={`rounded-xl shadow-md flex flex-col justify-start h-full cards
             ${isWidget ? "p-6" : "p-4"}
           `}
         >
@@ -78,7 +78,7 @@ const AnoVulnerabilidadeCard = forwardRef<AnoVulnerabilidadeCardRef, Props>(
     if (erro) {
       return (
         <div
-          className={`rounded-xl shadow-md flex flex-col justify-center items-center h-full bg-[#1D1929]
+          className={`rounded-xl shadow-md flex flex-col justify-center items-center h-full cards
             ${isWidget ? "p-6" : "p-4"}
           `}
         >
@@ -93,7 +93,7 @@ const AnoVulnerabilidadeCard = forwardRef<AnoVulnerabilidadeCardRef, Props>(
     if (!anoVulns.length) {
       return (
         <div
-          className={`rounded-xl shadow-md flex flex-col justify-center items-center h-full bg-[#1D1929]
+          className={`rounded-xl shadow-md flex flex-col justify-center items-center h-full cards
             ${isWidget ? "p-6" : "p-4"}
           `}
         >
@@ -109,7 +109,7 @@ const AnoVulnerabilidadeCard = forwardRef<AnoVulnerabilidadeCardRef, Props>(
     // ======================================================
     return (
       <div
-        className={`rounded-xl shadow-md flex flex-col justify-start h-full bg-[#1D1929]
+        className={`rounded-xl shadow-md flex flex-col justify-start h-full cards
           ${isWidget ? "p-6" : "p-4"}
         `}
       >

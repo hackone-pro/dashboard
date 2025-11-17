@@ -53,7 +53,7 @@ const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(
       <div
         className={`
           rounded-xl shadow-md flex flex-col
-          ${isWidget ? "p-6" : "p-4"} ${isWidget ? "bg-transparent" : "bg-[#1D1929]"}
+          ${isWidget ? "p-6" : "p-4"} ${isWidget ? "bg-transparent" : "cards"}
         `}
       >
         {/* HEADER */}
@@ -78,7 +78,7 @@ const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(
             onClick={onAtualizar || carregar}
             className={`
               flex items-center gap-2 text-xs
-              border border-[#282239] bg-[#1D1929]
+              border border-[#282239] cards
               hover:bg-gray-700 text-gray-300 px-3 py-1
               rounded-md transition ${isWidget ? "hidden" : ""}
               `}
