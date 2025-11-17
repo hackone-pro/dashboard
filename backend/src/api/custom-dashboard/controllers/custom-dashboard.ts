@@ -7,20 +7,40 @@ export default {
       const user = ctx.state.user;
       if (!user) return ctx.unauthorized("Usuário não autenticado");
 
-      const layout = await strapi.db.query("api::custom-dashboard.custom-dashboard").findOne({
-        where: { user: String(user.id) },
-      });
+      const userId = String(user.id);
 
-      if (layout) return ctx.send(layout);
+      // 🔹 1) Verifica se o usuário já tem layout no banco
+      const layout = await strapi.db
+        .query("api::custom-dashboard.custom-dashboard")
+        .findOne({
+          where: { user: userId },
+        });
 
-      // Busca layout padrão global
-      const defaultLayout = await strapi.db.query("api::custom-dashboard.custom-dashboard").findOne({
-        where: { is_default: true },
-      });
+      if (layout) {
+        return ctx.send(layout);
+      }
 
-      if (defaultLayout) return ctx.send(defaultLayout);
+      // 🔥 2) Se não tiver layout → cria automaticamente o layout padrão
+      const layoutPadrao = [
+        { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9 },
+        { i: "geo_map", x: 3, y: 0, w: 6, h: 13 },
+        { i: "top_paises", x: 9, y: 0, w: 3, h: 13 },
+        { i: "top_incidentes", x: 0, y: 10, w: 3, h: 18 },
+        { i: "ia_humans", x: 3, y: 12, w: 6, h: 14 },
+        { i: "top_firewalls", x: 9, y: 12, w: 3, h: 14 },
+      ];
 
-      return ctx.notFound("Nenhum layout encontrado.");
+      const created = await strapi.db
+        .query("api::custom-dashboard.custom-dashboard")
+        .create({
+          data: {
+            user: userId,
+            layout: layoutPadrao,
+          },
+        });
+
+      return ctx.send(created);
+
     } catch (err) {
       strapi.log.error("❌ Erro em custom-dashboard.me:", err);
       return ctx.internalServerError("Erro ao buscar layout.");
