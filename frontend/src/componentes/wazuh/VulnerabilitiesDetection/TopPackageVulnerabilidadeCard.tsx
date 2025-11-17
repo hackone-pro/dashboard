@@ -53,7 +53,7 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
     if (carregando) {
       return (
         <div
-          className={`rounded-xl shadow-md flex flex-col justify-start relative h-full bg-[#1D1929]
+          className={`rounded-xl shadow-md flex flex-col justify-start relative h-full cards
             ${isWidget ? "p-6" : "p-4"}
           `}
         >
@@ -97,7 +97,7 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
     if (erro) {
       return (
         <div
-          className={`rounded-xl shadow-md flex flex-col justify-center items-center relative h-full bg-[#1D1929]
+          className={`rounded-xl shadow-md flex flex-col justify-center items-center relative h-full cards
             ${isWidget ? "p-6" : "p-4"}
           `}
         >
@@ -112,7 +112,7 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
     if (!topPackages.length) {
       return (
         <div
-          className={`rounded-xl shadow-md flex flex-col justify-center items-center relative h-full bg-[#1D1929]
+          className={`rounded-xl shadow-md flex flex-col justify-center items-center relative h-full cards
             ${isWidget ? "p-6" : "p-4"}
           `}
         >
@@ -126,7 +126,7 @@ const TopPackageVulnerabilidadeCard = forwardRef<TopPackageVulnerabilidadeCardRe
     // =========================================================
     return (
       <div
-        className={`rounded-xl shadow-md flex flex-col justify-start relative h-full bg-[#1D1929]
+        className={`rounded-xl shadow-md flex flex-col justify-start relative h-full cards
           ${isWidget ? "p-6" : "p-4"}
         `}
       >

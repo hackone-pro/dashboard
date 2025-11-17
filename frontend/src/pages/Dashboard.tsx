@@ -27,16 +27,15 @@ import { useTenant } from "../context/TenantContext";
 
 const GridLayout = WidthProvider(GridLayoutBase);
 
-// 🧩 Gera o layout padrão com base no arquivo WidgetConfig
-function gerarLayoutPadrao(): WidgetLayout[] {
-  return widgetsConfig.map((w, index) => ({
-    i: w.id,
-    x: 0,
-    y: index * 10,
-    w: w.w,
-    h: w.h,
-  }));
-}
+// 🟣 Layout padrão DEFINITIVO do FRONT
+const layoutPadrao: WidgetLayout[] = [
+  { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9 },
+  { i: "geo_map", x: 3, y: 0, w: 6, h: 13 },
+  { i: "top_paises", x: 9, y: 0, w: 3, h: 13 },
+  { i: "top_incidentes", x: 0, y: 10, w: 3, h: 18 },
+  { i: "ia_humans", x: 3, y: 12, w: 6, h: 14 },
+  { i: "top_firewalls", x: 9, y: 12, w: 3, h: 14 },
+];
 
 export default function Dashboard() {
   const token = getToken();
@@ -51,19 +50,23 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [draggingFromSidebar, setDraggingFromSidebar] = useState(false);
 
-  // 🔹 Carrega layout (do banco ou padrão)
+  // 🔹 Carrega layout (do banco ou padrão do FRONT)
   useEffect(() => {
     let ativo = true;
 
     async function carregarLayout() {
       try {
         const data = await getDashboardLayout();
-        if (ativo) {
-          setLayout(data?.layout?.length ? data.layout : gerarLayoutPadrao());
+
+        // Se não existir layout ou for vazio → usa O LAYOUT PADRÃO DO FRONT
+        if (!data || !Array.isArray(data.layout) || data.layout.length === 0) {
+          if (ativo) setLayout(layoutPadrao);
+        } else {
+          if (ativo) setLayout(data.layout);
         }
       } catch (err) {
         console.error("❌ Erro ao carregar layout:", err);
-        if (ativo) setLayout(gerarLayoutPadrao());
+        if (ativo) setLayout(layoutPadrao);
       } finally {
         setTimeout(() => {
           if (ativo) setLoadingDashboard(false);
@@ -85,7 +88,7 @@ export default function Dashboard() {
 
     const carregarDados = async () => {
       try {
-        const dados = await getRiskLevel("1"); // padrão 24h
+        const dados = await getRiskLevel("1"); // 24h
         if (ativo) setIndiceRisco(dados.indiceRisco);
       } catch {
         if (ativo) setIndiceRisco(0);
@@ -99,7 +102,7 @@ export default function Dashboard() {
     };
   }, [tenantAtivo]);
 
-  // 🔹 Função de debounce genérica
+  // 🔹 Debounce
   function debounce<T extends (...args: any[]) => void>(fn: T, delay = 1000) {
     let timeout: NodeJS.Timeout;
     return (...args: Parameters<T>) => {
@@ -121,7 +124,7 @@ export default function Dashboard() {
     []
   );
 
-  // 🔹 Remove widget e atualiza no backend
+  // 🔹 Remove widget
   async function removerWidget(id: string) {
     try {
       const novoLayout = layout.filter((item) => item.i !== id);
@@ -140,12 +143,13 @@ export default function Dashboard() {
     }
   }
 
-  // 🔹 Mapa de widgets (JSX)
   const widgetMap = getWidgetMap(navigate, token || "", indiceRisco, setTotalAtaques);
+  
 
   return (
     <LayoutModel titulo="Home">
-      {/* 🔹 Botões de ação */}
+
+      {/* Botões */}
       <div className="flex justify-end mb-4">
         <button
           onClick={async () => {
@@ -166,8 +170,7 @@ export default function Dashboard() {
               try {
                 setResettingLayout(true);
                 await resetUserDashboardLayout();
-                const data = await getDashboardLayout();
-                setLayout(data?.layout?.length ? data.layout : gerarLayoutPadrao());
+                setLayout(layoutPadrao);
               } catch (err) {
                 Swal.fire({
                   icon: "error",
@@ -197,7 +200,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* 🔹 Grid principal */}
+      {/* Grid */}
       <div className="relative">
         <GridLayout
           className={`layout react-grid-layout ${loadingDashboard || loading}`}
@@ -243,7 +246,7 @@ export default function Dashboard() {
           {layout.map((item) => (
             <div key={item.i} className="rounded-2xl overflow-hidden relative group">
               <div className="absolute top-3.5 right-2 z-20">
-                <WidgetMenu onRemove={() => removerWidget(item.i)} /> {/* ✅ CORRETO */}
+                <WidgetMenu onRemove={() => removerWidget(item.i)} />
               </div>
               {widgetMap[item.i] || (
                 <div className="text-gray-400 text-sm text-center p-4">
@@ -254,16 +257,15 @@ export default function Dashboard() {
           ))}
         </GridLayout>
 
-        {/* 🔹 Indicação de drop ativo */}
         {draggingFromSidebar && (
           <div className="absolute inset-0 z-[9997] border-4 border-dashed border-purple-600/60 rounded-2xl bg-purple-900/10 pointer-events-none transition-all duration-300">
             <div className="flex items-center justify-center h-full text-purple-300 text-sm font-medium">
-              Solte o widget aqui para adicionar à dashboard
+              Solte o widget aqui
             </div>
           </div>
         )}
 
-        {/* 🔹 Menu lateral de widgets */}
+        {/* Sidebar */}
         <WidgetMenuSidebar
           layout={layout}
           indiceRisco={indiceRisco}
@@ -272,7 +274,7 @@ export default function Dashboard() {
           setDraggingFromSidebar={setDraggingFromSidebar}
         />
 
-        {/* 🔹 Overlay de reset */}
+        {/* Overlay de reset */}
         {resettingLayout && (
           <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] z-[9999] text-gray-300">
             <svg

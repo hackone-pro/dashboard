@@ -119,7 +119,7 @@ body.tema-escuro a.outline{
 .cards, .react-grid-item {
   background-color: #161125 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  overflow-x: hidden !important;
+  overflow: hidden !important;
 }
 
 .react-grid-item > div, .react-grid-item > div:hover{
