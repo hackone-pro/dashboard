@@ -99,14 +99,24 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
           {
             bool: {
               should: [
-                { term: { "customer.keyword": clientName } }
-              ]
+                { term: { "customer": clientName } },
+                { term: { "customer.keyword": clientName } },
+
+                { term: { "data.customer": clientName } },
+                { term: { "data.customer.keyword": clientName } },
+
+                { term: { "fields.customer": clientName } },
+                { term: { "fields.customer.keyword": clientName } }
+              ],
+              minimum_should_match: 1
             }
           },
-          timeFilter,
-        ],
-      },
+
+          timeFilter
+        ]
+      }
     },
+
     aggs: {
       severidade: {
         range: {
@@ -115,11 +125,11 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
             { to: 7, key: "Low" },
             { from: 7, to: 12, key: "Medium" },
             { from: 12, to: 15, key: "High" },
-            { from: 15, key: "Critical" },
-          ],
-        },
-      },
-    },
+            { from: 15, key: "Critical" }
+          ]
+        }
+      }
+    }
   };
 
   const response = await axios.post(
@@ -127,7 +137,7 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
     body,
     {
       headers: authHeader(tenant),
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false })
     }
   );
 
@@ -140,7 +150,7 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
     medio: get("Medium"),
     alto: get("High"),
     critico: get("Critical"),
-    total: buckets.reduce((acc, b) => acc + (b.doc_count || 0), 0),
+    total: buckets.reduce((acc, b) => acc + (b.doc_count || 0), 0)
   };
 }
 
