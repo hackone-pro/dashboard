@@ -137,6 +137,8 @@ export default function Sidebar() {
                                 { to: "/vulnerabilities-detections", icon: <VscSearchFuzzy className="text-[16px]" />, label: "Detecção de Vulnerabilidades" },
                                 // @ts-ignore
                                 { to: "/archives-integrity", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Integridade de Arquivos" },
+                                // @ts-ignore
+                                { to: "/monitoria-ngsoc", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Monitoria" },
                             ].map((item, idx) => (
                                 <li key={idx} className="py-1">
                                     <Link
@@ -220,6 +222,15 @@ export default function Sidebar() {
                                     >
                                         {/* @ts-ignore */}
                                         <VscFileSymlinkDirectory className="text-[16px]" /> Integridade de Arquivos
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        to="/monitoria-ngsoc"
+                                        className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <VscFileSymlinkDirectory className="text-[16px]" /> Monitoria
                                     </Link>
                                 </li>
                             </ul>
