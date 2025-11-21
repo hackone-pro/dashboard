@@ -1,5 +1,6 @@
 import {
   buscarSeveridadeIndexer,
+  buscarListaFirewalls,
   buscarTopGeradoresFirewall,
   buscarTopAgentes,
   buscarTopAgentesCis,
@@ -78,6 +79,37 @@ export default {
     }
   },
 
+  async firewalls(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+  
+      // Busca tenant ativo igual ao topGeradores
+      const tenant = await strapi.entityService.findMany("api::tenant.tenant", {
+        filters: {
+          users_permissions_users: { id: userId },
+          ativa: true,
+        },
+        populate: ["users_permissions_users"],
+      });
+  
+      if (!tenant || tenant.length === 0) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const tenantData = tenant[0];
+  
+      // Chama service para buscar lista de firewalls
+      const lista = await buscarListaFirewalls(tenantData);
+  
+      return ctx.send({ firewalls: lista });
+  
+    } catch (error) {
+      console.error("Erro ao listar firewalls:", error);
+      return ctx.internalServerError("Erro ao consultar firewalls");
+    }
+  },
+  
   async topGeradores(ctx) {
     try {
       const userId = ctx.state.user?.id;
