@@ -14,6 +14,12 @@ export default {
     },
     {
       method: "GET",
+      path: "/acesso/wazuh/firewalls",
+      handler: "acesso-wazuh.firewalls",
+      config: { policies: [] },
+    },    
+    {
+      method: "GET",
       path: "/acesso/wazuh/top-geradores",
       handler: "acesso-wazuh.topGeradores",
       config: { policies: [] },

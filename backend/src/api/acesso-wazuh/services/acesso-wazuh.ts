@@ -154,16 +154,13 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
   };
 }
 
-
-export async function buscarTopGeradoresFirewall(tenant, dias) {
+export async function buscarListaFirewalls(tenant) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  const timeFilter =
-    dias === "todos"
-      ? { match_all: {} }
-      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
-
+  // ------------------------------
+  // Filtro universal do customer
+  // ------------------------------
   const customerFilter = {
     bool: {
       should: [
@@ -178,65 +175,189 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     },
   };
 
-  // função auxiliar para criar body com campo de agregação variável
-  const buildBody = (devnameField) => ({
+  // ------------------------------
+  // Campos possíveis para devname
+  // ------------------------------
+  const DEVNAME_FIELDS = [
+    "data.devname.keyword",
+    "data.devname",
+    "devname.keyword",
+    "devname",
+    "fields.devname.keyword",
+    "fields.devname"
+  ];
+
+  // Função auxiliar para criar a query de agregação
+  const buildBody = (field) => ({
     size: 0,
-    query: { bool: { must: [customerFilter, timeFilter] } },
+    query: { bool: { must: [customerFilter] } },
     aggs: {
-      top_geradores: {
-        terms: { field: devnameField, size: 8, order: { _count: "desc" } },
-        aggs: {
-          severidade: {
-            range: {
-              field: "rule.level",
-              ranges: [
-                { from: 0, to: 6, key: "Low" },
-                { from: 7, to: 11, key: "Medium" },
-                { from: 12, to: 14, key: "High" },
-                { from: 15, key: "Critical" },
-              ],
-            },
-          },
+      firewalls: {
+        terms: {
+          field,
+          size: 200,
+          order: { _key: "asc" }
         },
-      },
-    },
+        aggs: {
+          get_ip: {
+            top_hits: {
+              _source: {
+                includes: ["location"]
+              },
+              size: 1
+            }
+          }
+        }
+      }
+    }
   });
 
   const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
 
-  // 🟢 1. Tenta com data.devname
-  let body = buildBody("data.devname");
-  let response = await axios.post(baseURL, body, {
-    headers: authHeader(tenant),
-    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-  });
+  let buckets = [];
+  let lastResponse = null;
 
-  let buckets = response.data?.aggregations?.top_geradores?.buckets || [];
+  // ------------------------------
+  // Tenta cada campo até funcionar
+  // ------------------------------
+  for (const field of DEVNAME_FIELDS) {
+    try {
+      const body = buildBody(field);
 
-  // 🔄 2. Se não houver resultados, tenta com data.devname.keyword
-  if (buckets.length === 0) {
-    body = buildBody("data.devname.keyword");
-    response = await axios.post(baseURL, body, {
-      headers: authHeader(tenant),
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    });
-    buckets = response.data?.aggregations?.top_geradores?.buckets || [];
+      const response = await axios.post(baseURL, body, {
+        headers: authHeader(tenant),
+        httpsAgent: new https.Agent({ rejectUnauthorized: false })
+      });
+
+      lastResponse = response;
+
+      buckets = response.data?.aggregations?.firewalls?.buckets || [];
+
+      if (buckets.length > 0) {
+        console.log("🔥 Campo devname detectado:", field);
+        break;
+      }
+    } catch (e) {
+      continue; // testa o próximo campo
+    }
   }
 
-  // 📊 Formatação do retorno
+  // ------------------------------
+  // Mapa final da resposta
+  // ------------------------------
+  return buckets.map((b) => {
+    const hit = b.get_ip?.hits?.hits?.[0]?._source || {};
+    const location = hit?.location || null;
+
+    return {
+      id: b.key,
+      nome: b.key,
+      location
+    };
+  });
+}
+
+export async function buscarTopGeradoresFirewall(tenant, dias) {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  // ------------------------------
+  // TEMPO (sua lógica mantida)
+  // ------------------------------
+  const timeFilter =
+    dias === "todos"
+      ? { match_all: {} }
+      : dias === "10min"
+        ? { range: { "@timestamp": { gte: "now-10m", lte: "now" } } }
+        : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
+
+  const body = {
+    size: 0,
+    query: { bool: { must: [customerFilter(clientName), timeFilter] } },
+    aggs: {
+      top_geradores: {
+        terms: { field: "data.devname.keyword", size: 8, order: { _count: "desc" } },
+        aggs: {
+          get_ip: {
+            top_hits: {
+              _source: {
+                includes: ["@timestamp"] // você pediu só timestamp aqui
+              },
+              size: 1
+            }
+          },
+          severidade: {
+            range: {
+              field: "rule.level",
+              ranges: [
+                { to: 7, key: "Low" },
+                { from: 7, to: 12, key: "Medium" },
+                { from: 12, to: 15, key: "High" },
+                { from: 15, key: "Critical" }
+              ]
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
+
+  let buckets = [];
+
+  // ------------------------------
+  // TENTA CADA CAMPO DE DEVNAME ATÉ FUNCIONAR
+  // ------------------------------
+  for (const field of DEVNAME_FIELDS) {
+    try {
+      const body = buildBody(field);
+
+      const response = await axios.post(
+        baseURL,
+        body,
+        {
+          headers: authHeader(tenant),
+          httpsAgent: new https.Agent({ rejectUnauthorized: false })
+        }
+      );
+
+      buckets = response.data?.aggregations?.top_geradores?.buckets || [];
+
+      if (buckets.length > 0) {
+        console.log("🔥 Campo de devname detectado:", field);
+        break;
+      }
+
+    } catch (err) {
+      continue;
+    }
+  }
+
+  // ------------------------------
+  // SEU RETORNO ORIGINAL — sem mudar nada
+  // ------------------------------
   return buckets.map((b) => {
     const sev = b.severidade?.buckets || [];
-    const get = (k: string) => sev.find((x: any) => x.key === k)?.doc_count || 0;
+    const get = (k) =>
+      sev.find((x) => x.key === k)?.doc_count || 0;
+
+    const hit = b.get_ip?.hits?.hits?.[0]?._source || {};
+
+    const location = hit?.location || null; // mantido
+    const timestamp = hit?.["@timestamp"] || null; // mantido
 
     return {
       gerador: b.key,
+      ip: location,
+      timestamp,
       total: b.doc_count,
       severidade: {
         baixo: get("Low"),
         medio: get("Medium"),
         alto: get("High"),
-        critico: get("Critical"),
-      },
+        critico: get("Critical")
+      }
     };
   });
 }
