@@ -3,6 +3,11 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.6.1.3]
+- Desabilitar opção WhiteTheme
+- Custom Dashboard
+- Filtro de Busca na página de Incidentes
+
 ## [v1.5.1.3]
 - Novo mapeamento de campos para o mapa
 - Ajuste de bug no Indice de Risco Dashboard
