@@ -373,8 +373,6 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-<<<<<<< HEAD
-=======
 export interface ApiCustomDashboardCustomDashboard
   extends Struct.CollectionTypeSchema {
   collectionName: 'custom_dashboards';
@@ -405,7 +403,6 @@ export interface ApiCustomDashboardCustomDashboard
   };
 }
 
->>>>>>> 61cf605 (feature: Estrutura Inicial Custom Dashboard)
 export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
   collectionName: 'tenants';
   info: {
@@ -1042,6 +1039,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::custom-dashboard.custom-dashboard': ApiCustomDashboardCustomDashboard;
       'api::tenant.tenant': ApiTenantTenant;
       'api::user-multi-tenant.user-multi-tenant': ApiUserMultiTenantUserMultiTenant;
       'api::user-role.user-role': ApiUserRoleUserRole;

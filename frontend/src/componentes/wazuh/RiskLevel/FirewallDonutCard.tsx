@@ -25,21 +25,21 @@ export default function FirewallDonutCard({
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [idxSelecionado, setIdxSelecionado] = useState<number | null>(null);
-  const [animReady, setAnimReady] = useState(false);
 
   // Reset filtro ao mudar o global
   useEffect(() => {
-    if (!tenantAtivo) return;
+    if (!filtroLocal) setFiltroLocal(null);
+  }, [dias]);
 
   // Buscar dados
   useEffect(() => {
     if (!tenantAtivo) return;
     let ativo = true;
+
     async function fetch() {
       try {
         setCarregando(true);
         setErro(null);
-        setAnimReady(false);
 
         const inicio = Date.now();
         const res = await getTopFirewalls(diasEfetivo);
@@ -49,10 +49,7 @@ export default function FirewallDonutCard({
         const delay = Math.max(500 - elapsed, 0);
 
         setTimeout(() => {
-          if (ativo) {
-            setDados(res);
-            setAnimReady(true);
-          }
+          if (ativo) setDados(res);
         }, delay);
       } catch (e: any) {
         if (!ativo) return;
@@ -61,6 +58,7 @@ export default function FirewallDonutCard({
         if (ativo) setCarregando(false);
       }
     }
+
     fetch();
     return () => { ativo = false };
   }, [diasEfetivo, tenantAtivo]);
@@ -81,41 +79,6 @@ export default function FirewallDonutCard({
   const labels = ["Crítico", "Alto", "Médio", "Baixo"];
   const series = [critico, alto, medio, baixo];
   const cores = ["#F914AD", "#A855F7", "#6366F1", "#1DD69A"];
-
-  // 🦴 Skeleton animado — mesmo padrão visual dos outros cards
-  if (carregando) {
-    return (
-      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between relative overflow-hidden">
-        <div className="flex justify-between items-center mb-4">
-          <div className="h-4 w-36 bg-[#ffffff12] rounded animate-pulse" />
-          <div className="h-6 w-24 bg-[#ffffff12] rounded animate-pulse" />
-        </div>
-
-        <div className="flex justify-center items-center my-6">
-          <div className="w-40 h-40 rounded-full border-4 border-[#ffffff12] animate-pulse" />
-        </div>
-
-        <div className="flex gap-3 flex-wrap mt-4 text-[10px] justify-center">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-[#ffffff12] rounded animate-pulse" />
-              <div className="h-3 w-10 bg-[#ffffff12] rounded animate-pulse" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (erro) {
-    return (
-      <div className="cards rounded-xl p-6 shadow-md h-full flex flex-col justify-between relative overflow-hidden">
-        <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-3">
-          {erro}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="cards rounded-xl mb-4 p-6 shadow-md h-full flex flex-col justify-between relative">

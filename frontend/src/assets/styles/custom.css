@@ -135,6 +135,13 @@ body.tema-escuro a.outline{
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
 }
 
+.cards.custom{
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 .h2 {
   color: white;
   transition: color 0.3s ease;
@@ -520,8 +527,6 @@ header button.toggle{
   }
 }
 
-<<<<<<< HEAD
-=======
 
 /*react-grid*/
 
@@ -531,9 +536,6 @@ header button.toggle{
   border: 1px solid rgba(255,255,255,0.05);
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-<<<<<<< HEAD
->>>>>>> 61cf605 (feature: Estrutura Inicial Custom Dashboard)
-=======
 
 .react-grid-item > .react-resizable-handle::after {
   right: 5px !important;
@@ -543,9 +545,6 @@ header button.toggle{
   border-right: 2px solid rgb(255 255 255 / 40%) !important;
   border-bottom: 2px solid rgb(255 255 255 / 40%) !important;
 }
-<<<<<<< HEAD
->>>>>>> 9a98553 (Estrutura 2 - Custom Dashboard)
-=======
 
 .react-grid-placeholder {
   background: rgba(128, 90, 213, 0.2) !important; /* Roxo translúcido */
@@ -582,4 +581,3 @@ header button.toggle{
      z-index: 999 !important;
    }
    
->>>>>>> 37dc103 (Estrutura 4 - Custom Dashboard)
