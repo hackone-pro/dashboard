@@ -12,6 +12,7 @@ import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
 import ServiceModel from '../pages/ServicesModel';
 import ServicesCatalog from '../pages/ServicesCatalog';
+import MonitoriaSoc from '../pages/MonitoriaSOC';
 
 export default function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ export default function AppRoutes() {
           <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
           <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
           <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
+          <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
           <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
           <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
           <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
