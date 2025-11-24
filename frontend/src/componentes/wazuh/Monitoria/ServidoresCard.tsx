@@ -1,48 +1,46 @@
 import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
-import { getTopFirewalls } from "../../../services/wazuh/topfirewall.service";
-import { getFirewallsList } from "../../../services/wazuh/firewalls.service";
+import { getServidoresList } from "../../../services/wazuh/servidores.service";
 
-import TooltipRight from "../../TooltipRight";
+import TooltipRight from "../../TooltipRight"; // 🔵 usa o mesmo tooltip global
 
-export type FirewallCardRef = {
+export type ServidoresCardRef = {
     carregar: () => void;
 };
 
-type FirewallMonitorItem = {
+type ServidorMonitorItem = {
     nome: string;
-    ip: string;
+    ip: string | null;
     timestamp: string | null;
     status: string;
 };
 
-function getStatusByTimestamp(timestamp: string | null) {
+// 🔵 Status baseado no timestamp
+function getStatus(timestamp: string | null) {
     if (!timestamp) return "🔴";
-
     const logDate = new Date(timestamp).getTime();
-    const now = Date.now();
-    const diffMinutes = (now - logDate) / 1000 / 60;
+    const diffMinutes = (Date.now() - logDate) / 1000 / 60;
 
     if (diffMinutes <= 59) return "🟢";
     if (diffMinutes <= 119) return "🟡";
     return "🔴";
 }
 
-// Ícones
+// 🔵 Mapeia status → imagem
 function getStatusIcon(status: string) {
     if (status === "🟢") return "/assets/img/indicador-on.png";
     if (status === "🟡") return "/assets/img/indicador-warning.png";
     return "/assets/img/indicador-off.png";
 }
 
+const ServidoresCard = forwardRef<ServidoresCardRef>((props, ref) => {
 
-const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
     const [loading, setLoading] = useState(true);
-    const [firewalls, setFirewalls] = useState<FirewallMonitorItem[]>([]);
+    const [servidores, setServidores] = useState<ServidorMonitorItem[]>([]);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const porPagina = 5;
 
-    const totalPaginas = Math.ceil(firewalls.length / porPagina);
-    const firewallsPaginados = firewalls.slice(
+    const totalPaginas = Math.ceil(servidores.length / porPagina);
+    const servidoresPaginados = servidores.slice(
         (paginaAtual - 1) * porPagina,
         paginaAtual * porPagina
     );
@@ -51,27 +49,16 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
         try {
             setLoading(true);
 
-            const inventario = await getFirewallsList();
-            const logs10 = await getTopFirewalls("10min");
-            const logsLast = await getTopFirewalls("todos");
+            const lista = await getServidoresList();
 
-            const tabela = inventario
-                .map((fw) => {
-                    const log10 = logs10.find((l) => l.gerador === fw.id);
-                    const logLast = logsLast.find((l) => l.gerador === fw.id);
-
-                    const timestamp =
-                        log10?.timestamp ??
-                        logLast?.timestamp ??
-                        null;
-
-                    return {
-                        nome: fw.nome,
-                        ip: fw.location ?? "-",
-                        timestamp,
-                        status: getStatusByTimestamp(timestamp),
-                    };
-                })
+            const tabela = lista
+                .filter((srv) => srv.ip && srv.ip.trim() !== "" && srv.ip !== "-")
+                .map((srv) => ({
+                    nome: srv.nome,
+                    ip: srv.ip,
+                    timestamp: srv.timestamp ?? null,
+                    status: getStatus(srv.timestamp ?? null),
+                }))
                 .sort((a, b) => {
                     if (!a.timestamp && !b.timestamp) return 0;
                     if (!a.timestamp) return 1;
@@ -79,9 +66,10 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
                 });
 
-            setFirewalls(tabela);
+            setServidores(tabela);
+
         } catch (err) {
-            console.error("Erro FirewallCard:", err);
+            console.error("Erro ServidoresCard:", err);
         } finally {
             setLoading(false);
         }
@@ -98,7 +86,7 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
     return (
         <div className="cards rounded-2xl p-6">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-white text-sm">Firewall</h3>
+                <h3 className="text-white text-sm">Servidores</h3>
 
                 <button
                     onClick={carregar}
@@ -108,14 +96,13 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                 </button>
             </div>
 
-            {/* 🔵 SKELETON */}
             {loading ? (
                 <div className="space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
                         <div
                             key={i}
                             className="w-full h-6 bg-white/5 animate-pulse rounded"
-                        ></div>
+                        />
                     ))}
                 </div>
             ) : (
@@ -131,27 +118,28 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                         </thead>
 
                         <tbody>
-                            {firewallsPaginados.map((fw, index) => (
+                            {servidoresPaginados.map((srv, index) => (
                                 <tr
                                     key={index}
                                     className="border-b border-white/5 hover:bg-[#ffffff05] transition-colors"
                                 >
-                                    <td className="px-3 py-3">{fw.nome}</td>
-                                    <td>{fw.ip}</td>
+                                    <td className="px-3 py-3">{srv.nome}</td>
+                                    <td>{srv.ip}</td>
 
+                                    {/* 🔵 TooltipRight igual ao FirewallCard */}
                                     <td className="text-center">
                                         <TooltipRight
-                                            status={fw.status}
+                                            status={srv.status}
                                             text={
-                                                fw.status === "🟢"
+                                                srv.status === "🟢"
                                                     ? "Recebendo logs\n(menos de 1h)"
-                                                    : fw.status === "🟡"
+                                                    : srv.status === "🟡"
                                                         ? "Sem receber logs\n (mais de 1h)"
                                                         : "Sem receber logs\n (mais de 2h)"
                                             }
                                         >
                                             <img
-                                                src={getStatusIcon(fw.status)}
+                                                src={getStatusIcon(srv.status)}
                                                 alt="status"
                                                 className="w-6 h-3 mx-auto"
                                             />
@@ -159,8 +147,8 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                                     </td>
 
                                     <td className="text-center">
-                                        {fw.timestamp
-                                            ? new Date(fw.timestamp).toLocaleString()
+                                        {srv.timestamp
+                                            ? new Date(srv.timestamp).toLocaleString()
                                             : "-"}
                                     </td>
                                 </tr>
@@ -168,16 +156,14 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                         </tbody>
                     </table>
 
-                    {/* 🔵 Paginação */}
+                    {/* PAGINAÇÃO */}
                     <div className="flex justify-between items-center mt-4">
                         <button
                             disabled={paginaAtual === 1}
                             onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
                             className={`px-3 py-1 rounded-md text-xs border text-gray-400 
-                                ${paginaAtual === 1
-                                    ? "opacity-30 cursor-not-allowed"
-                                    : "hover:bg-white/5"
-                                }`}
+                                ${paginaAtual === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5"}
+                            `}
                         >
                             ← Anterior
                         </button>
@@ -190,10 +176,8 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                             disabled={paginaAtual === totalPaginas}
                             onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
                             className={`px-3 py-1 rounded-md text-xs border text-gray-400 
-                                ${paginaAtual === totalPaginas
-                                    ? "opacity-30 cursor-not-allowed"
-                                    : "hover:bg-white/5"
-                                }`}
+                                ${paginaAtual === totalPaginas ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5"}
+                            `}
                         >
                             Próxima →
                         </button>
@@ -204,4 +188,4 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
     );
 });
 
-export default FirewallCard;
+export default ServidoresCard;

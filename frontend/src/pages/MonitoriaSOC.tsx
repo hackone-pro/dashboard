@@ -1,54 +1,95 @@
 // src/pages/MonitoriaSOC.tsx
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useTenant } from "../context/TenantContext";
 import LayoutModel from "../componentes/LayoutModel";
 import GraficoVolume from "../componentes/graficos/GraficoVolume";
 
-// Novo Card
+// Cards
 import FirewallCard, { FirewallCardRef } from "../componentes/wazuh/Monitoria/FirewallCard";
+import ServidoresCard, { ServidoresCardRef } from "../componentes/wazuh/Monitoria/ServidoresCard";
 
-const categoriasX = [
-    "0 GB", "100 GB", "200 GB", "300 GB", "400 GB",
-    "500 GB", "600 GB", "700 GB", "800 GB"
-];
-
-const dadosVolumeUtilizado = [50, 120, 200, 380, 450, 420, 510, 700, 650];
-const dadosVolumeTotal = Array(categoriasX.length).fill(1000); // 1 TB
-
-const seriesGrafico = [
-    { name: "Volume utilizado", data: dadosVolumeUtilizado },
-    { name: "Volume total", data: dadosVolumeTotal }
-];
+import { getStorageState } from "../services/storage/storage.service";
+import { getToken } from "../utils/auth";
 
 export default function MonitoriaSOC() {
 
-    // REF DO CARD DE FIREWALL
-    const { tenantAtivo } = useTenant();   // detecta mudança de tenant
-    const firewallRef = useRef<FirewallCardRef>(null);
+    const { tenantAtivo } = useTenant();
 
-    // Atualiza todos os cards da página (por enquanto só firewall)
-    const atualizarTudo = () => {
-        firewallRef.current?.carregar();
+    const firewallRef = useRef<FirewallCardRef>(null);
+    const servidoresRef = useRef<ServidoresCardRef>(null);
+
+    // STORAGE
+    const [storage, setStorage] = useState<any>(null);
+    const [loadingStorage, setLoadingStorage] = useState(true);
+
+    const carregarStorage = async () => {
+        try {
+            setLoadingStorage(true);
+            const token = getToken() ?? undefined;
+            const dados = await getStorageState(token);
+            setStorage(dados);
+        } catch (err) {
+            console.error("Erro ao carregar storage:", err);
+        } finally {
+            setLoadingStorage(false);
+        }
     };
-    
+
+    // 🔵 Quando muda o tenant → recarrega Firewall e Servidores
     useEffect(() => {
-        firewallRef.current?.carregar();   // recarrega ao trocar tenant
+        carregarStorage();
+        firewallRef.current?.carregar();
+        servidoresRef.current?.carregar();
     }, [tenantAtivo]);
 
+    // Conversão MB/GB/TB → GB
+    function parseValor(valor: string): number {
+        if (!valor) return 0;
+        const n = parseFloat(valor.replace(",", "."));
+        if (valor.includes("TB")) return n * 1024;
+        if (valor.includes("GB")) return n;
+        if (valor.includes("MB")) return n / 1024;
+        return n;
+    }
+
+    // GRÁFICO
+    const categoriasX = [
+        "0 GB", "100 GB", "200 GB", "300 GB", "400 GB",
+        "500 GB", "600 GB", "700 GB", "800 GB"
+    ];
+
+    const totalTB = 1024;
+
+    function gerarCurvaInterpolada(valorFinal: number, pontos: number) {
+        const arr = [];
+        const passo = valorFinal / (pontos - 1);
+        for (let i = 0; i < pontos; i++) arr.push(passo * i);
+        return arr;
+    }
+
+    let dadosUtil: number[] = [];
+    let dadosTotal: number[] = Array(categoriasX.length).fill(totalTB);
+
+    let totalUsado = 0;
+    let totalDisponivel = 1024;
+
+    if (storage) {
+        totalUsado = parseValor(storage.dados["Em uso"]);
+        totalDisponivel = Math.max(1024 - totalUsado, 0);
+
+        dadosUtil = gerarCurvaInterpolada(totalUsado, categoriasX.length);
+    }
+
+    // Botão "Atualizar tudo"
+    const atualizarTudo = () => {
+        firewallRef.current?.carregar();
+        servidoresRef.current?.carregar();
+        carregarStorage();
+    };
 
     return (
         <LayoutModel titulo="Monitoria NGSOC">
-
-            {/* Botão atualizar global */}
-            {/* <div className="flex justify-end mb-4">
-                <button
-                    onClick={atualizarTudo}
-                    className="px-3 py-1 border border-[#1D1929] hover:bg-white/10 rounded-md text-xs text-gray-300"
-                >
-                    Atualizar Tudo
-                </button>
-            </div> */}
 
             <section className="grid grid-cols-1 gap-6">
 
@@ -65,11 +106,11 @@ export default function MonitoriaSOC() {
                             </span>
 
                             <span className="text-[#6366F1] badge-darkpink px-3 py-2 rounded-md text-xs">
-                                Usado: <span className="font-bold">700 GB</span>
+                                Usado: <span className="font-bold">{totalUsado.toFixed(2)} GB</span>
                             </span>
 
                             <span className="text-pink-500 badge-pink px-3 py-2 rounded-md text-xs">
-                                Disponível: <span className="font-bold">220 GB</span>
+                                Disponível: <span className="font-bold">{totalDisponivel.toFixed(2)} GB</span>
                             </span>
                         </div>
                     </header>
@@ -85,11 +126,28 @@ export default function MonitoriaSOC() {
                             border: "1px solid rgba(255,255,255,0.06)"
                         }}
                     >
-                        <GraficoVolume
-                            series={seriesGrafico}
-                            categoriasX={categoriasX}
-                            height={320}
-                        />
+                        {loadingStorage ? (
+                            <div className="text-gray-400 text-xs">Carregando dados...</div>
+                        ) : (
+                            <GraficoVolume
+                                series={[
+                                    { 
+                                        name: "Volume utilizado", 
+                                        data: dadosUtil,
+                                        // @ts-ignore
+                                        marker: { size: 6, colors: ["#A78BFA"] }
+                                    },
+                                    { 
+                                        name: "Volume total", 
+                                        data: dadosTotal,
+                                        // @ts-ignore
+                                        marker: { size: 0 }
+                                    }
+                                ]}
+                                categoriasX={categoriasX}
+                                height={320}
+                            />
+                        )}
                     </div>
 
                     {/* Últimos descartes */}
@@ -100,22 +158,22 @@ export default function MonitoriaSOC() {
 
                             <div className="fundo-dashboard p-3 rounded-lg border border-white/10 text-xs text-gray-400">
                                 <div className="flex justify-between">
-                                    <p><span className="font-bold">Descarte 1:</span> 10/11/2025</p>
-                                    <p><span className="font-bold">Volume:</span> 98 GB</p>
+                                    <p><span className="font-bold">Descarte 1:</span> </p>
+                                    <p><span className="font-bold">Volume:</span> 0 GB</p>
                                 </div>
                             </div>
 
                             <div className="fundo-dashboard p-3 rounded-lg border border-white/10 text-xs text-gray-400">
                                 <div className="flex justify-between">
-                                    <p><span className="font-bold">Descarte 2:</span> 11/11/2025</p>
-                                    <p><span className="font-bold">Volume:</span> 48 GB</p>
+                                    <p><span className="font-bold">Descarte 2:</span> </p>
+                                    <p><span className="font-bold">Volume:</span> 0 GB</p>
                                 </div>
                             </div>
 
                             <div className="fundo-dashboard p-3 rounded-lg border border-white/10 text-xs text-gray-400">
                                 <div className="flex justify-between">
-                                    <p><span className="font-bold">Descarte 3:</span> 12/11/2025</p>
-                                    <p><span className="font-bold">Volume:</span> 140 GB</p>
+                                    <p><span className="font-bold">Descarte 3:</span> </p>
+                                    <p><span className="font-bold">Volume:</span> 0 GB</p>
                                 </div>
                             </div>
 
@@ -126,22 +184,19 @@ export default function MonitoriaSOC() {
                 {/* ====== CARDS DE MONITORAMENTO ====== */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* FIREWALL — Ref + Load + Paginação */}
+                    {/* FIREWALL */}
                     <FirewallCard ref={firewallRef} />
 
-                    {/* ===== SERVIDORES (placeholder) ===== */}
-                    <div className="cards rounded-2xl p-6">
-                        <h3 className="text-white text-sm mb-4">Servidores</h3>
-                        <p className="text-gray-500 text-xs">Em desenvolvimento...</p>
-                    </div>
+                    {/* SERVIDORES */}
+                    <ServidoresCard ref={servidoresRef} />
 
-                    {/* ===== EDR (placeholder) ===== */}
+                    {/* EDR */}
                     <div className="cards rounded-2xl p-6">
                         <h3 className="text-white text-sm mb-4">EDR</h3>
                         <p className="text-gray-500 text-xs">Em desenvolvimento...</p>
                     </div>
 
-                    {/* ===== Outros Coletores (placeholder) ===== */}
+                    {/* OUTROS COLETORES */}
                     <div className="cards rounded-2xl p-6">
                         <h3 className="text-white text-sm mb-4">Outros Coletores</h3>
                         <p className="text-gray-500 text-xs">Em desenvolvimento...</p>
