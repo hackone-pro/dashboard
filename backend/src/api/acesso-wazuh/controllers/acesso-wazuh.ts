@@ -7,6 +7,8 @@ import vulnerabilidades from "./vulnerabilidades.controller";
 import eventos from "./eventos.controller";
 import usuarios from "./usuarios.controller";
 import risco from "./risklevel.controller";
+import servidores from "./servidores.controller";
+
 
 export default {
   ...severidade,
@@ -17,5 +19,6 @@ export default {
   ...vulnerabilidades,
   ...eventos,
   ...usuarios,
-  ...risco
+  ...risco,
+  ...servidores
 }

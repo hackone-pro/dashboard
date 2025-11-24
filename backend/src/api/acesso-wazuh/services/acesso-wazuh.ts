@@ -13,3 +13,4 @@ export * from "./paises.service";
 export * from "./vulnerabilidades.service";
 export * from "./eventos.service";
 export * from "./usuarios.service";
+export * from "./servidores.service";

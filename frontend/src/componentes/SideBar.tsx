@@ -138,7 +138,7 @@ export default function Sidebar() {
                                 // @ts-ignore
                                 { to: "/archives-integrity", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Integridade de Arquivos" },
                                 // @ts-ignore
-                                { to: "/monitoria-ngsoc", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Monitoria" },
+                                { to: "/monitoria-ngsoc", icon: <TbHeartRateMonitor className="text-[16px]" />, label: "Monitoria" },
                             ].map((item, idx) => (
                                 <li key={idx} className="py-1">
                                     <Link
@@ -230,7 +230,7 @@ export default function Sidebar() {
                                         className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
                                     >
                                         {/* @ts-ignore */}
-                                        <VscFileSymlinkDirectory className="text-[16px]" /> Monitoria
+                                        <TbHeartRateMonitor className="text-[16px]" /> Monitoria
                                     </Link>
                                 </li>
                             </ul>

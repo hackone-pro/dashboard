@@ -138,6 +138,11 @@ export default {
       handler: "acesso-wazuh.riskLevel",
       config: { policies: [] },
     },
-    
+    {
+      method: "GET",
+      path: "/acesso/wazuh/servidores",
+      handler: "acesso-wazuh.servidores",
+      config: { policies: [] }
+    }    
   ],
 };
