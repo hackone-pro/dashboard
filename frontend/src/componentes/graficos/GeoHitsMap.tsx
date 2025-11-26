@@ -11,7 +11,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 
-import { useTenant } from "../../context/TenantContext"; // 👈 import do contexto
+import { useTenant } from "../../context/TenantContext";
 
 type GeoHitsMapProps = {
   height?: number | string;
@@ -22,7 +22,8 @@ type Flow = {
   origem: {
     ip: string;
     pais: string | null;
-    cidade?: string | null;
+    city?: string | null;
+    region?: string | null;
     lat: number | null;
     lng: number | null;
     srcport: string | null;
@@ -32,7 +33,8 @@ type Flow = {
   destino: {
     ip: string;
     pais?: string | null;
-    cidade?: string | null;
+    city?: string | null;
+    region?: string | null;
     lat: number | null;
     lng: number | null;
     agente?: string | null;
@@ -45,7 +47,7 @@ type Flow = {
   severidades: { key: string; doc_count: number }[];
 };
 
-
+// Ajusta mapa para caber os pontos
 function FitToData({ points }: { points: { lat: number; lng: number }[] }) {
   const map = useMap();
   useEffect(() => {
@@ -56,7 +58,7 @@ function FitToData({ points }: { points: { lat: number; lng: number }[] }) {
   return null;
 }
 
-/* ------- helpers de arco (Bézier) ------- */
+/* ARCO - helpers */
 type Pt = { lat: number; lng: number };
 
 function controlPoint(p0: Pt, p1: Pt, curvature = 0.24): Pt {
@@ -65,6 +67,7 @@ function controlPoint(p0: Pt, p1: Pt, curvature = 0.24): Pt {
   const dy = p1.lat - p0.lat;
   return { lat: mid.lat + dx * curvature, lng: mid.lng - dy * curvature };
 }
+
 function bezierPoint(t: number, p0: Pt, c: Pt, p1: Pt): Pt {
   const u = 1 - t;
   return {
@@ -72,6 +75,7 @@ function bezierPoint(t: number, p0: Pt, c: Pt, p1: Pt): Pt {
     lng: u * u * p0.lng + 2 * u * t * c.lng + t * t * p1.lng,
   };
 }
+
 function sampleBezier(p0: Pt, c: Pt, p1: Pt, samples = 80): Pt[] {
   const pts: Pt[] = [];
   for (let i = 0; i <= samples; i++) pts.push(bezierPoint(i / samples, p0, c, p1));
@@ -89,7 +93,7 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
     []
   );
 
-  // fetch
+  // Fetch API
   useEffect(() => {
     if (!tenantAtivo) return;
 
@@ -114,8 +118,10 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
         const data: { flows: Flow[] } = await res.json();
         if (!ativo) return;
 
+        // Delay mínimo para suavidade visual
         const elapsed = Date.now() - inicio;
-        const delay = Math.max(500 - elapsed, 0); // tempo mínimo p/ transição suave
+        const delay = Math.max(500 - elapsed, 0);
+
         setTimeout(() => {
           if (ativo) setFlows(data.flows || []);
         }, delay);
@@ -129,10 +135,9 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
     return () => {
       ativo = false;
     };
-  }, [dias, tenantAtivo]); // 👈 reage também à troca de tenant
+  }, [dias, tenantAtivo]);
 
-
-  // prepara pontos para ajustar bounds
+  // Pontos para ajustar bounds
   const allPoints = useMemo(() => {
     return flows.flatMap((f) => {
       const pts: { lat: number; lng: number }[] = [];
@@ -142,18 +147,21 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
     });
   }, [flows]);
 
-  // calcula arcos origem → destino
+  // Geração dos arcos origem → destino
   const arcs = useMemo(() => {
     return flows
       .map((f, i) => {
         if (!f.origem.lat || !f.origem.lng || !f.destino.lat || !f.destino.lng) return null;
+
         const p0 = { lat: f.origem.lat, lng: f.origem.lng };
         const p1 = { lat: f.destino.lat, lng: f.destino.lng };
         const c = controlPoint(p0, p1, 0.24);
+
         const sampled = sampleBezier(p0, c, p1, 80).map((p) => [p.lat, p.lng]) as [
           number,
           number
         ][];
+
         return { positions: sampled, group: i % 6 };
       })
       .filter(Boolean) as { positions: [number, number][]; group: number }[];
@@ -183,7 +191,7 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
           <TileLayer url={darkTiles} />
         </Pane>
 
-        {/* ORIGENS (pulse vermelho) */}
+        {/* ORIGENS */}
         <Pane name="origin-bubbles" style={{ zIndex: 410 }}>
           {flows.map(
             (f, i) =>
@@ -206,13 +214,25 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
                         <b className="text-[#9385e3] uppercase">Origem:</b>{" "}
                         {f.origem.pais === "Interno"
                           ? "IP Interno"
-                          : [f.origem.cidade, f.origem.pais].filter(Boolean).join(" - ") || "Desconhecido"}
+                          : [f.origem.city, f.origem.region, f.origem.pais]
+                              .filter(Boolean)
+                              .join(" - ") || "Desconhecido"}
                       </div>
-                      {/* <div><b>Total:</b> {f.total}</div> */}
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">IP:</b> {f.origem.ip}</div>
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Porta:</b> {f.origem.srcport || "N/A"}</div>
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Serviço:</b> {f.origem.servico || "N/A"}</div>
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Interface:</b> {f.origem.interface || "N/A"}</div>
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">IP:</b> {f.origem.ip}
+                      </div>
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Porta:</b>{" "}
+                        {f.origem.srcport || "N/A"}
+                      </div>
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Serviço:</b>{" "}
+                        {f.origem.servico || "N/A"}
+                      </div>
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Interface:</b>{" "}
+                        {f.origem.interface || "N/A"}
+                      </div>
                     </div>
                   </Tooltip>
                 </CircleMarker>
@@ -220,7 +240,7 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
           )}
         </Pane>
 
-        {/* DESTINOS (pulse verde) */}
+        {/* DESTINOS */}
         <Pane name="dest-bubbles" style={{ zIndex: 420 }}>
           {flows.map(
             (f, i) =>
@@ -243,14 +263,25 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
                         <b className="text-[#9385e3] uppercase">Destino:</b>{" "}
                         {f.destino.pais === "Interno"
                           ? "IP Interno"
-                          : [f.destino.cidade, f.destino.pais].filter(Boolean).join(" - ") || "Desconhecido"}
+                          : [f.destino.city, f.destino.region, f.destino.pais]
+                              .filter(Boolean)
+                              .join(" - ") || "Desconhecido"}
                       </div>
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">IP:</b> {f.destino.ip}</div>
-                      {/* <div><b>Agente:</b> {f.destino.agente || "N/A"}</div> */}
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Interface:</b> {f.destino.dstintf || "N/A"}</div>
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Porta:</b> {f.destino.dstport || "N/A"}</div>
-                      <div className="pb-1 text-gray-300"><b className="text-[#9385e3] uppercase">Device:</b> {f.destino.devname || "N/A"}</div>
-                      {/* <div className="pt-1"><b>Total:</b> {f.total}</div> */}
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">IP:</b> {f.destino.ip}
+                      </div>
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Interface:</b>{" "}
+                        {f.destino.dstintf || "N/A"}
+                      </div>
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Porta:</b>{" "}
+                        {f.destino.dstport || "N/A"}
+                      </div>
+                      <div className="pb-1 text-gray-300">
+                        <b className="text-[#9385e3] uppercase">Device:</b>{" "}
+                        {f.destino.devname || "N/A"}
+                      </div>
                     </div>
                   </Tooltip>
                 </CircleMarker>
@@ -258,7 +289,7 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
           )}
         </Pane>
 
-        {/* ARCOS + DOTS CORRENDO */}
+        {/* ARCOS */}
         <Pane name="shooting-lines" className="shooting-lines-pane" style={{ zIndex: 350 }}>
           {arcs.map((arc, i) => {
             const d =
@@ -272,12 +303,12 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
                   pathOptions={{
                     weight: 2.2,
                     opacity: 0.95,
-                    color: "transparent",   // 👈 transparente
+                    color: "transparent",
                   }}
                   className={`flow-arc s-i-${arc.group}`}
                 />
 
-                {/* dot correndo */}
+                {/* dots correndo */}
                 {[...Array(3)].map((_, j) => (
                   <circle
                     key={`dot-${i}-${j}`}
@@ -285,8 +316,8 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
                     style={{
                       offsetPath: `path('${d}')`,
                       offsetRotate: "auto",
-                      ["--dot-dur" as any]: `${2.5 + Math.random() * 1.5}s`, // duração aleatória
-                      ["--delay" as any]: `${Math.random() * 5}s`,            // delay aleatório
+                      ["--dot-dur" as any]: `${2.5 + Math.random() * 1.5}s`,
+                      ["--delay" as any]: `${Math.random() * 5}s`,
                     }}
                   />
                 ))}
@@ -303,6 +334,7 @@ export default function GeoHitsMap({ height = 400, dias = "todos" }: GeoHitsMapP
           Carregando mapa…
         </div>
       )}
+
       {erro && (
         <div className="absolute bottom-2 left-2 text-[11px] px-2 py-1 rounded bg-red-600/70 text-white">
           {erro}

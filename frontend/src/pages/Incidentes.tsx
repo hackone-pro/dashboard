@@ -11,7 +11,7 @@ import { getToken } from "../utils/auth";
 
 import { GoGraph } from "react-icons/go";
 import { RiQuestionLine, RiProgress5Line } from "react-icons/ri";
-import { FaLockOpen, FaRegCheckCircle, FaSort } from "react-icons/fa";
+import { FaLockOpen, FaRegCheckCircle, FaSort, FaSearch } from "react-icons/fa";
 import { HiLockClosed } from "react-icons/hi";
 import { IoStopCircleOutline } from "react-icons/io5";
 import { MdOutlineGppBad, MdOutlineHealthAndSafety } from "react-icons/md";
@@ -235,6 +235,8 @@ export default function Incidentes() {
   const [filtroOrigem, setFiltroOrigem] = useState<"abertos" | "fechados" | "atribuidos" | "nao_atribuidos" | null>(null);
   const [chartResetKey, setChartResetKey] = useState(0);
   const [animReady, setAnimReady] = useState(false);
+  const [busca, setBusca] = useState("");
+
 
   // Quando dados forem carregados, aplica o expandido via querystring
   useEffect(() => {
@@ -348,10 +350,35 @@ export default function Incidentes() {
   const linhas = useMemo(() => {
     let base = [...ordenados];
 
-    // 👇 aplica filtro de severidade se existir
-    if (filtroSeveridade) {
+    // 🔎 FILTRO DE BUSCA – texto livre
+    if (busca.trim() !== "") {
+      const termo = busca.toLowerCase();
+
+      base = base.filter(i => {
+        const id = String(i.case_id);
+        const nome = (i.case_name || "").toLowerCase();
+        const desc = (i.case_description || "").toLowerCase();
+        const status = (i.state_name || "").toLowerCase();
+        const owner = (extractOwner(i) || "").toLowerCase();
+        const cliente = (extractIncidentClient(i) || "").toLowerCase();
+        const nivel = nivelDoIncidente(i).toLowerCase();
+
+        return (
+          id.includes(termo) ||
+          nome.includes(termo) ||
+          desc.includes(termo) ||
+          status.includes(termo) ||
+          owner.includes(termo) ||
+          cliente.includes(termo) ||
+          nivel.includes(termo)
+        );
+      });
+    }
+
+    // 🔥 Filtros já existentes (severidade, origem)
+    if (filtroSeveridade || filtroOrigem) {
       base = base.filter(i =>
-        matchSeveridade(nivelDoIncidente(i), filtroSeveridade) &&
+        matchSeveridade(nivelDoIncidente(i), filtroSeveridade || "") &&
         (
           filtroOrigem === "abertos"
             ? (i.state_name || "").toLowerCase() === "open"
@@ -367,7 +394,7 @@ export default function Incidentes() {
     }
 
     return base.slice(start, end);
-  }, [ordenados, start, end, filtroSeveridade]);
+  }, [ordenados, start, end, busca, filtroSeveridade, filtroOrigem]);
 
   const baseTabela = useMemo(() => {
     return [...dados].filter(i => {
@@ -502,14 +529,47 @@ export default function Incidentes() {
         {/* Tabela */}
         <section className="cards p-6 rounded-2xl shadow-lg">
           {/* Header */}
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+
+            {/* ESQUERDA: ícone + título */}
             <div className="flex items-center gap-2">
               {/* @ts-ignore */}
-              <GoGraph className="flex text-[#744CD8] size-[20px]" />
-              <h2 className="text-white">Incidentes — Nível de Detalhe</h2>
+              <GoGraph className="text-[#744CD8] size-[20px]" />
+              <h2 className="text-white whitespace-nowrap">Incidentes — Nível de Detalhe</h2>
             </div>
-            <div className="flex items-center gap-3">
-              <label className="text-xs text-gray-400">
+
+            {/* CENTRO: CAMPO DE BUSCA */}
+            <div className="flex justify-center items-center flex-1">
+              <label className="text-xs text-gray-400 whitespace-nowrap pr-2">Pesquisar:</label>
+              {/* Campo de busca com ícone */}
+              <div className="relative w-64 md:w-80">
+                {/* @ts-ignore */}
+                <FaSearch
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"
+                />
+
+                <input
+                  type="text"
+                  placeholder="Buscar incidente..."
+                  value={busca}
+                  onChange={(e) => {
+                    setBusca(e.target.value);
+                    setPage(1);
+                  }}
+                  className="
+                  bg-[#0d0c22] border border-[#cacaca31] text-white text-xs
+                    pl-3 pr-3 py-2 rounded-md w-full
+                    focus:outline-none focus:border-purple-500
+                    transition-all
+                  "
+                />
+              </div>
+
+            </div>
+
+            {/* DIREITA: filtros + paginação */}
+            <div className="flex items-center gap-3 justify-end">
+              <label className="text-xs text-gray-400 whitespace-nowrap">
                 Intervalo:&nbsp;
                 <select
                   className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
@@ -523,15 +583,33 @@ export default function Incidentes() {
                   <option value={0}>Todos</option>
                 </select>
               </label>
-              <div className="text-xs text-gray-400">
-                {total > 0 ? <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></> : <>Mostrando 0 de 0</>}
+
+              <div className="text-xs text-gray-400 whitespace-nowrap">
+                {total > 0
+                  ? <>Mostrando <span className="text-gray-200">{start + 1}</span>–<span className="text-gray-200">{end}</span> de <span className="text-gray-200">{total}</span></>
+                  : <>Mostrando 0 de 0</>}
               </div>
+
               <div className="flex gap-2">
-                <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p - 1))} disabled={page <= 1}>← Anterior</button>
-                <button className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40" onClick={() => setPage(p => clampPage(p + 1))} disabled={page >= totalPages}>Próxima →</button>
+                <button
+                  className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
+                  onClick={() => setPage(p => clampPage(p - 1))}
+                  disabled={page <= 1}
+                >
+                  ← Anterior
+                </button>
+                <button
+                  className="px-2 py-1 btn hover:bg-purple-600 text-[12px] text-white rounded-md disabled:opacity-40"
+                  onClick={() => setPage(p => clampPage(p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  Próxima →
+                </button>
               </div>
             </div>
+
           </div>
+
 
           {/* Cabeçalho tabela */}
           <div className="cards rounded-2xl overflow-hidden table-incidente">

@@ -95,9 +95,28 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
     size: 0,
     query: {
       bool: {
-        must: [customerFilter(clientName), timeFilter],
-      },
+        must: [
+          {
+            bool: {
+              should: [
+                { term: { "customer": clientName } },
+                { term: { "customer.keyword": clientName } },
+
+                { term: { "data.customer": clientName } },
+                { term: { "data.customer.keyword": clientName } },
+
+                { term: { "fields.customer": clientName } },
+                { term: { "fields.customer.keyword": clientName } }
+              ],
+              minimum_should_match: 1
+            }
+          },
+
+          timeFilter
+        ]
+      }
     },
+
     aggs: {
       severidade: {
         range: {
@@ -106,11 +125,11 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
             { to: 7, key: "Low" },
             { from: 7, to: 12, key: "Medium" },
             { from: 12, to: 15, key: "High" },
-            { from: 15, key: "Critical" },
-          ],
-        },
-      },
-    },
+            { from: 15, key: "Critical" }
+          ]
+        }
+      }
+    }
   };
 
   const response = await axios.post(
@@ -118,7 +137,7 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
     body,
     {
       headers: authHeader(tenant),
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false })
     }
   );
 
@@ -131,7 +150,7 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
     medio: get("Medium"),
     alto: get("High"),
     critico: get("Critical"),
-    total: buckets.reduce((acc, b) => acc + (b.doc_count || 0), 0),
+    total: buckets.reduce((acc, b) => acc + (b.doc_count || 0), 0)
   };
 }
 
@@ -437,9 +456,9 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
           {
             bool: {
               should: [
-                { term: { "data.customer.keyword": clientName } },
-                { term: { "customer.keyword": clientName } },
-                { term: { "fields.customer.keyword": clientName } },
+                { term: { "data.customer": clientName } },
+                { term: { "customer": clientName } },
+                { term: { "fields.customer": clientName } },
               ],
               minimum_should_match: 1,
             },
@@ -448,9 +467,9 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
           {
             bool: {
               should: [
-                { term: { "rule.groups.keyword": "fortigate" } },
-                { term: { "rule.groups.keyword": "fortianalyzer-like" } },
-                { term: { "decoder.name.keyword": "fortianalyzer-like" } },
+                { term: { "rule.groups": "fortigate" } },
+                { term: { "rule.groups": "fortianalyzer-like" } },
+                { term: { "decoder.name": "fortianalyzer-like" } },
               ],
               minimum_should_match: 1,
             },
@@ -459,13 +478,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
         must_not: [
           {
             terms: {
-              "data.srccountry.keyword": [
-                "Reserved",
-                "Unknown",
-                "N/A",
-                "-",
-                "",
-              ],
+              "data.srccountry": ["Reserved", "Unknown", "N/A", "-", ""],
             },
           },
         ],
@@ -476,7 +489,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
     aggs: {
       top_countries: {
         terms: {
-          field: "GeoLocation.country_name.keyword",
+          field: "GeoLocation.country_name",
           size: 10,
           order: { _count: "desc" },
         },
@@ -492,36 +505,68 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
               ],
             },
           },
+          location: {
+            top_hits: {
+              size: 1,
+              _source: [
+                "GeoLocation.city_name",
+                "GeoLocation.country_name",
+                "GeoLocation.region_name",
+                "GeoLocation.location",
+              ],
+            },
+          },
         },
       },
 
       top_destinos: {
         terms: {
-          field: "data.dstip.keyword",
+          field: "data.dstip",
           size: 10,
           order: { _count: "desc" },
         },
         aggs: {
-          agentes: { terms: { field: "agent.name.keyword", size: 1 } },
+          agentes: { terms: { field: "agent.name", size: 1 } },
 
           origens: {
-            terms: { field: "data.srcip.keyword", size: 10 },
+            terms: { field: "data.srcip", size: 10 },
             aggs: {
-              pais_origem: { terms: { field: "data.srccountry.keyword", size: 1 } },
-              srcport: { terms: { field: "data.srcport.keyword", size: 1 } },
-              servico: { terms: { field: "data.app.keyword", size: 1 } },
-              interface: { terms: { field: "data.srcintf.keyword", size: 1 } },
-              // 🔹 adiciona coordenadas da origem
-              location: { top_hits: { size: 1, _source: ["GeoLocation.location"] } },
+              pais_origem: { terms: { field: "data.srccountry", size: 1 } },
+              srcport: { terms: { field: "data.srcport", size: 1 } },
+              servico: { terms: { field: "data.app", size: 1 } },
+              interface: { terms: { field: "data.srcintf", size: 1 } },
+
+              location: {
+                top_hits: {
+                  size: 1,
+                  _source: [
+                    "GeoLocation.city_name",
+                    "GeoLocation.country_name",
+                    "GeoLocation.region_name",
+                    "GeoLocation.location",
+                  ],
+                },
+              },
             },
           },
 
-          dstintf: { terms: { field: "data.dstintf.keyword", size: 1 } },
-          dstport: { terms: { field: "data.dstport.keyword", size: 1 } },
-          devname: { terms: { field: "data.devname.keyword", size: 1 } },
-          pais_destino: { terms: { field: "data.dstcountry.keyword", size: 1 } },
-          // 🔹 adiciona coordenadas do destino
-          location: { top_hits: { size: 1, _source: ["GeoLocation.location"] } },
+          dstintf: { terms: { field: "data.dstintf", size: 1 } },
+          dstport: { terms: { field: "data.dstport", size: 1 } },
+          devname: { terms: { field: "data.devname", size: 1 } },
+          pais_destino: { terms: { field: "data.dstcountry", size: 1 } },
+
+          location: {
+            top_hits: {
+              size: 1,
+              _source: [
+                "GeoLocation.city_name",
+                "GeoLocation.country_name",
+                "GeoLocation.region_name",
+                "GeoLocation.location",
+              ],
+            },
+          },
+
           severidade: {
             range: {
               field: "rule.level",
@@ -538,6 +583,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
     },
   };
 
+  // 📌 Requisição
   const response = await axios.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
@@ -547,20 +593,35 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
     }
   );
 
+  // 📌 Retorno final
   return [
-    ...(response.data.aggregations?.top_countries?.buckets || []).map((b) => ({
-      tipo: "origem",
-      pais: b.key,
-      total: b.doc_count,
-      severidades: (b.severidade?.buckets ?? []).map((s) => ({
-        key: s.key,
-        doc_count: s.doc_count,
-      })),
-    })),
+    ...(response.data.aggregations?.top_countries?.buckets || []).map((b) => {
+      const loc =
+        b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
+
+      return {
+        tipo: "origem",
+        pais: b.key,
+        total: b.doc_count,
+        city: b.location?.hits?.hits?.[0]?._source?.GeoLocation?.city_name ?? null,
+        region:
+          b.location?.hits?.hits?.[0]?._source?.GeoLocation?.region_name ?? null,
+        lat: loc?.lat ?? null,
+        lng: loc?.lon ?? null,
+
+        severidades: (b.severidade?.buckets ?? []).map((s) => ({
+          key: s.key,
+          doc_count: s.doc_count,
+        })),
+      };
+    }),
 
     ...(response.data.aggregations?.top_destinos?.buckets || []).map((b) => {
-      const loc = b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location;
+      const loc =
+        b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
+
       const ip = b.key;
+
       return {
         tipo: "destino",
         destino: ip,
@@ -571,15 +632,25 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
           : b.pais_destino?.buckets?.[0]?.key || null,
         lat: loc?.lat ?? null,
         lng: loc?.lon ?? null,
+
+        city:
+          b.location?.hits?.hits?.[0]?._source?.GeoLocation?.city_name ?? null,
+        region:
+          b.location?.hits?.hits?.[0]?._source?.GeoLocation?.region_name ?? null,
+
         dstintf: b.dstintf?.buckets?.[0]?.key || null,
         dstport: b.dstport?.buckets?.[0]?.key || null,
         devname: b.devname?.buckets?.[0]?.key || null,
+
         severidades: (b.severidade?.buckets ?? []).map((s) => ({
           key: s.key,
           doc_count: s.doc_count,
         })),
+
         origens: (b.origens?.buckets ?? []).map((o) => {
-          const loc = o.location?.hits?.hits?.[0]?._source?.GeoLocation?.location;
+          const loc =
+            o.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
+
           return {
             ip: o.key,
             total: o.doc_count,
@@ -595,7 +666,6 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
     }),
   ];
 }
-
 
 export async function buscarVulnSeveridades(tenant: any) {
   const clientName = tenant.wazuh_client_name;

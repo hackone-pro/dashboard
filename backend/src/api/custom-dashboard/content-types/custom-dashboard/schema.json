@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "custom_dashboards",
+  "info": {
+    "singularName": "custom-dashboard",
+    "pluralName": "custom-dashboards",
+    "displayName": "Custom Dashboard"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "layout": {
+      "type": "json"
+    },
+    "user": {
+      "type": "string"
+    }
+  }
+}
