@@ -3,6 +3,10 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.6.1.4]
+- Ajuste de cor de severidade Auditoria CIS
+- Ajuste duplicidade calculo RiskLevel
+
 ## [v1.6.1.3]
 - Desabilitar opção WhiteTheme
 - Custom Dashboard
