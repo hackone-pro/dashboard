@@ -61,16 +61,42 @@ export default function TopAgentsCisCard({ dias, onChangeFiltro, isWidget = fals
 
   // 🔹 Ordena por score (maior para menor)
   const lista = useMemo(
-    () => [...itens].sort((a, b) => b.score_cis_percent - a.score_cis_percent),
+    () =>
+      [...itens]
+        .sort((a, b) => b.score_cis_percent - a.score_cis_percent)
+        .slice(0, 15),
     [itens]
   );
+  
 
   // 🔹 Cores dinâmicas por faixa de score
   const getClassesPorScore = (p: number) => {
-    if (p < 30) return { bar: "bg-[#1DD69A1A]", text: "text-[#1DD69A]", border: "border-[#1DD69A33]" };
-    if (p < 40) return { bar: "bg-[#6F58E61A]", text: "text-[#6366F1]", border: "border-[#6F58E633]" };
-    if (p <= 75) return { bar: "bg-[#6700FF1A]", text: "text-[#A855F7]", border: "border-[#6700FF33]" };
-    return { bar: "bg-[#FB35B91A]", text: "text-[#F914AD]", border: "border-[#FB35B933]" };
+    if (p < 30)
+      return {
+        bar: "bg-[#FB35B91A]",    // crítico
+        text: "text-[#F914AD]",
+        border: "border-[#FB35B933]"
+      };
+  
+    if (p < 40)
+      return {
+        bar: "bg-[#6700FF1A]",   // alto
+        text: "text-[#A855F7]",
+        border: "border-[#6700FF33]"
+      };
+  
+    if (p <= 75)
+      return {
+        bar: "bg-[#6F58E61A]",   // médio
+        text: "text-[#6366F1]",
+        border: "border-[#6F58E633]"
+      };
+  
+    return {
+      bar: "bg-[#1DD69A1A]",    // baixo
+      text: "text-[#1DD69A]",
+      border: "border-[#1DD69A33]"
+    };
   };
 
   return (
