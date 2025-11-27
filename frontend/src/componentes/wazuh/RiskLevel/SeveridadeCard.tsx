@@ -1,6 +1,6 @@
 // src/components/wazuh/SeveridadeCard.tsx
 import { useEffect, useState } from "react";
-import { getSeveridadeWazuh } from "../../../services/wazuh/severidade.service";
+import { getRiskLevel } from "../../../services/wazuh/risklevel.service";
 import { useTenant } from "../../../context/TenantContext";
 import { GripVertical } from "lucide-react";
 
@@ -36,7 +36,7 @@ export default function SeveridadeCard({ dias, isWidget = false }: SeveridadeCar
         setAnimReady(false);
 
         const inicio = Date.now();
-        const r = await getSeveridadeWazuh(dias);
+        const r = await getRiskLevel(dias);
         if (!ativo) return;
 
         const elapsed = Date.now() - inicio;
@@ -44,7 +44,7 @@ export default function SeveridadeCard({ dias, isWidget = false }: SeveridadeCar
 
         setTimeout(() => {
           if (ativo) {
-            setDados(r);
+            setDados(r.severidades);
             setAnimReady(true);
           }
         }, delay);
