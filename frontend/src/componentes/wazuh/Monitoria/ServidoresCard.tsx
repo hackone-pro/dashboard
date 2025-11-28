@@ -113,47 +113,58 @@ const ServidoresCard = forwardRef<ServidoresCardRef>((props, ref) => {
                                 <th className="text-left py-2 px-3">Origem</th>
                                 <th className="text-left py-2">IP de Origem</th>
                                 <th className="text-center py-2">Indicador</th>
-                                <th className="text-center py-2">Últimos Logs</th>
+                                <th className="text-center py-2">Último Log</th>
                             </tr>
                         </thead>
 
                         <tbody>
-                            {servidoresPaginados.map((srv, index) => (
-                                <tr
-                                    key={index}
-                                    className="border-b border-white/5 hover:bg-[#ffffff05] transition-colors"
-                                >
-                                    <td className="px-3 py-3">{srv.nome}</td>
-                                    <td>{srv.ip}</td>
-
-                                    {/* 🔵 TooltipRight igual ao FirewallCard */}
-                                    <td className="text-center">
-                                        <TooltipRight
-                                            status={srv.status}
-                                            text={
-                                                srv.status === "🟢"
-                                                    ? "Recebendo logs\n(menos de 1h)"
-                                                    : srv.status === "🟡"
-                                                        ? "Sem receber logs\n (mais de 1h)"
-                                                        : "Sem receber logs\n (mais de 2h)"
-                                            }
-                                        >
-                                            <img
-                                                src={getStatusIcon(srv.status)}
-                                                alt="status"
-                                                className="w-6 h-3 mx-auto"
-                                            />
-                                        </TooltipRight>
-                                    </td>
-
-                                    <td className="text-center">
-                                        {srv.timestamp
-                                            ? new Date(srv.timestamp).toLocaleString()
-                                            : "-"}
+                            {servidoresPaginados.length === 0 ? (
+                                <tr className="border-b border-white/5">
+                                    <td
+                                        colSpan={4}
+                                        className="text-center py-6 text-gray-500"
+                                    >
+                                        Nenhum dado de servidor encontrado
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                servidoresPaginados.map((srv, index) => (
+                                    <tr
+                                        key={index}
+                                        className="border-b border-white/5 hover:bg-[#ffffff05] transition-colors"
+                                    >
+                                        <td className="px-3 py-3">{srv.nome}</td>
+                                        <td>{srv.ip}</td>
+
+                                        <td className="text-center">
+                                            <TooltipRight
+                                                status={srv.status}
+                                                text={
+                                                    srv.status === "🟢"
+                                                        ? "Recebendo logs\n(menos de 1h)"
+                                                        : srv.status === "🟡"
+                                                            ? "Sem receber logs\n (mais de 1h)"
+                                                            : "Sem receber logs\n (mais de 2h)"
+                                                }
+                                            >
+                                                <img
+                                                    src={getStatusIcon(srv.status)}
+                                                    alt="status"
+                                                    className="w-6 h-3 mx-auto"
+                                                />
+                                            </TooltipRight>
+                                        </td>
+
+                                        <td className="text-center">
+                                            {srv.timestamp
+                                                ? new Date(srv.timestamp).toLocaleString()
+                                                : "-"}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
+
                     </table>
 
                     {/* PAGINAÇÃO */}
