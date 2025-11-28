@@ -1,12 +1,15 @@
 import storageService from "../services/storage";
 
 export default {
+
+  // =============================
+  // STORAGE STATE (cliente)
+  // =============================
   async state(ctx) {
     try {
       const user = ctx.state.user;
       if (!user) return ctx.unauthorized("Usuário não autenticado");
 
-      // busca user completo (com tenant incluso)
       const fullUser = await strapi.db
         .query("plugin::users-permissions.user")
         .findOne({
@@ -18,20 +21,16 @@ export default {
         return ctx.notFound("Tenant não encontrado para este usuário");
 
       const tenantName = fullUser.tenant.cliente_name || "";
-      const tenantNameLower = tenantName.toLowerCase();
+      const tenantLower = tenantName.toLowerCase();
 
-      // lê o JSON inteiro
-      const dados = await storageService.lerStorageJSON();
+      const dados = await storageService.lerArquivo("state");
 
-      // filtra somente o customer do tenant (case insensitive)
-      const chaveEncontrada = Object.keys(dados).find(
-        (key) => key.toLowerCase() === tenantNameLower
+      const chave = Object.keys(dados).find(
+        (key) => key.toLowerCase() === tenantLower
       );
 
-      if (!chaveEncontrada) {
-        strapi.log.warn(
-          `⚠ Storage: Nenhuma chave no JSON corresponde ao tenant "${tenantName}".`
-        );
+      if (!chave) {
+        strapi.log.warn(`⚠ Nenhuma chave no JSON corresponde ao tenant "${tenantName}".`);
         return ctx.send({
           mensagem: "Nenhum dado correspondente ao tenant encontrado.",
           tenant: tenantName,
@@ -39,15 +38,28 @@ export default {
         });
       }
 
-      // envia somente os dados desse cliente
       return ctx.send({
-        cliente: chaveEncontrada,
-        dados: dados[chaveEncontrada],
+        cliente: chave,
+        dados: dados[chave],
       });
 
     } catch (err) {
-      strapi.log.error("❌ Erro ao buscar dados de storage:", err);
+      strapi.log.error("❌ Erro storage state:", err);
       return ctx.internalServerError("Erro ao acessar estado do storage.");
     }
-  }
+  },
+
+  // =============================
+  // STORAGE INTERNAL (descartes)
+  // =============================
+  async internal(ctx) {
+    try {
+      const dados = await storageService.lerArquivo("internal");
+      return ctx.send(dados);
+
+    } catch (err) {
+      strapi.log.error("❌ Erro storage internal:", err);
+      return ctx.internalServerError("Erro ao acessar storage internal.");
+    }
+  },
 };

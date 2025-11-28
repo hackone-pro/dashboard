@@ -8,6 +8,7 @@ import eventos from "./eventos.controller";
 import usuarios from "./usuarios.controller";
 import risco from "./risklevel.controller";
 import servidores from "./servidores.controller";
+import edr from "./edr.controller"
 
 
 export default {
@@ -20,5 +21,6 @@ export default {
   ...eventos,
   ...usuarios,
   ...risco,
-  ...servidores
+  ...servidores,
+  ...edr
 }

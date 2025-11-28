@@ -1,44 +1,34 @@
 import fs from "fs";
 import path from "path";
 
-/*
- * ============================================================
- *  CAMINHO 1 — Arquivo REAL do servidor (PRODUÇÃO)
- *     /opt/storage_monitoring/storage_state.json
- * ============================================================
- */
-const STORAGE_PATH_PROD = "/opt/storage_monitoring/storage_state.json";
+// Arquivos padrão
+const STORAGE_STATE_PROD = "/opt/storage_monitoring/storage_state.json";
+const STORAGE_INTERNAL_PROD = "/opt/storage_monitoring/storage_internal.json";
 
-/*
- * ============================================================
- *  CAMINHO 2 — Arquivo local para testes (DEV)
- *     backend/storage_state_dev.json
- * ============================================================
- */
-const STORAGE_PATH_DEV = path.join(process.cwd(), "storage_state_dev.json");
+// Arquivos locais (dev)
+const STORAGE_STATE_DEV = path.join(process.cwd(), "storage_state_dev.json");
+const STORAGE_INTERNAL_DEV = path.join(process.cwd(), "storage_internal_dev.json");
 
-// ============================================================
-//  ESCOLHA AQUI QUAL DOS DOIS CAMINHOS USAR
-//  Basta comentar/descomentar UMA linha
-// ============================================================
+// Escolha dev/prod
+const IS_DEV = false; // Altere manualmente se quiser
 
-// const STORAGE_PATH = STORAGE_PATH_DEV;   // ← usar arquivo local (teste)
-const STORAGE_PATH = STORAGE_PATH_PROD;    // ← usar arquivo real do servidor
+const PATHS = {
+  state: IS_DEV ? STORAGE_STATE_DEV : STORAGE_STATE_PROD,
+  internal: IS_DEV ? STORAGE_INTERNAL_DEV : STORAGE_INTERNAL_PROD,
+};
 
-
-// ============================================================
-//  FUNÇÃO PRINCIPAL
-// ============================================================
-export async function lerStorageJSON() {
+// Função genérica
+export async function lerArquivo(tipo: "state" | "internal") {
   try {
-    const raw = fs.readFileSync(STORAGE_PATH, "utf8");
+    const caminho = PATHS[tipo];
+    const raw = fs.readFileSync(caminho, "utf8");
     return JSON.parse(raw);
   } catch (err) {
-    strapi.log.error(`❌ Erro ao ler storage: ${STORAGE_PATH}`, err);
-    throw new Error("Não foi possível ler o arquivo de storage.");
+    strapi.log.error(`❌ Erro ao ler arquivo ${tipo}:`, err);
+    throw new Error(`Erro ao ler ${tipo}`);
   }
 }
 
 export default {
-  lerStorageJSON,
+  lerArquivo,
 };

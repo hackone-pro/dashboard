@@ -123,7 +123,7 @@ export default function Sidebar() {
                     <div
                         className={clsx(
                             "overflow-hidden transition-all duration-500 ease-in-out",
-                            isOpen && isNgsocOpen ? "max-h-80 opacity-100 mt-2" : "max-h-0 opacity-0"
+                            isOpen && isNgsocOpen ? "opacity-100 mt-2" : "max-h-0 opacity-0"
                         )}
                     >
                         <ul className=" pr-2 space-y-1 text-sm text-gray-300">
@@ -139,7 +139,7 @@ export default function Sidebar() {
                                 // @ts-ignore
                                 { to: "/archives-integrity", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Integridade de Arquivos" },
                                 // @ts-ignore
-                                { to: "/monitoria-ngsoc", icon: <TbHeartRateMonitor className="text-[16px]" />, label: "Monitoria" },
+                                { to: "/monitoria-ngsoc", icon: <TbHeartRateMonitor className="text-[16px]" />, label: "Monitoria NG-SOC" },
                             ].map((item, idx) => (
                                 <li key={idx} className="py-1">
                                     <Link
@@ -231,7 +231,7 @@ export default function Sidebar() {
                                         className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
                                     >
                                         {/* @ts-ignore */}
-                                        <TbHeartRateMonitor className="text-[16px]" /> Monitoria
+                                        <TbHeartRateMonitor className="text-[16px]" /> Monitoria NG-SOC
                                     </Link>
                                 </li>
                             </ul>

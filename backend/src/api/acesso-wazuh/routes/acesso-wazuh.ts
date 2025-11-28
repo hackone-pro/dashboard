@@ -143,6 +143,11 @@ export default {
       path: "/acesso/wazuh/servidores",
       handler: "acesso-wazuh.servidores",
       config: { policies: [] }
-    }    
+    },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/edr",
+      handler: "acesso-wazuh.edr",
+    },
   ],
 };

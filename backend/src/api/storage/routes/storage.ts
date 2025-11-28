@@ -6,5 +6,11 @@ export default {
       handler: "storage.state",
       config: { policies: [] },
     },
+    {
+      method: "GET",
+      path: "/storage/internal",
+      handler: "storage.internal",
+      config: { policies: [] },
+    },
   ],
 };

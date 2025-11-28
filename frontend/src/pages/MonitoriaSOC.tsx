@@ -8,8 +8,9 @@ import GraficoVolume from "../componentes/graficos/GraficoVolume";
 // Cards
 import FirewallCard, { FirewallCardRef } from "../componentes/wazuh/Monitoria/FirewallCard";
 import ServidoresCard, { ServidoresCardRef } from "../componentes/wazuh/Monitoria/ServidoresCard";
+import EdrCard, { EdrCardRef } from "../componentes/wazuh/Monitoria/EdrCard";
 
-import { getStorageState } from "../services/storage/storage.service";
+import { getStorageState, getStorageInternal } from "../services/storage/storage.service";
 import { getToken } from "../utils/auth";
 
 export default function MonitoriaSOC() {
@@ -18,11 +19,20 @@ export default function MonitoriaSOC() {
 
     const firewallRef = useRef<FirewallCardRef>(null);
     const servidoresRef = useRef<ServidoresCardRef>(null);
+    const edrRef = useRef<EdrCardRef>(null);
 
-    // STORAGE
+    // STORAGE PRINCIPAL
     const [storage, setStorage] = useState<any>(null);
     const [loadingStorage, setLoadingStorage] = useState(true);
 
+    // STORAGE INTERNAL (DESCARTES)
+    const [internal, setInternal] = useState<any>(null);
+    const [loadingInternal, setLoadingInternal] = useState(true);
+
+
+    // ============================
+    // 🔵 CARREGA STORAGE PRINCIPAL
+    // ============================
     const carregarStorage = async () => {
         try {
             setLoadingStorage(true);
@@ -36,12 +46,34 @@ export default function MonitoriaSOC() {
         }
     };
 
-    // 🔵 Quando muda o tenant → recarrega Firewall e Servidores
+
+    // ============================
+    // 🔵 CARREGA INTERNAL (DESCARTES)
+    // ============================
+    const carregarInternal = async () => {
+        try {
+            setLoadingInternal(true);
+            const token = getToken() ?? undefined;
+            const dados = await getStorageInternal(token);
+            setInternal(dados);
+        } catch (err) {
+            console.error("Erro ao carregar storage/internal:", err);
+        } finally {
+            setLoadingInternal(false);
+        }
+    };
+
+
+    // ============================
+    // 🔵 Quando muda o tenant
+    // ============================
     useEffect(() => {
         carregarStorage();
+        carregarInternal();
         firewallRef.current?.carregar();
         servidoresRef.current?.carregar();
     }, [tenantAtivo]);
+
 
     // Conversão MB/GB/TB → GB
     function parseValor(valor: string): number {
@@ -74,22 +106,63 @@ export default function MonitoriaSOC() {
     let totalUsado = 0;
     let totalDisponivel = 1024;
 
-    if (storage) {
+    if (storage?.dados) {
         totalUsado = parseValor(storage.dados["Em uso"]);
         totalDisponivel = Math.max(1024 - totalUsado, 0);
-
         dadosUtil = gerarCurvaInterpolada(totalUsado, categoriasX.length);
     }
+
+    // ===============================
+    // 🔵 DESCARTES — FILTRAR PELO TENANT
+    // ===============================
+
+    let descartesLista: any[] = [];
+
+    if (internal?.deleted && tenantAtivo) {
+        const clienteAtual = tenantAtivo?.cliente_name?.toLowerCase() ?? "";
+
+        const chaveMatch = Object.keys(internal.deleted).find(
+            (key) => key.toLowerCase() === clienteAtual
+        );
+
+        if (chaveMatch) {
+            descartesLista = internal.deleted[chaveMatch] ?? [];
+        }
+    }
+
+    // Função para comparar datas dd/mm/yyyy
+    function normalizarData(d: string) {
+        if (!d || !d.includes("/")) return d;
+        const [dia, mes, ano] = d.split("/");
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    // Ordenar por data desc
+    descartesLista = descartesLista
+        .sort((a, b) => {
+            const d1 = new Date(normalizarData(a.data)).getTime();
+            const d2 = new Date(normalizarData(b.data)).getTime();
+            return d2 - d1;
+        })
+        .slice(0, 3);
+
+    const descartesFinal = [
+        descartesLista[0] ?? { volume: 0, data: "--" },
+        descartesLista[1] ?? { volume: 0, data: "--" },
+        descartesLista[2] ?? { volume: 0, data: "--" },
+    ];
+
 
     // Botão "Atualizar tudo"
     const atualizarTudo = () => {
         firewallRef.current?.carregar();
         servidoresRef.current?.carregar();
         carregarStorage();
+        carregarInternal();
     };
 
     return (
-        <LayoutModel titulo="Monitoria NGSOC">
+        <LayoutModel titulo="Monitoria NG-SOC">
 
             <section className="grid grid-cols-1 gap-6">
 
@@ -131,14 +204,14 @@ export default function MonitoriaSOC() {
                         ) : (
                             <GraficoVolume
                                 series={[
-                                    { 
-                                        name: "Volume utilizado", 
+                                    {
+                                        name: "Volume utilizado",
                                         data: dadosUtil,
                                         // @ts-ignore
                                         marker: { size: 6, colors: ["#A78BFA"] }
                                     },
-                                    { 
-                                        name: "Volume total", 
+                                    {
+                                        name: "Volume total",
                                         data: dadosTotal,
                                         // @ts-ignore
                                         marker: { size: 0 }
@@ -154,30 +227,26 @@ export default function MonitoriaSOC() {
                     <div className="p-6 pt-4">
                         <h3 className="text-gray-400 text-sm mb-3">Últimos Descartes</h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {loadingInternal ? (
+                            <p className="text-gray-500 text-xs">Carregando descartes...</p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                            <div className="fundo-dashboard p-3 rounded-lg border border-white/10 text-xs text-gray-400">
-                                <div className="flex justify-between">
-                                    <p><span className="font-bold">Descarte 1:</span> </p>
-                                    <p><span className="font-bold">Volume:</span> 0 GB</p>
-                                </div>
+                                {descartesFinal.map((item, idx) => (
+                                    <div key={idx} className="fundo-dashboard p-3 rounded-lg border border-white/10 text-xs text-gray-400">
+                                        <div className="flex justify-between">
+                                            <p>
+                                                <span className="font-bold">Descarte {idx + 1}:</span> {item.data}
+                                            </p>
+                                            <p>
+                                                <span className="font-bold">Volume:</span> {item.volume.toFixed(2)} GB
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+
                             </div>
-
-                            <div className="fundo-dashboard p-3 rounded-lg border border-white/10 text-xs text-gray-400">
-                                <div className="flex justify-between">
-                                    <p><span className="font-bold">Descarte 2:</span> </p>
-                                    <p><span className="font-bold">Volume:</span> 0 GB</p>
-                                </div>
-                            </div>
-
-                            <div className="fundo-dashboard p-3 rounded-lg border border-white/10 text-xs text-gray-400">
-                                <div className="flex justify-between">
-                                    <p><span className="font-bold">Descarte 3:</span> </p>
-                                    <p><span className="font-bold">Volume:</span> 0 GB</p>
-                                </div>
-                            </div>
-
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -191,15 +260,31 @@ export default function MonitoriaSOC() {
                     <ServidoresCard ref={servidoresRef} />
 
                     {/* EDR */}
-                    <div className="cards rounded-2xl p-6">
-                        <h3 className="text-white text-sm mb-4">EDR</h3>
-                        <p className="text-gray-500 text-xs">Em desenvolvimento...</p>
-                    </div>
+                    <EdrCard ref={edrRef} />
 
                     {/* OUTROS COLETORES */}
                     <div className="cards rounded-2xl p-6">
                         <h3 className="text-white text-sm mb-4">Outros Coletores</h3>
-                        <p className="text-gray-500 text-xs">Em desenvolvimento...</p>
+                        <table className="w-full text-xs text-gray-400">
+                            <thead className="fundo-dashboard">
+                                <tr className="text-white">
+                                    <th className="text-left py-2 px-3">Origem</th>
+                                    <th className="text-center py-2">Status</th>
+                                    <th className="text-center py-2">Último Log</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr className="border-b border-white/5">
+                                    <td
+                                        colSpan={3}
+                                        className="text-center py-6 text-gray-500"
+                                    >
+                                        Nenhuma dado de coletores encontrado
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                 </div>
