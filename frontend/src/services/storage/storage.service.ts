@@ -31,3 +31,16 @@ export async function getStorageState(token?: string): Promise<StorageState> {
 
   return normalizarResposta(response.data);
 }
+
+export async function getStorageInternal(token?: string): Promise<any> {
+  const response = await axios.get<any>(
+    `${API_URL}/api/storage/internal`,
+    {
+      headers: token
+        ? { Authorization: `Bearer ${token}` }
+        : {},
+    }
+  );
+
+  return normalizarResposta(response.data);
+}
