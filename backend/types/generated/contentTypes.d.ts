@@ -516,6 +516,10 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
     wazuh_password: Schema.Attribute.String & Schema.Attribute.Private;
     wazuh_url: Schema.Attribute.String;
     wazuh_username: Schema.Attribute.String;
+    zabbix_config: Schema.Attribute.Relation<
+      'oneToOne',
+      'api::zabbix-config.zabbix-config'
+    >;
   };
 }
 
@@ -584,6 +588,38 @@ export interface ApiUserRoleUserRole extends Struct.CollectionTypeSchema {
       'oneToMany',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface ApiZabbixConfigZabbixConfig
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zabbix_configs';
+  info: {
+    displayName: 'Zabbix Config';
+    pluralName: 'zabbix-configs';
+    singularName: 'zabbix-config';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    enabled: Schema.Attribute.Boolean;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::zabbix-config.zabbix-config'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    tenant: Schema.Attribute.Relation<'oneToOne', 'api::tenant.tenant'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    zabbix_token: Schema.Attribute.String & Schema.Attribute.Private;
+    zabbix_url: Schema.Attribute.String;
   };
 }
 
@@ -1119,6 +1155,7 @@ declare module '@strapi/strapi' {
       'api::tenant.tenant': ApiTenantTenant;
       'api::user-multi-tenant.user-multi-tenant': ApiUserMultiTenantUserMultiTenant;
       'api::user-role.user-role': ApiUserRoleUserRole;
+      'api::zabbix-config.zabbix-config': ApiZabbixConfigZabbixConfig;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

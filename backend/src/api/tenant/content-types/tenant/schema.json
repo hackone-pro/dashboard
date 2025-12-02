@@ -54,6 +54,12 @@
     "organizacao": {
       "type": "string"
     },
+    "zabbix_config": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::zabbix-config.zabbix-config",
+      "inversedBy": "tenant"
+    },
     "contract": {
       "type": "relation",
       "relation": "oneToOne",
