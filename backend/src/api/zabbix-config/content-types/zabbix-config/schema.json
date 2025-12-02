@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zabbix_configs",
+  "info": {
+    "singularName": "zabbix-config",
+    "pluralName": "zabbix-configs",
+    "displayName": "Zabbix Config"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "tenant": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::tenant.tenant",
+      "mappedBy": "zabbix_config"
+    },
+    "zabbix_url": {
+      "type": "string"
+    },
+    "zabbix_token": {
+      "type": "string",
+      "private": true
+    },
+    "enabled": {
+      "type": "boolean"
+    }
+  }
+}
