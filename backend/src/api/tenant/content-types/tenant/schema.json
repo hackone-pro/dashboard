@@ -65,6 +65,12 @@
       "relation": "oneToMany",
       "target": "api::tenant-summary.tenant-summary",
       "mappedBy": "tenant"
+    },
+    "zabbix_config": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::zabbix-config.zabbix-config",
+      "inversedBy": "tenant"
     }
   }
 }
