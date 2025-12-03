@@ -8,7 +8,7 @@ const STORAGE_PROD_FOLDER = "/opt/storage_monitoring";
 const STORAGE_DEV_FOLDER = process.cwd();
 
 // Alternar manualmente
-const IS_DEV = false; // true para DEV, false para PRODUÇÃO
+const IS_DEV = false;
 
 // Apenas converte para minúsculo
 function normalizeTenantName(name: string): string {
