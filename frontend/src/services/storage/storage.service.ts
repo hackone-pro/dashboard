@@ -12,13 +12,13 @@ export type StorageState = {
   };
 };
 
-// Função auxiliar (mantém o padrão que você usa)
-function normalizarResposta(res: any): StorageState {
-  if (res && typeof res === "object") return res;
-  if (res?.data && typeof res.data === "object") return res.data;
-  return {};
-}
-
+// ===============================
+// 📌 STORAGE STATE
+// Backend retorna:
+// { cliente: "equatorial", dados: { ... } }
+// Precisamos transformar para:
+// { "equatorial": { ... } }
+// ===============================
 export async function getStorageState(token?: string): Promise<StorageState> {
   const response = await axios.get<any>(
     `${API_URL}/api/storage/state`,
@@ -29,9 +29,26 @@ export async function getStorageState(token?: string): Promise<StorageState> {
     }
   );
 
-  return normalizarResposta(response.data);
+  const payload = response.data;
+
+  // Formato do backend:
+  // { cliente: "...", dados: {...} }
+  if (payload?.cliente && payload?.dados) {
+    return {
+      [payload.cliente]: payload.dados
+    };
+  }
+
+  // Se vier fora do padrão:
+  return {};
 }
 
+// ===============================
+// 📌 STORAGE INTERNAL
+// Backend retorna exatamente:
+// { last_seen: {...}, deleted: [...] }
+// Então apenas retornamos direto.
+// ===============================
 export async function getStorageInternal(token?: string): Promise<any> {
   const response = await axios.get<any>(
     `${API_URL}/api/storage/internal`,
@@ -42,5 +59,5 @@ export async function getStorageInternal(token?: string): Promise<any> {
     }
   );
 
-  return normalizarResposta(response.data);
+  return response.data;
 }

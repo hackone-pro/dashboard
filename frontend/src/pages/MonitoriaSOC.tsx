@@ -106,8 +106,12 @@ export default function MonitoriaSOC() {
     let totalUsado = 0;
     let totalDisponivel = 1024;
 
-    if (storage?.dados) {
-        totalUsado = parseValor(storage.dados["Em uso"]);
+    // 🔥 NOVO FORMATO DO STATE
+    let chaveState = storage ? Object.keys(storage)[0] : null;
+    let dadosState = chaveState ? storage[chaveState] : null;
+
+    if (dadosState) {
+        totalUsado = parseValor(dadosState["Em uso"]);
         totalDisponivel = Math.max(1024 - totalUsado, 0);
         dadosUtil = gerarCurvaInterpolada(totalUsado, categoriasX.length);
     }
@@ -207,13 +211,11 @@ export default function MonitoriaSOC() {
                                     {
                                         name: "Volume utilizado",
                                         data: dadosUtil,
-                                        // @ts-ignore
                                         marker: { size: 6, colors: ["#A78BFA"] }
                                     },
                                     {
                                         name: "Volume total",
                                         data: dadosTotal,
-                                        // @ts-ignore
                                         marker: { size: 0 }
                                     }
                                 ]}
