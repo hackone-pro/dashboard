@@ -8,7 +8,7 @@ const STORAGE_PROD_FOLDER = "/opt/storage_monitoring";
 const STORAGE_DEV_FOLDER = process.cwd();
 
 // Alternar manualmente
-const IS_DEV = true; // ← AGORA DEFINA COMO FALSE NA PRODUÇÃO
+const IS_DEV = false; // ← AGORA DEFINA COMO FALSE NA PRODUÇÃO
 
 export async function lerArquivo(tipo: "state" | "internal", tenantName?: string) {
   try {
