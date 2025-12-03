@@ -3,6 +3,9 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.6.2.4]
+- Página Monitoria NG-SOC
+
 ## [v1.6.1.4]
 - Ajuste de cor de severidade Auditoria CIS
 - Ajuste duplicidade calculo RiskLevel
