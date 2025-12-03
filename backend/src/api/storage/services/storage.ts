@@ -21,7 +21,6 @@ export async function lerArquivo(tipo: "state" | "internal", tenantName?: string
       throw new Error("Tenant não informado ao ler storage");
     }
 
-    // Apenas lowercase
     const normalized = normalizeTenantName(tenantName);
 
     const fileName =
@@ -32,6 +31,11 @@ export async function lerArquivo(tipo: "state" | "internal", tenantName?: string
     const baseFolder = IS_DEV ? STORAGE_DEV_FOLDER : STORAGE_PROD_FOLDER;
     const caminho = path.join(baseFolder, fileName);
 
+    // 🔥 ADICIONAR ESTES LOGS:
+    strapi.log.info(`📌 Tenant recebido: "${tenantName}"`);
+    strapi.log.info(`📌 Tenant normalizado: "${normalized}"`);
+    strapi.log.info(`📁 Caminho final esperado: ${caminho}`);
+
     const raw = fs.readFileSync(caminho, "utf8");
     return JSON.parse(raw);
 
@@ -40,6 +44,7 @@ export async function lerArquivo(tipo: "state" | "internal", tenantName?: string
     throw new Error(`Erro ao ler ${tipo}`);
   }
 }
+
 
 export default {
   lerArquivo,
