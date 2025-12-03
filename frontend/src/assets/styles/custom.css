@@ -581,3 +581,45 @@ header button.toggle{
      z-index: 999 !important;
    }
    
+
+/* ============================
+ESTILO ESPECÍFICO DE IMPRESSÃO
+============================ */
+@media print {
+
+/* Remove tudo que for marcado como no-print */
+.no-print {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Remove sidebar e header */
+.sidebar {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Remove o botão de baixar PDF */
+.print-button {
+    display: none !important;
+}
+
+/* Faz o conteúdo ocupar toda a página */
+body {
+    background: #0A0617 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
+
+/* Remove margens do navegador */
+@page {
+    margin: 0;
+}
+
+/* Conteúdo do relatório ocupando 100% */
+.report-container {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+}

@@ -7,6 +7,9 @@ import ThreatMap from '../pages/ThreatMap';
 import Incidentes from '../pages/Incidentes';
 import VulnerabilitiesDetection from '../pages/VulnerabilitiesDetection';
 import ArchivesIntegrity from '../pages/ArchivesIntegrity';
+// import Reports from '../pages/Reports';
+import ReportDash from '../pages/ReportDash';
+import ReportView from '../pages/ReportView';
 import Config from '../pages/Config';
 import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
@@ -30,6 +33,8 @@ export default function AppRoutes() {
           <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
           <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
           <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
+y          <Route path="/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
+          <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
           <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
           <Route path="/forgot-password" element=<ForgotPassword /> />
           <Route path="/reset-password" element=<ResetPassword /> />
