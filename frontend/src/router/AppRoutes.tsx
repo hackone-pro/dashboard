@@ -9,6 +9,8 @@ import VulnerabilitiesDetection from '../pages/VulnerabilitiesDetection';
 import ArchivesIntegrity from '../pages/ArchivesIntegrity';
 import Reports from '../pages/Reports';
 import ServicesCatalog from '../pages/ServicesCatalog';
+import ReportDash from '../pages/ReportDash';
+import ReportView from '../pages/ReportView';
 import Config from '../pages/Config';
 import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
@@ -32,6 +34,8 @@ export default function AppRoutes() {
           <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
           <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
+          <Route path="/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
+          <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
           <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
           <Route path="/forgot-password" element=<ForgotPassword /> />
           <Route path="/reset-password" element=<ResetPassword /> />

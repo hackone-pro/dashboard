@@ -19,7 +19,7 @@ export default function Sidebar() {
 
     return (
         <div className={clsx(
-            "bg-[#161125] text-white min-h-screen p-3 transition-all duration-300 flex flex-col",
+            "bg-[#161125] text-white min-h-screen p-3 transition-all duration-300 flex flex-col sidebar",
             isOpen ? "w-64" : "w-16"
         )}>
 
