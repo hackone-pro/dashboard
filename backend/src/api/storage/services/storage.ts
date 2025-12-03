@@ -1,18 +1,21 @@
 import fs from "fs";
 import path from "path";
 
-// Caminhos de produção (agora dinâmicos)
+// Caminhos
 const STORAGE_PROD_FOLDER = "/opt/storage_monitoring";
-
-// Caminhos de desenvolvimento
 const STORAGE_DEV_FOLDER = process.cwd();
 
 // Alternar manualmente
 const IS_DEV = false;
 
-// Apenas converte para minúsculo
-function normalizeTenantName(name: string): string {
-  return name.toLowerCase();
+// Função utilitária para localizar arquivo com final dinâmico
+function encontrarArquivo(baseFolder: string, final: string): string | null {
+  const arquivos = fs.readdirSync(baseFolder);
+
+  // Exemplo final: "storage_state-equatorial.json"
+  const match = arquivos.find((nome) => nome.endsWith(final));
+
+  return match ? path.join(baseFolder, match) : null;
 }
 
 export async function lerArquivo(tipo: "state" | "internal", tenantName?: string) {
@@ -21,20 +24,20 @@ export async function lerArquivo(tipo: "state" | "internal", tenantName?: string
       throw new Error("Tenant não informado ao ler storage");
     }
 
-    const normalized = normalizeTenantName(tenantName);
-
-    const fileName =
-      tipo === "state"
-        ? `storage_state-${normalized}.json`
-        : `storage_internal-${normalized}.json`;
-
     const baseFolder = IS_DEV ? STORAGE_DEV_FOLDER : STORAGE_PROD_FOLDER;
-    const caminho = path.join(baseFolder, fileName);
 
-    // 🔥 ADICIONAR ESTES LOGS:
-    strapi.log.info(`📌 Tenant recebido: "${tenantName}"`);
-    strapi.log.info(`📌 Tenant normalizado: "${normalized}"`);
-    strapi.log.info(`📁 Caminho final esperado: ${caminho}`);
+    const final =
+      tipo === "state"
+        ? `storage_state-${tenantName}.json`
+        : `storage_internal-${tenantName}.json`;
+
+    const caminho = encontrarArquivo(baseFolder, final);
+
+    if (!caminho) {
+      throw new Error(`Arquivo não encontrado com final: ${final}`);
+    }
+
+    strapi.log.info(`📄 Usando arquivo detectado: ${caminho}`);
 
     const raw = fs.readFileSync(caminho, "utf8");
     return JSON.parse(raw);
@@ -44,7 +47,6 @@ export async function lerArquivo(tipo: "state" | "internal", tenantName?: string
     throw new Error(`Erro ao ler ${tipo}`);
   }
 }
-
 
 export default {
   lerArquivo,

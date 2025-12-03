@@ -117,21 +117,14 @@ export default function MonitoriaSOC() {
     }
 
     // ===============================
-    // 🔵 DESCARTES — FILTRAR PELO TENANT
+    // 🔵 DESCARTES — ARQUIVO EXCLUSIVO DO TENANT
     // ===============================
 
     let descartesLista: any[] = [];
 
-    if (internal?.deleted && tenantAtivo) {
-        const clienteAtual = tenantAtivo?.cliente_name?.toLowerCase() ?? "";
-
-        const chaveMatch = Object.keys(internal.deleted).find(
-            (key) => key.toLowerCase() === clienteAtual
-        );
-
-        if (chaveMatch) {
-            descartesLista = internal.deleted[chaveMatch] ?? [];
-        }
+    if (internal?.deleted) {
+        // internal.deleted já contém os descartes do tenant atual
+        descartesLista = internal.deleted;
     }
 
     // Função para comparar datas dd/mm/yyyy
@@ -141,7 +134,7 @@ export default function MonitoriaSOC() {
         return `${ano}-${mes}-${dia}`;
     }
 
-    // Ordenar por data desc
+    // Ordenar e pegar só os 3 últimos
     descartesLista = descartesLista
         .sort((a, b) => {
             const d1 = new Date(normalizarData(a.data)).getTime();
