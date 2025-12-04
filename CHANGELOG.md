@@ -3,6 +3,9 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.6.2.5]
+- Adaptação de novas querys para o novo ambiente prod
+
 ## [v1.6.2.4]
 - Página Monitoria NG-SOC
 
