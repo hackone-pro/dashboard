@@ -3,6 +3,8 @@ import { getToken } from "../../utils/auth";
 
 export interface TopFirewallItem {
   gerador: string;
+  ip: string | null;
+  timestamp: string | null;
   total: number;
   severidade: {
     baixo: number;
@@ -45,6 +47,8 @@ export async function getTopFirewalls(dias: string = "7"): Promise<TopFirewallIt
   const normalizado = lista
     .map((item: any) => ({
       gerador: String(item?.gerador ?? item?.key ?? ""),
+      ip: String(item?.ip ?? "-"),
+      timestamp: item?.timestamp ? String(item.timestamp) : "-",
       total: Number(item?.total ?? item?.doc_count ?? 0),
       severidade: {
         baixo: Number(item?.severidade?.baixo ?? 0),

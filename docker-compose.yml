@@ -23,6 +23,7 @@ services:
       - ./backend/package-lock.json:/package-lock.json
       - ./backend/.env:/app/.env
       - ./backend/.cache:/app/.cache
+      - /opt/storage_monitoring:/opt/storage_monitoring
     ports:
       - "1337:1337"
     depends_on:
