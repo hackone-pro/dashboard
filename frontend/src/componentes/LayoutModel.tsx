@@ -117,7 +117,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
         {/* Rodapé */}
         <footer className="text-right text-gray-500 text-xs mt-4">
-          Versão 1.6.2.4
+          Versão 1.6.2.5
         </footer>
 
       </div>

@@ -98,7 +98,8 @@ export default {
                 dias: String(dias),
             });
 
-            return ctx.send({ topAgentes: resultado });
+            // 🔥 Agora envia o ARRAY diretamente
+            return ctx.send(resultado);
 
         } catch (error) {
             console.error("Erro ao buscar top Agentes vulnerabilidades:", error);
@@ -110,24 +111,23 @@ export default {
     async topPackagesVulnerabilidades(ctx) {
         try {
             const tenant = await getTenantAtivo(ctx);
-            if (!tenant) {
-                return ctx.notFound("Tenant não encontrado ou inativo");
-            }
-
+            if (!tenant) return ctx.notFound("Tenant não encontrado ou inativo");
+    
             const { size = "5", dias = "todos" } = ctx.query;
-
+    
             const resultado = await buscarTopPackagesVulnerabilidades(tenant, {
                 size: Number(size),
                 dias: String(dias),
             });
-
+    
             return ctx.send({ topPackages: resultado });
-
+    
         } catch (error) {
             console.error("Erro ao buscar top Packages vulnerabilidades:", error);
-            return ctx.internalServerError("Erro ao consultar top Packages vulnerabilidades");
+            return ctx.internalServerError("Erro ao consultar top Packages vulneráveis");
         }
     },
+    
 
     //  6) Top scores de vulnerabilidades (CVSS)
     async topScoresVulnerabilidades(ctx) {

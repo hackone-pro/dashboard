@@ -9,6 +9,11 @@ export async function buscarTopAgentes(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  // Detecta se é Equatorial (Fortigate-only)
+  const isEquatorial =
+    clientName.toLowerCase().includes("equatorial") ||
+    (tenant.customer && tenant.customer.toLowerCase().includes("equatorial"));
+
   const timeFilter =
     dias === "todos"
       ? { match_all: {} }
@@ -21,7 +26,40 @@ export async function buscarTopAgentes(tenant, dias) {
           },
         };
 
-  const body = {
+  // -------------------------------
+  // 🔥 QUERY PARA EQUATORIAL
+  // -------------------------------
+  const bodyEquatorial = {
+    size: 0,
+    query: {
+      bool: {
+        must: [
+          timeFilter,
+          { match_phrase: { customer: clientName } },
+        ],
+        must_not: [
+          { match_phrase: { "agent.name": "wazuhhackone" } },
+        ],
+      },
+    },
+    aggs: {
+      top_agentes_alertas: {
+        terms: {
+          field: "agent.name",
+          order: { _count: "desc" },
+          size: 9,
+        },
+        aggs: {
+          por_severidade: { terms: { field: "rule.level" } },
+        },
+      },
+    },
+  };
+
+  // -------------------------------
+  // 🔥 QUERY ORIGINAL (syscheck)
+  // -------------------------------
+  const bodySyscheck = {
     size: 0,
     stored_fields: ["*"],
     script_fields: {},
@@ -35,7 +73,7 @@ export async function buscarTopAgentes(tenant, dias) {
       { field: "data.aws.createdAt", format: "date_time" },
       { field: "data.aws.end", format: "date_time" },
       { field: "data.aws.start", format: "date_time" },
-      { field: "data.aws.updatedAt", format: "date_time" }
+      { field: "data.aws.updatedAt", format: "date_time" },
     ],
     _source: {
       excludes: ["@timestamp"],
@@ -69,22 +107,27 @@ export async function buscarTopAgentes(tenant, dias) {
     },
   };
 
+  // Escolhe automaticamente a query
+  const finalQuery = isEquatorial ? bodyEquatorial : bodySyscheck;
+
+  // Execução
   const response = await http.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
-    body,
+    finalQuery,
     { headers: authHeader(tenant) }
   );
 
-  const agentes = response.data?.aggregations?.top_agentes_alertas?.buckets || [];
+  const agentes =
+    response.data?.aggregations?.top_agentes_alertas?.buckets || [];
 
   return agentes.map((agente) => {
-    const total = agente.por_severidade.buckets.reduce(
+    const total = agente.por_severidade?.buckets?.reduce(
       (sum, item) => sum + item.doc_count,
       0
-    );
+    ) || 0;
 
     const score =
-      agente.por_severidade.buckets.reduce((acc, item) => {
+      (agente.por_severidade?.buckets?.reduce((acc, item) => {
         const peso =
           item.key >= 0 && item.key <= 6
             ? 0.2
@@ -94,7 +137,7 @@ export async function buscarTopAgentes(tenant, dias) {
             ? 0.87
             : 1.0;
         return acc + item.doc_count * peso;
-      }, 0) / (total || 1);
+      }, 0) || 0) / (total || 1);
 
     let nivel;
     if (score >= 1.0) nivel = "Crítico";
@@ -110,10 +153,9 @@ export async function buscarTopAgentes(tenant, dias) {
     return {
       agente: agente.key,
       total_alertas: total,
-      severidades: agente.por_severidade.buckets,
+      severidades: agente.por_severidade?.buckets || [],
       nivel_risco: nivel,
       score: Math.round(score * 100),
-
       modified,
       added,
       deleted,

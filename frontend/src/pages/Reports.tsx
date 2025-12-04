@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import { Download, Loader2 } from "lucide-react";
+import { MdDeleteForever } from "react-icons/md";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getTopAgents, TopAgentItem } from "../services/wazuh/topagents.service";
@@ -28,7 +29,7 @@ export default function Reports() {
     const [periodo, setPeriodo] = useState("15");
     const [gerando, setGerando] = useState(false);
     const [relatoriosGerados, setRelatoriosGerados] = useState<RelatorioGerado[]>([]);
-    const [baixando, setBaixando] = useState(false);
+    const [baixandoId, setBaixandoId] = useState<string | null>(null);
 
     // 🔹 Carrega relatórios salvos
     useEffect(() => {
@@ -67,7 +68,7 @@ export default function Reports() {
                 dados: Array.isArray(dados) ? dados : [],
             };
 
-            setRelatoriosGerados((prev) => [...prev, novoRelatorio]);
+            setRelatoriosGerados((prev) => [novoRelatorio, ...prev]);
         } catch (err) {
             console.error("Erro ao gerar relatório:", err);
         } finally {
@@ -464,6 +465,7 @@ export default function Reports() {
                     alternateRowStyles: {
                         fillColor: "#151515",
                     },
+                    // @ts-ignore
                     didDrawPage: (data) => {
                         if (topApps.length === 0) {
                             const startY = data.cursor?.y || 60;
@@ -543,6 +545,7 @@ export default function Reports() {
                     alternateRowStyles: {
                         fillColor: "#151515",
                     },
+                    // @ts-ignore
                     didDrawPage: (data) => {
                         if (topCats.length === 0) {
                             const startY = data.cursor?.y || finalY + 45;
@@ -876,6 +879,7 @@ export default function Reports() {
                 },
                 headStyles: { fillColor: "#222222" },
                 alternateRowStyles: { fillColor: "#151515" },
+                // @ts-ignore
                 didParseCell: (data) => {
                     if (data.section === "body") {
                         const c = data.column.index;
@@ -895,6 +899,7 @@ export default function Reports() {
                         }
                     }
                 },
+                // @ts-ignore
                 didDrawPage: (data) => {
                     if (relatorio.dados.length === 0) {
                         const startY = data.cursor?.y || yTopHosts + 40;
@@ -1269,6 +1274,7 @@ export default function Reports() {
                 alternateRowStyles: {
                     fillColor: "#151515",
                 },
+                // @ts-ignore
                 didDrawPage: (data) => {
                     if (top5FIM.length === 0) {
                         const startY = data.cursor?.y || 60;
@@ -1457,6 +1463,11 @@ export default function Reports() {
         pdf.save(`${relatorio.nome}.pdf`);
     };
 
+    const deletarRelatorio = (id: string) => {
+        setRelatoriosGerados((prev) => prev.filter((r) => r.id !== id));
+    };
+
+
     // ========================================================
     // 🔹 Layout visual (inalterado)
     // ========================================================
@@ -1525,20 +1536,21 @@ export default function Reports() {
                                         </div>
 
                                         <div className="flex gap-3">
-                                            {/* 🔹 Baixar PDF */}
+
+                                            {/* Botão Baixar */}
                                             <button
                                                 onClick={async () => {
-                                                    setBaixando(true);
+                                                    setBaixandoId(r.id);
                                                     try {
                                                         await exportarRelatorioTopHosts(r);
                                                     } finally {
-                                                        setBaixando(false);
+                                                        setBaixandoId(null);
                                                     }
                                                 }}
-                                                disabled={baixando}
+                                                disabled={baixandoId === r.id}
                                                 className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-all text-xs border border-purple-400 rounded-lg px-2 py-1 disabled:opacity-60 disabled:cursor-not-allowed"
                                             >
-                                                {baixando ? (
+                                                {baixandoId === r.id ? (
                                                     <>
                                                         <Loader2 size={12} className="animate-spin" />
                                                         Baixando...
@@ -1550,7 +1562,18 @@ export default function Reports() {
                                                     </>
                                                 )}
                                             </button>
+
+                                            {/* Botão Deletar */}
+                                            <button
+                                                onClick={() => deletarRelatorio(r.id)}
+                                                className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-all text-xs border border-red-400 rounded-lg px-2 py-1"
+                                            >
+                                                {/* @ts-ignore */}
+                                                <MdDeleteForever /> Excluir
+                                            </button>
+
                                         </div>
+
                                     </div>
                                 ))
                             ) : (

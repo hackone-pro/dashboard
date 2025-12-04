@@ -466,6 +466,17 @@ export default function Sidebar() {
                     )}
                 </li>
 
+                <li>
+                    <Link to="/reports" className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                        {/* @ts-ignore */}
+                        <HiOutlineDocumentReport />
+                        {isOpen && <span>Relatórios</span>}
+                    </Link>
+                </li>
+
                 <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
