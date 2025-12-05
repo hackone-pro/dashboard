@@ -2,9 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
+import { gerarRelatorio as gerarRelatorioAPI } from "../services/report-entry/report.service";
+
 import LayoutModel from "../componentes/LayoutModel";
 import { FiSearch } from "react-icons/fi";
 import { useTenant } from "../context/TenantContext";
+
+import { toastSuccess, toastError } from "../utils/toast";
+
 
 export default function ReportDash() {
     const [horas, setHoras] = useState("24h");
@@ -12,6 +17,7 @@ export default function ReportDash() {
     const [secoesSelecionadas, setSecoesSelecionadas] = useState<string[]>([]);
     const [relatorios, setRelatorios] = useState<any[]>([]);
     const [gerando, setGerando] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const { tenantAtivo } = useTenant();
     const navigate = useNavigate();
@@ -40,24 +46,36 @@ export default function ReportDash() {
         );
     }
 
-    // Geração do relatório (simulada por enquanto)
-    async function gerarRelatorio() {
-        setGerando(true);
-
-        // Simula processamento
-        await new Promise(r => setTimeout(r, 2500));
-
-        const novo = {
-            id: crypto.randomUUID(),
-            nome: `relatorio_${Date.now()}`,
-            periodo: horas,
-            geradoEm: new Date().toLocaleString("pt-BR"),
-            organizacao: tenantAtivo?.cliente_name || "N/D",
-            secoes: secoesSelecionadas,
-        };
-
-        setRelatorios(prev => [novo, ...prev]);
-        setGerando(false);
+    // Gerar relatório REAL usando o backend
+    async function handleGerarRelatorio() {
+        try {
+    
+            // 🔥 1) VALIDAÇÃO — nenhuma seção selecionada
+            if (secoesSelecionadas.length === 0) {
+                toastError("Selecione ao menos uma seção do relatório.");
+                return;
+            }
+    
+            setGerando(true);
+            setLoading(true);
+    
+            // 🔥 2) Usa realmente as seções escolhidas
+            const secoes = secoesSelecionadas;
+    
+            const novoRelatorio = await gerarRelatorioAPI(horas, secoes);
+    
+            // 🔥 3) adiciona no topo da lista
+            setRelatorios(prev => [novoRelatorio, ...prev]);
+    
+            toastSuccess("Relatório gerado com sucesso!");
+    
+        } catch (error) {
+            console.error("Erro ao gerar relatório:", error);
+            toastError("Erro ao gerar relatório.");
+        } finally {
+            setGerando(false);
+            setLoading(false);
+        }
     }
 
     return (
@@ -192,23 +210,10 @@ export default function ReportDash() {
                     {/* BOTÃO GERAR */}
                     <div>
                         <button
-                            disabled={gerando}
-                            onClick={gerarRelatorio}
-                            className={`
-                                px-5 py-2 rounded-xl text-white transition-all flex items-center gap-2
-                                ${gerando
-                                    ? "bg-purple-900 cursor-not-allowed opacity-70"
-                                    : "bg-purple-600 hover:bg-purple-700"}
-                            `}
+                            onClick={handleGerarRelatorio}
+                            className="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-xl text-white transition-all"
                         >
-                            {gerando ? (
-                                <>
-                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                    Gerando...
-                                </>
-                            ) : (
-                                <>Gerar relatório →</>
-                            )}
+                            Gerar relatório →
                         </button>
                     </div>
                 </div>
@@ -241,18 +246,27 @@ export default function ReportDash() {
                 {/* Lista existente */}
                 {relatorios.length > 0 && (
                     <>
-                        {/* Skeleton APENAS para o novo relatório */}
-                        {gerando && <SkeletonLinha />}
+                        {/* Skeleton APENAS enquanto gera */}
+                        {loading && <SkeletonLinha />}
 
                         {relatorios.map(rel => (
                             <div
                                 key={rel.id}
                                 className="border border-white/5 rounded-xl px-4 py-4 grid grid-cols-5 items-center mb-2"
                             >
-                                <div className="text-gray-300">{rel.nome}</div>
-                                <div className="text-gray-300">{rel.periodo}</div>
-                                <div className="text-gray-300">{rel.geradoEm}</div>
-                                <div className="text-gray-300">{rel.organizacao}</div>
+                                <div className="text-gray-300">
+                                    relatório_{rel.id}
+                                </div>
+
+                                <div className="text-gray-300">{rel.period}</div>
+
+                                <div className="text-gray-300">
+                                    {new Date(rel.createdAt).toLocaleString("pt-BR")}
+                                </div>
+
+                                <div className="text-gray-300">
+                                    {tenantAtivo?.cliente_name || "---"}
+                                </div>
 
                                 <div className="flex justify-end gap-3">
                                     <button
@@ -265,7 +279,6 @@ export default function ReportDash() {
                                             px-3 py-2 rounded-lg text-sm transition
                                         "
                                     >
-                                        {/* @ts-ignore */}
                                         <FiSearch className="text-purple-400 text-lg" />
                                         Visualizar
                                     </button>

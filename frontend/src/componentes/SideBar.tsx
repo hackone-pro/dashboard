@@ -8,6 +8,8 @@ import { TbChartInfographic, TbHeartRateMonitor, TbCloudLock } from "react-icons
 import { GoShieldLock } from "react-icons/go";
 import { AiOutlineAim } from "react-icons/ai";
 import { BsDatabaseLock } from "react-icons/bs";
+import { HiOutlineDocumentReport } from "react-icons/hi";
+
 
 import clsx from 'clsx';
 
