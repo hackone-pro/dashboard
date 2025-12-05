@@ -139,6 +139,8 @@ export default function Sidebar() {
                                 { to: "/archives-integrity", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Integridade de Arquivos" },
                                 // @ts-ignore
                                 { to: "/monitoria-ngsoc", icon: <TbHeartRateMonitor className="text-[16px]" />, label: "Monitoria NG-SOC" },
+                                // @ts-ignore
+                                { to: "/relatorios", icon: <HiOutlineDocumentReport className="text-[16px]" />, label: "Relatórios" },
                             ].map((item, idx) => (
                                 <li key={idx} className="py-1">
                                     <Link
@@ -231,6 +233,15 @@ export default function Sidebar() {
                                     >
                                         {/* @ts-ignore */}
                                         <TbHeartRateMonitor className="text-[16px]" /> Monitoria NG-SOC
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        to="/relatorios"
+                                        className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <HiOutlineDocumentReport className="text-[16px]" /> Relatórios
                                     </Link>
                                 </li>
                             </ul>

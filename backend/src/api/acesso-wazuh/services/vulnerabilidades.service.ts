@@ -41,9 +41,16 @@ function customerFilterUniversal(clientName: string) {
 /* ======================================================
    1) RESUMO DE SEVERIDADES DE VULNERABILIDADES
 ====================================================== */
-export async function buscarVulnSeveridades(tenant: any) {
+export async function buscarVulnSeveridades(tenant: any, opts?: { dias?: string }) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const dias = opts?.dias ?? "todos";
+
+  const timeFilter =
+    dias !== "todos"
+      ? { range: { "@timestamp": { gte: `now-${dias}`, lte: "now" } } }
+      : { match_all: {} };
 
   const body = {
     size: 0,
@@ -58,7 +65,7 @@ export async function buscarVulnSeveridades(tenant: any) {
     query: {
       bool: {
         filter: [
-          { match_all: {} },
+          timeFilter,
           { match_phrase: { "wazuh.cluster.name": { query: "wazuhhackone" } } },
           customerFilterUniversal(clientName),
         ],
@@ -98,6 +105,7 @@ export async function buscarVulnSeveridades(tenant: any) {
     Total: total,
   };
 }
+
 
 
 
