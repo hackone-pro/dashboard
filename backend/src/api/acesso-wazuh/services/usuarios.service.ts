@@ -13,29 +13,35 @@ export async function buscarTopUsers(
 
   const dias = opts?.dias ?? "todos";
 
-  // Detecta Equatorial (usar SEM customerFilter)
+  // Detectar Equatorial
   const isEquatorial =
     clientName.toLowerCase().includes("equatorial") ||
     tenant.customer?.toLowerCase().includes("equatorial");
 
+  // Filtro de tempo
   const timeFilter =
     dias !== "todos"
       ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
       : { match_all: {} };
 
-  // 🔥 Se for Equatorial → NÃO aplica customerFilter
+  // Customer filter somente para NÃO-EQUATORIAL
   const customerFilterFinal = isEquatorial ? null : customerFilter(clientName);
+
+  // ------------------------------------------
+  // 🔥 Construção dinâmica do filtro principal
+  // ------------------------------------------
+  const filters: any[] = [
+    timeFilter,
+    ...(isEquatorial ? [{ term: { "agent.id": "000" } }] : []), // ✔ SOMENTE EQUATORIAL
+    ...(customerFilterFinal ? [customerFilterFinal] : [])        // ✔ SOMENTE NÃO EQUATORIAL
+  ];
 
   const body: any = {
     size: 0,
     query: {
       bool: {
-        filter: [
-          timeFilter,
-          { term: { "agent.id": "000" } }, // obrigatório para syscheck
-          ...(customerFilterFinal ? [customerFilterFinal] : [])
-        ],
-      },
+        filter: filters
+      }
     },
     aggs: {
       top_users: {
@@ -45,13 +51,13 @@ export async function buscarTopUsers(
             terms: { field: "agent.id", size: 5 },
             aggs: {
               agent_name: {
-                terms: { field: "agent.name", size: 1 },
-              },
-            },
-          },
-        },
-      },
-    },
+                terms: { field: "agent.name", size: 1 }
+              }
+            }
+          }
+        }
+      }
+    }
   };
 
   const response = await axios.post(
@@ -75,7 +81,7 @@ export async function buscarTopUsers(
         user: u.key ?? "Desconhecido",
         agent_id: a.key ?? "-",
         agent_name: agentName,
-        count: Number(a.doc_count ?? 0),
+        count: Number(a.doc_count ?? 0)
       });
     }
   }

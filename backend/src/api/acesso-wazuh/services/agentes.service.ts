@@ -170,18 +170,42 @@ export async function buscarTopAgentesCis(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  const diasFiltro = dias ?? "todos";
+
+  const isEquatorial =
+    clientName.toLowerCase().includes("equatorial") ||
+    tenant.customer?.toLowerCase().includes("equatorial");
+
+  const isAdentro =
+    clientName.toLowerCase().includes("adentro") ||
+    tenant.customer?.toLowerCase().includes("adentro");
+
+  // Filtro de tempo
   const timeFilter =
-    dias === "todos"
+    diasFiltro === "todos"
       ? null
       : {
           range: {
             "@timestamp": {
-              gte: `now-${dias}d`,
+              gte: `now-${diasFiltro}d`,
               lte: "now",
             },
           },
         };
 
+  // ------------------------------------------
+  // 🔥 CUSTOMER FILTER CORRETO PARA CADA CASO
+  // ------------------------------------------
+  let customerFilterFinal = null;
+
+  if (!isEquatorial && !isAdentro) {
+    // Só aplica customerFilter para clientes NORMAIS
+    customerFilterFinal = { match_phrase: { customer: clientName } };
+  }
+
+  // ------------------------------------------
+  // 🔥 BODY FINAL
+  // ------------------------------------------
   const body = {
     size: 0,
     query: {
@@ -189,7 +213,7 @@ export async function buscarTopAgentesCis(tenant, dias) {
         must: [],
         filter: [
           { match_all: {} },
-          { match_phrase: { customer: clientName } },
+          ...(customerFilterFinal ? [customerFilterFinal] : []), // usado SOMENTE nos outros tenants
           { term: { "rule.groups": "sca" } },
           { term: { "data.sca.type": "summary" } },
           ...(timeFilter ? [timeFilter] : []),
@@ -238,3 +262,4 @@ export async function buscarTopAgentesCis(tenant, dias) {
     };
   });
 }
+
