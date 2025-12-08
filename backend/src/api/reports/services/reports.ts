@@ -19,7 +19,7 @@ export async function gerarRelatorioN8N(cliente: string, periodo: number | strin
         auth: { username, password },
         headers: { "Content-Type": "application/json" },
         httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-        timeout: 20000,
+        timeout: 150000,
       }
     );
 
@@ -40,7 +40,7 @@ export async function buscarDadosReport(periodo = "15", cliente = "default") {
       auth: { username, password },
       headers: { "Content-Type": "application/json" },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-      timeout: 20000,
+      timeout: 150000,
     });
 
     strapi.log.info(`✅ Dados do relatório ${cliente} recuperados com sucesso (${periodo} dias)`);
