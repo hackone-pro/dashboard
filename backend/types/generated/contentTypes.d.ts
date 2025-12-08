@@ -423,6 +423,7 @@ export interface ApiReportEntryReportEntry extends Struct.CollectionTypeSchema {
       'api::report-entry.report-entry'
     > &
       Schema.Attribute.Private;
+    nome: Schema.Attribute.String;
     period: Schema.Attribute.String;
     progress: Schema.Attribute.Enumeration<
       ['aguardando', 'gerando', 'finalizado', 'falhou']
