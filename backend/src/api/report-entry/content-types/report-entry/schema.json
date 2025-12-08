@@ -11,6 +11,9 @@
   },
   "pluginOptions": {},
   "attributes": {
+    "nome": {
+      "type": "string"
+    },
     "tenant": {
       "type": "string",
       "required": true

@@ -38,6 +38,7 @@
                period,
                sections,
                progress: "gerando",
+               nome: `relatorio_${Date.now()}_${period}`,
                snapshot: {},
              },
            }

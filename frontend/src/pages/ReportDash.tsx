@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { gerarRelatorio as gerarRelatorioAPI } from "../services/report-entry/report.service";
+import { listarRelatorios } from "../services/report-entry/report.service";
 
 import LayoutModel from "../componentes/LayoutModel";
 import { FiSearch } from "react-icons/fi";
@@ -23,6 +24,22 @@ export default function ReportDash() {
     const navigate = useNavigate();
 
     const portalRoot = typeof window !== "undefined" ? document.body : null;
+
+    useEffect(() => {
+        async function carregar() {
+            try {
+                setLoading(true);
+                const lista = await listarRelatorios();
+                setRelatorios(lista);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        carregar();
+    }, []);
 
     // Skeleton de carregamento
     const SkeletonLinha = () => (
@@ -49,26 +66,26 @@ export default function ReportDash() {
     // Gerar relatório REAL usando o backend
     async function handleGerarRelatorio() {
         try {
-    
+
             // 🔥 1) VALIDAÇÃO — nenhuma seção selecionada
             if (secoesSelecionadas.length === 0) {
                 toastError("Selecione ao menos uma seção do relatório.");
                 return;
             }
-    
+
             setGerando(true);
             setLoading(true);
-    
+
             // 🔥 2) Usa realmente as seções escolhidas
             const secoes = secoesSelecionadas;
-    
+
             const novoRelatorio = await gerarRelatorioAPI(horas, secoes);
-    
+
             // 🔥 3) adiciona no topo da lista
             setRelatorios(prev => [novoRelatorio, ...prev]);
-    
+
             toastSuccess("Relatório gerado com sucesso!");
-    
+
         } catch (error) {
             console.error("Erro ao gerar relatório:", error);
             toastError("Erro ao gerar relatório.");
@@ -77,6 +94,7 @@ export default function ReportDash() {
             setLoading(false);
         }
     }
+
 
     return (
         <LayoutModel titulo="Relatórios">
@@ -244,49 +262,52 @@ export default function ReportDash() {
                 )}
 
                 {/* Lista existente */}
-                {relatorios.length > 0 && (
-                    <>
-                        {/* Skeleton APENAS enquanto gera */}
-                        {loading && <SkeletonLinha />}
+                {relatorios.map((rel) => {
+                    const r = rel.attributes || rel; // <-- aqui está a proteção
 
-                        {relatorios.map(rel => (
-                            <div
-                                key={rel.id}
-                                className="border border-white/5 rounded-xl px-4 py-4 grid grid-cols-5 items-center mb-2"
-                            >
-                                <div className="text-gray-300">
-                                    relatório_{rel.id}
-                                </div>
-
-                                <div className="text-gray-300">{rel.period}</div>
-
-                                <div className="text-gray-300">
-                                    {new Date(rel.createdAt).toLocaleString("pt-BR")}
-                                </div>
-
-                                <div className="text-gray-300">
-                                    {tenantAtivo?.cliente_name || "---"}
-                                </div>
-
-                                <div className="flex justify-end gap-3">
-                                    <button
-                                        onClick={() => navigate(`/report-view?id=${rel.id}`)}
-                                        className="
-                                            flex items-center gap-2
-                                            border border-purple-500/40
-                                            hover:bg-purple-500/10
-                                            text-purple-400
-                                            px-3 py-2 rounded-lg text-sm transition
-                                        "
-                                    >
-                                        <FiSearch className="text-purple-400 text-lg" />
-                                        Visualizar
-                                    </button>
-                                </div>
+                    return (
+                        <div
+                            key={rel.id}
+                            className="border border-white/5 rounded-xl px-4 py-4 grid grid-cols-5 items-center mb-2"
+                        >
+                            <div className="text-gray-300">
+                                {r?.nome ?? `relatório_${rel.id}`}
                             </div>
-                        ))}
-                    </>
-                )}
+
+                            <div className="text-gray-300">
+                                {r?.period ?? "--"}
+                            </div>
+
+                            <div className="text-gray-300">
+                                {r?.createdAt
+                                    ? new Date(r.createdAt).toLocaleString("pt-BR")
+                                    : "--"}
+                            </div>
+
+                            <div className="text-gray-300">
+                                {tenantAtivo?.cliente_name || "---"}
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => navigate(`/report-view?nome=${rel.nome}`)}
+                                    className="
+                                        flex items-center gap-2
+                                        border border-purple-500/40
+                                        hover:bg-purple-500/10
+                                        text-purple-400
+                                        px-3 py-2 rounded-lg text-sm transition
+                                    "
+                                >
+                                    {/* @ts-ignore */}
+                                    <FiSearch className="text-purple-400 text-lg" />
+                                    Visualizar
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+
             </div>
         </LayoutModel>
     );

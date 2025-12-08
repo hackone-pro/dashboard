@@ -16,6 +16,7 @@ export default {
         handler: "report-entry.find",
         config: {
           policies: [],
+          populate: "*",
         },
       },
       {
@@ -24,6 +25,7 @@ export default {
         handler: "report-entry.findOne",
         config: {
           policies: [],
+          populate: "*",
         },
       },
       {
