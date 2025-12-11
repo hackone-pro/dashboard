@@ -121,6 +121,87 @@ export async function buscarTopAgentes(tenant, dias) {
   });
 }
 
+export async function buscarTopAlteracoesArquivo(tenant, dias) {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const diasFormatado = dias === "todos" ? null : String(dias).replace("d", "");
+
+  const timeFilter =
+    dias === "todos"
+      ? { match_all: {} }
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${diasFormatado}d`,
+              lte: "now",
+            },
+          },
+        };
+
+  const body = {
+    size: 0,
+    query: {
+      bool: {
+        must: [
+          timeFilter,
+          {
+            bool: {
+              should: [
+                { match_phrase: { customer: clientName } },
+                { match_phrase: { "data.customer": clientName } },
+                { match_phrase: { "fields.customer": clientName } },
+              ],
+              minimum_should_match: 1,
+            },
+          },
+        ],
+        filter: [
+          { match_phrase: { "rule.groups": "syscheck" } },
+        ],
+        must_not: [
+          { term: { "agent.name": "wazuhhackone" } },
+        ],
+      },
+    },
+    aggs: {
+      top_hosts: {
+        terms: {
+          field: "agent.name",
+          order: { _count: "desc" },
+          size: 9,
+        },
+        aggs: {
+          por_evento: { terms: { field: "syscheck.event" } },
+        },
+      },
+    },
+  };
+
+  const response = await http.post(
+    `${tenant.wazuh_url}/wazuh-*/_search`,
+    body,
+    { headers: authHeader(tenant) }
+  );
+
+  const hosts = response.data?.aggregations?.top_hosts?.buckets || [];
+
+  return hosts.map((h) => {
+    const modified = h.por_evento.buckets.find(e => e.key === "modified")?.doc_count || 0;
+    const added = h.por_evento.buckets.find(e => e.key === "added")?.doc_count || 0;
+    const deleted = h.por_evento.buckets.find(e => e.key === "deleted")?.doc_count || 0;
+
+    return {
+      host: h.key,
+      modified,
+      added,
+      deleted,
+      total: modified + added + deleted,
+    };
+  });
+}
+
+
 /* ============================================
    TOP AGENTES CIS
 ============================================ */

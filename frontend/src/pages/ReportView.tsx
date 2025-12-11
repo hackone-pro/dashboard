@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import LayoutModel from "../componentes/LayoutModel";
-import { FiAlertTriangle, FiShield, FiTrendingUp, FiDownload, FiBarChart2 } from "react-icons/fi";
+import { FiAlertTriangle, FiShield, FiTrendingUp, FiDownload, FiBarChart2, FiUsers, FiUserCheck } from "react-icons/fi";
+import { CiServer } from "react-icons/ci";
+import { RiWindowsLine } from "react-icons/ri";
+import { LuFolderTree } from "react-icons/lu";
+import { BiCategory } from "react-icons/bi";
+import { TbListDetails } from "react-icons/tb";
 
 import GraficoGauge from "../componentes/graficos/GraficoGauge";
 import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
@@ -10,6 +15,27 @@ import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
 import { buscarRelatorioPorNome } from "../services/report-entry/report.service";
 
 export default function ReportView() {
+
+    function formatBytes(bytes: number) {
+        if (!bytes || bytes <= 0) return "0 B";
+
+        const TB = 1024 ** 4;
+        const GB = 1024 ** 3;
+        const MB = 1024 ** 2;
+
+        if (bytes >= TB) return (bytes / TB).toFixed(2) + " TB";
+        if (bytes >= GB) return (bytes / GB).toFixed(2) + " GB";
+        if (bytes >= MB) return (bytes / MB).toFixed(2) + " MB";
+
+        return bytes + " B";
+    }
+
+    function bytesToGBInt(bytes: number) {
+        if (!bytes || bytes <= 0) return 0;
+        const MB = 1024 ** 2;
+        return Math.round(bytes / MB); // sempre inteiro
+    }
+
 
     const [params] = useSearchParams();
     const [report, setReport] = useState<any>(null);
@@ -22,25 +48,35 @@ export default function ReportView() {
         return report?.sections?.includes(sec);
     }
 
-    const labels = [
-        "/",
-        "/favicon.ico",
-        "/prints-adm-contas/print_atual.png",
-        "/prints-chamados/print_atual.png",
-        "/prints-chamados/",
-        "/prints-adm-contas/print_atual.png?ver=1762165039799",
-        "/prints-adm-contas/print_atual.png?ver=1762165040040",
-        "/prints-adm-contas/print_atual.png?ver=1762165099782",
-        "/prints-adm-contas/print_atual.png?ver=1762165100085",
-        "/prints-adm-contas/print_atual.png?ver=1762165159680",
-    ];
+    const topAcessos = report?.snapshot?.topAcessos ?? null;
 
-    const series = [9, 8, 4, 3, 2, 1, 1, 1, 1, 1];
+    const labels = topAcessos?.urls?.map((item: any) => item[0]) ?? [];
+    const series = topAcessos?.urls?.map((item: any) => item[1]) ?? [];
+
+    const totalOcorrencias = series.reduce((a: number, b: number) => a + b, 0);
 
     const cores = [
         "#F914AD", "#A855F7", "#6366F1", "#1DD69A", "#FFC857",
         "#FF7B72", "#E87DFF", "#55D7FF", "#DEB6FF", "#6EE7B7"
     ];
+
+    //--------------------------TOP USERS-------------------------//
+    const topUsers = report?.snapshot?.topUsers ?? [];
+    const labelsTopUsers = topUsers.map((u: any) => u.user);
+
+    // Gráfico com números inteiros
+    const seriesTopUsers = topUsers.map((u: any) => bytesToGBInt(u.acessos));
+
+    // Total real para mostrar no centro
+    const totalBytes = topUsers.reduce((acc: number, u: any) => acc + u.acessos, 0);
+    const totalFormatado = formatBytes(totalBytes);
+
+    // cores padrão
+    const coresTopUsers = [
+        "#F914AD", "#A855F7", "#6366F1", "#1DD69A", "#FFC857",
+        "#FF7B72", "#E87DFF", "#55D7FF", "#DEB6FF", "#6EE7B7"
+    ];
+    //-------------------------
 
     useEffect(() => {
         async function load() {
@@ -74,6 +110,8 @@ export default function ReportView() {
     }
 
     const vuln = report?.snapshot?.vulnerabilidades ?? null;
+    const riskLevel = report?.snapshot?.riskLevel ?? null;
+
 
     return (
         <LayoutModel titulo="Relatórios">
@@ -109,15 +147,15 @@ export default function ReportView() {
                         Baixar PDF
                     </button>
                 </div>
-
+                <div className="py-3">
+                    <p className="text-gray-300 text-sm">
+                        <span className="text-gray-400">Período filtrado:</span> {report.period}
+                    </p>
+                </div>
                 {/* PERÍODO / SEÇÕES */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mt-4 gap-4">
 
-                    <div>
-                        <p className="text-gray-300 text-sm">
-                            <span className="text-gray-400">Período filtrado:</span> {report.period}
-                        </p>
-                    </div>
+
 
                     <div className="flex flex-wrap items-center gap-2 no-print">
                         <span className="text-gray-400 text-sm">Seções exibidas:</span>
@@ -141,17 +179,19 @@ export default function ReportView() {
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-3">
-                        {/* @ts-ignore */}
                         <FiBarChart2 className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Top acessos</h3>
                     </div>
 
                     <p className="text-gray-400 text-sm mb-6">
                         Esta seção apresenta os principais destinos acessados pelos usuários corporativos.
+                        A análise permite identificar padrões de navegação, potenciais riscos de exposição
+                        a domínios suspeitos e consumo elevado de banda em aplicações não essenciais.
                     </p>
 
                     <div className="bg-[#0F091F] border border-white/10 rounded-xl p-6 flex gap-10">
 
+                        {/* DONUT */}
                         <div className="flex flex-col items-center justify-center min-w-[260px]">
                             <GraficoDonutSimples
                                 labels={labels}
@@ -162,10 +202,11 @@ export default function ReportView() {
 
                             <div className="absolute flex flex-col items-center justify-center pointer-events-none">
                                 <div className="text-5xl font-semibold text-purple-400">
-                                    31
+                                    {totalOcorrencias}
                                 </div>
                                 <p className="text-white text-xs -mt-1">Ocorrências</p>
                             </div>
+
                             <p className="text-white text-center text-sm -mt-1">
                                 Os 10 maiores acessos de<br /> largura de banda
                             </p>
@@ -184,7 +225,7 @@ export default function ReportView() {
 
                             <table className="w-full text-sm">
                                 <tbody>
-                                    {labels.map((url, i) => (
+                                    {labels.map((url: string, i: number) => (
                                         <tr key={i} className="border-b border-white/5">
                                             <td className="py-3 flex items-center gap-2">
                                                 <span
@@ -200,8 +241,231 @@ export default function ReportView() {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 1.2 — TOP USUÁRIOS ========================== */}
+            {temSecao("Top Usuários") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-3">
+                        <FiUsers className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">Top Usuários</h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Aqui são exibidos os usuários com maior consumo de banda no período analisado. O objetivo é identificar
+                        comportamentos atípicos ou uso indevido dos recursos de rede, possibilitando intervenções preventivas ou ajustes de perfil de acesso. A correlação com políticas de uso aceitável reforça o alinhamento entre produtividade e segurança.
+                    </p>
+
+                    <div className="bg-[#0F091F] border border-white/10 rounded-xl p-6 flex gap-10">
+                        {/* DONUT */}
+                        <div className="flex flex-col items-center justify-center min-w-[260px]">
+
+                            <GraficoDonutSimples
+                                labels={labelsTopUsers}
+                                series={seriesTopUsers}
+                                cores={coresTopUsers}   // ✔ correto
+                                height={250}
+                            />
+                            {/* TOTAL AO CENTRO */}
+                            <div className="absolute flex flex-col items-center justify-center pointer-events-none">
+                                <div className="text-3xl font-semibold text-purple-400">
+                                    {totalFormatado}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* LISTA DE IPS + CONSUMO */}
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+
+                            {topUsers.map((u: any, i: number) => (
+                                <div key={i} className="flex items-center gap-2 text-sm">
+                                    <span
+                                        className="w-4 h-4 rounded-sm"
+                                        style={{ backgroundColor: coresTopUsers[i] }}
+                                    ></span>
+
+                                    <span className="text-gray-300">
+                                        {u.user} — {formatBytes(u.acessos)}
+                                    </span>
+                                </div>
+                            ))}
 
                         </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 1.3 — TOP Aplicações ========================== */}
+            {temSecao("Top Aplicações") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-3">
+                        <LuFolderTree className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">Top Aplicações</h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Mostra as aplicações mais utilizadas dentro do ambiente corporativo. Essa visão é essencial para compreender quais serviços demandam maior tráfego, avaliar riscos associados a softwares em nuvem, identificar shadow IT e otimizar o desempenho de rede. Também serve como base para priorizar inspeções de segurança em aplicações críticas.
+                    </p>
+
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Aplicação</th>
+                                    <th className="py-3 px-4 text-left font-semibold">Ocorrências</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {report?.snapshot?.topApps?.map((item: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5">
+                                        <td className="py-3 px-4 text-gray-300">
+                                            {item[0]}
+                                        </td>
+                                        <td className="py-3 px-4 font-semibold text-gray-200">
+                                            {item[1].toLocaleString("pt-BR")}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 1.4 — TOP Categorias ========================== */}
+            {temSecao("Top Categorias") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-3">
+                        <BiCategory className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">Top Categorias</h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Apresenta o agrupamento de aplicações e sites por categoria (ex.: redes sociais, colaboração, entretenimento). Essa análise permite avaliar a aderência das atividades digitais às políticas corporativas e identificar possíveis vetores de risco ou desperdício de recursos de conectividade
+                    </p>
+
+                    <div className="overflow-auto rounded-xl border bg-[#0F091F] border-white/10 px-5 pt-5 pb-10">
+
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Categoria</th>
+                                    <th className="py-3 px-4 text-left">Ocorrências</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {(report?.snapshot?.topCategorias ?? []).map((cat: any, i: number) => {
+                                    const nome = cat[0] || "N/A";
+                                    const valor = Number(cat[1] ?? 0);
+
+                                    return (
+                                        <tr key={i} className="border-b border-white/5">
+                                            <td className="py-3 px-4 text-gray-300">
+                                                {nome}
+                                            </td>
+                                            <td className="py-3 px-4 text-gray-400">
+                                                {valor.toLocaleString("pt-BR")}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 1.5 — TOP Usuarios Aplicação ========================== */}
+            {temSecao("Top Usuários por Volume de Aplicação") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-3">
+                        <FiUserCheck className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">Top Usuários por Volume de Aplicação</h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Mostra o detalhamento dos usuários que mais consomem aplicações específicas, com origem, destino e volume
+                        trafegado. Essa métrica apoia a detecção de desvios de comportamento, como transferências anômalas de dados ou uso intensivo de serviços externos, auxiliando a priorização de investigações e alertas.
+                    </p>
+
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Usuário</th>
+                                    <th className="py-3 px-4 text-left">Aplicação</th>
+                                    <th className="py-3 px-4 text-left">Volume de Dados</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {report?.snapshot?.topUsuariosAplicacao?.map((item: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5">
+                                        <td className="py-3 px-4">{item.user}</td>
+                                        <td className="py-3 px-4">{item.application}</td>
+                                        <td className="py-3 px-4">{item.total_bytes}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 1.6 — TOP Usuarios Detalhado ========================== */}
+            {temSecao("Top Acesso Detalhado") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-3">
+                        <TbListDetails className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">Top Acesso Detalhado</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm mb-6">
+                        Esta seção apresenta os principais destinos acessados pelos usuários corporativos. A análise permite identificar padrões de navegação, potenciais riscos de exposição a domínios suspeitos e consumo elevado de banda em aplicações não essenciais. Esses dados ajudam a orientar políticas de controle de acesso, priorização de tráfego e ações de conscientização dos usuários.
+                    </p>
+
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10 overflow-auto">
+
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">#</th>
+                                    <th className="py-3 px-4 text-left">Aplicação</th>
+                                    <th className="py-3 px-4 text-left">Categoria</th>
+                                    <th className="py-3 px-4 text-left">Usuário</th>
+                                    <th className="py-3 px-4 text-left">Total</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {report?.snapshot?.topAcessoDetalhado?.map((item: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5">
+                                        <td className="py-3 px-4">{item["#"]}</td>
+                                        <td className="py-3 px-4">{item.application}</td>
+                                        <td className="py-3 px-4">{item.category}</td>
+                                        <td className="py-3 px-4">{item.user}</td>
+                                        <td className="py-3 px-4">{item.total_bytes}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+
+                        </table>
 
                     </div>
                 </div>
@@ -224,10 +488,12 @@ export default function ReportView() {
 
                     <div className="h-[260px] bg-[#0F091F] rounded-xl border border-white/10 flex flex-col items-center justify-center gap-3">
 
+                        {/* GAUGE REAL */}
                         <div className="flex justify-center items-center">
-                            <GraficoGauge valor={82} />
+                            <GraficoGauge valor={riskLevel?.gauge ?? 0} />
                         </div>
 
+                        {/* LEGENDA ABAIXO DO GAUGE */}
                         <div className="flex justify-center text-[10px] text-gray-400 w-full">
                             <div className="flex gap-4 flex-wrap justify-center">
                                 <span className="flex items-center gap-1">
@@ -346,7 +612,7 @@ export default function ReportView() {
             )}
 
             {/* ========================== SEÇÃO 4 — TOP HOSTS ========================== */}
-            {temSecao("Top Hosts por nível de alertas") && (
+            {temSecao("Top Hosts por Nível de Alertas") && (
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-4">
@@ -365,29 +631,334 @@ export default function ReportView() {
                             <thead className="bg-black/20 text-gray-200">
                                 <tr>
                                     <th className="py-3 px-4 text-left">Host</th>
-                                    <th className="py-3 px-4 text-left text-[#1DD69A] font-semibold">Baixo</th>
-                                    <th className="py-3 px-4 text-left text-[#6366F1] font-semibold">Médio</th>
-                                    <th className="py-3 px-4 text-left text-[#A855F7] font-semibold">Alto</th>
                                     <th className="py-3 px-4 text-left text-[#F914AD] font-semibold">Crítico</th>
-                                    <th className="py-3 px-4 text-left">Score</th>
+                                    <th className="py-3 px-4 text-left text-[#A855F7] font-semibold">Alto</th>
+                                    <th className="py-3 px-4 text-left text-[#6366F1] font-semibold">Médio</th>
+                                    <th className="py-3 px-4 text-left text-[#1DD69A] font-semibold">Baixo</th>
                                 </tr>
                             </thead>
 
                             <tbody>
-                                <tr className="border-b border-white/5">
-                                    <td className="py-3 px-4">NB-SRV-01</td>
-                                    <td className="py-3 px-4">9128</td>
-                                    <td className="py-3 px-4">8</td>
-                                    <td className="py-3 px-4">0</td>
-                                    <td className="py-3 px-4">0</td>
-                                    <td className="py-3 px-4">20%</td>
-                                </tr>
+                                {report?.snapshot?.topHosts?.map((h: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5">
+                                        <td className="py-3 px-4">{h.host}</td>
+                                        <td className="py-3 px-4">{h.critico}</td>
+                                        <td className="py-3 px-4">{h.alto}</td>
+                                        <td className="py-3 px-4">{h.medio}</td>
+                                        <td className="py-3 px-4">{h.baixo}</td>
+                                    </tr>
+                                ))}
                             </tbody>
+
                         </table>
                     </div>
 
                 </div>
             )}
+
+            {/* ========================== SEÇÃO 5 — CIS Servicores ========================== */}
+            {temSecao("Segurança dos Servidores (CIS Score)") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-4">
+                        {/* @ts-ignore */}
+                        <CiServer className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">
+                            Nível de segurança dos servidores
+                        </h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Exibe a avaliação do nível de proteção e conformidade dos servidores monitorados.
+                        Com base em políticas de segurança, patches aplicados e configurações avaliadas,
+                        o indicador mostra o grau de exposição de cada sistema e direciona esforços de correção.
+                    </p>
+
+                    <div className="flex justify-center text-[10px] text-gray-400 w-full mb-5">
+                        <div className="flex gap-4 flex-wrap justify-center">
+                            <span className="flex items-center gap-1">
+                                <span className="w-3 h-3 bg-[#1DD69A] rounded-xs"></span> Baixo
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span className="w-3 h-3 bg-[#6366F1] rounded-xs"></span> Médio
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span className="w-3 h-3 bg-[#A855F7] rounded-xs"></span> Alto
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span className="w-3 h-3 bg-[#F914AD] rounded-xs"></span> Crítico
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Função para definir cor dinâmica */}
+                    {(() => {
+                        return null;
+                    })()}
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Host</th>
+                                    <th className="py-3 px-4 text-left">Score CIS (%)</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {report?.snapshot?.cisHosts?.map((item: any, i: number) => {
+
+                                    const getScoreColor = (score: number) => {
+                                        if (score < 25) return "#F914AD";      // crítico
+                                        if (score < 40) return "#A855F7";      // alto
+                                        if (score < 60) return "#6366F1";      // médio
+                                        return "#1DD69A";                      // baixo
+                                    };
+
+                                    const cor = getScoreColor(item.score);
+
+                                    return (
+                                        <tr key={i} className="border-b border-white/5">
+
+                                            {/* HOST */}
+                                            <td className="py-3 px-4 text-gray-300">
+                                                {item.host}
+                                            </td>
+
+                                            {/* SCORE + BARRA */}
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-4">
+
+                                                    {/* Barra de Score */}
+                                                    <div className="flex-1 h-2 rounded-full bg-[#1b1530] overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full transition-all duration-300"
+                                                            style={{
+                                                                width: `${item.score}%`,
+                                                                backgroundColor: cor,
+                                                            }}
+                                                        ></div>
+                                                    </div>
+
+                                                    {/* Texto Score */}
+                                                    <span
+                                                        className="w-10 text-right font-semibold"
+                                                        style={{ color: cor }}
+                                                    >
+                                                        {item.score}%
+                                                    </span>
+
+                                                </div>
+                                            </td>
+
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 5 — Top Sistemas Operacionais ========================== */}
+            {temSecao("Top 5 Sistemas Operacionais Detectados") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-4">
+                        {/* @ts-ignore */}
+                        <RiWindowsLine className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">
+                            Top 5 Sistemas Operacionais Detectados
+                        </h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Apresenta os sistemas operacionais predominantes no ambiente, permitindo entender o perfil tecnológico e avaliar riscos associados a versões desatualizadas ou fora de suporte. Serve como base para estratégias de padronização e atualização de sistemas.
+                    </p>
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Sistema Operacional</th>
+                                    <th className="py-3 px-4 text-left font-semibold">Total</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {report?.snapshot?.topOS?.map((item: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5">
+
+                                        {/* Nome do OS */}
+                                        <td className="py-3 px-4 text-gray-400">
+                                            {item.os}
+                                        </td>
+
+                                        {/* Total de vulnerabilidades */}
+                                        <td className="py-3 px-4">
+                                            <span className="text-gray-400 font-semibold">
+                                                {item.total}
+                                            </span>
+                                        </td>
+
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 5 — Top Hosts por Alteração de Arquivos ========================== */}
+            {temSecao("Top Hosts por Alteração de Arquivos") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    <div className="flex items-center gap-2 mb-4">
+                        {/* @ts-ignore */}
+                        <RiWindowsLine className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">
+                            Top Hosts por Alteração de Arquivos
+                        </h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Lista dos hosts com maior número de modificações, adições ou deleções de arquivos.
+                        Ideal para identificar atividades suspeitas, mudanças estruturais e comportamentos inesperados em servidores e estações.
+                    </p>
+
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Agente</th>
+                                    <th className="py-3 px-4 text-left">Modificados</th>
+                                    <th className="py-3 px-4 text-left">Adicionados</th>
+                                    <th className="py-3 px-4 text-left">Deletados</th>
+                                    <th className="py-3 px-4 text-left font-semibold">Total</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {report?.snapshot?.topHostsAlteracoes?.map((item: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5">
+
+                                        {/* Host */}
+                                        <td className="py-3 px-4 text-gray-400">
+                                            {item.host}
+                                        </td>
+
+                                        {/* Modificados */}
+                                        <td className="py-3 px-4 text-gray-400">
+                                            {item.modified}
+                                        </td>
+
+                                        {/* Adicionados */}
+                                        <td className="py-3 px-4 text-gray-400">
+                                            {item.added}
+                                        </td>
+
+                                        {/* Deletados */}
+                                        <td className="py-3 px-4 text-gray-400">
+                                            {item.deleted}
+                                        </td>
+
+                                        {/* Total */}
+                                        <td className="py-3 px-4">
+                                            <span className="text-gray-300 font-semibold">
+                                                {item.total}
+                                            </span>
+                                        </td>
+
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 6 — Top Hosts Alterados por Origem da Alteração ========================== */}
+            {temSecao("Top Hosts Alterados por Origem da Alteração") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+                    <div className="flex items-center gap-2 mb-4">
+                        {/* @ts-ignore */}
+                        <RiWindowsLine className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">
+                            Top Hosts Alterados por Origem da Alteração
+                        </h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Apresenta a origem das alterações (usuário, processo ou sistema) em cada host afetado. Essa visibilidade apoia auditorias forenses e garante rastreabilidade das ações, reforçando o controle de integridade e conformidade com normas de segurança.
+                    </p>
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Usuário</th>
+                                    <th className="py-3 px-4 text-left">ID do Host</th>
+                                    <th className="py-3 px-4 text-left">Nome do Host</th>
+                                    <th className="py-3 px-4 text-left">Contagem</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {report?.snapshot?.topHostsOrigem?.map((item: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5">
+                                        <td className="py-3 px-4">{item.usuario}</td>
+                                        <td className="py-3 px-4">{item.agent_id}</td>
+                                        <td className="py-3 px-4">{item.host}</td>
+                                        <td className="py-3 px-4">{item.contagem}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ========================== SEÇÃO 7 — Resumo de Ações nos Arquivos ========================== */}
+            {temSecao("Resumo de Ações nos Arquivos") && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+                    <div className="flex items-center gap-2 mb-4">
+                        {/* @ts-ignore */}
+                        <RiWindowsLine className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">
+                            Resumo de Ações nos Arquivos
+                        </h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Consolida o total de arquivos adicionados, modificados e deletados em um período, permitindo avaliar o nível de atividade sobre dados sensíveis. É uma métrica relevante para monitorar comportamentos anômalos e incidentes relacionados à integridade da informação.
+                    </p>
+
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Ação</th>
+                                    <th className="py-3 px-4 text-left">Total</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr className="border-b border-white/5">
+                                    <td className="py-3 px-4">Modificado</td>
+                                    <td className="py-3 px-4">{report?.snapshot?.resumoAcoes?.modificados ?? 0}</td>
+                                </tr>
+                                <tr className="border-b border-white/5">
+                                    <td className="py-3 px-4">Adicionado</td>
+                                    <td className="py-3 px-4">{report?.snapshot?.resumoAcoes?.adicionados ?? 0}</td>
+                                </tr>
+                                <tr className="border-b border-white/5">
+                                    <td className="py-3 px-4">Deletado</td>
+                                    <td className="py-3 px-4">{report?.snapshot?.resumoAcoes?.deletados ?? 0}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+
 
         </LayoutModel>
     );

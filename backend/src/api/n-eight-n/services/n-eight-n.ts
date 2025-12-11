@@ -1,0 +1,55 @@
+import axios from "axios";
+import https from "https";
+
+const N8N_USER = "secone";
+const N8N_PASS = "R4#20!mq%@=1";
+
+/**
+ * 🔹 Envia comando para o n8n gerar relatório remoto
+ */
+export async function gerarRelatorioN8N(cliente: string, periodo: number | string = "15") {
+  try {
+    const url = `http://10.0.99.22:5678/webhook/report`;
+
+    const response = await axios.post(
+      url,
+      { customer: cliente, period: Number(periodo) },
+      {
+        auth: { username: N8N_USER, password: N8N_PASS },
+        headers: { "Content-Type": "application/json" },
+        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+        timeout: 20000,
+      }
+    );
+
+    strapi.log.info(`✅ Relatório solicitado no n8n (${cliente}, ${periodo} dias)`);
+    return response.data;
+
+  } catch (err: any) {
+    strapi.log.error("❌ Erro ao solicitar relatório:", err.response?.data || err.message);
+    throw err;
+  }
+}
+
+/**
+ * 🔹 Busca os dados já processados pelo n8n
+ */
+export async function buscarDadosReport(periodo = "15", cliente = "default") {
+  try {
+    const url = `http://10.0.99.22:5678/webhook/report/data/${cliente}?period=${periodo}`;
+
+    const response = await axios.get(url, {
+      auth: { username: N8N_USER, password: N8N_PASS },
+      headers: { "Content-Type": "application/json" },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      timeout: 20000,
+    });
+
+    strapi.log.info(`✅ Dados do relatório ${cliente} recuperados (${periodo} dias)`);
+    return response.data;
+
+  } catch (err: any) {
+    strapi.log.error("❌ Erro ao buscar dados:", err.response?.data || err.message);
+    throw err;
+  }
+}

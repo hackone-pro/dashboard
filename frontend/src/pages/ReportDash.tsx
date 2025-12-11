@@ -3,13 +3,15 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { gerarRelatorio as gerarRelatorioAPI } from "../services/report-entry/report.service";
-import { listarRelatorios } from "../services/report-entry/report.service";
+import { listarRelatorios, deletarRelatorio } from "../services/report-entry/report.service";
 
 import LayoutModel from "../componentes/LayoutModel";
 import { FiSearch } from "react-icons/fi";
 import { useTenant } from "../context/TenantContext";
 
 import { toastSuccess, toastError } from "../utils/toast";
+import Swal from "sweetalert2";
+
 
 
 export default function ReportDash() {
@@ -19,6 +21,7 @@ export default function ReportDash() {
     const [relatorios, setRelatorios] = useState<any[]>([]);
     const [gerando, setGerando] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
 
     const { tenantAtivo } = useTenant();
     const navigate = useNavigate();
@@ -27,6 +30,8 @@ export default function ReportDash() {
 
     useEffect(() => {
         async function carregar() {
+            if (!tenantAtivo) return;
+
             try {
                 setLoading(true);
                 const lista = await listarRelatorios();
@@ -37,9 +42,9 @@ export default function ReportDash() {
                 setLoading(false);
             }
         }
-
         carregar();
-    }, []);
+    }, [tenantAtivo]);
+
 
     // Skeleton de carregamento
     const SkeletonLinha = () => (
@@ -66,22 +71,18 @@ export default function ReportDash() {
     // Gerar relatório REAL usando o backend
     async function handleGerarRelatorio() {
         try {
-
-            // 🔥 1) VALIDAÇÃO — nenhuma seção selecionada
             if (secoesSelecionadas.length === 0) {
                 toastError("Selecione ao menos uma seção do relatório.");
                 return;
             }
 
-            setGerando(true);
-            setLoading(true);
+            setGerandoRelatorio(true);
 
-            // 🔥 2) Usa realmente as seções escolhidas
             const secoes = secoesSelecionadas;
 
             const novoRelatorio = await gerarRelatorioAPI(horas, secoes);
 
-            // 🔥 3) adiciona no topo da lista
+            // adiciona no topo
             setRelatorios(prev => [novoRelatorio, ...prev]);
 
             toastSuccess("Relatório gerado com sucesso!");
@@ -90,8 +91,51 @@ export default function ReportDash() {
             console.error("Erro ao gerar relatório:", error);
             toastError("Erro ao gerar relatório.");
         } finally {
-            setGerando(false);
-            setLoading(false);
+            setGerandoRelatorio(false);  // 👈 encerra o skeleton do item
+        }
+    }
+
+    async function handleDelete(id: number, nome: string) {
+        const res = await Swal.fire({
+            title: "Excluir relatório?",
+            html: `Você realmente deseja excluir <b>${nome}</b>?<br>Essa ação não pode ser desfeita.`,
+            icon: "warning",
+            background: "#0A0617",
+            color: "#E5E5E5",
+            iconColor: "#A855F7",
+            showCancelButton: true,
+            confirmButtonText: "Sim, deletar",
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: "#A855F7",
+            cancelButtonColor: "#4B5563",
+        });
+
+        if (!res.isConfirmed) return;
+
+        try {
+            await deletarRelatorio(id);
+
+            // Remove da lista renderizada
+            setRelatorios(prev => prev.filter(r => r.id !== id));
+
+            Swal.fire({
+                title: "Deletado!",
+                text: "O relatório foi removido com sucesso.",
+                icon: "success",
+                background: "#0A0617",
+                color: "#E5E5E5",
+                confirmButtonColor: "#7C3AED"
+            });
+
+        } catch (err) {
+            Swal.fire({
+                title: "Erro!",
+                text: "Não foi possível excluir o relatório.",
+                icon: "error",
+                background: "#0A0617",
+                color: "#E5E5E5",
+                confirmButtonColor: "#7C3AED"
+            });
         }
     }
 
@@ -134,9 +178,8 @@ export default function ReportDash() {
                                     value={horas}
                                     onChange={(e) => setHoras(e.target.value)}
                                 >
-                                    <option value="24h">24 horas</option>
-                                    <option value="hoje">Hoje</option>
-                                    <option value="7d">7 dias</option>
+                                    <option value="">Período</option>
+                                    <option value="5d">5 dias</option>
                                     <option value="15d">15 dias</option>
                                     <option value="30d">30 dias</option>
                                 </select>
@@ -192,19 +235,20 @@ export default function ReportDash() {
                                         }}
                                     >
                                         {[
-                                            "Nível de Risco",
-                                            "Vulnerabilidades Detectadas",
-                                            "Top Hosts por Volume de Alertas",
-                                            "Segurança dos Servidores (CIS Score)",
-                                            "Integridade de Arquivos",
-                                            "Top Sistemas Operacionais Vulneráveis",
-                                            "Top Usuários",
-                                            "Distribuição de Ações (FIM)",
                                             "Top Acessos (URLs)",
+                                            "Top Usuários",
                                             "Top Aplicações",
                                             "Top Categorias",
-                                            "Top Usuários por Uso de Aplicações",
+                                            "Top Usuários por Volume de Aplicação",
                                             "Top Acesso Detalhado",
+                                            "Nível de Risco",
+                                            "Vulnerabilidades Detectadas",
+                                            "Top Hosts por Nível de Alertas",
+                                            "Segurança dos Servidores (CIS Score)",
+                                            "Top 5 Sistemas Operacionais Detectados",
+                                            "Top Hosts por Alteração de Arquivos",
+                                            "Top Hosts Alterados por Origem da Alteração",
+                                            "Resumo de Ações nos Arquivos",
                                         ].map((item, idx) => (
                                             <label
                                                 key={idx}
@@ -249,8 +293,23 @@ export default function ReportDash() {
                     <span className="text-right mr-6">Ações</span>
                 </div>
 
-                {/* Mensagem inicial */}
-                {!gerando && relatorios.length === 0 && (
+                {/* SKELETON GERAL — aparece ao mudar tenant ou carregar primeira vez */}
+                {loading && !gerandoRelatorio && (
+                    <>
+                        <SkeletonLinha />
+                        <SkeletonLinha />
+                        <SkeletonLinha />
+                        <SkeletonLinha />
+                    </>
+                )}
+
+                {/* SKELETON EXCLUSIVO — aparece somente enquanto um novo relatório é gerado */}
+                {gerandoRelatorio && (
+                    <SkeletonLinha />
+                )}
+
+                {/* MENSAGEM: nenhum relatório */}
+                {!loading && !gerandoRelatorio && relatorios.length === 0 && (
                     <div className="h-[40vh] flex items-center justify-center text-gray-300">
                         <div className="text-center">
                             <h2 className="text-lg mb-2">Nenhum relatório criado</h2>
@@ -261,54 +320,64 @@ export default function ReportDash() {
                     </div>
                 )}
 
-                {/* Lista existente */}
-                {relatorios.map((rel) => {
-                    const r = rel.attributes || rel; // <-- aqui está a proteção
+                {/* LISTA REAL DE RELATÓRIOS */}
+                {!loading && relatorios.map((rel) => {
+                    const r = rel.attributes || rel;
 
                     return (
                         <div
                             key={rel.id}
                             className="border border-white/5 rounded-xl px-4 py-4 grid grid-cols-5 items-center mb-2"
                         >
+                            {/* Nome */}
                             <div className="text-gray-300">
-                                {r?.nome ?? `relatório_${rel.id}`}
+                                {r?.nome ?? `relatorio_${rel.id}`}
                             </div>
 
+                            {/* Período */}
                             <div className="text-gray-300">
                                 {r?.period ?? "--"}
                             </div>
 
+                            {/* Data */}
                             <div className="text-gray-300">
                                 {r?.createdAt
                                     ? new Date(r.createdAt).toLocaleString("pt-BR")
                                     : "--"}
                             </div>
 
+                            {/* Organização */}
                             <div className="text-gray-300">
-                                {tenantAtivo?.cliente_name || "---"}
+                                {r?.tenant || "---"}
                             </div>
 
+                            {/* Ações */}
                             <div className="flex justify-end gap-3">
+
+                                {/* VISUALIZAR */}
                                 <button
-                                    onClick={() => navigate(`/report-view?nome=${rel.nome}`)}
-                                    className="
-                                        flex items-center gap-2
-                                        border border-purple-500/40
-                                        hover:bg-purple-500/10
-                                        text-purple-400
-                                        px-3 py-2 rounded-lg text-sm transition
-                                    "
+                                    onClick={() => navigate(`/report-view?nome=${r.nome}`)}
+                                    className="flex items-center gap-2 border border-purple-500/40 hover:bg-purple-500/10 text-purple-400 px-3 py-2 rounded-lg text-sm transition"
                                 >
-                                    {/* @ts-ignore */}
                                     <FiSearch className="text-purple-400 text-lg" />
                                     Visualizar
                                 </button>
+
+                                {/* DELETAR */}
+                                <button
+                                    onClick={() => handleDelete(rel.id, r.nome)}
+                                    className="flex items-center gap-2 border border-red-500/40 hover:bg-red-500/10 text-red-400 px-3 py-2 rounded-lg text-sm transition"
+                                >
+                                    🗑️ Deletar
+                                </button>
+
                             </div>
                         </div>
                     );
                 })}
 
             </div>
+
         </LayoutModel>
     );
 }
