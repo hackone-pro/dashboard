@@ -34,7 +34,7 @@ export async function gerarRelatorio(
     try {
       const err = await response.json();
       if (err?.error?.message) msg = err.error.message;
-    } catch {}
+    } catch { }
     throw new Error(msg);
   }
 
@@ -57,8 +57,10 @@ export async function listarRelatorios() {
   }
 
   const data = await response.json();
-  return data.data; // Strapi v4/v5 retorna em "data"
+
+  return data.data || [];
 }
+
 
 export async function buscarRelatorioPorNome(nome: string) {
   const token = getToken();
@@ -97,14 +99,14 @@ export async function deletarRelatorio(id: number) {
   const baseUrl = import.meta.env.VITE_API_URL;
 
   const response = await fetch(`${baseUrl}/api/report-entries/${id}`, {
-      method: "DELETE",
-      headers: {
-          Authorization: `Bearer ${token}`,
-      },
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
-      throw new Error("Erro ao deletar relatório.");
+    throw new Error("Erro ao deletar relatório");
   }
 
   return true;
