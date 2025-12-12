@@ -740,32 +740,6 @@ header button.toggle {
 }
 
 
-/* Scrollbar da lista de seções (checkbox) */
-.lista-secoes {
-  scrollbar-width: thin;              /* Firefox */
-  scrollbar-color: #484D64 #252835;   /* Firefox */
-}
-
-/* Chrome, Edge, Safari */
-.lista-secoes::-webkit-scrollbar {
-  width: 6px;
-}
-
-.lista-secoes::-webkit-scrollbar-track {
-  background: #0A0617;
-  border-radius: 10px;
-}
-
-.lista-secoes::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    #3A0F80,
-    #AE29CA,
-    #3A0F80
-  );
-  border-radius: 10px;
-}
-
 /* ============================
 ESTILO ESPECÍFICO DE IMPRESSÃO
 ============================ */
@@ -782,8 +756,8 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
 @media print {
 
   h1{
-    font-size: 35px;
-    padding: 15px;
+    font-size: 25px;
+    padding: 15px 0;
   }
 
   /* Faz o conteúdo ocupar toda a página */
@@ -817,7 +791,7 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
     color: white;
     text-align: center;
     position: relative;
-    top: 40%;
+    margin-top:250px;
   }
 
   .cover-content {
