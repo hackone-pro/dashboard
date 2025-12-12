@@ -1,27 +1,30 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { gerarRelatorio as gerarRelatorioAPI } from "../services/report-entry/report.service";
 import { listarRelatorios, deletarRelatorio } from "../services/report-entry/report.service";
 
 import LayoutModel from "../componentes/LayoutModel";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiTrash } from "react-icons/fi";
+import { IoCalendarOutline } from "react-icons/io5";
 import { useTenant } from "../context/TenantContext";
 
 import { toastSuccess, toastError } from "../utils/toast";
 import Swal from "sweetalert2";
 
 
-
 export default function ReportDash() {
-    const [horas, setHoras] = useState("24h");
+    const [horas, setHoras] = useState("");
     const [openSecoes, setOpenSecoes] = useState(false);
     const [secoesSelecionadas, setSecoesSelecionadas] = useState<string[]>([]);
     const [relatorios, setRelatorios] = useState<any[]>([]);
     const [gerando, setGerando] = useState(false);
     const [loading, setLoading] = useState(false);
     const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
+    const [progresso, setProgresso] = useState(0);
+
+    const botaoSecoesRef = useRef<HTMLButtonElement | null>(null);
 
     const { tenantAtivo } = useTenant();
     const navigate = useNavigate();
@@ -45,6 +48,8 @@ export default function ReportDash() {
         carregar();
     }, [tenantAtivo]);
 
+    const [filtroSecoes, setFiltroSecoes] = useState("");
+    const secoesRef = useRef<HTMLDivElement | null>(null);
 
     // Skeleton de carregamento
     const SkeletonLinha = () => (
@@ -59,6 +64,14 @@ export default function ReportDash() {
         </div>
     );
 
+    const SkeletonGeracaoRelatorio = () => (
+        <div className="mt-4 space-y-3 animate-pulse">
+            <div className="h-4 w-1/3 bg-[#ffffff15] rounded"></div>
+            <div className="h-4 w-2/3 bg-[#ffffff15] rounded"></div>
+            <div className="h-4 w-1/2 bg-[#ffffff15] rounded"></div>
+        </div>
+    );
+
     // Marcar/desmarcar seções
     function toggleSecao(item: string) {
         setSecoesSelecionadas(prev =>
@@ -68,30 +81,50 @@ export default function ReportDash() {
         );
     }
 
+    function selecionarTodasSecoes() {
+        setSecoesSelecionadas(secoesFiltradas);
+    }
+
+    function limparTodasSecoes() {
+        setSecoesSelecionadas([]);
+    }
+
+
     // Gerar relatório REAL usando o backend
     async function handleGerarRelatorio() {
         try {
+            if (!horas) {
+                toastError("Selecione um período para gerar o relatório.");
+                return;
+            }
+
             if (secoesSelecionadas.length === 0) {
                 toastError("Selecione ao menos uma seção do relatório.");
                 return;
             }
 
             setGerandoRelatorio(true);
+            setProgresso(5);
 
-            const secoes = secoesSelecionadas;
+            const interval = setInterval(() => {
+                setProgresso(prev => (prev < 90 ? prev + 5 : prev));
+            }, 600);
 
-            const novoRelatorio = await gerarRelatorioAPI(horas, secoes);
+            const novoRelatorio = await gerarRelatorioAPI(horas, secoesSelecionadas);
 
-            // adiciona no topo
+            clearInterval(interval);
+            setProgresso(100);
+
             setRelatorios(prev => [novoRelatorio, ...prev]);
-
             toastSuccess("Relatório gerado com sucesso!");
 
         } catch (error) {
-            console.error("Erro ao gerar relatório:", error);
             toastError("Erro ao gerar relatório.");
         } finally {
-            setGerandoRelatorio(false);  // 👈 encerra o skeleton do item
+            setTimeout(() => {
+                setGerandoRelatorio(false);
+                setProgresso(0);
+            }, 500);
         }
     }
 
@@ -139,10 +172,52 @@ export default function ReportDash() {
         }
     }
 
+    const secoesDisponiveis = [
+        "Top Acessos (URLs)",
+        "Top Usuários",
+        "Top Aplicações",
+        "Top Categorias",
+        "Top Usuários por Volume de Aplicação",
+        "Top Acesso Detalhado",
+        "Nível de Risco",
+        "Vulnerabilidades Detectadas",
+        "Top Hosts por Nível de Alertas",
+        "Segurança dos Servidores (CIS Score)",
+        "Top 5 Sistemas Operacionais Detectados",
+        "Top Hosts por Alteração de Arquivos",
+        "Top Hosts Alterados por Origem da Alteração",
+        "Resumo de Ações nos Arquivos",
+        "Incidentes",
+    ];
+
+    const secoesFiltradas = secoesDisponiveis.filter(sec =>
+        sec.toLowerCase().includes(filtroSecoes.toLowerCase())
+    );
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const target = event.target as Node;
+            // se clicou no botão, ignora
+            if (botaoSecoesRef.current?.contains(target)) {
+                return;
+            }
+            // se clicou fora do portal, fecha
+            if (
+                openSecoes &&
+                secoesRef.current &&
+                !secoesRef.current.contains(target)
+            ) {
+                setOpenSecoes(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [openSecoes]);
 
     return (
         <LayoutModel titulo="Relatórios">
-
             {/* ======================== BARRA SUPERIOR ======================== */}
             <div className="cards rounded-2xl p-6 mb-6 border border-white/5 shadow-lg relative">
 
@@ -159,7 +234,10 @@ export default function ReportDash() {
                         {/* SELECT DE DATAS */}
                         <div className="flex items-center gap-2">
                             <div className="w-10 h-10 bg-[#0A0617] border border-white/10 rounded-xl flex items-center justify-center">
-                                <span className="text-white text-lg">📅</span>
+                                <span className="text-white text-lg">
+                                    {/* @ts-ignore */}
+                                    <IoCalendarOutline />
+                                </span>
                             </div>
 
                             <div className="relative">
@@ -193,7 +271,8 @@ export default function ReportDash() {
                         {/* SELECT DE SEÇÕES */}
                         <div className="relative">
                             <button
-                                onClick={() => setOpenSecoes(!openSecoes)}
+                                ref={botaoSecoesRef}
+                                onClick={() => setOpenSecoes(v => !v)}
                                 className="
                                     bg-[#0A0617]
                                     border border-white/10
@@ -216,17 +295,16 @@ export default function ReportDash() {
                             {openSecoes && portalRoot &&
                                 createPortal(
                                     <div
+                                        ref={secoesRef}
                                         className="
                                             fixed
                                             z-[999999]
-                                            bg-[#0A0617]
+                                            bg-[#161125]
                                             border border-white/10
                                             rounded-xl
                                             shadow-xl
                                             p-4
                                             text-sm
-                                            max-h-[500px]
-                                            overflow-y-auto
                                         "
                                         style={{
                                             top: "220px",
@@ -234,38 +312,126 @@ export default function ReportDash() {
                                             width: "380px"
                                         }}
                                     >
-                                        {[
-                                            "Top Acessos (URLs)",
-                                            "Top Usuários",
-                                            "Top Aplicações",
-                                            "Top Categorias",
-                                            "Top Usuários por Volume de Aplicação",
-                                            "Top Acesso Detalhado",
-                                            "Nível de Risco",
-                                            "Vulnerabilidades Detectadas",
-                                            "Top Hosts por Nível de Alertas",
-                                            "Segurança dos Servidores (CIS Score)",
-                                            "Top 5 Sistemas Operacionais Detectados",
-                                            "Top Hosts por Alteração de Arquivos",
-                                            "Top Hosts Alterados por Origem da Alteração",
-                                            "Resumo de Ações nos Arquivos",
-                                        ].map((item, idx) => (
-                                            <label
-                                                key={idx}
-                                                className="flex items-center gap-3 py-2 cursor-pointer text-gray-300"
+                                        {/* CAMPO DE PESQUISA */}
+                                        <input
+                                            type="text"
+                                            placeholder="Pesquisar seção..."
+                                            value={filtroSecoes}
+                                            onChange={(e) => setFiltroSecoes(e.target.value)}
+                                            className="
+                                                w-full px-3 py-2 mb-3
+                                                bg-[#0d0a20]
+                                                border border-white/10
+                                                rounded-lg
+                                                text-white
+                                            "
+                                        />
+
+                                        {/* AÇÕES RÁPIDAS */}
+                                        <div className="flex justify-between items-center mb-2 px-1 text-xs">
+                                            <button
+                                                type="button"
+                                                onClick={selecionarTodasSecoes}
+                                                className="
+                                                text-gray-400
+                                                    hover:text-white
+                                                    transition
+                                                "
                                             >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={secoesSelecionadas.includes(item)}
-                                                    onChange={() => toggleSecao(item)}
-                                                    className="w-4 h-4 rounded border-gray-600 bg-transparent"
-                                                />
-                                                <span>{item}</span>
-                                            </label>
-                                        ))}
+                                                Selecionar todos
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={limparTodasSecoes}
+                                                className="
+                                                text-gray-400
+                                                hover:text-white
+                                                transition
+                                            "
+                                            >
+                                                Limpar tudo
+                                            </button>
+                                        </div>
+
+
+                                        {/* LISTA COM ALTURA FIXA + SCROLL */}
+                                        <div className="lista-secoes max-h-[330px] overflow-y-auto pr-2 overflow-x-hidden">
+
+                                            {secoesFiltradas.map((item, idx) => {
+                                                const ativo = secoesSelecionadas.includes(item);
+
+                                                return (
+                                                    <label
+                                                        key={idx}
+                                                        className={`
+                                                            relative flex items-center gap-3 p-3 cursor-pointer transition-colors
+                                                            ${ativo
+                                                                ? `
+                                                                bg-[#250E5D] text-white rounded-md
+                                                                before:absolute before:top-0 before:left-0 before:w-full before:h-[1px]
+                                                                before:bg-gradient-to-r before:from-[#3A0F80] before:via-[#AE29CA] before:to-[#3A0F80]
+                                                                after:absolute after:bottom-0 after:w-full after:h-[1px]
+                                                                after:bg-gradient-to-r after:from-[#3A0F80] after:via-[#AE29CA] after:to-[#3A0F80]
+                                                            `
+                                                                : "text-gray-400 hover:bg-[#1B1037]"
+                                                            }
+                                                        `}
+                                                    >
+                                                        {/* checkbox nativo */}
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={ativo}
+                                                            onChange={() => toggleSecao(item)}
+                                                            className="sr-only"
+                                                        />
+
+                                                        {/* checkbox visual */}
+                                                        <span
+                                                            className={`
+                                                            w-6 h-6 flex items-center justify-center
+                                                            border border-[#271E3F]
+                                                            bg-transparent
+                                                            transition-all
+                                                            ${ativo ? "border-[#554b74]" : ""}
+                                                            `}
+                                                        >
+                                                            <svg
+                                                                className={`
+                                                                    w-4 h-4
+                                                                    transition-all
+                                                                    ${ativo ? "opacity-100 scale-100 text-[#939393]" : "opacity-0 scale-75"}
+                                                                `}
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth="3"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M5 13l4 4L19 7"
+                                                                />
+                                                            </svg>
+                                                        </span>
+
+                                                        <span>{item}</span>
+                                                    </label>
+                                                );
+                                            })}
+
+
+                                            {secoesFiltradas.length === 0 && (
+                                                <p className="text-gray-500 text-center py-3">
+                                                    Nenhuma seção encontrada.
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>,
                                     portalRoot
-                                )}
+                                )
+                            }
+
                         </div>
                     </div>
 
@@ -305,8 +471,27 @@ export default function ReportDash() {
 
                 {/* SKELETON EXCLUSIVO — aparece somente enquanto um novo relatório é gerado */}
                 {gerandoRelatorio && (
-                    <SkeletonLinha />
+                    <>
+                        {/* barra de progresso */}
+                        <div className="mt-3">
+                            <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                <span>Gerando relatório…</span>
+                                <span>{progresso}%</span>
+                            </div>
+
+                            <div className="w-full h-2 bg-[#1B1037] rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-purple-500 via-purple-400 to-purple-600 transition-all duration-500"
+                                    style={{ width: `${progresso}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* skeleton visual */}
+                        <SkeletonGeracaoRelatorio />
+                    </>
                 )}
+
 
                 {/* MENSAGEM: nenhum relatório */}
                 {!loading && !gerandoRelatorio && relatorios.length === 0 && (
@@ -359,6 +544,7 @@ export default function ReportDash() {
                                     onClick={() => navigate(`/report-view?nome=${r.nome}`)}
                                     className="flex items-center gap-2 border border-purple-500/40 hover:bg-purple-500/10 text-purple-400 px-3 py-2 rounded-lg text-sm transition"
                                 >
+                                    {/* @ts-ignore */}
                                     <FiSearch className="text-purple-400 text-lg" />
                                     Visualizar
                                 </button>
@@ -366,18 +552,17 @@ export default function ReportDash() {
                                 {/* DELETAR */}
                                 <button
                                     onClick={() => handleDelete(rel.id, r.nome)}
-                                    className="flex items-center gap-2 border border-red-500/40 hover:bg-red-500/10 text-red-400 px-3 py-2 rounded-lg text-sm transition"
+                                    className="flex items-center gap-2 border border-pink hover:bg-red-500/10 text-[#F914AD] px-3 py-2 rounded-lg text-sm transition"
                                 >
-                                    🗑️ Deletar
+                                    {/* @ts-ignore */}
+                                    <FiTrash /> Deletar
                                 </button>
 
                             </div>
                         </div>
                     );
                 })}
-
             </div>
-
         </LayoutModel>
     );
 }

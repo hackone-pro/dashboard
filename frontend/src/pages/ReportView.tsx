@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import LayoutModel from "../componentes/LayoutModel";
-import { FiAlertTriangle, FiShield, FiTrendingUp, FiDownload, FiBarChart2, FiUsers, FiUserCheck } from "react-icons/fi";
+import { FiAlertTriangle, FiShield, FiTrendingUp, FiDownload, FiBarChart2, FiUsers, FiUserCheck, FiEye, FiEyeOff } from "react-icons/fi";
 import { CiServer } from "react-icons/ci";
 import { RiWindowsLine } from "react-icons/ri";
 import { LuFolderTree } from "react-icons/lu";
@@ -11,10 +11,35 @@ import { TbListDetails } from "react-icons/tb";
 
 import GraficoGauge from "../componentes/graficos/GraficoGauge";
 import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
+import GraficoDonutIncidentes from "../componentes/graficos/GraficoDonutIncidentes";
 
 import { buscarRelatorioPorNome } from "../services/report-entry/report.service";
+import { getStatusMeta } from "../utils/incidentes/status";
+
+
+import {
+    formatDateBR,
+    getCorBadge,
+    sentenceCase,
+    statusPT,
+    formatCaseName,
+    agruparPorSeveridade,
+    detectarNivelPorNome,
+} from "../utils/incidentes/helpers";
+
+
 
 export default function ReportView() {
+
+    function formatDateBR(date?: string) {
+        if (!date) return "--";
+
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return "--";
+
+        return d.toLocaleDateString("pt-BR");
+    }
+
 
     function formatBytes(bytes: number) {
         if (!bytes || bytes <= 0) return "0 B";
@@ -30,23 +55,80 @@ export default function ReportView() {
         return bytes + " B";
     }
 
-    function bytesToGBInt(bytes: number) {
+    function bytesToChartValue(bytes: number) {
         if (!bytes || bytes <= 0) return 0;
+
+        const KB = 1024;
         const MB = 1024 ** 2;
-        return Math.round(bytes / MB); // sempre inteiro
+        const GB = 1024 ** 3;
+
+        if (bytes < MB) return Math.max(1, bytes / KB); // KB (mínimo > 0)
+        if (bytes < GB) return bytes / MB;              // MB
+        return bytes / GB;                              // GB
     }
 
 
     const [params] = useSearchParams();
     const [report, setReport] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [secoesVisiveis, setSecoesVisiveis] = useState<string[]>([]);
 
     const nome = params.get("nome");
 
     // Função auxiliar para exibir somente as seções escolhidas
     function temSecao(sec: string) {
-        return report?.sections?.includes(sec);
+        return (
+            report?.sections?.includes(sec) &&
+            secoesVisiveis.includes(sec)
+        );
     }
+
+    function toggleVisibilidadeSecao(sec: string) {
+        setSecoesVisiveis(prev =>
+            prev.includes(sec)
+                ? prev.filter(s => s !== sec)
+                : [...prev, sec]
+        );
+    }
+
+    function mapNivelPorClassificationId(
+        id?: number | null
+    ): "Crítico" | "Alto" | "Médio" | "Baixo" {
+        if (id == null) return "Baixo";
+        if ([1, 2, 11, 12, 13, 25, 32, 33, 34, 35, 36].includes(id)) return "Baixo";
+        if ([3, 4, 5, 14, 15, 22, 30, 31].includes(id)) return "Médio";
+        if ([6, 7, 8, 9, 10, 16, 23, 26, 27, 28, 29].includes(id)) return "Alto";
+        if ([17, 18, 19, 20, 21, 24].includes(id)) return "Crítico";
+        return "Baixo";
+    }
+
+    function nivelDoIncidente(i: any): "Crítico" | "Alto" | "Médio" | "Baixo" {
+        // 1️⃣ severidade direta da API
+        if (i.severity) {
+            const s = i.severity.toLowerCase();
+            if (s.includes("crit")) return "Crítico";
+            if (s.includes("high") || s.includes("alto")) return "Alto";
+            if (s.includes("med")) return "Médio";
+            if (s.includes("low") || s.includes("baix")) return "Baixo";
+        }
+
+        // 2️⃣ severidade detectada no título (IA)
+        const manual = detectarNivelPorNome(i.case_name || i.name || "");
+        if (manual) return manual as any;
+
+        // 3️⃣ fallback textual no nome
+        const nome = (i.case_name || "").toLowerCase();
+        if (nome.includes("crít")) return "Crítico";
+        if (nome.includes("alto") || nome.includes("alta")) return "Alto";
+        if (nome.includes("méd") || nome.includes("media")) return "Médio";
+        if (nome.includes("baix")) return "Baixo";
+
+        // 4️⃣ fallback final
+        if (!i.classification_id) return "Médio";
+
+        return mapNivelPorClassificationId(i.classification_id);
+    }
+
 
     const topAcessos = report?.snapshot?.topAcessos ?? null;
 
@@ -65,7 +147,10 @@ export default function ReportView() {
     const labelsTopUsers = topUsers.map((u: any) => u.user);
 
     // Gráfico com números inteiros
-    const seriesTopUsers = topUsers.map((u: any) => bytesToGBInt(u.acessos));
+    const seriesTopUsers = topUsers.map((u: any) =>
+        bytesToChartValue(u.acessos)
+    );
+
 
     // Total real para mostrar no centro
     const totalBytes = topUsers.reduce((acc: number, u: any) => acc + u.acessos, 0);
@@ -84,6 +169,7 @@ export default function ReportView() {
                 if (!nome) return;
                 const rel = await buscarRelatorioPorNome(nome);
                 setReport(rel);
+                setSecoesVisiveis(rel.sections ?? []);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -111,19 +197,50 @@ export default function ReportView() {
 
     const vuln = report?.snapshot?.vulnerabilidades ?? null;
     const riskLevel = report?.snapshot?.riskLevel ?? null;
+    const incidentes = report?.snapshot?.incidentes ?? null;
+    const listaIncidentes = incidentes?.lista ?? [];
+
+    const resumoPorSeveridade = agruparPorSeveridade(
+        listaIncidentes,
+        nivelDoIncidente
+    );
+
+    const abertos = listaIncidentes.filter(
+        (i: any) => (i.state_name || i.status || "").toLowerCase() === "open"
+    );
+
+    const fechados = listaIncidentes.filter(
+        (i: any) => (i.state_name || i.status || "").toLowerCase() === "closed"
+    );
+
+    const atribuidos = listaIncidentes.filter(
+        (i: any) => i.owner || i.assigned_to
+    );
+
+    const naoAtribuidos = listaIncidentes.filter(
+        (i: any) => !i.owner && !i.assigned_to
+    );
+
 
 
     return (
         <LayoutModel titulo="Relatórios">
 
+            <div className="print-cover">
+                <div className="cover-content">
+                    <img src="../assets/img/Logo-Security-One-Positivo.png" alt="Logo" className="cover-logo" />
+                    <h1>Relatório {report?.tenant}</h1>
+                    {/* <p>Período Filtrado: {report.period}</p> */}
+                </div>
+            </div>
+
             {/* =======================================
                 HEADER DO RELATÓRIO 
             ======================================== */}
-            <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617] shadow-lg">
-
+            <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617] shadow-lg no-print">
                 <div className="flex items-start justify-between flex-wrap gap-4">
                     <div>
-                        <h2 className="text-white text-xl font-medium">{report.nome}</h2>
+                        {/* <h2 className="text-white text-xl font-medium">{report.nome}</h2> */}
                         <p className="text-gray-400 text-sm mt-1">
                             Visualização completa do relatório processado com base no período selecionado e nas seções escolhidas.
                         </p>
@@ -154,29 +271,46 @@ export default function ReportView() {
                 </div>
                 {/* PERÍODO / SEÇÕES */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mt-4 gap-4">
-
-
-
                     <div className="flex flex-wrap items-center gap-2 no-print">
                         <span className="text-gray-400 text-sm">Seções exibidas:</span>
                         {/* @ts-ignore */}
-                        {report.sections.map((sec, i) => (
-                            <span
-                                key={i}
-                                className="px-3 py-1 rounded-lg text-xs bg-purple-600/20 text-purple-300 border border-purple-500/30"
-                            >
-                                {sec}
-                            </span>
-                        ))}
-                    </div>
+                        {report.sections.map((sec, i) => {
+                            const ativo = secoesVisiveis.includes(sec);
 
+                            return (
+                                <span
+                                    key={i}
+                                    onClick={() => toggleVisibilidadeSecao(sec)}
+                                    className={`
+        px-3 py-1 rounded-lg text-xs cursor-pointer select-none
+        flex items-center gap-2
+        transition-all
+        ${ativo
+                                            ? "bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600/30"
+                                            : "bg-gray-700/20 text-gray-400 border border-gray-600/30 hover:bg-gray-600/30"
+                                        }
+      `}
+                                >
+                                    {/* ÍCONE DE ESTADO */}
+                                    {ativo ? (
+                                        <FiEye className="text-sm opacity-80" />
+                                    ) : (
+                                        <FiEyeOff className="text-sm opacity-80" />
+                                    )}
+
+                                    {/* NOME DA SEÇÃO */}
+                                    <span>{sec}</span>
+                                </span>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
 
             {/* ========================== SEÇÃO 1 — TOP ACESSOS (sempre estática por enquanto) ========================== */}
             {temSecao("Top Acessos (URLs)") && (
-                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617] top-acessos">
 
                     <div className="flex items-center gap-2 mb-3">
                         <FiBarChart2 className="text-purple-400 text-xl" />
@@ -957,6 +1091,119 @@ export default function ReportView() {
                     </div>
                 </div>
             )}
+
+            {/* ========================== SEÇÃO — INCIDENTES ========================== */}
+            {temSecao("Incidentes") && incidentes && (
+                <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
+
+                    {/* TÍTULO */}
+                    <div className="flex items-center gap-2 mb-4">
+                        <FiAlertTriangle className="text-purple-400 text-xl" />
+                        <h3 className="text-white text-lg font-medium">Incidentes</h3>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-6">
+                        Visão consolidada dos incidentes registrados no período selecionado,
+                        incluindo status, atribuição e eventos mais recentes.
+                    </p>
+
+                    {/* CARDS RESUMO */}
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+                        <GraficoDonutIncidentes
+                            titulo="Incidentes abertos"
+                            total={abertos.length}
+                            valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
+                            onFiltrarPorNivel={() => { }}
+                        />
+
+                        <GraficoDonutIncidentes
+                            titulo="Incidentes fechados"
+                            total={fechados.length}
+                            valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
+                            onFiltrarPorNivel={() => { }}
+                        />
+
+                        <GraficoDonutIncidentes
+                            titulo="Incidentes atribuídos"
+                            total={atribuidos.length}
+                            valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
+                            onFiltrarPorNivel={() => { }}
+                        />
+
+                        <GraficoDonutIncidentes
+                            titulo="Incidentes não atribuídos"
+                            total={naoAtribuidos.length}
+                            valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
+                            onFiltrarPorNivel={() => { }}
+                        />
+
+                    </div>
+
+
+
+                    {/* LISTA DOS ÚLTIMOS INCIDENTES */}
+                    <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">
+                        <h4 className="text-white text-sm font-medium mb-4">
+                            Últimos 5 incidentes
+                        </h4>
+
+                        <table className="w-full text-sm text-gray-300">
+                            <thead className="bg-black/20 text-gray-200">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Incidente</th>
+                                    <th className="py-3 px-4 text-left">Severidade</th>
+                                    <th className="py-3 px-4 text-left">Status</th>
+                                    <th className="py-3 px-4 text-left">Data</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {(incidentes.ultimos ?? []).map((inc: any, i: number) => {
+                                    const nivel = nivelDoIncidente(inc);
+                                    const badge = getCorBadge(nivel);
+
+                                    const meta = getStatusMeta(inc.state_name ?? inc.status);
+                                    const StatusIcon = meta.Icon;
+
+                                    return (
+                                        <tr key={i} className="border-b border-white/5">
+                                            {/* Incidente */}
+                                            <td className="py-3 px-4 text-gray-300">
+                                                {formatCaseName(inc.case_name || inc.name || "—")}
+                                            </td>
+
+                                            {/* Severidade */}
+                                            <td className="py-3 px-4">
+                                                <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>{sentenceCase(nivel)}</span>
+                                            </td>
+
+                                            {/* Status */}
+                                            <td className="py-3 px-4">
+                                                <span className="inline-flex items-center justify-center gap-1 text-xs text-gray-400">
+                                                    {/* @ts-ignore */}
+                                                    <StatusIcon className={`w-4 h-4 ${meta.color}`} />{meta.label}
+                                                </span>
+                                            </td>
+
+                                            {/* Data */}
+                                            <td className="py-3 px-4">
+                                                {formatDateBR(
+                                                    inc.case_open_date ??
+                                                    inc.created_at ??
+                                                    inc.start_date
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            )}
+
 
 
 

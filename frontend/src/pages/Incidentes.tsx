@@ -21,6 +21,8 @@ import { VscError } from "react-icons/vsc";
 import { FiRotateCcw } from "react-icons/fi";
 
 import { useTenant } from "../context/TenantContext";
+import { getStatusMeta } from "../utils/incidentes/status";
+
 
 import {
   normaliza,
@@ -48,22 +50,6 @@ const PAGE_SIZE = 10;
 type SortKey = "id" | "data" | "severidade" | "status";
 type SortDir = "asc" | "desc";
 
-type StatusMeta = { label: string; Icon: IconType; color: string };
-
-const STATUS_MAP: Record<string, StatusMeta> = {
-  open: { label: "Aberto", Icon: FaLockOpen, color: "text-gray-500" },
-  "in progress": { label: "Em progresso", Icon: RiProgress5Line, color: "text-gray-500" },
-  containment: { label: "Contenção", Icon: IoStopCircleOutline, color: "text-gray-500" },
-  eradication: { label: "Erradicação", Icon: MdOutlineGppBad, color: "text-gray-500" },
-  recovery: { label: "Recuperação", Icon: MdOutlineHealthAndSafety, color: "text-gray-500" },
-  "post-incident": { label: "Pós-incidente", Icon: GrTroubleshoot, color: "text-gray-500" },
-  reporting: { label: "Reportando", Icon: TbMessageReport, color: "text-gray-500" },
-  closed: { label: "Fechado", Icon: FaRegCheckCircle, color: "text-gray-500" },
-  unspecified: { label: "Não especificado", Icon: RiQuestionLine, color: "text-gray-500" },
-};
-
-const DEFAULT_STATUS: StatusMeta = { label: "—", Icon: RiQuestionLine, color: "text-gray-400" };
-
 const STATUS_ORDER: Record<string, number> = {
   open: 1,
   "in progress": 2,
@@ -79,10 +65,6 @@ const STATUS_ORDER: Record<string, number> = {
 /* =========================================
  * HELPERS
  * ======================================= */
-function getStatusMeta(s?: string): StatusMeta {
-  const v = (s ?? "").toLowerCase().trim();
-  return STATUS_MAP[v] ?? { ...DEFAULT_STATUS, label: s || "—" };
-}
 
 function mapNivelPorClassificationId(
   id?: number | null

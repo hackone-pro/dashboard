@@ -59,7 +59,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
       <div className="flex-1 px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300">
         {/* Header */}
-        <header className="flex items-center px-6 rounded-xl justify-between mb-4">
+        <header className="flex items-center px-6 rounded-xl justify-between mb-4 no-print">
           {/* 🔹 Esquerda - Título */}
           <div className="flex items-center gap-2">
             <h1 className="text-white text-2xl">{titulo}</h1>
