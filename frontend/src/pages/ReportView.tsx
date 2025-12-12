@@ -282,19 +282,21 @@ export default function ReportView() {
                                     key={i}
                                     onClick={() => toggleVisibilidadeSecao(sec)}
                                     className={`
-        px-3 py-1 rounded-lg text-xs cursor-pointer select-none
-        flex items-center gap-2
-        transition-all
-        ${ativo
+                                    px-3 py-1 rounded-lg text-xs cursor-pointer select-none
+                                    flex items-center gap-2
+                                    transition-all
+                                    ${ativo
                                             ? "bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600/30"
                                             : "bg-gray-700/20 text-gray-400 border border-gray-600/30 hover:bg-gray-600/30"
                                         }
-      `}
+                                `}
                                 >
                                     {/* ÍCONE DE ESTADO */}
                                     {ativo ? (
+                                        // @ts-ignore
                                         <FiEye className="text-sm opacity-80" />
                                     ) : (
+                                        // @ts-ignore
                                         <FiEyeOff className="text-sm opacity-80" />
                                     )}
 
@@ -313,6 +315,7 @@ export default function ReportView() {
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617] top-acessos">
 
                     <div className="flex items-center gap-2 mb-3">
+                        {/* @ts-ignore */}
                         <FiBarChart2 className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Top acessos</h3>
                     </div>
@@ -386,6 +389,7 @@ export default function ReportView() {
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-3">
+                        {/* @ts-ignore */}
                         <FiUsers className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Top Usuários</h3>
                     </div>
@@ -440,6 +444,7 @@ export default function ReportView() {
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-3">
+                        {/* @ts-ignore */}
                         <LuFolderTree className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Top Aplicações</h3>
                     </div>
@@ -480,6 +485,7 @@ export default function ReportView() {
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-3">
+                        {/* @ts-ignore */}
                         <BiCategory className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Top Categorias</h3>
                     </div>
@@ -528,6 +534,7 @@ export default function ReportView() {
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-3">
+                        {/* @ts-ignore */}
                         <FiUserCheck className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Top Usuários por Volume de Aplicação</h3>
                     </div>
@@ -567,6 +574,7 @@ export default function ReportView() {
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-3">
+                        {/* @ts-ignore */}
                         <TbListDetails className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Top Acesso Detalhado</h3>
                     </div>
@@ -1098,6 +1106,7 @@ export default function ReportView() {
 
                     {/* TÍTULO */}
                     <div className="flex items-center gap-2 mb-4">
+                        {/* @ts-ignore */}
                         <FiAlertTriangle className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">Incidentes</h3>
                     </div>
