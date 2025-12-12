@@ -677,7 +677,7 @@ export default function ReportView() {
                         </div>
                         <p className="text-gray-400 text-sm mb-6">Alertas totais</p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                        <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-4">
 
                             {/* Crítico */}
                             <div className="cards rounded-xl p-4 border border-white/10 bg-[#12121a] flex flex-col">
