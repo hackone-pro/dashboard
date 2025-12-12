@@ -8,11 +8,19 @@ import { factories } from "@strapi/strapi";
 import { buscarVulnSeveridades, buscarTopOSVulnerabilidades } from "../../acesso-wazuh/services/vulnerabilidades.service";
 import { buscarTopGeradoresFirewall } from "../../acesso-wazuh/services/firewalls.service";
 import { buscarTopAgentes, buscarTopAgentesCis, buscarTopAlteracoesArquivo } from "../../acesso-wazuh/services/agentes.service";
-import { buscarIncidentesIris } from "../../acesso-iris/services/acesso-iris";
+import { buscarIncidentesIris, buscarCasos } from "../../acesso-iris/services/acesso-iris";
 import { buscarTopUsers } from "../../acesso-wazuh/services/usuarios.service";
 import { buscarDadosReport } from "../../n-eight-n/services/n-eight-n";
 
 import { getTenantAtivo } from "../../acesso-wazuh/controllers/_utils";
+
+import {
+  startOfDay,
+  endOfDay,
+  subDays,
+  isAfter,
+  isBefore
+} from "date-fns";
 
 export default factories.createCoreService(
   "api::report-entry.report-entry",
@@ -445,12 +453,113 @@ export default factories.createCoreService(
       }
     },
 
+    async coletarIncidentesDetalhados(tenant, dias, user) {
+
+      const casosResponse = await buscarCasos(tenant, user);
+      const casos = Array.isArray(casosResponse)
+        ? casosResponse
+        : casosResponse?.data || [];
+
+      // converte dias
+      let diasNum = 1;
+      if (dias === "5") diasNum = 5;
+      else if (dias === "15") diasNum = 15;
+      else if (dias === "30") diasNum = 30;
+      else if (dias === "todos") diasNum = 0;
+
+      const inicio = startOfDay(subDays(new Date(), diasNum));
+      const fim = endOfDay(new Date());
+
+      const ownerUser = user?.owner_name_iris || "";
+      const clienteName = tenant?.cliente_name || "";
+      const ownersValidos = [ownerUser, "Inteligencia_Artificial"];
+
+      const filtrados = casos.filter((caso) => {
+        if (!caso.case_open_date) return false;
+
+        let data = new Date(caso.case_open_date);
+        if (isNaN(data.getTime())) {
+          const partes = caso.case_open_date.split(/[\/\-]/);
+          if (partes.length === 3) {
+            const [a, b, c] = partes.map((x) => parseInt(x, 10));
+            data = a > 1900 ? new Date(a, b - 1, c) : new Date(c, a - 1, b);
+          }
+        }
+        if (isNaN(data.getTime())) return false;
+
+        const dentroDoPeriodo =
+          diasNum === 0 ? true : isAfter(data, inicio) && isBefore(data, fim);
+
+        const ownerCaso = caso.owner || caso.owner_name || "";
+        const matchOwner =
+          ownersValidos.includes(ownerCaso) ||
+          (ownerCaso === "Inteligencia_Artificial" &&
+            caso.case_name?.includes(clienteName));
+
+        return dentroDoPeriodo && matchOwner;
+      });
+
+      const total = filtrados.length;
+
+      const abertos = filtrados.filter(
+        i => (i.case_status || "").toLowerCase() === "open"
+      ).length;
+
+      const fechados = filtrados.filter(
+        i => (i.case_status || "").toLowerCase() === "closed"
+      ).length;
+
+      const atribuidos = filtrados.filter(
+        i => i.owner || i.owner_name
+      ).length;
+
+      const nao_atribuidos = total - atribuidos;
+
+      const ultimos = [...filtrados]
+        .sort(
+          (a, b) =>
+            new Date(b.case_open_date).getTime() -
+            new Date(a.case_open_date).getTime()
+        )
+        .slice(0, 5);
+
+        return {
+          total,
+          abertos,
+          fechados,
+          atribuidos,
+          nao_atribuidos,
+          lista: filtrados,
+          ultimos,
+        };
+    },
 
     /**
      * ==========================================================
      * GERAR RELATÓRIO
      * ==========================================================
      */
+
+    gerarNomeRelatorio() {
+      const agora = new Date();
+
+      // Converte para horário do Brasil
+      const brasil = new Date(
+        agora.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+      );
+
+      const pad = (n) => String(n).padStart(2, "0");
+
+      const ano = brasil.getFullYear();
+      const mes = pad(brasil.getMonth() + 1);
+      const dia = pad(brasil.getDate());
+      const hora = pad(brasil.getHours());
+      const min = pad(brasil.getMinutes());
+      const seg = pad(brasil.getSeconds());
+
+      return `securityone_${dia}${mes}${ano}_${hora}${min}${seg}`;
+    },
+
     async gerarRelatorio(ctx) {
       try {
         const user = ctx.state.user;
@@ -473,7 +582,7 @@ export default factories.createCoreService(
               period,
               sections,
               progress: "gerando",
-              nome: `relatorio_${Date.now()}_${period}`,
+              nome: this.gerarNomeRelatorio(),
               snapshot: {},
             },
           }
@@ -649,6 +758,18 @@ export default factories.createCoreService(
             await this.coletarTopAcessoDetalhadoN8N(tenant, diasNormalizados);
         }
 
+        // ============================================================
+        // 15 — Incidentes (IRIS)
+        // ============================================================
+        if (sections.includes("Incidentes")) {
+
+          snapshot.incidentes =
+            await this.coletarIncidentesDetalhados(
+              tenant,
+              diasNormalizados,
+              user
+            );
+        }
 
 
         // Finalização
