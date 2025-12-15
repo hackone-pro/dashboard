@@ -158,7 +158,8 @@ export default function Dashboard() {
               cancelButtonColor: "#6b7280",
               confirmButtonText: "Sim, restaurar",
               cancelButtonText: "Cancelar",
-              background: "#1f1f2b",
+              background: "#0A0617",
+              iconColor: "#A855F7",
               color: "#fff",
             });
 
@@ -173,7 +174,7 @@ export default function Dashboard() {
                   title: "Erro!",
                   text: "Não foi possível restaurar o layout.",
                   confirmButtonColor: "#7e22ce",
-                  background: "#1f1f2b",
+                  background: "#0A0617",
                   color: "#fff",
                 });
               } finally {
