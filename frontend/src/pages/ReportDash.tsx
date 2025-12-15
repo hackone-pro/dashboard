@@ -24,6 +24,11 @@ export default function ReportDash() {
     const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
     const [progresso, setProgresso] = useState(0);
 
+    const [openPeriodo, setOpenPeriodo] = useState(false);
+    const botaoPeriodoRef = useRef<HTMLButtonElement | null>(null);
+    const periodoRef = useRef<HTMLDivElement | null>(null);
+
+
     const botaoSecoesRef = useRef<HTMLButtonElement | null>(null);
 
     const { tenantAtivo } = useTenant();
@@ -88,7 +93,6 @@ export default function ReportDash() {
     function limparTodasSecoes() {
         setSecoesSelecionadas([]);
     }
-
 
     // Gerar relatório REAL usando o backend
     async function handleGerarRelatorio() {
@@ -201,6 +205,16 @@ export default function ReportDash() {
             if (botaoSecoesRef.current?.contains(target)) {
                 return;
             }
+
+            if (
+                openPeriodo &&
+                periodoRef.current &&
+                !periodoRef.current.contains(target) &&
+                !botaoPeriodoRef.current?.contains(target)
+            ) {
+                setOpenPeriodo(false);
+            }
+
             // se clicou fora do portal, fecha
             if (
                 openSecoes &&
@@ -215,6 +229,12 @@ export default function ReportDash() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [openSecoes]);
+
+    const periodosDisponiveis = [
+        { label: "5 dias", value: "5d" },
+        { label: "15 dias", value: "15d" },
+        { label: "30 dias", value: "30d" },
+    ];
 
     return (
         <LayoutModel titulo="Relatórios">
@@ -241,7 +261,11 @@ export default function ReportDash() {
                             </div>
 
                             <div className="relative">
-                                <select
+
+                                {/* BOTÃO DO PERÍODO */}
+                                <button
+                                    ref={botaoPeriodoRef}
+                                    onClick={() => setOpenPeriodo(v => !v)}
                                     className="
                                         bg-[#0A0617]
                                         border border-white/10
@@ -250,22 +274,101 @@ export default function ReportDash() {
                                         px-4 py-2
                                         pr-10
                                         w-36
-                                        appearance-none
+                                        flex items-center justify-between
                                         cursor-pointer
                                     "
-                                    value={horas}
-                                    onChange={(e) => setHoras(e.target.value)}
                                 >
-                                    <option value="">Período</option>
-                                    <option value="5d">5 dias</option>
-                                    <option value="15d">15 dias</option>
-                                    <option value="30d">30 dias</option>
-                                </select>
+                                    <span className={horas ? "text-white" : "text-gray-400"}>
+                                        {periodosDisponiveis.find(p => p.value === horas)?.label || "Período"}
+                                    </span>
 
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300">
-                                    ▼
-                                </span>
+                                    <span className="text-gray-300">▼</span>
+                                </button>
+
+                                {/* DROPDOWN DO PERÍODO */}
+                                {openPeriodo && portalRoot &&
+                                    createPortal(
+                                        <div
+                                            ref={periodoRef}
+                                            className="
+                                                fixed z-[999999]
+                                                bg-[#161125]
+                                                border border-white/10
+                                                rounded-xl
+                                                shadow-xl
+                                                p-2
+                                                w-40
+                                            "
+                                            style={{
+                                                top: "220px",
+                                                left: "160px",
+                                            }}
+                                        >
+                                            {periodosDisponiveis.map(p => {
+                                                const ativo = horas === p.value;
+
+                                                return (
+                                                    <button
+                                                        key={p.value}
+                                                        onClick={() => {
+                                                            setHoras(p.value);
+                                                            setOpenPeriodo(false);
+                                                        }}
+                                                        className={`
+                                                            relative
+                                                            w-full flex items-center gap-3 p-3 rounded-md text-left
+                                                            transition-colors
+                                                            ${ativo
+                                                                                                            ? `
+                                                                bg-[#250E5D] text-white
+                                                                before:absolute before:top-0 before:left-0 before:w-full before:h-[1px]
+                                                                before:bg-gradient-to-r before:from-[#3A0F80] before:via-[#AE29CA] before:to-[#3A0F80]
+                                                                after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px]
+                                                                after:bg-gradient-to-r after:from-[#3A0F80] after:via-[#AE29CA] after:to-[#3A0F80]
+                                                            `
+                                                                : "text-gray-400 hover:bg-[#1B1037]"
+                                                            }
+                                                        `}
+                                                    >
+
+                                                        {/* CHECK VISUAL — IGUAL AO DAS SEÇÕES */}
+                                                        <span
+                                                            className={`
+                                                                w-6 h-6 flex items-center justify-center
+                                                                border border-[#271E3F]
+                                                                bg-transparent
+                                                                transition-all
+                                                                ${ativo ? "border-[#554b74]" : ""}
+                                                                `}
+                                                                                                        >
+                                                             <svg className={`
+                                                                    w-4 h-4
+                                                                    transition-all
+                                                                    ${ativo ? "opacity-100 scale-100 text-[#939393]" : "opacity-0 scale-75"}
+                                                                `}
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth="3"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M5 13l4 4L19 7"
+                                                                />
+                                                            </svg>
+                                                        </span>
+
+                                                        <span>{p.label}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>,
+                                        portalRoot
+                                    )
+                                }
                             </div>
+
                         </div>
 
                         {/* SELECT DE SEÇÕES */}

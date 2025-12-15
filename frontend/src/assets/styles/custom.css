@@ -314,17 +314,64 @@ header button.toggle {
 }
 
 .custom-scroll::-webkit-scrollbar-track {
-  background: #0d0a20; /* fundo escuro padrão */
+  background: #0d0a20;
+  /* fundo escuro padrão */
   border-radius: 10px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: #6d28d9; /* roxo da dashboard */
+  background: #484D64;
+  /* roxo da dashboard */
   border-radius: 10px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #484D64;
+}
+
+/*SCROLL*/
+.lista-secoes {
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: #484D64 #252835;   /* Firefox */
+}
+
+/* Chrome, Edge, Safari */
+.lista-secoes::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lista-secoes::-webkit-scrollbar-track {
+  background: #252835;
+  border-radius: 10px;
+}
+
+.lista-secoes::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #252835,
+    #484D64,
+    #252835
+  );
+  border-radius: 10px;
+}
+
+
+/*TOAST*/
+:root {
+  --toastify-color-success: #8b5cf6 !important;
+  --toastify-color-error: #F914AD !important;
+}
+.Toastify__toast--success{
+  color:#8b5cf6 !important;
+}
+.Toastify__toast--error{
+  color: #F914AD;
+}
+.Toastify__progress-bar--success{
   background: #8b5cf6;
+}
+.Toastify__progress-bar--error {
+  background: #F914AD !important;
 }
 
 
@@ -755,7 +802,7 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
 
 @media print {
 
-  h1{
+  h1 {
     font-size: 25px;
     padding: 15px 0;
   }
@@ -791,7 +838,7 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
     color: white;
     text-align: center;
     position: relative;
-    margin-top:250px;
+    margin-top: 250px;
   }
 
   .cover-content {
@@ -808,8 +855,8 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
     padding: 0 !important;
   }
 
-  .top-acessos{
-    margin-top:15px !important;
+  .top-acessos {
+    margin-top: 15px !important;
   }
 
   /* Remove margens do navegador */

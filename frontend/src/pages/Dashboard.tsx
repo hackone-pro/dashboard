@@ -15,19 +15,16 @@ import { widgetsConfig } from "../componentes/dashboard/WidgetConfig";
 import { getWidgetMap } from "../componentes/dashboard/WidgetMap";
 import WidgetMenu from "../componentes/dashboard/WidgetMenu";
 
-import {
-  getDashboardLayout,
-  saveDashboardLayout,
-  resetUserDashboardLayout,
-  WidgetLayout,
-} from "../services/dashboard/dashboardLayout.service";
+import { getDashboardLayout, saveDashboardLayout, resetUserDashboardLayout, WidgetLayout} from "../services/dashboard/dashboardLayout.service";
 import { getRiskLevel } from "../services/wazuh/risklevel.service";
 import { getToken } from "../utils/auth";
+import { normalizarLayout, limparLayoutParaSalvar} from "../utils/dashboardLayout";
+
 import { useTenant } from "../context/TenantContext";
 
 const GridLayout = WidthProvider(GridLayoutBase);
 
-// 🟣 Layout padrão DEFINITIVO do FRONT
+// Layout padrão DEFINITIVO do FRONT
 const layoutPadrao: WidgetLayout[] = [
   { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9 },
   { i: "geo_map", x: 3, y: 0, w: 6, h: 13 },
@@ -57,16 +54,15 @@ export default function Dashboard() {
     async function carregarLayout() {
       try {
         const data = await getDashboardLayout();
-
-        // Se não existir layout ou for vazio → usa O LAYOUT PADRÃO DO FRONT
-        if (!data || !Array.isArray(data.layout) || data.layout.length === 0) {
-          if (ativo) setLayout(layoutPadrao);
+          if (!data || !Array.isArray(data.layout) || data.layout.length === 0) {
+          if (ativo) setLayout(normalizarLayout(layoutPadrao));
         } else {
-          if (ativo) setLayout(data.layout);
+          if (ativo) setLayout(normalizarLayout(data.layout));
         }
+  
       } catch (err) {
-        console.error("❌ Erro ao carregar layout:", err);
-        if (ativo) setLayout(layoutPadrao);
+        console.error("Erro ao carregar layout:", err);
+        if (ativo) setLayout(normalizarLayout(layoutPadrao));
       } finally {
         setTimeout(() => {
           if (ativo) setLoadingDashboard(false);
@@ -118,7 +114,7 @@ export default function Dashboard() {
         try {
           await saveDashboardLayout(newLayout);
         } catch (err) {
-          console.error("❌ Erro ao salvar layout:", err);
+          console.error("Erro ao salvar layout:", err);
         }
       }, 1000),
     []
@@ -131,7 +127,7 @@ export default function Dashboard() {
       setLayout(novoLayout);
       await saveDashboardLayout(novoLayout);
     } catch (err) {
-      console.error("❌ Erro ao remover widget:", err);
+      console.error("Erro ao remover widget:", err);
       Swal.fire({
         icon: "error",
         title: "Erro ao atualizar layout",
@@ -221,27 +217,53 @@ export default function Dashboard() {
             const id = e.dataTransfer?.getData("text/plain");
             if (!id) return;
             if (layout.some((item) => item.i === id)) return;
-
-            const cleaned = layout.filter((item) => item.i !== "__dropping-elem__");
+          
+            const cleaned = layout.filter(
+              (item) => item.i !== "__dropping-elem__"
+            );
+          
             const config = widgetsConfig.find((w) => w.id === id);
-
-            const novoWidget: WidgetLayout = {
-              i: id,
-              x: layoutItem?.x ?? 0,
-              y: layoutItem?.y ?? Infinity,
-              w: config?.w ?? 3,
-              h: config?.h ?? 10,
-            };
-
-            const novoLayout = [...cleaned, novoWidget];
+          
+            // layout base (SEM regras de UI)
+            const novoLayoutBase: WidgetLayout[] = [
+              ...cleaned,
+              {
+                i: id,
+                x: layoutItem?.x ?? 0,
+                y: layoutItem?.y ?? Infinity,
+                w: config?.w ?? 3,
+                h: config?.h ?? 10,
+              },
+            ];
+          
+            // aplica regras de UI (minW / minH)
+            const novoLayout = normalizarLayout(novoLayoutBase);
+          
+            //renderiza no frontend
             setLayout(novoLayout);
-            saveDashboardLayout(novoLayout);
+          
+            // salva no backend (layout LIMPO)
+            saveDashboardLayout(limparLayoutParaSalvar(novoLayout));
             setDraggingFromSidebar(false);
           }}
+          
           onLayoutChange={(newLayout) => {
-            setLayout(newLayout as WidgetLayout[]);
-            salvarLayoutDebounced(newLayout as WidgetLayout[]);
+            // remove regras de UI antes de salvar
+            const layoutLimpo = limparLayoutParaSalvar(
+              newLayout as WidgetLayout[]
+            );
+          
+            // reaplica regras de UI para renderizar
+            const layoutNormalizado = normalizarLayout(layoutLimpo);
+          
+            // renderiza
+            setLayout(layoutNormalizado);
+          
+            // salva no backend (sem minW/minH)
+            salvarLayoutDebounced(layoutLimpo);
           }}
+          
+          
         >
           {layout.map((item) => (
             <div key={item.i} className="rounded-2xl overflow-hidden relative group">
