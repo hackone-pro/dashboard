@@ -1,10 +1,11 @@
 import { getToken } from "../../utils/auth";
+import { Layout } from "react-grid-layout";
 
 /**
- * 🔹 Tipagem do layout
+ * Tipagem do layout
  * Baseada no formato do react-grid-layout
  */
-export interface WidgetLayout {
+export interface WidgetLayout extends Layout {
   i: string; // ID do widget (ex: grafico_risco)
   x: number;
   y: number;
@@ -13,7 +14,7 @@ export interface WidgetLayout {
 }
 
 /**
- * 🔹 Resposta vinda da API
+ * Resposta vinda da API
  */
 export interface DashboardLayoutResponse {
   id: number;
@@ -22,7 +23,7 @@ export interface DashboardLayoutResponse {
 }
 
 /**
- * 🔹 Busca o layout do usuário logado (ou o padrão global)
+ * Busca o layout do usuário logado (ou o padrão global)
  */
 export async function getDashboardLayout(): Promise<DashboardLayoutResponse> {
   const token = getToken();
@@ -45,7 +46,7 @@ export async function getDashboardLayout(): Promise<DashboardLayoutResponse> {
 }
 
 /**
- * 🔹 Salva ou atualiza o layout do usuário logado
+ * Salva ou atualiza o layout do usuário logado
  */
 export async function saveDashboardLayout(
   layout: WidgetLayout[]
@@ -75,7 +76,7 @@ export async function saveDashboardLayout(
 }
 
 /**
- * 🔹 Restaura o layout padrão global
+ * Restaura o layout padrão global
  */
 export async function resetDashboardLayout(): Promise<DashboardLayoutResponse> {
   const token = getToken();

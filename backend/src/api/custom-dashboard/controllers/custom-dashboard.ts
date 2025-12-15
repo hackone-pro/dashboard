@@ -9,7 +9,7 @@ export default {
 
       const userId = String(user.id);
 
-      // 🔹 1) Verifica se o usuário já tem layout no banco
+      // 1) Verifica se o usuário já tem layout no banco
       const layout = await strapi.db
         .query("api::custom-dashboard.custom-dashboard")
         .findOne({
@@ -20,14 +20,14 @@ export default {
         return ctx.send(layout);
       }
 
-      // 🔥 2) Se não tiver layout → cria automaticamente o layout padrão
+      // 2) Se não tiver layout → cria automaticamente o layout padrão
       const layoutPadrao = [
-        { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9 },
-        { i: "geo_map", x: 3, y: 0, w: 6, h: 13 },
-        { i: "top_paises", x: 9, y: 0, w: 3, h: 13 },
-        { i: "top_incidentes", x: 0, y: 10, w: 3, h: 18 },
-        { i: "ia_humans", x: 3, y: 12, w: 6, h: 14 },
-        { i: "top_firewalls", x: 9, y: 12, w: 3, h: 14 },
+        { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9, minW: 3, minH: 9},
+        { i: "geo_map", x: 3, y: 0, w: 6, h: 13, minW: 6, minH: 13 },
+        { i: "top_paises", x: 9, y: 0, w: 3, h: 13, minW: 3, minH: 13 },
+        { i: "top_incidentes", x: 0, y: 10, w: 3, h: 18, minW: 3, minH: 18 },
+        { i: "ia_humans", x: 3, y: 12, w: 6, h: 14, minW: 3, minH: 12 },
+        { i: "top_firewalls", x: 9, y: 12, w: 3, h: 14,minW: 9, minH: 12 },
       ];
 
       const created = await strapi.db
@@ -62,7 +62,7 @@ export default {
 
       const userId = String(user.id);
 
-      strapi.log.info(`🟢 Salvando layout para user=${userId}`);
+      strapi.log.info(`Salvando layout para user=${userId}`);
 
       // 🔹 Verifica se o usuário já possui registro
       const existing = await strapi.db
@@ -73,7 +73,7 @@ export default {
         });
 
       if (existing) {
-        strapi.log.info(`✏️ Atualizando layout existente ID=${existing.id}`);
+        strapi.log.info(`Atualizando layout existente ID=${existing.id}`);
         const updated = await strapi.db
           .query("api::custom-dashboard.custom-dashboard")
           .update({
@@ -84,12 +84,12 @@ export default {
             },
           });
 
-        strapi.log.info(`✅ Layout atualizado com sucesso`);
+        strapi.log.info(`Layout atualizado com sucesso`);
         return ctx.send(updated);
       }
 
       // 🔹 Caso não exista, cria novo
-      strapi.log.info(`➕ Criando novo layout para user=${userId}`);
+      strapi.log.info(`Criando novo layout para user=${userId}`);
       const created = await strapi.db
         .query("api::custom-dashboard.custom-dashboard")
         .create({
@@ -99,10 +99,10 @@ export default {
           },
         });
 
-      strapi.log.info(`✅ Layout criado ID=${created.id}`);
+      strapi.log.info(`Layout criado ID=${created.id}`);
       return ctx.send(created);
     } catch (err) {
-      strapi.log.error("❌ Erro em custom-dashboard.updateMe:", err);
+      strapi.log.error("Erro em custom-dashboard.updateMe:", err);
       return ctx.internalServerError("Erro ao salvar layout.");
     }
   },
@@ -120,12 +120,12 @@ export default {
 
       // 🔹 Define o layout padrão fixo (igual ao do frontend)
       const layoutPadrao = [
-        { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9 },
-        { i: "geo_map", x: 3, y: 0, w: 6, h: 13 },
-        { i: "top_paises", x: 9, y: 0, w: 3, h: 13 },
-        { i: "top_incidentes", x: 0, y: 10, w: 3, h: 18 },
-        { i: "ia_humans", x: 3, y: 12, w: 6, h: 14 },
-        { i: "top_firewalls", x: 9, y: 12, w: 3, h: 14 },
+        { i: "grafico_risco", x: 0, y: 0, w: 3, h: 9, minW: 3, minH: 9},
+        { i: "geo_map", x: 3, y: 0, w: 6, h: 13, minW: 6, minH: 13 },
+        { i: "top_paises", x: 9, y: 0, w: 3, h: 13, minW: 3, minH: 13 },
+        { i: "top_incidentes", x: 0, y: 10, w: 3, h: 18, minW: 3, minH: 18 },
+        { i: "ia_humans", x: 3, y: 12, w: 6, h: 14, minW: 3, minH: 12 },
+        { i: "top_firewalls", x: 9, y: 12, w: 3, h: 14,minW: 9, minH: 12 },
       ];
 
       // 🔹 Busca o registro existente do usuário
@@ -134,7 +134,7 @@ export default {
         .findOne({ where: { user: userId }, select: ["id"] });
 
       if (!existing) {
-        strapi.log.warn(`⚠️ Nenhum layout encontrado para user=${userId}`);
+        strapi.log.warn(`Nenhum layout encontrado para user=${userId}`);
         return ctx.notFound("Layout do usuário não encontrado.");
       }
 
@@ -146,10 +146,10 @@ export default {
           data: { layout: layoutPadrao, user: userId },
         });
 
-      strapi.log.info(`🔄 Layout do user=${userId} restaurado para o padrão.`);
+      strapi.log.info(`Layout do user=${userId} restaurado para o padrão.`);
       return ctx.send(updated);
     } catch (err) {
-      strapi.log.error("❌ Erro em custom-dashboard.resetMe:", err);
+      strapi.log.error("Erro em custom-dashboard.resetMe:", err);
       return ctx.internalServerError("Erro ao restaurar layout padrão.");
     }
   }
