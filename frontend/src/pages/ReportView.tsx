@@ -15,6 +15,7 @@ import GraficoDonutIncidentes from "../componentes/graficos/GraficoDonutIncident
 
 import { buscarRelatorioPorNome } from "../services/report-entry/report.service";
 import { getStatusMeta } from "../utils/incidentes/status";
+import { useTenant } from "../context/TenantContext";
 
 
 import {
@@ -72,6 +73,8 @@ export default function ReportView() {
     const [report, setReport] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [secoesVisiveis, setSecoesVisiveis] = useState<string[]>([]);
+    const { tenantAtivo } = useTenant();
+    const [semPermissao, setSemPermissao] = useState(false);
 
     const nome = params.get("nome");
 
@@ -164,20 +167,46 @@ export default function ReportView() {
     //-------------------------
 
     useEffect(() => {
+        // sempre que trocar o tenant:
+        setReport(null);
+        setSemPermissao(false);
+        setLoading(true);
+    }, [tenantAtivo]);
+
+
+    useEffect(() => {
         async function load() {
             try {
-                if (!nome) return;
+                if (!nome || !tenantAtivo?.cliente_name) return;
+
+                setLoading(true);
+
                 const rel = await buscarRelatorioPorNome(nome);
+
+                // validação correta de tenant
+                if (rel?.tenant !== tenantAtivo.cliente_name) {
+                    setSemPermissao(true);
+                    setReport(null);
+                    return;
+                }
+
                 setReport(rel);
                 setSecoesVisiveis(rel.sections ?? []);
+                setSemPermissao(false);
+
             } catch (err) {
                 console.error(err);
+                setSemPermissao(true);
+                setReport(null);
             } finally {
                 setLoading(false);
             }
         }
+
         load();
-    }, [nome]);
+    }, [nome, tenantAtivo?.cliente_name]);
+
+
 
     if (loading) {
         return (
@@ -187,9 +216,28 @@ export default function ReportView() {
         );
     }
 
+    if (semPermissao) {
+        return (
+            <LayoutModel titulo="Visualização do Relatório">
+                <div className="h-[40vh] flex items-center justify-center">
+                    <div className="text-center max-w-md">
+                        <h2 className="text-lg text-white mb-2">
+                            Relatório indisponível
+                        </h2>
+                        <p className="text-gray-400 text-sm">
+                            Este relatório não pertence ao tenant atualmente selecionado
+                            ou você não possui permissão para visualizá-lo.
+                        </p>
+                    </div>
+                </div>
+            </LayoutModel>
+        );
+    }
+
+
     if (!report) {
         return (
-            <LayoutModel titulo="Relatórios">
+            <LayoutModel titulo="Visualização do Relatório">
                 <div className="text-gray-300 p-10">Relatório não encontrado.</div>
             </LayoutModel>
         );
@@ -222,9 +270,8 @@ export default function ReportView() {
     );
 
 
-
     return (
-        <LayoutModel titulo="Relatórios">
+        <LayoutModel titulo="Visualização do Relatório">
 
             <div className="print-cover">
                 <div className="cover-content">
@@ -1148,8 +1195,6 @@ export default function ReportView() {
                         />
 
                     </div>
-
-
 
                     {/* LISTA DOS ÚLTIMOS INCIDENTES */}
                     <div className="p-5 rounded-xl bg-[#0F091F] border border-white/10">

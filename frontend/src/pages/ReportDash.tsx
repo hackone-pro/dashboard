@@ -644,7 +644,7 @@ export default function ReportDash() {
 
                                 {/* VISUALIZAR */}
                                 <button
-                                    onClick={() => navigate(`/report-view?nome=${r.nome}`)}
+                                    onClick={() => navigate(`/relatorios/report-view?nome=${r.nome}`)}
                                     className="flex items-center gap-2 border border-purple-500/40 hover:bg-purple-500/10 text-purple-400 px-3 py-2 rounded-lg text-sm transition"
                                 >
                                     {/* @ts-ignore */}

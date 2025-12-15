@@ -1,6 +1,6 @@
 // src/componentes/LayoutModel.tsx
 import { ReactNode, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import Sidebar from "./SideBar";
 import TenantSelector from "./TenantSelector";
 import { logout } from "../utils/auth";
@@ -8,6 +8,8 @@ import { toastSuccess } from "../utils/toast";
 import { FiLogOut } from "react-icons/fi";
 import { AiFillSun, AiFillQuestionCircle } from "react-icons/ai";
 import { FaWhatsapp, FaMoon } from "react-icons/fa";
+import { IoIosArrowForward } from "react-icons/io";
+
 
 interface LayoutModelProps {
   children: ReactNode;
@@ -16,6 +18,7 @@ interface LayoutModelProps {
 
 export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [temaClaro, setTemaClaro] = useState<boolean | undefined>(undefined);
 
   // Verificar tema salvo
@@ -53,6 +56,32 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
   if (temaClaro === undefined) return null;
 
+  const breadcrumbPaths = location.pathname
+    .split("/")
+    .filter(Boolean);
+
+  function formatBreadcrumb(label: string) {
+    return label
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  function getBreadcrumbLabel(path: string, index: number) {
+    const isLast = index === breadcrumbPaths.length - 1;
+
+    // Último item → usa o título da página
+    if (isLast && titulo) {
+      return titulo;
+    }
+
+    // Demais níveis → nome da rota
+    return path
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+
+
   return (
     <div className="flex">
       <Sidebar />
@@ -63,6 +92,40 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
           {/* 🔹 Esquerda - Título */}
           <div className="flex items-center gap-2">
             <h1 className="text-white text-2xl">{titulo}</h1>
+
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-2 text-sm text-gray-400 ml-5">
+
+              {/* Home */}
+              <Link to="/" className="hover:text-white transition">
+                Dashboard
+              </Link>
+
+              {breadcrumbPaths.map((path, index) => {
+                const to = "/" + breadcrumbPaths.slice(0, index + 1).join("/");
+                const isLast = index === breadcrumbPaths.length - 1;
+
+                return (
+                  <span key={to} className="flex items-center gap-2">
+                    {/* @ts-ignore */}
+                    <span><IoIosArrowForward /></span>
+
+                    {isLast ? (
+                      <span className="text-gray-300">
+                        {getBreadcrumbLabel(path, index)}
+                      </span>
+                    ) : (
+                      <Link
+                        to={to}
+                        className="hover:text-white transition"
+                      >
+                        {getBreadcrumbLabel(path, index)}
+                      </Link>
+                    )}
+                  </span>
+                );
+              })}
+            </nav>
           </div>
 
           {/* 🔹 Centro - TenantSelector centralizado */}
