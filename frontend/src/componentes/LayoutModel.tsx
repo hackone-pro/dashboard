@@ -97,7 +97,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             <nav className="flex items-center gap-2 text-sm text-gray-400 ml-5">
 
               {/* Home */}
-              <Link to="/" className="hover:text-white transition">
+              <Link to="/dashboard" className="hover:text-white transition">
                 Dashboard
               </Link>
 
