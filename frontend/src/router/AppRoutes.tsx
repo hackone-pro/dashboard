@@ -33,7 +33,7 @@ export default function AppRoutes() {
           <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
           <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
           <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
-          <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
+          {/* <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} /> */}
           <Route path="/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
           <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
           <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
