@@ -20,6 +20,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [temaClaro, setTemaClaro] = useState<boolean | undefined>(undefined);
+  const isServicePage = location.pathname.startsWith("/service/");
 
   // Verificar tema salvo
   useEffect(() => {
@@ -80,8 +81,6 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
       .replace(/\b\w/g, l => l.toUpperCase());
   }
 
-
-
   return (
     <div className="flex">
       <Sidebar />
@@ -95,37 +94,56 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-sm text-gray-400 ml-5">
-
-              {/* Home */}
+              {/* Dashboard */}
               <Link to="/dashboard" className="hover:text-white transition">
                 Dashboard
               </Link>
 
-              {breadcrumbPaths.map((path, index) => {
-                const to = "/" + breadcrumbPaths.slice(0, index + 1).join("/");
-                const isLast = index === breadcrumbPaths.length - 1;
+              {/* 🔹 CASO ESPECIAL: SERVICES */}
+              {isServicePage ? (
+                <>
+                  {/* @ts-ignore */}
+                  <IoIosArrowForward />
 
-                return (
-                  <span key={to} className="flex items-center gap-2">
-                    {/* @ts-ignore */}
-                    <span><IoIosArrowForward /></span>
+                  <Link
+                    to="/services-catalog"
+                    className="hover:text-white transition"
+                  >
+                    Serviços
+                  </Link>
+                  {/* @ts-ignore */}
+                  <IoIosArrowForward />
 
-                    {isLast ? (
-                      <span className="text-gray-300">
-                        {getBreadcrumbLabel(path, index)}
-                      </span>
-                    ) : (
-                      <Link
-                        to={to}
-                        className="hover:text-white transition"
-                      >
-                        {getBreadcrumbLabel(path, index)}
-                      </Link>
-                    )}
+                  <span className="text-gray-300">
+                    {titulo}
                   </span>
-                );
-              })}
+                </>
+              ) : (
+                /* 🔹 PADRÃO: outras rotas (ex: relatórios) */
+                breadcrumbPaths.map((path, index) => {
+                  const isLast = index === breadcrumbPaths.length - 1;
+                  const to = "/" + breadcrumbPaths.slice(0, index + 1).join("/");
+
+                  return (
+                    <span key={to} className="flex items-center gap-2">
+                      {/* @ts-ignore */}
+                      <IoIosArrowForward />
+
+                      {isLast ? (
+                        <span className="text-gray-300">
+                          {titulo ?? formatBreadcrumb(path)}
+                        </span>
+                      ) : (
+                        <Link to={to} className="hover:text-white transition">
+                          {formatBreadcrumb(path)}
+                        </Link>
+                      )}
+                    </span>
+                  );
+                })
+              )}
             </nav>
+
           </div>
 
           {/* 🔹 Centro - TenantSelector centralizado */}

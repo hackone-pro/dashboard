@@ -66,7 +66,7 @@ export default function ServicesCatalog() {
     }
 
     return (
-        <LayoutModel titulo="CSC">
+        <LayoutModel titulo="Serviços">
             {/* Header */}
             <section className="p-6 rounded-2xl shadow-lg mb-3 flex justify-between items-center">
                 <h2 className="text-white text-2xl">
