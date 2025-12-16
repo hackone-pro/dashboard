@@ -36,8 +36,8 @@ export default {
 
       return ctx.send({ ok: true, data: dados });
 
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      strapi.log.error("❌ Controller data() falhou", err);
       return ctx.internalServerError("Erro ao buscar dados do relatório");
     }
   },
