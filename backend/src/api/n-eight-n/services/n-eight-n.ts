@@ -19,7 +19,7 @@ export async function gerarRelatorioN8N(cliente: string, periodo: number | strin
         auth: { username: N8N_USER, password: N8N_PASS },
         headers: { "Content-Type": "application/json" },
         httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-        timeout: 20000,
+        timeout: 50000,
       }
     );
 
@@ -27,7 +27,15 @@ export async function gerarRelatorioN8N(cliente: string, periodo: number | strin
     return response.data;
 
   } catch (err: any) {
-    strapi.log.error("❌ Erro ao solicitar relatório no n8n");
+    strapi.log.error("❌ Erro ao solicitar relatório no n8n", {
+      message: err.message,
+      code: err.code,
+      status: err.response?.status,
+      data: err.response?.data,
+      url: err.config?.url,
+    });
+  
+    throw err;
   }
 }
 
@@ -42,13 +50,21 @@ export async function buscarDadosReport(periodo = "15", cliente = "default") {
       auth: { username: N8N_USER, password: N8N_PASS },
       headers: { "Content-Type": "application/json" },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-      timeout: 20000,
+      timeout: 50000,
     });
 
     strapi.log.info(`✅ Dados do relatório ${cliente} recuperados (${periodo} dias)`);
     return response.data;
 
   } catch (err: any) {
-    strapi.log.error("❌ Erro ao buscar dados do n8n");
-  }  
+    strapi.log.error("❌ Erro ao buscar dados do n8n", {
+      message: err.message,
+      code: err.code,
+      status: err.response?.status,
+      data: err.response?.data,
+      url: err.config?.url,
+    });
+  
+    throw err;
+  }
 }

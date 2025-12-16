@@ -54,13 +54,20 @@ export default factories.createCoreController(
           return ctx.notFound("Tenant não encontrado ou inativo");
         }
     
+        const page = Number(ctx.query.page || 1);
+        const pageSize = Number(ctx.query.pageSize || 10);
+    
         const resultado = await strapi.entityService.findMany(
           "api::report-entry.report-entry",
           {
             filters: {
               tenant: tenant.cliente_name,
             },
-            sort: { createdAt: "desc" },
+            sort: ["createdAt:desc"] as any, // ✅ CAMELCASE
+            pagination: {
+              page,
+              pageSize,
+            },
           }
         );
     
@@ -71,6 +78,8 @@ export default factories.createCoreController(
         return ctx.internalServerError("Erro ao consultar relatórios");
       }
     }
+    
+    
 
   })
 );
