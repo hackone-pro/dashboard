@@ -1,40 +1,52 @@
 /*--- TEMA CLARO ---*/
-body.tema-claro a svg, body.tema-claro button svg{
+body.tema-claro a svg,
+body.tema-claro button svg {
   color: #939393;
 }
-body.tema-claro  button.toggle svg, 
+
+body.tema-claro button.toggle svg,
 body.tema-claro a svg:hover,
-body.tema-claro .table-incidente span{
+body.tema-claro .table-incidente span {
   color: #fff !important;
 }
-body.tema-claro button.card{
+
+body.tema-claro button.card {
   background: #744CD8 !important;
   border: 2px solid #5e34be;
 }
-body.tema-claro button.card:hover{
+
+body.tema-claro button.card:hover {
   background: #C5BCF5 !important;
   color: #352363;
 }
-body.tema-claro button.header{
+
+body.tema-claro button.header {
   background: transparent !important;
 }
-body.tema-claro button.header:hover{
+
+body.tema-claro button.header:hover {
   background: #6a01bb !important;
 }
-body.tema-claro h1, body.tema-claro span{
+
+body.tema-claro h1,
+body.tema-claro span {
   color: #1a1a1a !important;
 }
-body.tema-claro text{
+
+body.tema-claro text {
   color: #5e34be;
 }
-body.tema-claro select{
+
+body.tema-claro select {
   background: #EDE6FC !important;
   border: 0;
   color: #777 !important;
 }
-body.tema-claro .table-incidente{
+
+body.tema-claro .table-incidente {
   background-color: #161125 !important;
 }
+
 /*---- FIM DO TEMA ----*/
 
 
@@ -42,13 +54,13 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-li{
+li {
   font-weight: normal !important;
 }
 
-a.header:hover{
-  background:#6a01bb;
-  color:#fff;
+a.header:hover {
+  background: #6a01bb;
+  color: #fff;
 }
 
 input:focus-visible {
@@ -56,33 +68,33 @@ input:focus-visible {
   box-shadow: none !important;
 }
 
-.badge{
+.badge {
   width: 55px;
   text-align: center;
 }
 
-.badge-pink{
+.badge-pink {
   background-color: #fb35b92a;
   border: 1px solid #f914ad59;
   color: #F914AD;
   font-weight: 400;
-  
+
 }
 
-.badge-darkpink{
+.badge-darkpink {
   background-color: #7058e62c;
   border: 1px solid #7058e63d;
   color: #6366F1;
   font-weight: 400;
-  
+
 }
 
-.badge-green{
+.badge-green {
   background-color: #1dd69b31;
   border: 1px solid #1dd69b50;
   color: #1DD69A;
   font-weight: 400;
-  
+
 }
 
 .badge-high {
@@ -91,18 +103,20 @@ input:focus-visible {
   color: #A855F7;
 }
 
-.btn{
+.btn {
   background-color: #4807df41;
   border: 2px solid #321C64;
 }
 
-.apexcharts-legend-marker{
+.apexcharts-legend-marker {
   stroke: none !important;
 }
 
-.apexcharts-legend-marker svg{
-  border-radius: 30px !important; /* deixa redondo */
-  border: none !important;       /* remove a borda */
+.apexcharts-legend-marker svg {
+  border-radius: 30px !important;
+  /* deixa redondo */
+  border: none !important;
+  /* remove a borda */
 }
 
 /* Padrão para escuro */
@@ -111,22 +125,24 @@ input:focus-visible {
   transition: background-color 0.3s ease, color 0.3s ease, background 0.3s ease;
 }
 
-body.tema-escuro a.outline{
+body.tema-escuro a.outline {
   background: transparent !important;
   border: 1px solid #1D1929;
 }
 
-.cards, .react-grid-item {
+.cards,
+.react-grid-item {
   background-color: #161125 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   overflow: hidden !important;
 }
 
-.react-grid-item > div, .react-grid-item > div:hover{
+.react-grid-item>div,
+.react-grid-item>div:hover {
   box-shadow: none;
 }
 
-.cards.inverse{
+.cards.inverse {
   background-color: transparent !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
 }
@@ -135,11 +151,11 @@ body.tema-escuro a.outline{
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
 }
 
-.cards.custom{
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+.cards.custom {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .h2 {
@@ -148,69 +164,71 @@ body.tema-escuro a.outline{
   font-family: 'Inter', sans-serif;
 }
 
-h3{
+h3 {
   font-family: 'Inter', sans-serif;
 }
 
-header button{
+header button {
   background-color: #540093;
 }
 
-header button:hover{
+header button:hover {
   background-color: #6a01bb;
 }
 
-.logout{
+.logout {
   color: #fff;
 }
 
-li{
+li {
   font-weight: 200;
   color: #939393;
 }
 
 /*-- Icones --*/
-li svg{
+li svg {
   width: 20px;
   height: 20px;
 }
-button svg.bars{
+
+button svg.bars {
   width: 25px;
   height: 25px;
 }
-.icon-risk{
+
+.icon-risk {
   margin-top: -10px;
 }
 
 /*---BUTTONS---*/
-button{
+button {
   cursor: pointer;
 }
 
-button.login{
+button.login {
   background: transparent;
 }
 
-button div.box-icon{
-  background:#744CD8;
-  color:#fff;
+button div.box-icon {
+  background: #744CD8;
+  color: #fff;
 }
 
-button div.box-icon svg{
+button div.box-icon svg {
   font-size: 18px;
 }
 
-header button.toggle{
+header button.toggle {
   background: #161125 !important;
 }
 
 /*---------------*/
 
-.overtime .apexcharts-legend-text{
+.overtime .apexcharts-legend-text {
   font-size: 12px !important;
 }
 
-.apexcharts-legend-text{
+.apexcharts-legend-text {
   color: #99a1af !important;
   font-family: 'Inter', sans-serif !important;
   font-size: 10px !important;
@@ -220,7 +238,8 @@ header button.toggle{
 /* ----------------Quando estiver em modo claro -----------*/
 
 .tema-claro .fundo-dashboard {
-  background: #f0f0f8; /* um cinza claro bonito */
+  background: #f0f0f8;
+  /* um cinza claro bonito */
 }
 
 .tema-claro .texto-dashboard {
@@ -237,33 +256,35 @@ header button.toggle{
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
-.tema-claro .text-white{
+.tema-claro .text-white {
   color: #ccc;
 }
 
-.tema-claro h2, .tema-claro h3 {
+.tema-claro h2,
+.tema-claro h3 {
   color: #1a1a1a !important;
   transition: color 0.3s ease;
   font-family: 'Inter', sans-serif;
 }
 
-.tema-claro p, .tema-claro .cards .text-gray-300{
-  color:#79818c;
+.tema-claro p,
+.tema-claro .cards .text-gray-300 {
+  color: #79818c;
 }
 
-.tema-claro button.text-white{
+.tema-claro button.text-white {
   color: #fff;
 }
 
-.tema-claro header button{
+.tema-claro header button {
   background-color: #fff;
 }
 
-.tema-claro header button:hover{
+.tema-claro header button:hover {
   background-color: #e1ceff;
 }
 
-.tema-claro .logout{
+.tema-claro .logout {
   color: #6a01bb;
 }
 
@@ -282,8 +303,75 @@ header button.toggle{
   float: right !important;
 }
 
-.case-color{
-  color:#fff !important;
+.case-color {
+  color: #fff !important;
+}
+
+
+/* Scrollbar padrão da dashboard */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #0d0a20;
+  /* fundo escuro padrão */
+  border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #484D64;
+  /* roxo da dashboard */
+  border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #484D64;
+}
+
+/*SCROLL*/
+.lista-secoes {
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: #484D64 #252835;   /* Firefox */
+}
+
+/* Chrome, Edge, Safari */
+.lista-secoes::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lista-secoes::-webkit-scrollbar-track {
+  background: #252835;
+  border-radius: 10px;
+}
+
+.lista-secoes::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #252835,
+    #484D64,
+    #252835
+  );
+  border-radius: 10px;
+}
+
+
+/*TOAST*/
+:root {
+  --toastify-color-success: #8b5cf6 !important;
+  --toastify-color-error: #F914AD !important;
+}
+.Toastify__toast--success{
+  color:#8b5cf6 !important;
+}
+.Toastify__toast--error{
+  color: #F914AD;
+}
+.Toastify__progress-bar--success{
+  background: #8b5cf6;
+}
+.Toastify__progress-bar--error {
+  background: #F914AD !important;
 }
 
 
@@ -297,12 +385,10 @@ header button.toggle{
   left: 0;
   width: 100%;
   height: 220%;
-  background: radial-gradient(
-    circle at top center,
-    rgba(112, 35, 255, 0.627),
-    rgba(41, 13, 111, 0.533),
-    transparent 75%
-  );
+  background: radial-gradient(circle at top center,
+      rgba(112, 35, 255, 0.627),
+      rgba(41, 13, 111, 0.533),
+      transparent 75%);
   animation: moveGlow 8s ease-in-out infinite;
   z-index: 0;
   pointer-events: none;
@@ -312,15 +398,17 @@ header button.toggle{
   0% {
     transform: translateY(-25%);
   }
+
   50% {
     transform: translateY(10%);
   }
+
   100% {
     transform: translateY(-25%);
   }
 }
 
-.risk-light-effect > * {
+.risk-light-effect>* {
   position: relative;
   z-index: 10;
 }
@@ -333,12 +421,10 @@ header button.toggle{
   left: 0;
   width: 100%;
   height: 220%;
-  background: radial-gradient(
-    circle at bottom center,
-    rgba(74, 6, 221, 0.678),
-    rgba(238, 53, 251, 0.408),
-    transparent 75%
-  );
+  background: radial-gradient(circle at bottom center,
+      rgba(74, 6, 221, 0.678),
+      rgba(238, 53, 251, 0.408),
+      transparent 75%);
   animation: riseGlow 8s ease-in-out infinite;
   z-index: 0;
   pointer-events: none;
@@ -349,17 +435,19 @@ header button.toggle{
     transform: translateY(30%);
     opacity: 0.3;
   }
+
   50% {
     transform: translateY(0%);
     opacity: 0.5;
   }
+
   100% {
     transform: translateY(30%);
     opacity: 0.3;
   }
 }
 
-.glow-bottom > * {
+.glow-bottom>* {
   position: relative;
   z-index: 10;
 }
@@ -368,18 +456,29 @@ header button.toggle{
 
 /* arco com leve glow */
 .shooting-lines-pane path.flow-arc {
-  filter: drop-shadow(0 0 4px rgba(236,72,153,0.45));
+  filter: drop-shadow(0 0 4px rgba(236, 72, 153, 0.45));
 }
 
 /* pontinho “glow” que corre no arco */
 .leaflet-pane .glow-dot {
-  filter: drop-shadow(0 0 8px rgba(236,72,153,0.9));
+  filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.9));
 }
 
 /* pequena variação de velocidade (se quiser manter) */
-.flow-arc.speed-0, .glow-dot.speed-0 { animation-duration: .50s; }
-.flow-arc.speed-1, .glow-dot.speed-1 { animation-duration: .62s; }
-.flow-arc.speed-2, .glow-dot.speed-2 { animation-duration: .74s; }
+.flow-arc.speed-0,
+.glow-dot.speed-0 {
+  animation-duration: .50s;
+}
+
+.flow-arc.speed-1,
+.glow-dot.speed-1 {
+  animation-duration: .62s;
+}
+
+.flow-arc.speed-2,
+.glow-dot.speed-2 {
+  animation-duration: .74s;
+}
 
 /* se estiver usando a bolha central com “pulse” */
 .leaflet-pane path.bubble-pulse {
@@ -387,31 +486,57 @@ header button.toggle{
   transform-origin: center;
   transition: filter 0.2s ease;
 }
+
 .leaflet-pane path.origin-pulse {
   animation: originPulseGlow 1.8s ease-in-out infinite;
   transform-origin: center;
   transition: filter 0.2s ease;
 }
+
 @keyframes pulseGlow {
-  0%, 100% { r: 6; opacity: 0.85; filter: drop-shadow(0 0 1px #22c55e); }
-  50%      { r: 7; opacity: 1;    filter: drop-shadow(0 0 4px #22c55e); }
+
+  0%,
+  100% {
+    r: 6;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 1px #22c55e);
+  }
+
+  50% {
+    r: 7;
+    opacity: 1;
+    filter: drop-shadow(0 0 4px #22c55e);
+  }
 }
+
 @keyframes originPulseGlow {
-  0%, 100% { r: 6; opacity: 0.85; filter: drop-shadow(0 0 1px #b92f2f); }
-  50%      { r: 7; opacity: 1;    filter: drop-shadow(0 0 4px #ee4949); }
+
+  0%,
+  100% {
+    r: 6;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 1px #b92f2f);
+  }
+
+  50% {
+    r: 7;
+    opacity: 1;
+    filter: drop-shadow(0 0 4px #ee4949);
+  }
 }
 
 .leaflet-tooltip.country-tip {
   background: rgba(17, 17, 26, 0.9);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
   padding: 10px;
   line-height: 18px;
   border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
   pointer-events: none;
   z-index: 999;
 }
+
 .leaflet-tooltip.country-tip::before {
   border-top-color: rgba(17, 17, 26, 0.9);
 }
@@ -425,44 +550,107 @@ header button.toggle{
 }
 
 /* defasagem suave entre arcos (opcional; deixa mais orgânico) */
-.s-i-0 { --dur: 0.55s; animation-delay: 0.00s, 0s; }
-.s-i-1 { --dur: 0.62s; animation-delay: 0.10s, 0s; }
-.s-i-2 { --dur: 0.58s; animation-delay: 0.20s, 0s; }
-.s-i-3 { --dur: 0.68s; animation-delay: 0.30s, 0s; }
-.s-i-4 { --dur: 0.60s; animation-delay: 0.40s, 0s; }
-.s-i-5 { --dur: 0.72s; animation-delay: 0.50s, 0s; }
+.s-i-0 {
+  --dur: 0.55s;
+  animation-delay: 0.00s, 0s;
+}
+
+.s-i-1 {
+  --dur: 0.62s;
+  animation-delay: 0.10s, 0s;
+}
+
+.s-i-2 {
+  --dur: 0.58s;
+  animation-delay: 0.20s, 0s;
+}
+
+.s-i-3 {
+  --dur: 0.68s;
+  animation-delay: 0.30s, 0s;
+}
+
+.s-i-4 {
+  --dur: 0.60s;
+  animation-delay: 0.40s, 0s;
+}
+
+.s-i-5 {
+  --dur: 0.72s;
+  animation-delay: 0.50s, 0s;
+}
 
 /* keyframes da animação (move o dash) */
-@keyframes dashmove { to { stroke-dashoffset: -34; } }
+@keyframes dashmove {
+  to {
+    stroke-dashoffset: -34;
+  }
+}
 
 /* “respiração” leve de opacidade (você já tem, mas repito pra garantir) */
-@keyframes glowPulse { 0%,100% { opacity: .95 } 50% { opacity: .75 } }
+@keyframes glowPulse {
+
+  0%,
+  100% {
+    opacity: .95
+  }
+
+  50% {
+    opacity: .75
+  }
+}
 
 
 
 /* Arcos com dash roxo e glow */
 .shooting-lines-pane path.flow-arc {
-  stroke: rgba(139, 92, 246, 0.7);   /* Roxo #8B5CF6 */
+  stroke: rgba(139, 92, 246, 0.7);
+  /* Roxo #8B5CF6 */
   stroke-width: 2.2;
   fill: none;
   stroke-dasharray: 5 30;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.5)); /* Glow roxo */
+  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.5));
+  /* Glow roxo */
   animation: dashmove var(--dur, 2.5s) linear infinite, glowPulse 2.2s ease-in-out infinite;
 }
 
 /* Defasagem suave entre arcos (mais orgânico) */
-.s-i-0 { --dur: 2.5s; animation-delay: 0.10s, 0s; }
-.s-i-1 { --dur: 2.5s; animation-delay: 0.20s, 0s; }
-.s-i-2 { --dur: 2.3s; animation-delay: 0.40s, 0s; }
-.s-i-3 { --dur: 2.7s; animation-delay: 0.60s, 0s; }
-.s-i-4 { --dur: 2.4s; animation-delay: 0.80s, 0s; }
-.s-i-5 { --dur: 2.8s; animation-delay: 1.00s, 0s; }
+.s-i-0 {
+  --dur: 2.5s;
+  animation-delay: 0.10s, 0s;
+}
+
+.s-i-1 {
+  --dur: 2.5s;
+  animation-delay: 0.20s, 0s;
+}
+
+.s-i-2 {
+  --dur: 2.3s;
+  animation-delay: 0.40s, 0s;
+}
+
+.s-i-3 {
+  --dur: 2.7s;
+  animation-delay: 0.60s, 0s;
+}
+
+.s-i-4 {
+  --dur: 2.4s;
+  animation-delay: 0.80s, 0s;
+}
+
+.s-i-5 {
+  --dur: 2.8s;
+  animation-delay: 1.00s, 0s;
+}
 
 /* Pontinho brilhante percorrendo o arco */
 .glow-dot {
   r: 4;
-  fill: #a855f7;  /* Roxo neon */
+  fill: #a855f7;
+  /* Roxo neon */
   filter: drop-shadow(0 0 8px #a855f7);
   offset-distance: 0%;
   animation: move-dot var(--dot-dur, 2.5s) linear infinite;
@@ -470,20 +658,31 @@ header button.toggle{
 
 /* Keyframes */
 @keyframes dashmove {
-  to { stroke-dashoffset: -200; }
+  to {
+    stroke-dashoffset: -200;
+  }
 }
 
 @keyframes glowPulse {
-  0%,100% { opacity: .95 }
-  50%     { opacity: .75 }
+
+  0%,
+  100% {
+    opacity: .95
+  }
+
+  50% {
+    opacity: .75
+  }
 }
 
 @keyframes move-dot {
-  to { offset-distance: 100%; }
+  to {
+    offset-distance: 100%;
+  }
 }
 
 /* Destino pulsando */
-.bubble-pulse{
+.bubble-pulse {
   animation: pulse 2s infinite;
 }
 
@@ -497,11 +696,13 @@ header button.toggle{
     fill: #22c55e;
     opacity: 0.8;
   }
+
   50% {
     r: 6;
     fill: #38ef7d;
     opacity: 1;
   }
+
   100% {
     r: 3;
     fill: #22c55e;
@@ -515,11 +716,13 @@ header button.toggle{
     fill: #c52248;
     opacity: 0.8;
   }
+
   50% {
     r: 6;
     fill: #d92751;
     opacity: 1;
   }
+
   100% {
     r: 3;
     fill: #f12857;
@@ -530,14 +733,14 @@ header button.toggle{
 
 /*react-grid*/
 
-.layout > div {
+.layout>div {
   border-radius: 12px;
   background: rgba(30, 30, 40, 0.9);
-  border: 1px solid rgba(255,255,255,0.05);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.react-grid-item > .react-resizable-handle::after {
+.react-grid-item>.react-resizable-handle::after {
   right: 5px !important;
   bottom: 5px !important;
   width: 7px !important;
@@ -547,7 +750,8 @@ header button.toggle{
 }
 
 .react-grid-placeholder {
-  background: rgba(128, 90, 213, 0.2) !important; /* Roxo translúcido */
+  background: rgba(128, 90, 213, 0.2) !important;
+  /* Roxo translúcido */
   border: 2px dashed rgba(167, 139, 250, 0.8) !important;
   border-radius: 12px !important;
   box-shadow: 0 0 15px rgba(167, 139, 250, 0.4) !important;
@@ -569,15 +773,96 @@ header button.toggle{
 
 /* 🔹 Remove o texto "Widget" do elemento temporário criado pelo react-grid-layout
    quando arrastamos algo do menu lateral (drop novo) */
-   .react-grid-item[data-grid-id="__dropping-elem__"],
-   .react-grid-item.__dropping-elem__,
-   .react-grid-placeholder.__dropping-elem__ {
-     color: transparent !important;
-     font-size: 0 !important;
-     overflow: hidden !important;
-     background: rgba(139, 92, 246, 0.15) !important; /* fundo suave */
-     border: 2px dashed rgba(167, 139, 250, 0.8) !important;
-     border-radius: 12px !important;
-     z-index: 999 !important;
-   }
-   
+.react-grid-item[data-grid-id="__dropping-elem__"],
+.react-grid-item.__dropping-elem__,
+.react-grid-placeholder.__dropping-elem__ {
+  color: transparent !important;
+  font-size: 0 !important;
+  overflow: hidden !important;
+  background: rgba(139, 92, 246, 0.15) !important;
+  /* fundo suave */
+  border: 2px dashed rgba(167, 139, 250, 0.8) !important;
+  border-radius: 12px !important;
+  z-index: 999 !important;
+}
+
+
+/* ============================
+ESTILO ESPECÍFICO DE IMPRESSÃO
+============================ */
+
+* {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.print-cover {
+  display: none;
+}
+
+@media print {
+
+  h1 {
+    font-size: 25px;
+    padding: 15px 0;
+  }
+
+  /* Faz o conteúdo ocupar toda a página */
+  body {
+    background: #0A0617 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove tudo que for marcado como no-print */
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Remove sidebar e header */
+  .sidebar {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Remove o botão de baixar PDF */
+  .print-button {
+    display: none !important;
+  }
+
+  .print-cover {
+    display: block;
+    page-break-after: always;
+    background: #0A0617;
+    color: white;
+    text-align: center;
+    position: relative;
+    margin-top: 250px;
+  }
+
+  .cover-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    page-break-after: always;
+  }
+
+  .report-container {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .top-acessos {
+    margin-top: 15px !important;
+  }
+
+  /* Remove margens do navegador */
+  @page {
+    padding-top: 20px;
+    margin: 0;
+  }
+
+}

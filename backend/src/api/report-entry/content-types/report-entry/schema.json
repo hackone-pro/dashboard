@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "report_entries",
+  "info": {
+    "singularName": "report-entry",
+    "pluralName": "report-entries",
+    "displayName": "Report Entry"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nome": {
+      "type": "string"
+    },
+    "tenant": {
+      "type": "string",
+      "required": true
+    },
+    "period": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "json"
+    },
+    "progress": {
+      "type": "enumeration",
+      "default": "gerando",
+      "enum": [
+        "aguardando",
+        "gerando",
+        "finalizado",
+        "falhou"
+      ]
+    },
+    "snapshot": {
+      "type": "json"
+    }
+  }
+}

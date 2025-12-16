@@ -5,10 +5,11 @@ import { PiNotebook, PiWarningLight, PiSkullLight, PiShareNetworkDuotone, PiLock
 import { HiOutlineBars3, HiOutlineIdentification } from "react-icons/hi2";
 import { VscSearchFuzzy, VscFileSymlinkDirectory } from "react-icons/vsc";
 import { TbChartInfographic, TbHeartRateMonitor, TbCloudLock } from "react-icons/tb";
-import { HiOutlineDocumentReport } from "react-icons/hi";
 import { GoShieldLock } from "react-icons/go";
 import { AiOutlineAim } from "react-icons/ai";
 import { BsDatabaseLock } from "react-icons/bs";
+import { HiOutlineDocumentReport } from "react-icons/hi";
+
 
 import clsx from 'clsx';
 
@@ -19,7 +20,7 @@ export default function Sidebar() {
 
     return (
         <div className={clsx(
-            "bg-[#161125] text-white min-h-screen p-3 transition-all duration-300 flex flex-col",
+            "bg-[#161125] text-white min-h-screen p-3 transition-all duration-300 flex flex-col sidebar",
             isOpen ? "w-64" : "w-16"
         )}>
 
@@ -140,6 +141,8 @@ export default function Sidebar() {
                                 { to: "/archives-integrity", icon: <VscFileSymlinkDirectory className="text-[16px]" />, label: "Integridade de Arquivos" },
                                 // @ts-ignore
                                 { to: "/monitoria-ngsoc", icon: <TbHeartRateMonitor className="text-[16px]" />, label: "Monitoria NG-SOC" },
+                                // @ts-ignore
+                                { to: "/relatorios", icon: <HiOutlineDocumentReport className="text-[16px]" />, label: "Relatórios" },
                             ].map((item, idx) => (
                                 <li key={idx} className="py-1">
                                     <Link
@@ -232,6 +235,15 @@ export default function Sidebar() {
                                     >
                                         {/* @ts-ignore */}
                                         <TbHeartRateMonitor className="text-[16px]" /> Monitoria NG-SOC
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        to="/relatorios"
+                                        className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <HiOutlineDocumentReport className="text-[16px]" /> Relatórios
                                     </Link>
                                 </li>
                             </ul>
@@ -466,16 +478,16 @@ export default function Sidebar() {
                     )}
                 </li>
 
-                <li>
+                {/* <li>
                     <Link to="/reports" className={clsx(
                         "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                         isOpen ? "justify-start" : "justify-center"
                     )}>
-                        {/* @ts-ignore */}
+                        
                         <HiOutlineDocumentReport />
                         {isOpen && <span>Relatórios</span>}
                     </Link>
-                </li>
+                </li> */}
 
                 <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",

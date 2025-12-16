@@ -163,20 +163,19 @@ export async function buscarTopAgentes(tenant, dias) {
   });
 }
 
-/* ============================================
-   TOP AGENTES CIS
-============================================ */
-export async function buscarTopAgentesCis(tenant, dias) {
+export async function buscarTopAlteracoesArquivo(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  const diasFormatado = dias === "todos" ? null : String(dias).replace("d", "");
+
   const timeFilter =
     dias === "todos"
-      ? null
+      ? { match_all: {} }
       : {
           range: {
             "@timestamp": {
-              gte: `now-${dias}d`,
+              gte: `now-${diasFormatado}d`,
               lte: "now",
             },
           },
@@ -186,10 +185,116 @@ export async function buscarTopAgentesCis(tenant, dias) {
     size: 0,
     query: {
       bool: {
+        must: [
+          timeFilter,
+          {
+            bool: {
+              should: [
+                { match_phrase: { customer: clientName } },
+                { match_phrase: { "data.customer": clientName } },
+                { match_phrase: { "fields.customer": clientName } },
+              ],
+              minimum_should_match: 1,
+            },
+          },
+        ],
+        filter: [
+          { match_phrase: { "rule.groups": "syscheck" } },
+        ],
+        must_not: [
+          { term: { "agent.name": "wazuhhackone" } },
+        ],
+      },
+    },
+    aggs: {
+      top_hosts: {
+        terms: {
+          field: "agent.name",
+          order: { _count: "desc" },
+          size: 9,
+        },
+        aggs: {
+          por_evento: { terms: { field: "syscheck.event" } },
+        },
+      },
+    },
+  };
+
+  const response = await http.post(
+    `${tenant.wazuh_url}/wazuh-*/_search`,
+    body,
+    { headers: authHeader(tenant) }
+  );
+
+  const hosts = response.data?.aggregations?.top_hosts?.buckets || [];
+
+  return hosts.map((h) => {
+    const modified = h.por_evento.buckets.find(e => e.key === "modified")?.doc_count || 0;
+    const added = h.por_evento.buckets.find(e => e.key === "added")?.doc_count || 0;
+    const deleted = h.por_evento.buckets.find(e => e.key === "deleted")?.doc_count || 0;
+
+    return {
+      host: h.key,
+      modified,
+      added,
+      deleted,
+      total: modified + added + deleted,
+    };
+  });
+}
+
+
+/* ============================================
+   TOP AGENTES CIS
+============================================ */
+export async function buscarTopAgentesCis(tenant, dias) {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) throw new Error("Tenant sem client_name definido");
+
+  const diasFiltro = dias ?? "todos";
+
+  const isEquatorial =
+    clientName.toLowerCase().includes("equatorial") ||
+    tenant.customer?.toLowerCase().includes("equatorial");
+
+  const isAdentro =
+    clientName.toLowerCase().includes("adentro") ||
+    tenant.customer?.toLowerCase().includes("adentro");
+
+  // Filtro de tempo
+  const timeFilter =
+    diasFiltro === "todos"
+      ? null
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${diasFiltro}d`,
+              lte: "now",
+            },
+          },
+        };
+
+  // ------------------------------------------
+  // 🔥 CUSTOMER FILTER CORRETO PARA CADA CASO
+  // ------------------------------------------
+  let customerFilterFinal = null;
+
+  if (!isEquatorial && !isAdentro) {
+    // Só aplica customerFilter para clientes NORMAIS
+    customerFilterFinal = { match_phrase: { customer: clientName } };
+  }
+
+  // ------------------------------------------
+  // 🔥 BODY FINAL
+  // ------------------------------------------
+  const body = {
+    size: 0,
+    query: {
+      bool: {
         must: [],
         filter: [
           { match_all: {} },
-          { match_phrase: { customer: clientName } },
+          ...(customerFilterFinal ? [customerFilterFinal] : []), // usado SOMENTE nos outros tenants
           { term: { "rule.groups": "sca" } },
           { term: { "data.sca.type": "summary" } },
           ...(timeFilter ? [timeFilter] : []),
@@ -238,3 +343,4 @@ export async function buscarTopAgentesCis(tenant, dias) {
     };
   });
 }
+

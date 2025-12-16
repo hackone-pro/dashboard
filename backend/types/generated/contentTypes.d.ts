@@ -403,6 +403,42 @@ export interface ApiCustomDashboardCustomDashboard
   };
 }
 
+export interface ApiReportEntryReportEntry extends Struct.CollectionTypeSchema {
+  collectionName: 'report_entries';
+  info: {
+    displayName: 'Report Entry';
+    pluralName: 'report-entries';
+    singularName: 'report-entry';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::report-entry.report-entry'
+    > &
+      Schema.Attribute.Private;
+    nome: Schema.Attribute.String;
+    period: Schema.Attribute.String;
+    progress: Schema.Attribute.Enumeration<
+      ['aguardando', 'gerando', 'finalizado', 'falhou']
+    > &
+      Schema.Attribute.DefaultTo<'gerando'>;
+    publishedAt: Schema.Attribute.DateTime;
+    sections: Schema.Attribute.JSON;
+    snapshot: Schema.Attribute.JSON;
+    tenant: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
   collectionName: 'tenants';
   info: {
@@ -1040,6 +1076,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::custom-dashboard.custom-dashboard': ApiCustomDashboardCustomDashboard;
+      'api::report-entry.report-entry': ApiReportEntryReportEntry;
       'api::tenant.tenant': ApiTenantTenant;
       'api::user-multi-tenant.user-multi-tenant': ApiUserMultiTenantUserMultiTenant;
       'api::user-role.user-role': ApiUserRoleUserRole;

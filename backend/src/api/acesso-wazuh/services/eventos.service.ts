@@ -168,17 +168,17 @@ export async function buscarEventosSummary(
       ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
       : null;
 
-  // ============================================
-  // 🔥 1) Query para Equatorial
-  // ============================================
+  // ============================================================
+  // 🔥 EQUATORIAL
+  // ============================================================
   const queryEquatorial = {
     size: 0,
     query: {
       bool: {
         filter: [
-          { term: { "agent.id": "000" }},
-          { match_phrase: { "rule.groups": "syscheck" }},
-          { match_phrase: { "manager.name": "manager" }},
+          { term: { "agent.id": "000" } },                       // ✔ SOMENTE EQUATORIAL
+          { term: { "rule.groups": "syscheck" } },
+          { term: { "manager.name": "manager" } },               // ✔ Equatorial usa manager
           ...(timeFilter ? [timeFilter] : [])
         ]
       }
@@ -186,7 +186,7 @@ export async function buscarEventosSummary(
     aggs: {
       por_dia: {
         date_histogram: {
-          field: "@timestamp",        // <— IMPORTANTE
+          field: "@timestamp",                                   // ✔ Campo do Equatorial
           fixed_interval: "30m",
           time_zone: "America/Sao_Paulo",
           min_doc_count: 1
@@ -195,17 +195,16 @@ export async function buscarEventosSummary(
     }
   };
 
-  // ============================================
-  // 🔥 2) Query para os outros clientes
-  // ============================================
+  // ============================================================
+  // 🔥 NÃO EQUATORIAL
+  // ============================================================
   const queryDefault = {
     size: 0,
     query: {
       bool: {
-        must: [
-          { match_phrase: { "manager.name": "wazuhhackone" }},
-          { match_phrase: { "rule.groups": "syscheck" }},
-          { match_phrase: { customer: clientName }},
+        filter: [
+          { term: { "rule.groups": "syscheck" } },
+          { term: { "customer": clientName } },                  // ✔ Customer correto
           ...(timeFilter ? [timeFilter] : [])
         ]
       }
@@ -213,7 +212,7 @@ export async function buscarEventosSummary(
     aggs: {
       por_dia: {
         date_histogram: {
-          field: "timestamp",         // <— NÃO mexer para outros clientes
+          field: "timestamp",                                    // ✔ Campo dos outros clientes
           fixed_interval: "30m",
           time_zone: "America/Sao_Paulo",
           min_doc_count: 1
@@ -222,7 +221,6 @@ export async function buscarEventosSummary(
     }
   };
 
-  // Escolher automaticamente
   const body = isEquatorial ? queryEquatorial : queryDefault;
 
   const response = await http.post(
@@ -279,17 +277,19 @@ export async function buscarRuleDistribution(
       : null;
 
   // Campo correto para agregação
-  const ruleField = isEquatorial
-    ? "rule.description"             // texto normal
-    : "rule.description.keyword";    // keyword para outros clientes
+  // ✔ PARA TODOS OS CLIENTES => rule.description
+  const ruleField = "rule.description";
 
-  const body = {
+  // -------------------------------
+  // 🔥 Query EQUATORIAL
+  // -------------------------------
+  const queryEquatorial = {
     size: 0,
     query: {
       bool: {
         must: [
           { term: { "rule.groups": "syscheck" } },
-          { match_phrase: { "agent.id": "000" } },
+          { term: { "agent.id": "000" } },   // ✔ SOMENTE EQUATORIAL
           ...(timeFilter ? [timeFilter] : [])
         ]
       }
@@ -297,13 +297,41 @@ export async function buscarRuleDistribution(
     aggs: {
       rules: {
         terms: {
-          field: ruleField,
+          field: ruleField, // SEM keyword
           size: 10,
           order: { "_count": "desc" }
         }
       }
     }
   };
+
+  // -------------------------------
+  // 🔥 Query NÃO EQUATORIAL
+  // -------------------------------
+  const queryDefault = {
+    size: 0,
+    query: {
+      bool: {
+        must: [
+          { term: { "rule.groups": "syscheck" } },
+          // ❌ NADA de agent.id aqui
+          ...(timeFilter ? [timeFilter] : [])
+        ]
+      }
+    },
+    aggs: {
+      rules: {
+        terms: {
+          field: ruleField, // SEM keyword (único que funcionou)
+          size: 10,
+          order: { "_count": "desc" }
+        }
+      }
+    }
+  };
+
+  // Selecionar automaticamente
+  const body = isEquatorial ? queryEquatorial : queryDefault;
 
   const response = await http.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
