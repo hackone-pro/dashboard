@@ -600,8 +600,6 @@ header button.toggle {
   }
 }
 
-
-
 /* Arcos com dash roxo e glow */
 .shooting-lines-pane path.flow-arc {
   stroke: rgba(139, 92, 246, 0.7);
@@ -730,6 +728,11 @@ header button.toggle {
   }
 }
 
+.attack-row {
+  min-height: 30px;
+}
+
+
 
 /*react-grid*/
 
@@ -785,6 +788,7 @@ header button.toggle {
   border-radius: 12px !important;
   z-index: 999 !important;
 }
+
 
 
 /* ============================

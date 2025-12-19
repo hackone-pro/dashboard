@@ -8,5 +8,5 @@ export const httpsAgent = new https.Agent({
 
 export const http = axios.create({
   httpsAgent,
-  timeout: 15000, // 🔹 seguro, não obrigatório
+  timeout: 50000, // 🔹 seguro, não obrigatório
 });

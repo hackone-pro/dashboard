@@ -4,8 +4,9 @@ import "./index.css";
 import App from "./App";
 import "leaflet/dist/leaflet.css";
 
-import { AuthProvider } from "./context/AuthContext"; 
+import { AuthProvider } from "./context/AuthContext";
 import { TenantProvider } from "./context/TenantContext";
+import { AttackStreamProvider } from "./context/AttackStreamProvider";
 
 // Fontes
 import "@fontsource/inter/200.css";
@@ -18,7 +19,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <AuthProvider>
       <TenantProvider>
-        <App />
+        <AttackStreamProvider>
+          <App />
+        </AttackStreamProvider>
       </TenantProvider>
     </AuthProvider>
   </React.StrictMode>

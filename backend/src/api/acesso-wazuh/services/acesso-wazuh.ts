@@ -15,3 +15,4 @@ export * from "./eventos.service";
 export * from "./usuarios.service";
 export * from "./servidores.service";
 export * from "./edr.service";
+export * from "./mitre-techniques.service"

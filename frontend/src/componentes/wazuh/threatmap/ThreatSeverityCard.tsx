@@ -12,7 +12,7 @@ type Totais = {
 
 export default function ThreatSeverityCard({
   className = "",
-  dias = "todos",
+  dias = "1",
   topN = 5,
 }: {
   className?: string;

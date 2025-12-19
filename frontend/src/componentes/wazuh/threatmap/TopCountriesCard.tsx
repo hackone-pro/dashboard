@@ -13,7 +13,7 @@ export default function TopCountriesCard({
   const MIN_BAR_PCT = 6; // piso visual p/ barras pequenas
   const { tenantAtivo } = useTenant(); // 👈 pega tenant do contexto
 
-  const [dias, setDias] = useState<string>("todos");
+  const [dias, setDias] = useState<string>("1");
   const [items, setItems] = useState<PaisItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [erro, setErro] = useState<string | null>(null);
