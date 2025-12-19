@@ -8,7 +8,8 @@ import eventos from "./eventos.controller";
 import usuarios from "./usuarios.controller";
 import risco from "./risklevel.controller";
 import servidores from "./servidores.controller";
-import edr from "./edr.controller"
+import edr from "./edr.controller";
+import mitreTechniquesController from "./mitre-techniques.controller";
 
 
 export default {
@@ -22,5 +23,6 @@ export default {
   ...usuarios,
   ...risco,
   ...servidores,
-  ...edr
+  ...edr,
+  ...mitreTechniquesController
 }

@@ -3,7 +3,6 @@ import { getTenantAtivo } from "./_utils";
 import { resolveCountryCoords } from "../../../utils/countryResolver";
 
 export default {
-  
   /* ======================================================
         TOP PAÍSES (ORIGEM + DESTINO)
   ====================================================== */
@@ -14,9 +13,13 @@ export default {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
 
-      const dias = ctx.query.dias || "7";
+      const { dias, range } = ctx.query;
 
-      const resultado = await buscarTopPaisesAtaque(tenant, dias);
+      const filtroTempo = range
+        ? { range }
+        : { dias: dias || "7" };
+
+      const resultado = await buscarTopPaisesAtaque(tenant, filtroTempo);
 
       return ctx.send({ topPaises: resultado });
 
@@ -36,9 +39,13 @@ export default {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
 
-      const dias = ctx.query.dias || "7";
+      const { dias, range } = ctx.query;
 
-      const resultado = await buscarTopPaisesAtaque(tenant, dias);
+      const filtroTempo = range
+        ? { range }
+        : { dias: dias || "7" };
+
+      const resultado = await buscarTopPaisesAtaque(tenant, filtroTempo);
 
       // Apenas destinos
       const destinos = resultado.filter((p: any) => p.tipo === "destino");
@@ -46,10 +53,7 @@ export default {
       // Criar flows ORIGEM → DESTINO
       const flows = destinos.flatMap((dest: any) => {
         return (dest.origens || []).map((o: any) => {
-          
-          // ================================
-          // RESOLVE PAÍSES (origem/destino)
-          // ================================
+
           const origemCountry =
             o.pais && o.pais !== "Interno" ? resolveCountryCoords(o.pais) : null;
 
@@ -65,7 +69,6 @@ export default {
               city: o.city || null,
               region: o.region || null,
 
-              // Coordenadas do GeoLocation OU do resolver
               lat: o.lat ?? origemCountry?.lat ?? null,
               lng: o.lng ?? origemCountry?.lng ?? null,
 
@@ -89,6 +92,7 @@ export default {
               devname: dest.devname || null,
             },
 
+            rule: dest.rule || null,
             total: o.total,
             severidades: dest.severidades,
           };

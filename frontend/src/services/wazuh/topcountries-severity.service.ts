@@ -22,7 +22,7 @@ function normKey(k: string): "low" | "medium" | "high" | "critical" | null {
 }
 
 export async function getTopCountriesWithSeverity(
-  dias: string = "todos",
+  dias: string = "1",
   size: number = 5
 ): Promise<CountrySeverityItem[]> {
   const token = getToken();
