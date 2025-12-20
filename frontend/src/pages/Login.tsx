@@ -1,36 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toastSuccess, toastError } from "../utils/toast";
 import { loginAttempt } from "../services/auth/loginAttemps.service";
-import { useAuth } from "../context/AuthContext"; // 👈 novo import
+import { useAuth } from "../context/AuthContext";
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  /* ==========================
+     Turnstile (SEM impacto visual)
+  ========================== */
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY || !(window as any).turnstile) return;
+
+    const el = document.getElementById("turnstile-container");
+    if (!el) return;
+
+    el.innerHTML = "";
+
+    (window as any).turnstile.render(el, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: "dark",
+      callback: (token: string) => setCaptchaToken(token),
+      "expired-callback": () => setCaptchaToken(null),
+      "error-callback": () => setCaptchaToken(null),
+    });
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
+    if (!captchaToken) {
+      toastError("Confirme que você não é um robô.");
+      return;
+    }
+
     try {
-      const data = await loginAttempt(email, senha);
-  
-      // ✅ salva token e atualiza o contexto reativamente
+      const data = await loginAttempt(email, senha, captchaToken);
+
       login(data.jwt);
-  
-      // ✅ salva user normalmente
       localStorage.setItem("user", JSON.stringify(data.user));
-  
-      // ✅ lembra email (se marcado)
       if (remember) localStorage.setItem("remember_email", email);
-  
+
       toastSuccess("Login realizado com sucesso!");
       navigate("/dashboard");
     } catch (err: any) {
+      setCaptchaToken(null);
       toastError(err.message || "Erro ao tentar login");
     }
   };
@@ -49,11 +73,7 @@ export default function Login() {
         />
         <div className="relative w-full max-w-lg mx-auto px-6 py-10 lg:px-12 lg:py-0">
           <div className="mb-8">
-            <a
-              href="https://securityone.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href="https://securityone.ai" target="_blank" rel="noopener noreferrer">
               <img
                 src="/assets/img/Logo-Security-One-Positivo.png"
                 alt="SecurityOne"
@@ -102,58 +122,14 @@ export default function Login() {
                   type="button"
                   onClick={() => setShowPass((s) => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                  aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
                 >
-                  {showPass ? (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M3 3l18 18"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                      />
-                      <path
-                        d="M10.58 10.58A3 3 0 0012 15a3 3 0 002.83-3.74"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        fill="none"
-                      />
-                      <path
-                        d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7c-2.57 0-4.74-.88-6.5-2.1"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        fill="none"
-                      />
-                    </svg>
-                  ) : (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        fill="none"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="3"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        fill="none"
-                      />
-                    </svg>
-                  )}
+                  👁
                 </button>
               </div>
             </div>
 
-            {/* <div className="text-xs text-gray-400 text-right">
-              <Link
-                to="/forgot-password"
-                className="text-violet-300 hover:text-violet-200"
-              >
-                Esqueceu a senha?
-              </Link>
-            </div> */}
+            {/* 🔐 Turnstile (invisível no layout) */}
+            <div id="turnstile-container" className="flex justify-center" />
 
             {/* Botão */}
             <button
@@ -167,11 +143,10 @@ export default function Login() {
               Login
             </button>
 
-            {/* rodapé de links */}
             <div className="text-xs text-gray-400 text-center">
               Não tem uma conta?{" "}
               <a
-                href="https://hackone.com.br/consultoria-aberturachamado"
+                href="https://hackone.com.br/whatsappsuporte"
                 target="_blank"
                 className="text-violet-300 hover:text-violet-200"
               >
@@ -184,15 +159,11 @@ export default function Login() {
 
       {/* Coluna DIREITA – imagem */}
       <div className="relative hidden lg:block">
-        <div className="absolute inset-0 bg-[#0b0916]" />
-        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_20%_20%,#6d4bf0_0%,transparent_35%),radial-gradient(circle_at_80%_10%,#2ec6e8_0%,transparent_30%)]" />
-        <div className="relative h-full w-full flex items-center justify-center">
-          <img
-            src="/assets/img/mockup-alta.webp"
-            alt="Dashboard preview"
-            className="relative h-full w-full object-cover"
-          />
-        </div>
+        <img
+          src="/assets/img/mockup-alta.webp"
+          alt="Dashboard preview"
+          className="relative h-full w-full object-cover"
+        />
       </div>
     </div>
   );

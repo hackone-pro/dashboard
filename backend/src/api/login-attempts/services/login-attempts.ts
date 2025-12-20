@@ -1,5 +1,31 @@
 // src/api/login-attempts/services/login-attempts.ts
 import bcrypt from "bcryptjs";
+import axios from "axios";
+
+async function validarTurnstile(token: string, ip?: string) {
+    const secret = process.env.CLOUDFLARE_TURNSTILE_SECRET;
+
+    if (!secret) {
+        throw new Error("Turnstile secret não configurado");
+    }
+
+    const response = await axios.post(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        new URLSearchParams({
+            secret,
+            response: token,
+            ...(ip && { remoteip: ip }),
+        }),
+        {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            timeout: 5000,
+        }
+    );
+
+    return response.data;
+}
 
 export default {
     async login(ctx) {

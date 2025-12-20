@@ -8,12 +8,14 @@ export interface LoginResponse {
 
 export async function loginAttempt(
   email: string,
-  password: string
+  password: string,
+  captchaToken: string
 ): Promise<LoginResponse> {
+
   const res = await fetch(`${API_URL}/api/auth/login-attempts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, captchaToken }),
   });
 
   const data = await res.json();
