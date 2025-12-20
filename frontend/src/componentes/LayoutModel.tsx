@@ -156,7 +156,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             <TenantSelector />
             {/* WhatsApp */}
             <a
-              href="https://hackone.com.br/consultoria-aberturachamado"
+              href="https://hackone.com.br/whatsappsuporte"
               target="_blank"
               rel="noopener noreferrer"
               className="flex header items-center gap-2 text-gray-400 border hover:text-white border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
