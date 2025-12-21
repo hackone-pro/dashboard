@@ -6,6 +6,14 @@ export interface FirewallItem {
   ip: string | null;
   online: boolean;
   availability: string;
+
+  ram_total_bytes: number;
+  ram_available_bytes: number;
+  ram_used_bytes: number;
+  ram_used_percent: number;
+
+  processes: number | null;
+  sessions: number | null;
 }
 
 export async function getZabbixFirewalls(): Promise<FirewallItem[]> {
