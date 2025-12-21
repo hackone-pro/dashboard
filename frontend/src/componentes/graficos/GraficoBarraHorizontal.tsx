@@ -5,6 +5,7 @@ export interface GraficoBarHorizontalProps {
     valores: number[];
     cor?: string;
     tituloY?: string;
+    nomeSerie?: string;
 }
 
 export default function GraficoBarHorizontal({
@@ -12,6 +13,7 @@ export default function GraficoBarHorizontal({
     valores,
     cor = "#632BD3", // cor padrão roxa
     tituloY,
+    nomeSerie,
 }: GraficoBarHorizontalProps) {
     const options: ApexCharts.ApexOptions = {
         chart: {
@@ -62,7 +64,7 @@ export default function GraficoBarHorizontal({
 
     const series = [
         {
-            name: "Vulnerabilidades",
+            name: nomeSerie ?? "Vulnerabilidades",
             data: valores,
         },
     ];

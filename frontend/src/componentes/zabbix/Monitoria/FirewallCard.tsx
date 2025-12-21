@@ -97,7 +97,7 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
         },
 
         colors: firewalls.map(fw =>
-            fw.status === "online" ? "#00e676" : "#ff4dd2"
+            fw.status === "online" ? "#1DD69A" : "#EC4899"
         ),
 
         xaxis: {
@@ -118,7 +118,7 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
             theme: "dark",
             custom: ({ seriesIndex, dataPointIndex, w }) => {
                 const fw = w.config.series[seriesIndex].data[dataPointIndex];
-                const cor = fw.status === "online" ? "#00e676" : "#ff4dd2";
+                const cor = fw.status === "online" ? "#1DD69A" : "#EC4899";
 
                 return `
                     <div style="padding:10px;">
@@ -136,13 +136,13 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
     };
 
     return (
-        <div className="cards rounded-2xl p-6 flex flex-col card">
+        <div className="cards rounded-2xl p-6 flex flex-col card zabbix-card">
 
-            <h3 className="text-white mb-4">Firewall</h3>
-            <p className="text-gray-400 text-sm mb-2">
-                Quantidade de Ativos Monitorados
+            <h3 className="text-white">Firewall</h3>
+            <p className="text-gray-400 text-sm mb-4">
+                Quantidade de Firewalls
             </p>
-            <p className="text-white text-xs font-bold">
+            <p className="text-white text-xs">
                 Total de Firewalls: {firewalls.length}
             </p>
 
@@ -160,17 +160,17 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                 <div className="flex items-center gap-2">
                     <span
                         className="inline-block w-3 h-3 rounded-full"
-                        style={{ backgroundColor: "#00e676" }}
+                        style={{ backgroundColor: "#1DD69A" }}
                     ></span>
-                    <span className="text-xs text-gray-300">Online</span>
+                    <span className="text-xs text-gray-400">Online</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <span
                         className="inline-block w-3 h-3 rounded-full"
-                        style={{ backgroundColor: "#ff4dd2" }}
+                        style={{ backgroundColor: "#EC4899" }}
                     ></span>
-                    <span className="text-xs text-gray-300">Offline</span>
+                    <span className="text-xs text-gray-400">Offline</span>
                 </div>
 
             </div>

@@ -9,12 +9,17 @@ import { GoShieldLock } from "react-icons/go";
 import { AiOutlineAim } from "react-icons/ai";
 import { BsDatabaseLock } from "react-icons/bs";
 
+import { useZabbixAtivo } from "../hooks/useZabbixAtivo";
+
+
 import clsx from 'clsx';
 
 export default function Sidebar() {
     const [isOpen, setIsOpen] = useState(false);
     const [isNgsocOpen, setIsNgsocOpen] = useState(false);
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+
+    const { ativo, loading } = useZabbixAtivo();
 
     return (
         <div className={clsx(
@@ -464,7 +469,26 @@ export default function Sidebar() {
                         </div>
                     )}
                 </li>
-                
+
+                {/* =========================
+                    MONITORIA CSC (ZABBIX)
+                ========================= */}
+                {!loading && ativo && (
+                    <li>
+                        <Link
+                            to="/monitoria-csc"
+                            className={clsx(
+                                "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                                isOpen ? "justify-start" : "justify-center"
+                            )}
+                        >
+                            {/* @ts-ignore */}
+                            <TbHeartRateMonitor className="text-[18px]" />
+                            {isOpen && <span>Monitoria</span>}
+                        </Link>
+                    </li>
+                )}
+
                 {/* <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
@@ -477,7 +501,7 @@ export default function Sidebar() {
                         {isOpen && <span>Configurações</span>}
                     </Link>
                 </li> */}
-                
+
             </ul>
         </div>
     );
