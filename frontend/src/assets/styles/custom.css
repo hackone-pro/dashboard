@@ -889,11 +889,11 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
 }
 
 .zabbix-card {
-  background-image: url("assets/img/background-zabbix.jpg");
+  background-image: url("/assets/img/background-zabbix.jpg");
 }
 .alertas-card {
-  background-image: url("assets/img/bg-alertas.png");
+  background-image: url("/assets/img/bg-alertas.png");
 }
 .switches-card {
-  background-image: url("assets/img/bg-switches.png");
+  background-image: url("/assets/img/bg-switches.png");
 }
