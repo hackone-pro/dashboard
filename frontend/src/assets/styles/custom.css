@@ -308,6 +308,73 @@ header button.toggle {
 }
 
 
+/* Scrollbar padrão da dashboard */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #0d0a20;
+  /* fundo escuro padrão */
+  border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #484D64;
+  /* roxo da dashboard */
+  border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #484D64;
+}
+
+/*SCROLL*/
+.lista-secoes {
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: #484D64 #252835;   /* Firefox */
+}
+
+/* Chrome, Edge, Safari */
+.lista-secoes::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lista-secoes::-webkit-scrollbar-track {
+  background: #252835;
+  border-radius: 10px;
+}
+
+.lista-secoes::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #252835,
+    #484D64,
+    #252835
+  );
+  border-radius: 10px;
+}
+
+
+/*TOAST*/
+:root {
+  --toastify-color-success: #8b5cf6 !important;
+  --toastify-color-error: #F914AD !important;
+}
+.Toastify__toast--success{
+  color:#8b5cf6 !important;
+}
+.Toastify__toast--error{
+  color: #F914AD;
+}
+.Toastify__progress-bar--success{
+  background: #8b5cf6;
+}
+.Toastify__progress-bar--error {
+  background: #F914AD !important;
+}
+
+
 /*ANIMAÇÃO CORES E EFEITOS*/
 
 /*Risk Level Card*/
@@ -719,6 +786,87 @@ header button.toggle {
   z-index: 999 !important;
 }
 
+
+/* ============================
+ESTILO ESPECÍFICO DE IMPRESSÃO
+============================ */
+
+* {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.print-cover {
+  display: none;
+}
+
+@media print {
+
+  h1 {
+    font-size: 25px;
+    padding: 15px 0;
+  }
+
+  /* Faz o conteúdo ocupar toda a página */
+  body {
+    background: #0A0617 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove tudo que for marcado como no-print */
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Remove sidebar e header */
+  .sidebar {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Remove o botão de baixar PDF */
+  .print-button {
+    display: none !important;
+  }
+
+  .print-cover {
+    display: block;
+    page-break-after: always;
+    background: #0A0617;
+    color: white;
+    text-align: center;
+    position: relative;
+    margin-top: 250px;
+  }
+
+  .cover-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    page-break-after: always;
+  }
+
+  .report-container {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .top-acessos {
+    margin-top: 15px !important;
+  }
+
+  /* Remove margens do navegador */
+  @page {
+    padding-top: 20px;
+    margin: 0;
+  }
+
+}
+
 /*ZABBIX*/
 
 .zabbix-card,
@@ -741,11 +889,11 @@ header button.toggle {
 }
 
 .zabbix-card {
-  background-image: url("assets/img/background-zabbix.jpg");
+  background-image: url("/assets/img/background-zabbix.jpg");
 }
 .alertas-card {
-  background-image: url("assets/img/bg-alertas.png");
+  background-image: url("/assets/img/bg-alertas.png");
 }
 .switches-card {
-  background-image: url("assets/img/bg-switches.png");
+  background-image: url("/assets/img/bg-switches.png");
 }
