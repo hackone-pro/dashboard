@@ -1,5 +1,9 @@
 import { getToken } from "../../utils/auth";
 
+/* =========================
+   TYPES
+========================= */
+
 export type PaisItem = {
   pais: string;
   total: number;
@@ -7,19 +11,33 @@ export type PaisItem = {
 };
 
 export type LiveAttackItem = {
-  tecnica?: string;
   origem: {
-    pais: string;
-    city?: string;
+    ip: string;
+    pais?: string | null;
+    lat?: number | null;
+    lng?: number | null;
   };
   destino: {
-    pais: string;
-    city?: string;
-    devname?: string;
+    ip: string;
+    pais?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+    devname?: string | null;
+  };
+  rule?: {
+    description?: string | null;
+    mitre?: {
+      technique?: string[] | string | null;
+    };
   };
 };
 
-export async function getTopPaises(dias: string = "30"): Promise<PaisItem[]> {
+/* =========================
+   TOP PAÍSES (HISTÓRICO)
+========================= */
+export async function getTopPaises(
+  dias: string = "30"
+): Promise<PaisItem[]> {
   const token = getToken();
 
   const url = `${import.meta.env.VITE_API_URL}/api/acesso/wazuh/top-paises?dias=${encodeURIComponent(
@@ -36,11 +54,16 @@ export async function getTopPaises(dias: string = "30"): Promise<PaisItem[]> {
 
   const json = await res.json();
   const arr = Array.isArray(json?.topPaises) ? json.topPaises : [];
-  // Garantia de no máximo 10
+
   return arr.slice(0, 10);
 }
 
-export async function getTopPaisesGeo(dias: string = "todos"): Promise<LiveAttackItem[]> {
+/* =========================
+   GEO — HISTÓRICO
+========================= */
+export async function getTopPaisesGeo(
+  dias: string = "todos"
+): Promise<LiveAttackItem[]> {
   const token = getToken();
 
   const url = `${import.meta.env.VITE_API_URL}/api/acesso/wazuh/top-paises-geo?dias=${encodeURIComponent(
@@ -56,10 +79,12 @@ export async function getTopPaisesGeo(dias: string = "todos"): Promise<LiveAttac
   }
 
   const json = await res.json();
-
   return Array.isArray(json?.flows) ? json.flows : [];
 }
 
+/* =========================
+   GEO — LIVE (30s)
+========================= */
 export async function getTopPaisesGeoRange(
   range: string = "30s"
 ): Promise<LiveAttackItem[]> {

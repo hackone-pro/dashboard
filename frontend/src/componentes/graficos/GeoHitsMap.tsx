@@ -7,46 +7,39 @@ import {
   useMap,
   ZoomControl,
   Polyline,
-  Tooltip,
 } from "react-leaflet";
 import L from "leaflet";
 
 import { useAttackStream } from "../../context/AttackStreamProvider";
 
 /* =========================
-   CONFIG
+   TIPOS
 ========================= */
-const MAX_FLOWS = 120;
-const MAP_LIFETIME_MS = 8000;
+type Flow = {
+  origem: {
+    ip: string;
+    pais?: string | null;
+    lat: number | null;
+    lng: number | null;
+  };
+  destino: {
+    ip: string;
+    pais?: string | null;
+    lat: number | null;
+    lng: number | null;
+    devname?: string | null;
+  };
+};
 
 type GeoHitsMapProps = {
   height?: number | string;
 };
 
-type Flow = {
-  origem: {
-    ip: string;
-    pais: string | null;
-    city?: string | null;
-    region?: string | null;
-    lat: number | null;
-    lng: number | null;
-    srcport?: string | null;
-    servico?: string | null;
-    interface?: string | null;
-  };
-  destino: {
-    ip: string;
-    pais?: string | null;
-    city?: string | null;
-    region?: string | null;
-    lat: number | null;
-    lng: number | null;
-    dstintf?: string | null;
-    dstport?: string | null;
-    devname?: string | null;
-  };
-};
+/* =========================
+   CONFIG
+========================= */
+const MAX_FLOWS = 120;
+const MAP_LIFETIME_MS = 8000;
 
 /* =========================
    FIT BOUNDS (1x)
@@ -67,7 +60,7 @@ function FitToData({ points }: { points: { lat: number; lng: number }[] }) {
 }
 
 /* =========================
-   ARCO HELPERS
+   BEZIER HELPERS
 ========================= */
 type Pt = { lat: number; lng: number };
 
@@ -94,17 +87,25 @@ function sampleBezier(p0: Pt, c: Pt, p1: Pt, samples = 80): Pt[] {
   return pts;
 }
 
+/* =========================
+   COMPONENT
+========================= */
 export default function GeoHitsMap({ height = 400 }: GeoHitsMapProps) {
   const { events } = useAttackStream();
+
   const [nowTick, setNowTick] = useState(Date.now());
 
+  /* 🔄 reavalia vida útil dos eventos */
   useEffect(() => {
-    const i = setInterval(() => setNowTick(Date.now()), 1000);
+    const i = setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+
     return () => clearInterval(i);
   }, []);
 
   /* =========================
-     EVENTOS ATIVOS
+     EVENTOS ATIVOS (8s)
   ========================= */
   const activeEvents = useMemo(() => {
     return events.filter(
@@ -125,11 +126,14 @@ export default function GeoHitsMap({ height = 400 }: GeoHitsMapProps) {
     return activeEvents
       .filter((e) => {
         if (!e.origem || !e.destino) return false;
+
         if (
           e.origem.lat === e.destino.lat &&
           e.origem.lng === e.destino.lng
-        )
+        ) {
           return false;
+        }
+
         return true;
       })
       .slice(0, MAX_FLOWS)
@@ -139,17 +143,16 @@ export default function GeoHitsMap({ height = 400 }: GeoHitsMapProps) {
       }));
   }, [activeEvents]);
 
-  const darkTiles =
-    "https://{s}.basemaps.cartocdn.com/spotify_dark/{z}/{x}/{y}{r}.png";
-
   /* =========================
-     BOUNDS
+     PONTOS (FIT)
   ========================= */
   const allPoints = useMemo(() => {
     return flows.flatMap((f) => {
       const pts: { lat: number; lng: number }[] = [];
-      if (f.origem.lat && f.origem.lng) pts.push({ lat: f.origem.lat, lng: f.origem.lng });
-      if (f.destino.lat && f.destino.lng) pts.push({ lat: f.destino.lat, lng: f.destino.lng });
+      if (f.origem.lat && f.origem.lng)
+        pts.push({ lat: f.origem.lat, lng: f.origem.lng });
+      if (f.destino.lat && f.destino.lng)
+        pts.push({ lat: f.destino.lat, lng: f.destino.lng });
       return pts;
     });
   }, [flows]);
@@ -160,22 +163,41 @@ export default function GeoHitsMap({ height = 400 }: GeoHitsMapProps) {
   const arcs = useMemo(() => {
     return flows
       .map((f, i) => {
-        const p0 = { lat: f.origem.lat!, lng: f.origem.lng! };
-        const p1 = { lat: f.destino.lat!, lng: f.destino.lng! };
+        if (
+          !f.origem.lat ||
+          !f.origem.lng ||
+          !f.destino.lat ||
+          !f.destino.lng
+        ) {
+          return null;
+        }
+
+        const p0 = { lat: f.origem.lat, lng: f.origem.lng };
+        const p1 = { lat: f.destino.lat, lng: f.destino.lng };
         const c = controlPoint(p0, p1);
 
         return {
           id: `${f.origem.ip}-${f.destino.ip}-${i}`,
           group: i % 6,
-          positions: sampleBezier(p0, c, p1, 80).map((p) => [p.lat, p.lng]) as [
-            number,
-            number
-          ][],
+          positions: sampleBezier(p0, c, p1, 80).map((p) => [
+            p.lat,
+            p.lng,
+          ]) as [number, number][],
         };
       })
-      .filter(Boolean);
+      .filter(Boolean) as {
+      id: string;
+      group: number;
+      positions: [number, number][];
+    }[];
   }, [flows]);
 
+  const darkTiles =
+    "https://{s}.basemaps.cartocdn.com/spotify_dark/{z}/{x}/{y}{r}.png";
+
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <div
       className="w-full relative rounded-sm overflow-hidden z-0"
@@ -207,7 +229,7 @@ export default function GeoHitsMap({ height = 400 }: GeoHitsMapProps) {
               f.origem.lat &&
               f.origem.lng && (
                 <CircleMarker
-                  key={`origem-${i}`}
+                  key={`origem-${f.origem.ip}-${i}`}
                   center={[f.origem.lat, f.origem.lng]}
                   radius={5}
                   pathOptions={{
@@ -228,7 +250,7 @@ export default function GeoHitsMap({ height = 400 }: GeoHitsMapProps) {
               f.destino.lat &&
               f.destino.lng && (
                 <CircleMarker
-                  key={`destino-${i}`}
+                  key={`destino-${f.destino.ip}-${i}`}
                   center={[f.destino.lat, f.destino.lng]}
                   radius={6}
                   pathOptions={{
@@ -243,7 +265,11 @@ export default function GeoHitsMap({ height = 400 }: GeoHitsMapProps) {
         </Pane>
 
         {/* ARCOS */}
-        <Pane name="shooting-lines" style={{ zIndex: 350 }}>
+        <Pane
+          name="shooting-lines"
+          className="shooting-lines-pane"
+          style={{ zIndex: 350 }}
+        >
           {arcs.map((arc) => (
             <Polyline
               key={arc.id}

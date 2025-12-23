@@ -2,9 +2,6 @@ import { http } from "./utils/http";
 import { authHeader } from "./utils/auth";
 import { isPrivateIp } from "./utils/ip";
 
-/* ===============================================
-   HELPER — TIME FILTER (dias OU range)
-=============================================== */
 function buildTimeFilter({
   dias,
   range,
@@ -12,6 +9,7 @@ function buildTimeFilter({
   dias?: string;
   range?: string;
 }) {
+  // 🔹 prioridade para LIVE
   if (range) {
     return {
       range: {
@@ -23,6 +21,7 @@ function buildTimeFilter({
     };
   }
 
+  // 🔹 compatibilidade com histórico
   if (!dias || dias === "todos") {
     return { match_all: {} };
   }
@@ -37,15 +36,24 @@ function buildTimeFilter({
   };
 }
 
+
 /* ===============================================
    TOP PAÍSES DE ATAQUES (ORIGEM + DESTINO)
 =============================================== */
 export async function buscarTopPaisesAtaque(
   tenant,
-  { dias, range }: { dias?: string; range?: string }
+  {
+    dias,
+    range,
+  }: {
+    dias?: string;
+    range?: string;
+  }
 ) {
   const clientName = tenant.wazuh_client_name;
-  if (!clientName) throw new Error("Tenant sem client_name definido");
+  if (!clientName) {
+    throw new Error("Tenant sem client_name definido");
+  }
 
   const timeFilter = buildTimeFilter({ dias, range });
 
@@ -65,7 +73,16 @@ export async function buscarTopPaisesAtaque(
             },
           },
           timeFilter,
-          { term: { "rule.groups": "fortigate" } },
+          {
+            bool: {
+              should: [
+                { term: { "rule.groups": "fortigate" } },
+                { term: { "rule.groups": "fortianalyzer-like" } },
+                { term: { "decoder.name": "fortianalyzer-like" } },
+              ],
+              minimum_should_match: 1,
+            },
+          },
         ],
         must_not: [
           {
@@ -79,8 +96,15 @@ export async function buscarTopPaisesAtaque(
     },
 
     aggs: {
+      /* =======================
+         ORIGENS (PAÍSES)
+      ======================= */
       top_countries: {
-        terms: { field: "data.srccountry", size: 10 },
+        terms: {
+          field: "GeoLocation.country_name",
+          size: 10,
+          order: { _count: "desc" },
+        },
         aggs: {
           severidade: {
             range: {
@@ -93,16 +117,37 @@ export async function buscarTopPaisesAtaque(
               ],
             },
           },
+          location: {
+            top_hits: {
+              size: 1,
+              _source: [
+                "GeoLocation.city_name",
+                "GeoLocation.country_name",
+                "GeoLocation.region_name",
+                "GeoLocation.location",
+              ],
+            },
+          },
         },
       },
 
+      /* =======================
+         DESTINOS (IPS)
+      ======================= */
       top_destinos: {
-        terms: { field: "data.dstip", size: 10 },
+        terms: {
+          field: "data.dstip",
+          size: 10,
+          order: { _count: "desc" },
+        },
         aggs: {
           rule_info: {
             top_hits: {
               size: 1,
-              _source: ["rule.description", "rule.mitre.technique"],
+              _source: [
+                "rule.description",
+                "rule.mitre.technique",
+              ],
             },
           },
 
@@ -111,16 +156,19 @@ export async function buscarTopPaisesAtaque(
           origens: {
             terms: { field: "data.srcip", size: 10 },
             aggs: {
-              pais_origem: {
-                terms: { field: "GeoLocation.country_name", size: 1 },
-              },
+              pais_origem: { terms: { field: "data.srccountry", size: 1 } },
               srcport: { terms: { field: "data.srcport", size: 1 } },
-              servico: { terms: { field: "data.service", size: 1 } },
+              servico: { terms: { field: "data.app", size: 1 } },
               interface: { terms: { field: "data.srcintf", size: 1 } },
               location: {
                 top_hits: {
                   size: 1,
-                  _source: ["GeoLocation.location"],
+                  _source: [
+                    "GeoLocation.city_name",
+                    "GeoLocation.country_name",
+                    "GeoLocation.region_name",
+                    "GeoLocation.location",
+                  ],
                 },
               },
             },
@@ -136,6 +184,7 @@ export async function buscarTopPaisesAtaque(
               size: 1,
               _source: [
                 "GeoLocation.city_name",
+                "GeoLocation.country_name",
                 "GeoLocation.region_name",
                 "GeoLocation.location",
               ],
@@ -158,37 +207,42 @@ export async function buscarTopPaisesAtaque(
     },
   };
 
+  /* ===============================
+     CHAMADA AO WAZUH INDEXER
+  =============================== */
   const response = await http.post(
-    `${tenant.wazuh_url}/wazuh-archives-*/_search`,
+    `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
     { headers: authHeader(tenant) }
   );
 
+  /* ===============================
+     PROCESSAMENTO DO RETORNO
+  =============================== */
   const aggs = response.data.aggregations ?? {};
   const origemBuckets = aggs.top_countries?.buckets ?? [];
   const destinoBuckets = aggs.top_destinos?.buckets ?? [];
 
   return [
-    /* =========================
-       ORIGENS
-    ========================= */
-    ...origemBuckets.map((b) => ({
-      tipo: "origem",
-      pais: b.key,
-      total: b.doc_count,
-      city: null,
-      region: null,
-      lat: null,
-      lng: null,
-      severidades: (b.severidade?.buckets ?? []).map((s) => ({
-        key: s.key,
-        doc_count: s.doc_count,
-      })),
-    })),
+    /* ---------- ORIGENS ---------- */
+    ...origemBuckets.map((b) => {
+      const loc =
+        b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
 
-    /* =========================
-       DESTINOS
-    ========================= */
+      return {
+        tipo: "origem",
+        pais: b.key,
+        total: b.doc_count,
+        lat: loc?.lat ?? null,
+        lng: loc?.lon ?? null,
+        severidades: (b.severidade?.buckets ?? []).map((s) => ({
+          key: s.key,
+          doc_count: s.doc_count,
+        })),
+      };
+    }),
+
+    /* ---------- DESTINOS ---------- */
     ...destinoBuckets.map((b) => {
       const loc =
         b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
@@ -196,21 +250,17 @@ export async function buscarTopPaisesAtaque(
       const ruleHit =
         b.rule_info?.hits?.hits?.[0]?._source?.rule ?? null;
 
+      const ip = b.key;
+
       return {
         tipo: "destino",
-        destino: b.key,
+        destino: ip,
         total: b.doc_count,
-
         agente: b.agentes?.buckets?.[0]?.key || null,
 
-        pais: isPrivateIp(b.key)
+        pais: isPrivateIp(ip)
           ? "Interno"
           : b.pais_destino?.buckets?.[0]?.key || null,
-
-        city:
-          b.location?.hits?.hits?.[0]?._source?.GeoLocation?.city_name ?? null,
-        region:
-          b.location?.hits?.hits?.[0]?._source?.GeoLocation?.region_name ?? null,
 
         lat: loc?.lat ?? null,
         lng: loc?.lon ?? null,
@@ -222,9 +272,7 @@ export async function buscarTopPaisesAtaque(
         rule: ruleHit
           ? {
               description: ruleHit.description ?? null,
-              mitre: {
-                technique: ruleHit.mitre?.technique ?? null,
-              },
+              mitre: { technique: ruleHit.mitre?.technique ?? null },
             }
           : null,
 
