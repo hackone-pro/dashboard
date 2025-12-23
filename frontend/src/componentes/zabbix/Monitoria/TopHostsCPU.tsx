@@ -38,7 +38,7 @@ export default function TopHostsCPU() {
     <div className="h-full flex flex-col">
       
       {/* Título */}
-      <h3 className="text-white text-md mb-1">CPU e memória</h3>
+      <h3 className="text-white text-md mb-1">CPU</h3>
       <p className="text-gray-400 text-sm mb-4">Top hosts por CPU %</p>
 
       {/* Loading */}
