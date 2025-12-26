@@ -2,36 +2,51 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toastSuccess, toastError } from "../utils/toast";
 import { loginAttempt } from "../services/auth/loginAttemps.service";
-import { useAuth } from "../context/AuthContext"; // 👈 novo import
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
+
 
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
+    if (loading) return;
+    setLoading(true);
+
     try {
       const data = await loginAttempt(email, senha);
-  
-      // ✅ salva token e atualiza o contexto reativamente
+
+      // MFA obrigatório
+      if ("mfaRequired" in data) {
+        sessionStorage.setItem("mfa_token", data.mfaToken);
+        sessionStorage.setItem("mfa_email", email);
+
+        navigate("/verify-code", { replace: true });
+        return;
+      }
+
+      // login direto (fallback)
       login(data.jwt);
-  
-      // ✅ salva user normalmente
       localStorage.setItem("user", JSON.stringify(data.user));
-  
-      // ✅ lembra email (se marcado)
-      if (remember) localStorage.setItem("remember_email", email);
-  
+
+      if (remember) {
+        localStorage.setItem("remember_email", email);
+      }
+
       toastSuccess("Login realizado com sucesso!");
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
+
     } catch (err: any) {
       toastError(err.message || "Erro ao tentar login");
+      setLoading(false); //
     }
   };
 
@@ -158,13 +173,15 @@ export default function Login() {
             {/* Botão */}
             <button
               type="submit"
-              className="w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 transition-transform hover:-translate-y-0.5 focus:outline-none"
+              disabled={loading}
+              className="w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 transition-transform focus:outline-none
+    disabled:opacity-60 disabled:cursor-not-allowed"
               style={{
                 background:
                   "linear-gradient(90deg, #6C2CF5 0%, #7C4DFF 40%, #7B61FF 100%)",
               }}
             >
-              Login
+              {loading ? "Acessando..." : "Login"}
             </button>
 
             {/* rodapé de links */}

@@ -16,14 +16,23 @@ import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
 import ServiceModel from '../pages/ServicesModel';
 import MonitoriaSoc from '../pages/MonitoriaSOC';
+import VerifyCode from '../pages/MFACode';
 
 export default function AppRoutes() {
   return (
     <>
       <BrowserRouter>
         <Routes>
+          {/* Redirect inicial */}
           <Route path="/" element={<Navigate to="/login" replace />} />
+
+          {/* Auth */}
           <Route path="/login" element={<Login />} />
+          <Route path="/verify-code" element={<VerifyCode />} />
+          <Route path="/forgot-password" element=<ForgotPassword /> />
+          <Route path="/reset-password" element=<ResetPassword /> />
+          
+          {/* Protegidas */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
           <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
@@ -33,11 +42,10 @@ export default function AppRoutes() {
           <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
           <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
           <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
-y          <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
+          <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
           <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
           <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
-          <Route path="/forgot-password" element=<ForgotPassword /> />
-          <Route path="/reset-password" element=<ResetPassword /> />
+          
         </Routes>
       </BrowserRouter>
     </>
