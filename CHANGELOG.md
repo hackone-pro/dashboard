@@ -10,6 +10,7 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 - Criação da Página de Relatórios
 - Ajuste Visual dos alertas
 - Ajuste de tamanho fixo para os cards da Home
+- Live Attack no ThreatMap
 
 ## [v1.6.2.5]
 - Adaptação de novas querys para o novo ambiente prod
