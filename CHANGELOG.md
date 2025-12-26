@@ -3,6 +3,9 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.7.3.5]
+- Segurança: Login de Dupla Autenticação
+
 ## [v1.7.2.5]
 - Criação da Página de Relatórios
 - Ajuste Visual dos alertas

@@ -1028,6 +1028,9 @@ export interface PluginUsersPermissionsUser
     > &
       Schema.Attribute.Private;
     login_attempts: Schema.Attribute.Integer;
+    mfa_code: Schema.Attribute.String;
+    mfa_expire: Schema.Attribute.DateTime;
+    mfa_token: Schema.Attribute.String;
     nome: Schema.Attribute.String;
     owner_name_iris: Schema.Attribute.String;
     password: Schema.Attribute.Password &

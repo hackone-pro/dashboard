@@ -3,16 +3,59 @@ import { authHeader } from "./utils/auth";
 import { isPrivateIp } from "./utils/ip";
 
 /* ===============================================
+   HELPER — TIME FILTER (dias OU range)
+=============================================== */
+function buildTimeFilter({
+  dias,
+  range,
+}: {
+  dias?: string;
+  range?: string;
+}) {
+  // Prioridade para range (ex: 30s, 5m, 2h)
+  if (range) {
+    return {
+      range: {
+        "@timestamp": {
+          gte: `now-${range}`,
+          lte: "now",
+        },
+      },
+    };
+  }
+
+  // Compatibilidade total com comportamento atual
+  if (!dias || dias === "todos") {
+    return { match_all: {} };
+  }
+
+  return {
+    range: {
+      "@timestamp": {
+        gte: `now-${dias}d`,
+        lte: "now",
+      },
+    },
+  };
+}
+
+/* ===============================================
    TOP PAÍSES DE ATAQUES (ORIGEM + DESTINO)
 =============================================== */
-export async function buscarTopPaisesAtaque(tenant, dias: string) {
+export async function buscarTopPaisesAtaque(
+  tenant,
+  {
+    dias,
+    range,
+  }: {
+    dias?: string;
+    range?: string;
+  }
+) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  const timeFilter =
-    dias === "todos"
-      ? { match_all: {} }
-      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
+  const timeFilter = buildTimeFilter({ dias, range });
 
   const body = {
     size: 0,
@@ -23,7 +66,7 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
             bool: {
               should: [
                 { term: { "data.customer": clientName } },
-                { term: { "customer": clientName } },
+                { term: { customer: clientName } },
                 { term: { "fields.customer": clientName } },
               ],
               minimum_should_match: 1,
@@ -92,6 +135,16 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
           order: { _count: "desc" },
         },
         aggs: {
+          rule_info: {
+            top_hits: {
+              size: 1,
+              _source: [
+                "rule.description",
+                "rule.mitre.technique",
+              ],
+
+            },
+          },
           agentes: { terms: { field: "agent.name", size: 1 } },
 
           origens: {
@@ -101,7 +154,6 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
               srcport: { terms: { field: "data.srcport", size: 1 } },
               servico: { terms: { field: "data.app", size: 1 } },
               interface: { terms: { field: "data.srcintf", size: 1 } },
-
               location: {
                 top_hits: {
                   size: 1,
@@ -119,7 +171,6 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
           dstintf: { terms: { field: "data.dstintf", size: 1 } },
           dstport: { terms: { field: "data.dstport", size: 1 } },
           devname: { terms: { field: "data.devname", size: 1 } },
-
           pais_destino: { terms: { field: "data.dstcountry", size: 1 } },
 
           location: {
@@ -167,9 +218,6 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
   const destinoBuckets = aggs.top_destinos?.buckets ?? [];
 
   return [
-    /* =====================================
-         ORIGENS (Países de ataque)
-    ===================================== */
     ...origemBuckets.map((b) => {
       const loc =
         b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
@@ -178,14 +226,12 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
         tipo: "origem",
         pais: b.key,
         total: b.doc_count,
-
         city:
           b.location?.hits?.hits?.[0]?._source?.GeoLocation?.city_name ?? null,
         region:
           b.location?.hits?.hits?.[0]?._source?.GeoLocation?.region_name ?? null,
         lat: loc?.lat ?? null,
         lng: loc?.lon ?? null,
-
         severidades: (b.severidade?.buckets ?? []).map((s) => ({
           key: s.key,
           doc_count: s.doc_count,
@@ -193,12 +239,15 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
       };
     }),
 
-    /* =====================================
-         DESTINOS (IPs atacados)
-    ===================================== */
     ...destinoBuckets.map((b) => {
       const loc =
         b.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
+
+      const ruleHit =
+        b.rule_info?.hits?.hits?.[0]?._source?.rule ?? null;
+
+      const ruleDescription = ruleHit?.description ?? null;
+      const mitreTechnique = ruleHit?.mitre?.technique ?? null;
 
       const ip = b.key;
 
@@ -206,46 +255,41 @@ export async function buscarTopPaisesAtaque(tenant, dias: string) {
         tipo: "destino",
         destino: ip,
         total: b.doc_count,
-
         agente: b.agentes?.buckets?.[0]?.key || null,
         pais: isPrivateIp(ip)
           ? "Interno"
           : b.pais_destino?.buckets?.[0]?.key || null,
-
         city:
           b.location?.hits?.hits?.[0]?._source?.GeoLocation?.city_name ?? null,
         region:
           b.location?.hits?.hits?.[0]?._source?.GeoLocation?.region_name ?? null,
-
         lat: loc?.lat ?? null,
         lng: loc?.lon ?? null,
-
         dstintf: b.dstintf?.buckets?.[0]?.key || null,
         dstport: b.dstport?.buckets?.[0]?.key || null,
         devname: b.devname?.buckets?.[0]?.key || null,
-
+        rule: {
+          description: ruleDescription,
+          mitre: {
+            technique: mitreTechnique,
+          },
+        },
         severidades: (b.severidade?.buckets ?? []).map((s) => ({
           key: s.key,
           doc_count: s.doc_count,
         })),
-
         origens: (b.origens?.buckets ?? []).map((o) => {
           const locO =
             o.location?.hits?.hits?.[0]?._source?.GeoLocation?.location ?? null;
 
-          const ipOrigem = o.key;
-
           return {
-            ip: ipOrigem,
+            ip: o.key,
             total: o.doc_count,
-
-            pais: isPrivateIp(ipOrigem)
+            pais: isPrivateIp(o.key)
               ? "Interno"
               : o.pais_origem?.buckets?.[0]?.key || null,
-
             lat: locO?.lat ?? null,
             lng: locO?.lon ?? null,
-
             srcport: o.srcport?.buckets?.[0]?.key || null,
             servico: o.servico?.buckets?.[0]?.key || null,
             interface: o.interface?.buckets?.[0]?.key || null,

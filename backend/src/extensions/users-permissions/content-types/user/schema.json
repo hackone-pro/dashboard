@@ -101,6 +101,15 @@
       "relation": "oneToMany",
       "target": "api::user-multi-tenant.user-multi-tenant",
       "mappedBy": "users_permissions_user"
+    },
+    "mfa_code": {
+      "type": "string"
+    },
+    "mfa_token": {
+      "type": "string"
+    },
+    "mfa_expire": {
+      "type": "datetime"
     }
   }
 }

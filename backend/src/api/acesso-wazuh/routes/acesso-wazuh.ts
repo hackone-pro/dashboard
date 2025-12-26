@@ -149,5 +149,13 @@ export default {
       path: "/acesso/wazuh/edr",
       handler: "acesso-wazuh.edr",
     },
+    {
+      method: "GET",
+      path: "/acesso/wazuh/mitre-techniques",
+      handler: "acesso-wazuh.topMitreTechniques",
+      config: {
+        policies: [],
+      },
+    },
   ],
 };
