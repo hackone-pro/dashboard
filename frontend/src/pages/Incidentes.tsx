@@ -370,9 +370,9 @@ export default function Incidentes() {
             : filtroOrigem === "fechados"
               ? (i.state_name || "").toLowerCase() === "closed"
               : filtroOrigem === "atribuidos"
-                ? normaliza(extractOwner(i)) === normaliza(tenantOwner)
+                ? !isIAOwner(extractOwner(i))
                 : filtroOrigem === "nao_atribuidos"
-                  ? normaliza(extractOwner(i)) !== normaliza(tenantOwner)
+                  ? isIAOwner(extractOwner(i))
                   : true
         )
       );
@@ -402,10 +402,10 @@ export default function Incidentes() {
   const atribuidos = baseTabela.filter(i =>
     !isIAOwner(extractOwner(i))
   );
-  
+
   const naoAtribuidos = baseTabela.filter(i =>
     isIAOwner(extractOwner(i))
-  );  
+  );
 
   useEffect(() => {
     const resumo = baseTabela.reduce((acc, i) => {
