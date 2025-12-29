@@ -16,6 +16,10 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const isLocalhost =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+
   /* ==========================
      Turnstile (SEM impacto visual)
   ========================== */
@@ -39,17 +43,20 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!captchaToken) {
+    if (!isLocalhost && !captchaToken) {
       toastError("Confirme que você não é um robô.");
       return;
     }
 
     try {
-      const data = await loginAttempt(email, senha, captchaToken);
+      const data = await loginAttempt(email, senha, captchaToken!);
 
       login(data.jwt);
       localStorage.setItem("user", JSON.stringify(data.user));
-      if (remember) localStorage.setItem("remember_email", email);
+
+      if (remember) {
+        localStorage.setItem("remember_email", email);
+      }
 
       toastSuccess("Login realizado com sucesso!");
       navigate("/dashboard");
@@ -129,7 +136,9 @@ export default function Login() {
             </div>
 
             {/* 🔐 Turnstile (invisível no layout) */}
-            <div id="turnstile-container" className="flex justify-center" />
+            {!isLocalhost && (
+              <div id="turnstile-container" className="flex justify-center" />
+            )}
 
             {/* Botão */}
             <button

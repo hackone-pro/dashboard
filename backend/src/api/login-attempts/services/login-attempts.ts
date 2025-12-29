@@ -29,7 +29,27 @@ async function validarTurnstile(token: string, ip?: string) {
 
 export default {
     async login(ctx) {
-        const { email, password } = ctx.request.body;
+        const { email, password, captchaToken } = ctx.request.body as any;
+
+        const isDev =
+        process.env.NODE_ENV === "development" ||
+        ctx.request.hostname === "localhost" ||
+        ctx.request.ip === "127.0.0.1";
+
+        if (!isDev) {
+            if (!captchaToken) {
+                return ctx.badRequest("Captcha não enviado");
+            }
+    
+            const captcha = await validarTurnstile(
+                captchaToken,
+                ctx.request.ip
+            );
+    
+            if (!captcha.success) {
+                return ctx.unauthorized("Falha na verificação do captcha");
+            }
+        }
 
         if (!email || !password) {
             return ctx.badRequest("Email e senha são obrigatórios");
