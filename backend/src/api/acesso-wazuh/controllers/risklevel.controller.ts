@@ -1,10 +1,53 @@
 import {
   buscarTopGeradoresFirewall,
   buscarTopAgentes,
+  buscarSeveridadeIndexer,
 } from "../services/acesso-wazuh";
 
 import { buscarIncidentesIris } from "../../acesso-iris/services/acesso-iris";
+
 import { getTenantAtivo } from "./_utils";
+
+/**
+ * Cálculo do índice de Risk Level
+ * Baseado na severidade mais alta presente
+ */
+ function calcularRiskLevel({
+  critico,
+  alto,
+  medio,
+  baixo,
+}: {
+  critico: number;
+  alto: number;
+  medio: number;
+  baixo: number;
+}) {
+  // CRÍTICO domina
+  if (critico > 0) {
+    return Math.min(100, 80 + critico * 0.5);
+  }
+
+  // ALTO domina (MÉDIO só ajusta levemente)
+  if (alto > 0) {
+    const impactoAlto = Math.min(30, alto * 1.5); // ALTO é o motor real
+    const ajusteMedio = Math.min(10, Math.log10(1 + medio) * 2); // MÉDIO limitado
+
+    return Math.min(80, 40 + impactoAlto + ajusteMedio);
+  }
+
+  // MÉDIO (quando não há ALTO)
+  if (medio > 0) {
+    return Math.min(60, 20 + Math.sqrt(medio) * 1.2);
+  }
+
+  // BAIXO
+  if (baixo > 0) {
+    return Math.min(30, 10 + Math.log10(1 + baixo));
+  }
+
+  return 0;
+}
 
 export default {
   async riskLevel(ctx) {
@@ -16,27 +59,29 @@ export default {
       const diasGlobal = ctx.query.dias || "1";
       const diasFirewall = ctx.query.firewall || diasGlobal;
       const diasAgentes = ctx.query.agentes || diasGlobal;
+      const diasSeveridade = ctx.query.severidade || diasGlobal;
       const diasIris = ctx.query.iris || diasGlobal;
 
       // Tenant ativo
       const tenant = await getTenantAtivo(ctx);
       if (!tenant) return ctx.notFound("Tenant não encontrado ou inativo");
 
-      // Buscar dados simultaneamente (❗ sem buscar severidade indexer)
-      const [fw, agentes, iris] = await Promise.all([
+      // Buscar dados simultaneamente
+      const [fw, agentes, severidade, iris] = await Promise.all([
         buscarTopGeradoresFirewall(tenant, diasFirewall),
         buscarTopAgentes(tenant, diasAgentes),
+        buscarSeveridadeIndexer(tenant, diasSeveridade),
         buscarIncidentesIris(tenant, diasIris, ctx.state.user),
       ]);
 
-      // Totais SOMENTE dos cards (não duplica)
-      let baixo = 0;
-      let medio = 0;
-      let alto = 0;
-      let critico = 0;
-      let total = 0;
+      // Totais iniciais (Indexer)
+      let baixo = severidade.baixo || 0;
+      let medio = severidade.medio || 0;
+      let alto = severidade.alto || 0;
+      let critico = severidade.critico || 0;
+      let total = severidade.total || 0;
 
-      // 🔹 Firewall
+      // Firewall
       fw.forEach((item) => {
         baixo += item.severidade.baixo;
         medio += item.severidade.medio;
@@ -45,7 +90,7 @@ export default {
         total += item.total;
       });
 
-      // 🔹 Agentes
+      // Agentes
       agentes.forEach((agente) => {
         agente.severidades.forEach((s) => {
           if (s.key <= 6) baixo += s.doc_count;
@@ -57,7 +102,7 @@ export default {
         });
       });
 
-      // 🔹 IRIS
+      // IRIS
       if (iris && typeof iris === "object") {
         baixo += iris.baixo || 0;
         medio += iris.medio || 0;
@@ -66,25 +111,34 @@ export default {
         total += iris.total || 0;
       }
 
-      // Cálculo do índice de risco
-      const risco =
-        total > 0
-          ? ((baixo * 0.2 + medio * 0.6 + alto * 0.8 + critico * 1.0) / total) *
-            100
-          : 0;
+      // Novo cálculo de Risk Level (correto)
+      const risco = calcularRiskLevel({
+        critico,
+        alto,
+        medio,
+        baixo,
+      });
 
-      // Log atualizado (sem severidade indexer)
+      // Log técnico
       strapi.log.info(
-        `🧩 RiskLevel (${diasGlobal}d): FW=${fw.length}, Agentes=${agentes.length}, IRIS=${iris?.total || 0}`
+        `RiskLevel (${diasGlobal}d): ` +
+          `C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
       );
 
       return ctx.send({
-        severidades: { baixo, medio, alto, critico, total },
+        severidades: {
+          baixo,
+          medio,
+          alto,
+          critico,
+          total,
+        },
         indiceRisco: parseFloat(risco.toFixed(2)),
         filtrosUsados: {
           diasGlobal,
           diasFirewall,
           diasAgentes,
+          diasSeveridade,
           diasIris,
         },
       });
