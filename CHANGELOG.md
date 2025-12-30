@@ -5,6 +5,8 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ## [v1.7.3.6]
 - Ajuste conflito em incidentes "Atribuidos" no gráfico.
+- Ajuste Cálculo do RiskLevel
+- Separação do Card Indice de Risco das Severidades
 
 ## [v1.7.3.5]
 - Segurança: Login de Dupla Autenticação
