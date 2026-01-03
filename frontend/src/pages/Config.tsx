@@ -15,6 +15,8 @@ import { deleteUser } from "../services/auth/deleteUser.service";
 import { updateUser } from "../services/auth/updateUser.service";
 import { resendInvite } from "../services/auth/resendInvite.service";
 
+import { useTenant } from "../context/TenantContext";
+
 type Aba = "senha" | "perfil";
 type Secao = "geral" | "usuarios";
 type AbaUsuarios = "lista" | "cadastro";
@@ -24,6 +26,7 @@ export default function Configuracoes() {
   const [secao, setSecao] = useState<Secao>("geral");
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [abaUsuarios, setAbaUsuarios] = useState<AbaUsuarios>("lista");
+  const { tenantAtivo } = useTenant();
 
   // Estados para alteração de senha
   const [senhaAtual, setSenhaAtual] = useState("");
@@ -48,6 +51,10 @@ export default function Configuracoes() {
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(true);
   const [erroUsuarios, setErroUsuarios] = useState<string | null>(null);
 
+  // 🔹 Paginação
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 10;
+
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -63,9 +70,16 @@ export default function Configuracoes() {
 
   // 🔹 Busca usuários do tenant
   useEffect(() => {
+    if (!isAdmin || !tenantAtivo) return;
+  
     async function carregarUsuarios() {
       try {
         setCarregandoUsuarios(true);
+        setErroUsuarios(null);
+  
+        setUsuarios([]);
+        setPaginaAtual(1);
+  
         const data = await getUserList();
         setUsuarios(data);
       } catch (err: any) {
@@ -74,9 +88,9 @@ export default function Configuracoes() {
         setCarregandoUsuarios(false);
       }
     }
-
-    if (isAdmin) carregarUsuarios();
-  }, [isAdmin]);
+  
+    carregarUsuarios();
+  }, [isAdmin, tenantAtivo]);
 
   const recarregarUsuarios = async () => {
     try {
@@ -168,6 +182,13 @@ export default function Configuracoes() {
         </svg>
       )}
     </button>
+  );
+
+  const totalPaginas = Math.ceil(usuarios.length / itensPorPagina);
+
+  const usuariosPaginados = usuarios.slice(
+    (paginaAtual - 1) * itensPorPagina,
+    paginaAtual * itensPorPagina
   );
 
   return (
@@ -350,7 +371,7 @@ export default function Configuracoes() {
                     <div className="p-5 text-gray-400 text-sm">Nenhum usuário encontrado.</div>
                   ) : (
                     <div className="divide-y divide-[#1D1929]">
-                      {usuarios.map((u) => {
+                      {usuariosPaginados.map((u) => {
                         // 🔹 Lógica correta baseada nos campos do Strapi
                         let statusTexto = "Convite em andamento";
                         let statusCor = "text-yellow-400 bg-yellow-900/30";
@@ -530,6 +551,32 @@ export default function Configuracoes() {
                     </div>
                   )}
                 </section>
+                {/* 🔹 Paginação */}
+                {totalPaginas > 1 && (
+                  <div className="flex justify-between items-center mt-4 px-2">
+                    <span className="text-sm text-gray-400">
+                      Página {paginaAtual} de {totalPaginas}
+                    </span>
+
+                    <div className="flex gap-2">
+                      <button
+                        disabled={paginaAtual === 1}
+                        onClick={() => setPaginaAtual((p) => p - 1)}
+                        className="px-3 py-1 text-sm rounded-lg border border-[#2c2450] text-gray-300 hover:bg-[#1d1830] disabled:opacity-40"
+                      >
+                        Anterior
+                      </button>
+
+                      <button
+                        disabled={paginaAtual === totalPaginas}
+                        onClick={() => setPaginaAtual((p) => p + 1)}
+                        className="px-3 py-1 text-sm rounded-lg border border-[#2c2450] text-gray-300 hover:bg-[#1d1830] disabled:opacity-40"
+                      >
+                        Próxima
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
