@@ -7,6 +7,7 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 - Ajuste conflito em incidentes "Atribuidos" no gráfico.
 - Ajuste Cálculo do RiskLevel
 - Separação do Card Indice de Risco das Severidades
+- Inclusão de Paginação na Lista de Usuários.
 
 ## [v1.7.3.5]
 - Segurança: Login de Dupla Autenticação
