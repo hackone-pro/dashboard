@@ -20,7 +20,7 @@ export async function buscarCasos(tenant, user) {
     if (Array.isArray(casos) && ownerName) {
       return casos.map((c) => ({
         ...c,
-        owner_name: ownerName,
+        owner_name_iris: ownerName,
       }));
     }
 

@@ -22,6 +22,7 @@ export const normaliza = (s?: string) =>
 // Extrai owner de possíveis campos
 export function extractOwner(i: any): string | undefined {
   return (
+    i.owner_name_iris ??
     i.owner ??
     i.owner_name ??
     i.ownerUser ??
@@ -30,6 +31,16 @@ export function extractOwner(i: any): string | undefined {
     undefined
   );
 }
+
+// Identifica se o owner é IA
+export function isIAOwner(owner?: string) {
+  const o = normaliza(owner);
+  return (
+    o === "inteligencia_artificial" ||
+    o === "inteligencia artificial"
+  );
+}
+
 
 // Extrai cliente de possíveis campos
 export function extractIncidentClient(i: any): string | undefined {

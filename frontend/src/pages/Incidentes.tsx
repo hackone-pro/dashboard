@@ -10,18 +10,14 @@ import { getTodosCasos } from "../services/iris/cases.service";
 import { getToken } from "../utils/auth";
 
 import { GoGraph } from "react-icons/go";
-import { RiQuestionLine, RiProgress5Line } from "react-icons/ri";
 import { FaLockOpen, FaRegCheckCircle, FaSort, FaSearch } from "react-icons/fa";
 import { HiLockClosed } from "react-icons/hi";
-import { IoStopCircleOutline } from "react-icons/io5";
-import { MdOutlineGppBad, MdOutlineHealthAndSafety } from "react-icons/md";
-import { GrTroubleshoot } from "react-icons/gr";
-import { TbMessageReport } from "react-icons/tb";
 import { VscError } from "react-icons/vsc";
 import { FiRotateCcw } from "react-icons/fi";
 
 import { useTenant } from "../context/TenantContext";
 import { getStatusMeta } from "../utils/incidentes/status";
+import { isIAOwner } from "../utils/incidentes/helpers";
 
 
 import {
@@ -219,6 +215,13 @@ export default function Incidentes() {
   const [animReady, setAnimReady] = useState(false);
   const [busca, setBusca] = useState("");
 
+  useEffect(() => {
+    console.log("TENANT OWNER:", tenantOwner);
+    console.log(
+      "OWNERS EXTRAÍDOS:",
+      dados.map(d => extractOwner(d))
+    );
+  }, [dados, tenantOwner]);
 
   // Quando dados forem carregados, aplica o expandido via querystring
   useEffect(() => {
@@ -367,9 +370,9 @@ export default function Incidentes() {
             : filtroOrigem === "fechados"
               ? (i.state_name || "").toLowerCase() === "closed"
               : filtroOrigem === "atribuidos"
-                ? normaliza(extractOwner(i)) === normaliza(tenantOwner)
+                ? !isIAOwner(extractOwner(i))
                 : filtroOrigem === "nao_atribuidos"
-                  ? normaliza(extractOwner(i)) !== normaliza(tenantOwner)
+                  ? isIAOwner(extractOwner(i))
                   : true
         )
       );
@@ -397,11 +400,11 @@ export default function Incidentes() {
   );
 
   const atribuidos = baseTabela.filter(i =>
-    normaliza(extractOwner(i)) === normaliza(tenantOwner)
+    !isIAOwner(extractOwner(i))
   );
 
   const naoAtribuidos = baseTabela.filter(i =>
-    normaliza(extractOwner(i)) !== normaliza(tenantOwner)
+    isIAOwner(extractOwner(i))
   );
 
   useEffect(() => {
