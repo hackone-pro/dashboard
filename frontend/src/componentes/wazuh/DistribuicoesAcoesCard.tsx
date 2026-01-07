@@ -5,7 +5,11 @@ import GraficoDonutSimples from "../graficos/GraficoDonutSimples";
 import { useTenant } from "../../context/TenantContext";
 
 export type DistribuicaoAcoesCardRef = {
-  carregar: () => void;
+  carregar: (opts?: {
+    from?: string;
+    to?: string;
+    dias?: number;
+  }) => void;
 };
 
 const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) => {
@@ -14,12 +18,29 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = async () => {
+  const CORES_POR_ACAO: Record<string, string> = {
+    Adicionado: "#1DD69A",
+    Modificado: "#6A55DC",
+    Deletado: "#EC4899",
+  };
+
+  const carregar = async (opts?: {
+    from?: string;
+    to?: string;
+    dias?: number;
+  }) => {
     if (!tenantAtivo) return;
+
     try {
       setCarregando(true);
       setErro(null);
-      const res = await getOvertimeEventos("todos");
+
+      const res = await getOvertimeEventos(
+        opts?.from && opts?.to
+          ? { from: opts.from, to: opts.to }
+          : { dias: opts?.dias ?? 1 }
+      );
+
       setData(res);
     } catch (err: any) {
       setErro(err.message ?? "Erro ao carregar dados");
@@ -29,12 +50,13 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
   };
 
   useEffect(() => {
-    carregar();
+    carregar({ dias: 1 }); // últimas 24h
   }, [tenantAtivo]);
 
   useImperativeHandle(ref, () => ({
     carregar,
   }));
+  
 
   const top5 = useMemo(() => {
     if (!data) return [];
@@ -46,8 +68,15 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
   }, [data]);
 
   const labels = top5.map((r) => r.label || "Desconhecido");
-  const series = top5.map((r) => (Number.isFinite(r.value) ? r.value : 0));
-  const cores = ["#6A55DC", "#1DD69A", "#EC4899", "#FACC15", "#3B82F6"];
+
+  const series = top5.map((r) =>
+    Number.isFinite(r.value) ? r.value : 0
+  );
+
+  const cores = top5.map(
+    (r) => CORES_POR_ACAO[r.label] ?? "#64748B" // fallback cinza
+  );
+
 
   if (erro) {
     return (

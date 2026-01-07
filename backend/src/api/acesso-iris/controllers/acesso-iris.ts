@@ -1,8 +1,17 @@
 import { buscarCasos } from "../services/acesso-iris";
-import { parse, isAfter, isBefore, startOfDay, endOfDay, subDays } from 'date-fns';
+import {
+  parse,
+  isAfter,
+  isBefore,
+  startOfDay,
+  endOfDay,
+  subDays,
+} from "date-fns";
 
 export default {
-  // LISTA TODOS OS CASOS IRIS
+  // ======================================================
+  // LISTA TODOS OS CASOS IRIS (COM FILTRO from / to)
+  // ======================================================
   async listCases(ctx) {
     try {
       const user = ctx.state.user;
@@ -18,16 +27,58 @@ export default {
       if (!fullUser?.tenant)
         return ctx.notFound("Tenant não encontrado para este usuário");
 
-      const data = await buscarCasos(fullUser.tenant, fullUser);
+      // 🔹 injeta dinamicamente o owner_name do usuário logado no tenant
+      if (user.owner_name_iris) {
+        fullUser.tenant.owner_name = user.owner_name_iris;
+      }
 
-      return data;
+      // 🔹 período vindo do frontend
+      const { from, to } = ctx.query;
+
+      const inicio = from ? startOfDay(new Date(from)) : null;
+      const fim = to ? endOfDay(new Date(to)) : null;
+
+      // 🔹 busca casos no IRIS
+      const dataResponse = await buscarCasos(fullUser.tenant, fullUser);
+
+      // ✅ normaliza retorno (array ou { data: [] })
+      const casos = Array.isArray(dataResponse)
+        ? dataResponse
+        : Array.isArray(dataResponse?.data)
+        ? dataResponse.data
+        : [];
+
+      // 🔥 filtro real por data (IRIS usa MM/DD/YYYY)
+      const filtrados = casos.filter((caso) => {
+        if (!caso.case_open_date) return false;
+
+        const dataCaso = parse(
+          caso.case_open_date,
+          "MM/dd/yyyy",
+          new Date()
+        );
+
+        if (isNaN(dataCaso.getTime())) return false;
+
+        if (inicio && isBefore(dataCaso, inicio)) return false;
+        if (fim && isAfter(dataCaso, fim)) return false;
+
+        return true;
+      });
+
+      return filtrados;
     } catch (err) {
-      strapi.log.error("❌ Erro ao buscar casos no Iris:", err.response?.data || err);
+      strapi.log.error(
+        "❌ Erro ao buscar casos no Iris:",
+        err?.response?.data || err
+      );
       return ctx.badRequest("Erro ao acessar Iris");
     }
   },
 
-  // LISTA SOMENTE CASOS RECENTES (últimas 24 horas)
+  // ======================================================
+  // LISTA SOMENTE CASOS RECENTES (endpoint legado)
+  // ======================================================
   async listarRecentes(ctx) {
     try {
       const user = ctx.state.user;
@@ -44,10 +95,16 @@ export default {
         return ctx.notFound("Tenant não encontrado para este usuário");
 
       const casosResponse = await buscarCasos(fullUser.tenant, fullUser);
-      const casos = casosResponse.data || casosResponse;
 
-      // 🔽 PARTE NOVA — tratar query param ?range=7d etc
-      const range = ctx.query.range || "1d"; // default para 1d (24h)
+      // normaliza retorno
+      const casos = Array.isArray(casosResponse)
+        ? casosResponse
+        : Array.isArray(casosResponse?.data)
+        ? casosResponse.data
+        : [];
+
+      // 🔽 trata query param ?range=7d etc
+      const range = ctx.query.range || "1d"; // default 24h
 
       let dias = 1;
       if (range === "7d") dias = 7;
@@ -59,13 +116,21 @@ export default {
       const recentes = casos.filter((caso) => {
         if (!caso.case_open_date) return false;
 
-        const data = parse(caso.case_open_date, 'MM/dd/yyyy', new Date());
+        const data = parse(
+          caso.case_open_date,
+          "MM/dd/yyyy",
+          new Date()
+        );
+
         return isAfter(data, inicio) && isBefore(data, fim);
       });
 
       return ctx.send(recentes);
     } catch (err) {
-      strapi.log.error("❌ Erro ao listar casos recentes:", err.response?.data || err);
+      strapi.log.error(
+        "❌ Erro ao listar casos recentes:",
+        err?.response?.data || err
+      );
       return ctx.internalServerError("Erro ao buscar casos recentes");
     }
   }

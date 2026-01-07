@@ -1,3 +1,4 @@
+// src/services/wazuh/eventossummary.service.ts
 import { getToken } from "../../utils/auth";
 
 export interface EventosSummary {
@@ -6,30 +7,28 @@ export interface EventosSummary {
 }
 
 export async function getEventosSummary(
-  dias: string | number = "todos" // 👈 parâmetro opcional
+  opts?: { from?: string; to?: string; dias?: number }
 ): Promise<EventosSummary> {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
-  const response = await fetch(
-    `${baseUrl}/api/acesso/wazuh/eventos-summary?dias=${dias}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  const url = new URL(`${baseUrl}/api/acesso/wazuh/eventos-summary`);
+
+  if (opts?.from && opts?.to) {
+    url.searchParams.set("from", opts.from);
+    url.searchParams.set("to", opts.to);
+  } else if (opts?.dias) {
+    url.searchParams.set("dias", String(opts.dias));
+  }
+
+  const response = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
   if (!response.ok) {
-    let msg = "Erro ao buscar eventos summary";
-    try {
-      const err = await response.json();
-      if (err?.error?.message) msg = err.error.message;
-    } catch {}
-    throw new Error(msg);
+    throw new Error("Erro ao buscar eventos summary");
   }
 
   const data = await response.json();
-  const eventos = data?.eventos ?? { labels: [], values: [] };
-
-  return {
-    labels: Array.isArray(eventos.labels) ? eventos.labels : [],
-    values: Array.isArray(eventos.values) ? eventos.values : [],
-  };
+  return data?.eventos ?? { labels: [], values: [] };
 }
