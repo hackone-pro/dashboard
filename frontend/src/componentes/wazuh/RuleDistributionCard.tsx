@@ -5,7 +5,11 @@ import GraficoDonutSimples from "../graficos/GraficoDonutSimples";
 import { useTenant } from "../../context/TenantContext";
 
 export type RuleDistributionCardRef = {
-  carregar: () => void;
+  carregar: (opts?: {
+    from?: string;
+    to?: string;
+    dias?: number;
+  }) => void;
 };
 
 const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) => {
@@ -14,12 +18,23 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = async () => {
+  const carregar = async (opts?: {
+    from?: string;
+    to?: string;
+    dias?: number;
+  }) => {
     if (!tenantAtivo) return;
+  
     try {
       setCarregando(true);
       setErro(null);
-      const res = await getRuleDistribution("todos");
+  
+      const res = await getRuleDistribution(
+        opts?.from && opts?.to
+          ? { from: opts.from, to: opts.to }
+          : { dias: opts?.dias ?? 1 }
+      );
+  
       setDados(res);
     } catch (e: any) {
       setErro(e?.message ?? "Erro ao carregar distribuição de regras");
@@ -29,7 +44,7 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
   };
 
   useEffect(() => {
-    carregar();
+    carregar({ dias: 1 }); // padrão: últimas 24h
   }, [tenantAtivo]);
 
   useImperativeHandle(ref, () => ({

@@ -32,13 +32,22 @@ function normalizarResposta(res: any): Incidente[] {
   return [];
 }
 
-export async function getTodosCasos(token: string): Promise<Incidente[]> {
-  const response = await axios.get<any>(  // 👈 força o tipo genérico para aceitar qualquer coisa
+export async function getTodosCasos(
+  token: string,
+  payload?: { from?: string; to?: string }
+): Promise<Incidente[]> {
+
+  const params: any = {};
+  if (payload?.from) params.from = payload.from;
+  if (payload?.to) params.to = payload.to;
+
+  const response = await axios.get<any>(
     `${API_URL}/api/acesso/iris/manage/cases/list`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      params,
     }
   );
 

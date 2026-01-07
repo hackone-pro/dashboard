@@ -1,4 +1,10 @@
-import { buscarTopAgentes, buscarTopAgentesCis, buscarListaServidores } from "../services/acesso-wazuh";
+import {
+  buscarTopAgentes,
+  buscarTopAgentesCis,
+  buscarListaServidores,
+  buscarTopAgentesSyscheck
+} from "../services/acesso-wazuh";
+
 import { getTenantAtivo } from "./_utils";
 
 export default {
@@ -53,4 +59,28 @@ export default {
       return ctx.internalServerError("Erro ao consultar agentes");
     }
   },
+
+  async topAgentesSyscheck(ctx) {
+    try {
+      const tenant = await getTenantAtivo(ctx);
+      if (!tenant) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
+  
+      const { from, to, dias } = ctx.query;
+  
+      const resultado = await buscarTopAgentesSyscheck(tenant, {
+        from: from ? String(from) : undefined,
+        to: to ? String(to) : undefined,
+        dias: dias ? String(dias) : "7",
+      });
+  
+      return ctx.send({ topAgentes: resultado });
+  
+    } catch (error) {
+      console.error("Erro ao buscar top agentes syscheck:", error);
+      return ctx.internalServerError("Erro ao consultar top agentes syscheck");
+    }
+  },
+  
 };

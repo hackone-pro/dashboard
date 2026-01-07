@@ -344,3 +344,135 @@ export async function buscarTopAgentesCis(tenant, dias) {
   });
 }
 
+
+/* ======================================================
+   TOP AGENTES — SYSHECK (INTEGRIDADE DE ARQUIVOS)
+====================================================== */
+export async function buscarTopAgentesSyscheck(
+  tenant,
+  opts?: {
+    from?: string;
+    to?: string;
+    dias?: string;
+  }
+) {
+  const clientName = tenant.wazuh_client_name;
+  if (!clientName) {
+    throw new Error("Tenant sem wazuh_client_name definido");
+  }
+
+  const { from, to, dias = "todos" } = opts ?? {};
+
+  // --------------------------------------------------
+  // 🔥 FILTRO DE TEMPO (prioridade: from/to)
+  // --------------------------------------------------
+  const timeFilter =
+    from && to
+      ? {
+          range: {
+            "@timestamp": {
+              gte: from,
+              lte: to,
+            },
+          },
+        }
+      : dias === "todos"
+      ? { match_all: {} }
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        };
+
+  // --------------------------------------------------
+  // 🔥 QUERY SYSHECK (PADRÃO FUNCIONAL)
+  // --------------------------------------------------
+  const body = {
+    size: 0,
+    query: {
+      bool: {
+        must: [
+          timeFilter,
+          { match_phrase: { customer: clientName } },
+        ],
+        filter: [
+          { match_phrase: { "rule.groups": "syscheck" } },
+        ],
+        must_not: [
+          { match_phrase: { "agent.name": "wazuhhackone" } },
+        ],
+      },
+    },
+    aggs: {
+      top_agentes_alertas: {
+        terms: {
+          field: "agent.name",
+          order: { _count: "desc" },
+          size: 9,
+        },
+        aggs: {
+          por_severidade: {
+            terms: { field: "rule.level" },
+          },
+          por_evento: {
+            terms: { field: "syscheck.event" },
+          },
+        },
+      },
+    },
+  };
+
+  // --------------------------------------------------
+  // 🔥 EXECUÇÃO
+  // --------------------------------------------------
+  const response = await http.post(
+    `${tenant.wazuh_url}/wazuh-*/_search`,
+    body,
+    { headers: authHeader(tenant) }
+  );
+
+  const agentes =
+    response.data?.aggregations?.top_agentes_alertas?.buckets ?? [];
+
+  // --------------------------------------------------
+  // 🔥 NORMALIZAÇÃO (IGUAL AO FRONT)
+  // --------------------------------------------------
+  return agentes.map((agente) => {
+    const total =
+      agente.por_severidade?.buckets?.reduce(
+        (sum, item) => sum + item.doc_count,
+        0
+      ) ?? 0;
+
+    const score =
+      (agente.por_severidade?.buckets?.reduce((acc, item) => {
+        const peso =
+          item.key <= 6
+            ? 0.2
+            : item.key <= 11
+            ? 0.6
+            : item.key <= 14
+            ? 0.87
+            : 1.0;
+        return acc + item.doc_count * peso;
+      }, 0) || 0) / (total || 1);
+
+    const eventos = agente.por_evento?.buckets ?? [];
+
+    return {
+      agente: agente.key,
+      total_alertas: total,
+      severidades: agente.por_severidade?.buckets ?? [],
+      score: Math.round(score * 100),
+      modified:
+        eventos.find((e) => e.key === "modified")?.doc_count ?? 0,
+      added:
+        eventos.find((e) => e.key === "added")?.doc_count ?? 0,
+      deleted:
+        eventos.find((e) => e.key === "deleted")?.doc_count ?? 0,
+    };
+  });
+}

@@ -870,3 +870,39 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
   }
 
 }
+
+/*DATA PICKER RANGE*/
+.react-datepicker {
+  background-color: #fff !important;
+  border: 3px solid #b27af8 !important;
+  color: #202020 !important;
+  font-size: 13px !important;
+}
+
+.react-datepicker__header {
+  background-color: #161125 !important;
+  border-bottom: 0;
+}
+
+.react-datepicker__current-month{
+  color: #fff !important;
+}
+
+.react-datepicker__day,
+.react-datepicker__day-name {
+  color: #d1d5db;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #7951d7 !important;
+  color: #fff !important;
+}
+
+.react-datepicker__day--disabled {
+  color: #4b5563;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: #9ca3af;
+}

@@ -1,63 +1,86 @@
 import axios from "axios";
 import https from "https";
-import { authHeader, customerFilter } from "./acesso-wazuh"; 
-import { TopUserItem } from "../services/acesso-wazuh";
+import { authHeader, customerFilter } from "./acesso-wazuh";
+import type { TopUserItem } from "./acesso-wazuh";
 
 export async function buscarTopUsers(
   tenant: any,
-  opts?: { dias?: string }
+  opts?: {
+    from?: string;
+    to?: string;
+    dias?: string;
+  }
 ): Promise<TopUserItem[]> {
 
   const clientName = tenant.wazuh_client_name;
-  if (!clientName) throw new Error("Tenant sem client_name definido");
+  if (!clientName) {
+    throw new Error("Tenant sem wazuh_client_name definido");
+  }
 
-  const dias = opts?.dias ?? "todos";
+  const { from, to, dias = "todos" } = opts ?? {};
 
-  // Detectar Equatorial
-  const isEquatorial =
-    clientName.toLowerCase().includes("equatorial") ||
-    tenant.customer?.toLowerCase().includes("equatorial");
-
-  // Filtro de tempo
+  // ----------------------------------
+  // FILTRO DE TEMPO (PRIORIDADE)
+  // ----------------------------------
   const timeFilter =
-    dias !== "todos"
-      ? { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
-      : { match_all: {} };
+    from && to
+      ? {
+        range: {
+          "@timestamp": {
+            gte: from,
+            lte: to,
+          },
+        },
+      }
+      : dias === "todos"
+        ? { match_all: {} }
+        : {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias}d`,
+              lte: "now",
+            },
+          },
+        };
 
-  // Customer filter somente para NÃO-EQUATORIAL
-  const customerFilterFinal = isEquatorial ? null : customerFilter(clientName);
-
-  // ------------------------------------------
-  // 🔥 Construção dinâmica do filtro principal
-  // ------------------------------------------
-  const filters: any[] = [
-    timeFilter,
-    ...(isEquatorial ? [{ term: { "agent.id": "000" } }] : []), // ✔ SOMENTE EQUATORIAL
-    ...(customerFilterFinal ? [customerFilterFinal] : [])        // ✔ SOMENTE NÃO EQUATORIAL
-  ];
-
-  const body: any = {
+  const body = {
     size: 0,
     query: {
       bool: {
-        filter: filters
-      }
+        filter: [
+          timeFilter,
+          customerFilter(clientName),
+          { match_phrase: { "rule.groups": "syscheck" } },
+        ],
+        must_not: [
+          { term: { "agent.name": "wazuhhackone" } },
+        ],
+      },
     },
     aggs: {
       top_users: {
-        terms: { field: "syscheck.uname_after", size: 5 },
+        terms: {
+          field: "syscheck.uname_after",
+          size: 5,
+        },
         aggs: {
           top_agents: {
-            terms: { field: "agent.id", size: 5 },
+            terms: {
+              field: "agent.id",
+              size: 5,
+            },
             aggs: {
               agent_name: {
-                terms: { field: "agent.name", size: 1 }
-              }
-            }
-          }
-        }
-      }
-    }
+                terms: {
+                  field: "agent.name",
+                  size: 1,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   };
 
   const response = await axios.post(
@@ -74,14 +97,14 @@ export async function buscarTopUsers(
   const results: TopUserItem[] = [];
 
   for (const u of buckets) {
-    for (const a of u.top_agents.buckets) {
-      const agentName = a.agent_name?.buckets?.[0]?.key ?? "Desconhecido";
-
+    for (const a of u.top_agents.buckets ?? []) {
       results.push({
-        user: u.key ?? "Desconhecido",
-        agent_id: a.key ?? "-",
-        agent_name: agentName,
-        count: Number(a.doc_count ?? 0)
+        user: String(u.key ?? "Desconhecido"),
+        agent_id: String(a.key ?? "-"),
+        agent_name: String(
+          a.agent_name?.buckets?.[0]?.key ?? "Desconhecido"
+        ),
+        count: Number(a.doc_count ?? 0),
       });
     }
   }

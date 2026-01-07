@@ -86,6 +86,12 @@ export default {
     },
     {
       method: "GET",
+      path: "/acesso/wazuh/top-agentes-syscheck",
+      handler: "acesso-wazuh.topAgentesSyscheck",
+      config: { policies: [] },
+    },
+    {
+      method: "GET",
       path: "/acesso/wazuh/vulnerabilidades/top-packages",
       handler: "acesso-wazuh.topPackagesVulnerabilidades",
       config: {

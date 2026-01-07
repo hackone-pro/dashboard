@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import LayoutModel from "../componentes/LayoutModel";
 import DescricaoFormatada from "../componentes/iris/DescricaoFormatada";
 import GraficoDonutIncidentes from "../componentes/graficos/GraficoDonutIncidentes";
+import DateRangePicker from "../componentes/DataRangePicker";
 
 import { getTenant } from "../services/wazuh/tenant.service";
 import { getTodosCasos } from "../services/iris/cases.service";
@@ -26,7 +27,6 @@ import {
   extractIncidentClient,
   parseDateBR,
   formatDateBR,
-  filtrarPorDias,
   getCorBadge,
   statusPT,
   agruparPorSeveridade,
@@ -189,6 +189,28 @@ function ListaSkeleton() {
   );
 }
 
+function GraficoSkeleton() {
+  return (
+    <div className="cards p-5 rounded-2xl animate-pulse">
+      {/* Título */}
+      <div className="h-4 w-40 bg-[#ffffff12] rounded mb-4" />
+
+      {/* Donut fake */}
+      <div className="flex justify-center items-center">
+        <div className="w-28 h-28 rounded-full bg-[#ffffff0a]" />
+      </div>
+
+      {/* Legendas fake */}
+      <div className="mt-4 space-y-2">
+        <div className="h-3 w-32 bg-[#ffffff12] rounded" />
+        <div className="h-3 w-24 bg-[#ffffff12] rounded" />
+        <div className="h-3 w-28 bg-[#ffffff12] rounded" />
+      </div>
+    </div>
+  );
+}
+
+
 /* =========================================
  * PÁGINA: INCIDENTES
  * ======================================= */
@@ -196,7 +218,6 @@ export default function Incidentes() {
   const { tenantAtivo } = useTenant();
   const token = getToken();
   const [dados, setDados] = useState<PageIncidente[]>([]);
-  const [filtroDias, setFiltroDias] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [expandido, setExpandido] = useState<number | string | null>(null);
@@ -214,14 +235,16 @@ export default function Incidentes() {
   const [chartResetKey, setChartResetKey] = useState(0);
   const [animReady, setAnimReady] = useState(false);
   const [busca, setBusca] = useState("");
+  const [periodo, setPeriodo] = useState<{ from: string; to: string } | null>(null);
 
-  useEffect(() => {
-    console.log("TENANT OWNER:", tenantOwner);
-    console.log(
-      "OWNERS EXTRAÍDOS:",
-      dados.map(d => extractOwner(d))
-    );
-  }, [dados, tenantOwner]);
+
+  // useEffect(() => {
+  //   console.log("TENANT OWNER:", tenantOwner);
+  //   console.log(
+  //     "OWNERS EXTRAÍDOS:",
+  //     dados.map(d => extractOwner(d))
+  //   );
+  // }, [dados, tenantOwner]);
 
   // Quando dados forem carregados, aplica o expandido via querystring
   useEffect(() => {
@@ -251,6 +274,7 @@ export default function Incidentes() {
     if (!tenantAtivo) return;
 
     let ativo = true;
+
     async function fetch() {
       try {
         setCarregando(true);
@@ -258,7 +282,8 @@ export default function Incidentes() {
         setAnimReady(false);
         setExpandido(null);
 
-        const inicio = Date.now();
+        const inicioFetch = Date.now();
+
         const tenant = await getTenant();
         setIrisUrl(tenant?.iris_url || "");
         setTenantOwner(tenant?.owner_name || "");
@@ -269,15 +294,27 @@ export default function Incidentes() {
           return;
         }
 
-        const lista: PageIncidente[] = await getTodosCasos(token || "");
-        const filtrado = filtrarPorDias(
-          lista.filter(i => normaliza(extractIncidentClient(i)) === normaliza(tenant.cliente_name)),
-          filtroDias
+        const lista: PageIncidente[] = await getTodosCasos(
+          token || "",
+          periodo || undefined
         );
-        const baseLimpa = filtrado.filter(i => nivelDoIncidente(i) !== "Baixo" || i.severity?.toLowerCase() === "low");
-        filtrado.sort((a, b) => Number(b.case_id) - Number(a.case_id));
 
-        const elapsed = Date.now() - inicio;
+        // mantém filtro por cliente
+        const filtradoCliente = lista.filter(
+          i =>
+            normaliza(extractIncidentClient(i)) ===
+            normaliza(tenant.cliente_name)
+        );
+
+        // mantém regra de severidade
+        const baseLimpa = filtradoCliente.filter(
+          i => nivelDoIncidente(i) !== "Baixo" || i.severity?.toLowerCase() === "low"
+        );
+
+        // ordenação original
+        baseLimpa.sort((a, b) => Number(b.case_id) - Number(a.case_id));
+
+        const elapsed = Date.now() - inicioFetch;
         const delay = Math.max(500 - elapsed, 0);
 
         setTimeout(() => {
@@ -287,6 +324,7 @@ export default function Incidentes() {
             setAnimReady(true);
           }
         }, delay);
+
       } catch (e: any) {
         console.error("[Incidentes] erro fetch", e);
         if (ativo) setErro(e?.message ?? "Erro ao carregar incidentes");
@@ -296,8 +334,10 @@ export default function Incidentes() {
     }
 
     fetch();
-    return () => { ativo = false; };
-  }, [token, filtroDias, tenantAtivo]);
+    return () => {
+      ativo = false;
+    };
+  }, [token, tenantAtivo, periodo]);
 
   // Paginação
   const total = dados.length;
@@ -423,93 +463,103 @@ export default function Incidentes() {
       {/* Gráficos resumo */}
       <div>
         <div className="flex justify-end mt-5 mb-3 px-6">
+          <DateRangePicker
+            onApply={(payload) => {
+              setPeriodo(payload);
+            }}
+          />
+
           <button
             onClick={() => {
+              setPeriodo(null);
               setFiltroSeveridade(null);
               setFiltroOrigem(null);
-              setChartResetKey((k) => k + 1); // 🔁 força recriação dos gráficos
+              setBusca("");
             }}
             className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"
           >
             {/* @ts-ignore */}
-            <FiRotateCcw className="w-4 h-4" />
+            <FiRotateCcw className="ml-3 w-4 h-4" />
             Limpar filtros
           </button>
+
+
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <GraficoDonutIncidentes
-            key={`abertos-${chartResetKey}`}
-            titulo={<span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <FaLockOpen className="text-gray-400" /> Incidentes abertos</span>}
-            total={abertos.length}
-            valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
-            onFiltrarPorNivel={(nivel) => {
-              if (!nivel) {
-                setFiltroSeveridade(null);
-                setFiltroOrigem(null);
-              } else {
-                setFiltroSeveridade(nivel);
-                setFiltroOrigem("abertos"); // ou "fechados"
-              }
-            }}
-          />
+          {carregando ? (
+            <>
+              <GraficoSkeleton />
+              <GraficoSkeleton />
+              <GraficoSkeleton />
+              <GraficoSkeleton />
+            </>
+          ) : (
+            <>
+              <GraficoDonutIncidentes
+                key={`abertos-${chartResetKey}`}
+                titulo={<span className="flex items-center gap-1">
+                  {/* @ts-ignore */}
+                  <FaLockOpen className="text-gray-400" /> Incidentes abertos
+                </span>}
+                total={abertos.length}
+                valores={agruparPorSeveridade(abertos, nivelDoIncidente)}
+                onFiltrarPorNivel={(nivel) => {
+                  if (!nivel) {
+                    setFiltroSeveridade(null);
+                    setFiltroOrigem(null);
+                  } else {
+                    setFiltroSeveridade(nivel);
+                    setFiltroOrigem("abertos");
+                  }
+                }}
+              />
 
-          <GraficoDonutIncidentes
-            key={`fechados-${chartResetKey}`}
-            titulo={<span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <HiLockClosed className="text-gray-400" /> Incidentes fechados</span>}
-            total={fechados.length}
-            valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
-            onFiltrarPorNivel={(nivel) => {
-              if (filtroSeveridade === nivel && filtroOrigem === "fechados") {
-                setFiltroSeveridade(null);
-                setFiltroOrigem(null);
-              } else {
-                setFiltroSeveridade(nivel);
-                setFiltroOrigem("fechados");
-              }
-            }}
-          />
+              <GraficoDonutIncidentes
+                key={`fechados-${chartResetKey}`}
+                titulo={<span className="flex items-center gap-1">
+                  {/* @ts-ignore */}
+                  <HiLockClosed className="text-gray-400" /> Incidentes fechados
+                </span>}
+                total={fechados.length}
+                valores={agruparPorSeveridade(fechados, nivelDoIncidente)}
+                onFiltrarPorNivel={(nivel) => {
+                  setFiltroSeveridade(nivel);
+                  setFiltroOrigem("fechados");
+                }}
+              />
 
-          <GraficoDonutIncidentes
-            key={`atribuidos-${chartResetKey}`}
-            titulo={<span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos</span>}
-            total={atribuidos.length}
-            valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
-            onFiltrarPorNivel={(nivel) => {
-              if (!nivel) {
-                setFiltroSeveridade(null);
-                setFiltroOrigem(null);
-              } else {
-                setFiltroSeveridade(nivel);
-                setFiltroOrigem("atribuidos");
-              }
-            }}
-          />
+              <GraficoDonutIncidentes
+                key={`atribuidos-${chartResetKey}`}
+                titulo={<span className="flex items-center gap-1">
+                  {/* @ts-ignore */}
+                  <FaRegCheckCircle className="text-gray-400" /> Incidentes atribuídos
+                </span>}
+                total={atribuidos.length}
+                valores={agruparPorSeveridade(atribuidos, nivelDoIncidente)}
+                onFiltrarPorNivel={(nivel) => {
+                  setFiltroSeveridade(nivel);
+                  setFiltroOrigem("atribuidos");
+                }}
+              />
 
-          <GraficoDonutIncidentes
-            key={`naoatribuidos-${chartResetKey}`}
-            titulo={<span className="flex items-center gap-1">
-              {/* @ts-ignore */}
-              <VscError className="text-gray-400" /> Incidentes não atribuídos</span>}
-            total={naoAtribuidos.length}
-            valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
-            onFiltrarPorNivel={(nivel) => {
-              if (!nivel) {
-                setFiltroSeveridade(null);
-                setFiltroOrigem(null);
-              } else {
-                setFiltroSeveridade(nivel);
-                setFiltroOrigem("nao_atribuidos");
-              }
-            }}
-          />
+              <GraficoDonutIncidentes
+                key={`naoatribuidos-${chartResetKey}`}
+                titulo={<span className="flex items-center gap-1">
+                  {/* @ts-ignore */}
+                  <VscError className="text-gray-400" /> Incidentes não atribuídos
+                </span>}
+                total={naoAtribuidos.length}
+                valores={agruparPorSeveridade(naoAtribuidos, nivelDoIncidente)}
+                onFiltrarPorNivel={(nivel) => {
+                  setFiltroSeveridade(nivel);
+                  setFiltroOrigem("nao_atribuidos");
+                }}
+              />
+            </>
+          )}
         </div>
+
 
         {/* Tabela */}
         <section className="cards p-6 rounded-2xl shadow-lg">
@@ -554,20 +604,6 @@ export default function Incidentes() {
 
             {/* DIREITA: filtros + paginação */}
             <div className="flex items-center gap-3 justify-end">
-              <label className="text-xs text-gray-400 whitespace-nowrap">
-                Intervalo:&nbsp;
-                <select
-                  className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-                  value={filtroDias}
-                  onChange={e => setFiltroDias(Number(e.target.value))}
-                >
-                  <option value={1}>Hoje</option>
-                  <option value={7}>7 dias</option>
-                  <option value={15}>15 dias</option>
-                  <option value={30}>30 dias</option>
-                  <option value={0}>Todos</option>
-                </select>
-              </label>
 
               <div className="text-xs text-gray-400 whitespace-nowrap">
                 {total > 0
