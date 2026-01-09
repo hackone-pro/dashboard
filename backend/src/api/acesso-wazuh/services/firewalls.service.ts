@@ -91,7 +91,6 @@ export async function buscarListaFirewalls(tenant) {
 ============================================ */
 export async function buscarTopGeradoresFirewall(tenant, dias) {
   const clientName = tenant.wazuh_client_name;
-  if (!clientName) throw new Error("Tenant sem client_name definido");
 
   const timeFilter =
     dias === "todos"
@@ -123,11 +122,14 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     "fields.devname",
   ];
 
-  const buildBody = (field) => ({
+  const buildBody = (field, usarCustomer: boolean) => ({
     size: 0,
     query: {
       bool: {
-        must: [customerFilterUniversal, timeFilter],
+        must: [
+          timeFilter,
+          ...(usarCustomer ? [customerFilterUniversal] : []),
+        ],
       },
     },
     aggs: {
@@ -140,19 +142,26 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
         aggs: {
           get_ip: {
             top_hits: {
-              _source: { includes: ["@timestamp"] },
+              _source: { includes: ["@timestamp", "location"] },
               size: 1,
             },
           },
-          severidade: {
-            range: {
-              field: "rule.level",
-              ranges: [
-                { to: 7, key: "Low" },
-                { from: 7, to: 12, key: "Medium" },
-                { from: 12, to: 15, key: "High" },
-                { from: 15, key: "Critical" },
-              ],
+          com_severidade: {
+            filter: {
+              exists: { field: "rule.level" },
+            },
+            aggs: {
+              severidade: {
+                range: {
+                  field: "rule.level",
+                  ranges: [
+                    { from: 0, to: 6, key: "Low" },
+                    { from: 7, to: 11, key: "Medium" },
+                    { from: 12, to: 14, key: "High" },
+                    { from: 15, key: "Critical" },
+                  ],
+                },
+              },
             },
           },
         },
@@ -162,19 +171,43 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
 
   const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
   let buckets: any[] = [];
+  let usandoCustomer = true;
 
   for (const field of DEVNAME_FIELDS) {
     try {
-      const response = await http.post(
+      // 🔹 1ª tentativa — COM customer
+      let response = await http.post(
         baseURL,
-        buildBody(field),
+        buildBody(field, true),
         { headers: authHeader(tenant) }
       );
 
       buckets = response.data?.aggregations?.top_geradores?.buckets || [];
 
+      // Fallback — SEM customer
+      if (buckets.length === 0) {
+        response = await http.post(
+          baseURL,
+          buildBody(field, false),
+          { headers: authHeader(tenant) }
+        );
+
+        buckets = response.data?.aggregations?.top_geradores?.buckets || [];
+
+        if (buckets.length > 0) {
+          usandoCustomer = false;
+          console.warn(
+            "Wazuh sem campo customer. Fallback aplicado.",
+            "Campo devname:",
+            field
+          );
+        }
+      }
+
       if (buckets.length > 0) {
-        console.log("🔥 Campo de devname detectado:", field);
+        console.log(
+          `Campo devname detectado: ${field} | customer: ${usandoCustomer}`
+        );
         break;
       }
     } catch (err) {
@@ -183,7 +216,9 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
   }
 
   return buckets.map((b) => {
-    const sev = b.severidade?.buckets || [];
+    const sev =
+      b.com_severidade?.severidade?.buckets || [];
+
     const get = (k) => sev.find((x) => x.key === k)?.doc_count || 0;
 
     const hit = b.get_ip?.hits?.hits?.[0]?._source || {};
@@ -198,6 +233,9 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
         medio: get("Medium"),
         alto: get("High"),
         critico: get("Critical"),
+      },
+      meta: {
+        usouCustomer: usandoCustomer,
       },
     };
   });
