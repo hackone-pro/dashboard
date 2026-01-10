@@ -1,4 +1,3 @@
-// src/service/wazuh/topagents.service.ts
 import { getToken } from "../../utils/auth";
 
 export interface TopAgentItem {
@@ -17,16 +16,31 @@ export interface TopAgentItem {
   deleted: number;
 }
 
-/**
- * Busca os top agentes no Wazuh agregados por agente,
- * retornando: nome, total de alertas, score, severidade separada e diffs (modified/added/deleted).
- */
-export async function getTopAgents(dias: string = "7"): Promise<TopAgentItem[]> {
+export type TopAgentsFiltro =
+  | { from: string; to: string }
+  | { dias: string };
+
+export async function getTopAgents(
+  filtro?: TopAgentsFiltro
+): Promise<TopAgentItem[]> {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
   const url = new URL(`${baseUrl}/api/acesso/wazuh/top-agentes`);
-  if (dias) url.searchParams.set("dias", dias);
+
+  // ----------------------------------
+  // PRIORIDADE: from / to
+  // ----------------------------------
+  if (filtro && "from" in filtro) {
+    url.searchParams.set("from", filtro.from);
+    url.searchParams.set("to", filtro.to);
+  }
+  // ----------------------------------
+  // 🔁 FALLBACK: dias
+  // ----------------------------------
+  else if (filtro && "dias" in filtro) {
+    url.searchParams.set("dias", filtro.dias);
+  }
 
   const response = await fetch(url.toString(), {
     headers: {
@@ -49,10 +63,8 @@ export async function getTopAgents(dias: string = "7"): Promise<TopAgentItem[]> 
   const lista = Array.isArray(data?.topAgentes) ? data.topAgentes : [];
 
   const resultado: TopAgentItem[] = lista.map((item: any) => {
-    // inicializa contadores
     const severidade = { Baixo: 0, Médio: 0, Alto: 0, Crítico: 0 };
 
-    // percorre os buckets do backend
     (item?.severidades || []).forEach((s: any) => {
       const level = Number(s.key);
       if (level >= 0 && level <= 6) severidade.Baixo += s.doc_count;
