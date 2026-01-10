@@ -56,22 +56,39 @@ function mapearSeveridadeIris(incidente) {
   return "medio";
 }
 
-export async function buscarIncidentesIris(tenant, dias = "1", user = null) {
+export async function buscarIncidentesIris(
+  tenant,
+  time: { dias: string } | { from: string; to: string },
+  user = null
+) {
   try {
     const casosResponse = await buscarCasos(tenant, user);
     const casos = Array.isArray(casosResponse)
       ? casosResponse
       : casosResponse.data || [];
 
-    // converte "7" → 7, "15" → 15, "todos" → 0
-    let diasNum = 1;
-    if (dias === "7") diasNum = 7;
-    else if (dias === "15") diasNum = 15;
-    else if (dias === "30") diasNum = 30;
-    else if (dias === "todos") diasNum = 0;
+    // 🔹 Definição do período (CORRIGIDA)
+    let inicio: Date;
+    let fim: Date;
 
-    const inicio = startOfDay(subDays(new Date(), diasNum));
-    const fim = endOfDay(new Date());
+    if ("from" in time && "to" in time) {
+      // 👉 vindo do calendário
+      inicio = startOfDay(new Date(time.from));
+      fim = endOfDay(new Date(time.to));
+    } else {
+      // 👉 vindo de dias
+      let diasNum = 1;
+      if (time.dias === "7") diasNum = 7;
+      else if (time.dias === "15") diasNum = 15;
+      else if (time.dias === "30") diasNum = 30;
+      else if (time.dias === "todos") diasNum = 0;
+
+      inicio = diasNum === 0
+        ? new Date(0)
+        : startOfDay(subDays(new Date(), diasNum));
+
+      fim = endOfDay(new Date());
+    }
 
     const ownerUser = user?.owner_name_iris || "";
     const clienteName = tenant?.cliente_name || "";
@@ -81,22 +98,25 @@ export async function buscarIncidentesIris(tenant, dias = "1", user = null) {
       if (!caso.case_open_date) return false;
 
       let data = new Date(caso.case_open_date);
-      // caso o formato não seja reconhecido, tenta manualmente
+
+      // fallback para formatos estranhos
       if (isNaN(data.getTime())) {
         const partes = caso.case_open_date.split(/[\/\-]/);
         if (partes.length === 3) {
           const [a, b, c] = partes.map((x) => parseInt(x, 10));
-          data = a > 1900 ? new Date(a, b - 1, c) : new Date(c, a - 1, b);
+          data = a > 1900
+            ? new Date(a, b - 1, c)
+            : new Date(c, a - 1, b);
         }
       }
 
       if (isNaN(data.getTime())) return false;
 
-      // aplica filtro de data
+      // 🔹 Filtro de período
       const dentroDoPeriodo =
-        diasNum === 0 ? true : isAfter(data, inicio) && isBefore(data, fim);
+        isAfter(data, inicio) && isBefore(data, fim);
 
-      // aplica filtro de owner
+      // 🔹 Filtro de owner
       const ownerCaso = caso.owner || caso.owner_name || "";
       const matchOwner =
         ownersValidos.includes(ownerCaso) ||
@@ -106,7 +126,7 @@ export async function buscarIncidentesIris(tenant, dias = "1", user = null) {
       return dentroDoPeriodo && matchOwner;
     });
 
-    // 🔹 Contagem por severidade
+    // 🔹 Contagem por severidade (inalterada)
     const severidades = { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };
 
     recentes.forEach((c) => {
@@ -128,16 +148,17 @@ export async function buscarIncidentesIris(tenant, dias = "1", user = null) {
     });
 
     strapi.log.info(
-      `IRIS (${diasNum === 0 ? "todos" : diasNum + " dias"}): ${
-        severidades.total
-      } incidentes (owners: ${ownersValidos.join(" + ")}) | Crit: ${
-        severidades.critico
-      }, Alto: ${severidades.alto}, Médio: ${severidades.medio}, Baixo: ${
-        severidades.baixo
-      }`
+      `IRIS (${
+        "from" in time
+          ? `${time.from} → ${time.to}`
+          : time.dias === "todos"
+          ? "todos"
+          : `${time.dias} dias`
+      }): ${severidades.total} incidentes`
     );
 
     return severidades;
+
   } catch (err) {
     strapi.log.error("❌ Erro ao buscar incidentes IRIS:", err);
     return { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };

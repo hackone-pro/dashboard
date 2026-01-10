@@ -89,16 +89,47 @@ export async function buscarListaFirewalls(tenant) {
 /* ============================================
    TOP GERADORES DE FIREWALL
 ============================================ */
-export async function buscarTopGeradoresFirewall(tenant, dias) {
+export async function buscarTopGeradoresFirewall(
+  tenant,
+  dias,
+  periodo?: { from?: string; to?: string }
+) {
   const clientName = tenant.wazuh_client_name;
-  if (!clientName) throw new Error("Tenant sem client_name definido");
 
-  const timeFilter =
-    dias === "todos"
-      ? { match_all: {} }
-      : dias === "10min"
-        ? { range: { "@timestamp": { gte: "now-10m", lte: "now" } } }
-        : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
+  /* ======================
+     TIME FILTER (PRIORIDADE CALENDÁRIO)
+  ====================== */
+
+  let timeFilter;
+
+  if (periodo?.from && periodo?.to) {
+    timeFilter = {
+      range: {
+        "@timestamp": {
+          gte: periodo.from,
+          lte: periodo.to,
+        },
+      },
+    };
+  } else if (dias === "todos") {
+    timeFilter = { match_all: {} };
+  } else if (dias === "10min") {
+    timeFilter = {
+      range: {
+        "@timestamp": { gte: "now-10m", lte: "now" },
+      },
+    };
+  } else {
+    timeFilter = {
+      range: {
+        "@timestamp": { gte: `now-${dias}d`, lte: "now" },
+      },
+    };
+  }
+
+  /* ======================
+     CUSTOMER FILTER
+  ====================== */
 
   const customerFilterUniversal = {
     bool: {
@@ -114,6 +145,10 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     },
   };
 
+  /* ======================
+     CAMPOS POSSÍVEIS DE DEVNAME
+  ====================== */
+
   const DEVNAME_FIELDS = [
     "data.devname.keyword",
     "data.devname",
@@ -123,11 +158,18 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     "fields.devname",
   ];
 
-  const buildBody = (field) => ({
+  /* ======================
+     QUERY BUILDER
+  ====================== */
+
+  const buildBody = (field: string, usarCustomer: boolean) => ({
     size: 0,
     query: {
       bool: {
-        must: [customerFilterUniversal, timeFilter],
+        must: [
+          timeFilter,
+          ...(usarCustomer ? [customerFilterUniversal] : []),
+        ],
       },
     },
     aggs: {
@@ -140,19 +182,28 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
         aggs: {
           get_ip: {
             top_hits: {
-              _source: { includes: ["@timestamp"] },
+              _source: {
+                includes: ["@timestamp", "location"],
+              },
               size: 1,
             },
           },
-          severidade: {
-            range: {
-              field: "rule.level",
-              ranges: [
-                { to: 7, key: "Low" },
-                { from: 7, to: 12, key: "Medium" },
-                { from: 12, to: 15, key: "High" },
-                { from: 15, key: "Critical" },
-              ],
+          com_severidade: {
+            filter: {
+              exists: { field: "rule.level" },
+            },
+            aggs: {
+              severidade: {
+                range: {
+                  field: "rule.level",
+                  ranges: [
+                    { from: 0, to: 6, key: "Low" },
+                    { from: 7, to: 11, key: "Medium" },
+                    { from: 12, to: 14, key: "High" },
+                    { from: 15, key: "Critical" },
+                  ],
+                },
+              },
             },
           },
         },
@@ -160,21 +211,51 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     },
   });
 
+  /* ======================
+     EXECUÇÃO COM FALLBACK
+  ====================== */
+
   const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
   let buckets: any[] = [];
+  let usandoCustomer = true;
 
   for (const field of DEVNAME_FIELDS) {
     try {
-      const response = await http.post(
+      // 🔹 1ª tentativa — COM customer
+      let response = await http.post(
         baseURL,
-        buildBody(field),
+        buildBody(field, true),
         { headers: authHeader(tenant) }
       );
 
-      buckets = response.data?.aggregations?.top_geradores?.buckets || [];
+      buckets =
+        response.data?.aggregations?.top_geradores?.buckets || [];
+
+      // 🔹 fallback — SEM customer
+      if (buckets.length === 0) {
+        response = await http.post(
+          baseURL,
+          buildBody(field, false),
+          { headers: authHeader(tenant) }
+        );
+
+        buckets =
+          response.data?.aggregations?.top_geradores?.buckets || [];
+
+        if (buckets.length > 0) {
+          usandoCustomer = false;
+          console.warn(
+            "Wazuh sem campo customer. Fallback aplicado.",
+            "Campo devname:",
+            field
+          );
+        }
+      }
 
       if (buckets.length > 0) {
-        console.log("🔥 Campo de devname detectado:", field);
+        console.log(
+          `Campo devname detectado: ${field} | customer: ${usandoCustomer}`
+        );
         break;
       }
     } catch (err) {
@@ -182,9 +263,15 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
     }
   }
 
+  /* ======================
+     NORMALIZAÇÃO FINAL
+  ====================== */
+
   return buckets.map((b) => {
-    const sev = b.severidade?.buckets || [];
-    const get = (k) => sev.find((x) => x.key === k)?.doc_count || 0;
+    const sev = b.com_severidade?.severidade?.buckets || [];
+
+    const get = (k: string) =>
+      sev.find((x) => x.key === k)?.doc_count || 0;
 
     const hit = b.get_ip?.hits?.hits?.[0]?._source || {};
 
@@ -198,6 +285,9 @@ export async function buscarTopGeradoresFirewall(tenant, dias) {
         medio: get("Medium"),
         alto: get("High"),
         critico: get("Critical"),
+      },
+      meta: {
+        usouCustomer: usandoCustomer,
       },
     };
   });

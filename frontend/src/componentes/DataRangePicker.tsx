@@ -9,6 +9,8 @@ import "react-datepicker/dist/react-datepicker.css";
 
 type PeriodoRapido = "24h" | "48h" | "7d" | "15d" | "30d";
 
+registerLocale("pt-BR", ptBR);
+
 export default function DateRangePicker({
   onApply,
 }: {
@@ -84,7 +86,7 @@ export default function DateRangePicker({
   }
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       {/* BOTÃO FILTROS */}
       <button
         onClick={() => setOpen(v => !v)}
@@ -98,7 +100,7 @@ export default function DateRangePicker({
       {/* MODAL */}
       {open && (
         <div
-          className="absolute right-0 mt-3 z-50 bg-[#0A0617] border border-[#1D1929] rounded-xl p-4 w-[auto] shadow-lg flex flex-col"
+          className="absolute right-0 mt-3 z-50 bg-[#0A0617] border border-[#1D1929] rounded-xl p-4 shadow-lg"
         >
 
           {/* LINHA 1 — PERÍODOS RÁPIDOS */}
@@ -142,6 +144,7 @@ export default function DateRangePicker({
                 maxDate={hoje}
                 dateFormat="dd/MM/yyyy"
                 inline
+                locale="pt-BR"
               />
 
             </div>
@@ -162,6 +165,7 @@ export default function DateRangePicker({
                 maxDate={hoje}
                 dateFormat="dd/MM/yyyy"
                 inline
+                locale="pt-BR"
               />
 
             </div>

@@ -15,14 +15,18 @@ export default {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
 
-      const dias = ctx.query.dias || "7";
+      const { from, to, dias = "1" } = ctx.query;
 
-      const resultado = await buscarTopAgentes(tenant, dias);
+      const resultado = await buscarTopAgentes(tenant, {
+        from: from ? String(from) : undefined,
+        to: to ? String(to) : undefined,
+        dias: String(dias),
+      });
 
       return ctx.send({ topAgentes: resultado });
 
     } catch (error) {
-      console.error("Erro ao buscar top agentes com risco:", error);
+      console.error("Erro ao buscar top agentes:", error);
       return ctx.internalServerError("Erro ao consultar top agentes");
     }
   },
@@ -33,19 +37,29 @@ export default {
       if (!tenant) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-
+  
+      // 🔹 Período absoluto (calendário)
+      const periodo =
+        ctx.query.from && ctx.query.to
+          ? { from: ctx.query.from, to: ctx.query.to }
+          : null;
+  
+      // 🔹 Dias (fallback)
       const dias = ctx.query.dias || "7";
-
-      const resultado = await buscarTopAgentesCis(tenant, dias);
-
+  
+      const resultado = await buscarTopAgentesCis(
+        tenant,
+        periodo ?? { dias }
+      );
+  
       return ctx.send({ topAgentesCis: resultado });
-
+  
     } catch (error) {
       console.error("Erro ao buscar top agentes CIS:", error);
       return ctx.internalServerError("Erro ao consultar top agentes CIS");
     }
   },
-
+  
   async agentesInventario(ctx) {
     try {
       const tenant = await getTenantAtivo(ctx);
@@ -66,21 +80,21 @@ export default {
       if (!tenant) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-  
+
       const { from, to, dias } = ctx.query;
-  
+
       const resultado = await buscarTopAgentesSyscheck(tenant, {
         from: from ? String(from) : undefined,
         to: to ? String(to) : undefined,
         dias: dias ? String(dias) : "7",
       });
-  
+
       return ctx.send({ topAgentes: resultado });
-  
+
     } catch (error) {
       console.error("Erro ao buscar top agentes syscheck:", error);
       return ctx.internalServerError("Erro ao consultar top agentes syscheck");
     }
   },
-  
+
 };

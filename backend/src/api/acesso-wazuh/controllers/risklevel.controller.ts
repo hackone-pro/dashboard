@@ -12,7 +12,7 @@ import { getTenantAtivo } from "./_utils";
  * Cálculo do índice de Risk Level
  * Baseado na severidade mais alta presente
  */
- function calcularRiskLevel({
+function calcularRiskLevel({
   critico,
   alto,
   medio,
@@ -55,33 +55,64 @@ export default {
       const userId = ctx.state.user?.id;
       if (!userId) return ctx.unauthorized("Usuário não autenticado");
 
-      // Filtros
+      // 🔹 Período absoluto (calendário) — DEFINIR UMA VEZ
+      const periodo =
+        ctx.query.from && ctx.query.to
+          ? { from: ctx.query.from, to: ctx.query.to }
+          : null;
+
+      // 🔹 Dias (fallback)
       const diasGlobal = ctx.query.dias || "1";
+
       const diasFirewall = ctx.query.firewall || diasGlobal;
       const diasAgentes = ctx.query.agentes || diasGlobal;
       const diasSeveridade = ctx.query.severidade || diasGlobal;
       const diasIris = ctx.query.iris || diasGlobal;
 
+      // 🔹 Montagem correta do time do IRIS
+      const timeIris = periodo
+        ? { from: periodo.from, to: periodo.to }
+        : { dias: diasIris };
+
       // Tenant ativo
       const tenant = await getTenantAtivo(ctx);
       if (!tenant) return ctx.notFound("Tenant não encontrado ou inativo");
 
-      // Buscar dados simultaneamente
+      // 🔹 Buscar dados simultaneamente
       const [fw, agentes, severidade, iris] = await Promise.all([
-        buscarTopGeradoresFirewall(tenant, diasFirewall),
-        buscarTopAgentes(tenant, diasAgentes),
-        buscarSeveridadeIndexer(tenant, diasSeveridade),
-        buscarIncidentesIris(tenant, diasIris, ctx.state.user),
+        buscarTopGeradoresFirewall(
+          tenant,
+          diasFirewall,
+          periodo // (vamos alinhar esse service depois)
+        ),
+        buscarTopAgentes(
+          tenant,
+          {
+            dias: diasAgentes,
+            from: periodo?.from,
+            to: periodo?.to,
+          }
+        ),
+        buscarSeveridadeIndexer(
+          tenant,
+          diasSeveridade,
+          periodo
+        ),
+        buscarIncidentesIris(
+          tenant,
+          timeIris,
+          ctx.state.user
+        ),
       ]);
 
-      // Totais iniciais (Indexer)
+      // 🔹 Totais iniciais (Indexer)
       let baixo = severidade.baixo || 0;
       let medio = severidade.medio || 0;
       let alto = severidade.alto || 0;
       let critico = severidade.critico || 0;
       let total = severidade.total || 0;
 
-      // Firewall
+      // 🔹 Firewall
       fw.forEach((item) => {
         baixo += item.severidade.baixo;
         medio += item.severidade.medio;
@@ -90,7 +121,7 @@ export default {
         total += item.total;
       });
 
-      // Agentes
+      // 🔹 Agentes
       agentes.forEach((agente) => {
         agente.severidades.forEach((s) => {
           if (s.key <= 6) baixo += s.doc_count;
@@ -102,7 +133,7 @@ export default {
         });
       });
 
-      // IRIS
+      // 🔹 IRIS
       if (iris && typeof iris === "object") {
         baixo += iris.baixo || 0;
         medio += iris.medio || 0;
@@ -111,7 +142,7 @@ export default {
         total += iris.total || 0;
       }
 
-      // Novo cálculo de Risk Level (correto)
+      // 🔹 Cálculo final do Risk Level
       const risco = calcularRiskLevel({
         critico,
         alto,
@@ -119,11 +150,18 @@ export default {
         baixo,
       });
 
-      // Log técnico
-      strapi.log.info(
-        `RiskLevel (${diasGlobal}d): ` +
-          `C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
-      );
+      // 🔹 Log técnico
+      if (periodo) {
+        strapi.log.info(
+          `RiskLevel (${periodo.from} → ${periodo.to}): ` +
+            `C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
+        );
+      } else {
+        strapi.log.info(
+          `RiskLevel (${diasGlobal}d): ` +
+            `C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
+        );
+      }
 
       return ctx.send({
         severidades: {
@@ -136,6 +174,7 @@ export default {
         indiceRisco: parseFloat(risco.toFixed(2)),
         filtrosUsados: {
           diasGlobal,
+          periodo,
           diasFirewall,
           diasAgentes,
           diasSeveridade,
@@ -143,7 +182,7 @@ export default {
         },
       });
     } catch (error) {
-      console.error("❌ Erro ao calcular RiskLevel:", error);
+      console.error("Erro ao calcular RiskLevel:", error);
       return ctx.internalServerError("Erro ao calcular RiskLevel");
     }
   },

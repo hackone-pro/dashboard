@@ -16,14 +16,27 @@ export interface TopFirewallItem {
 
 /**
  * Busca os top firewalls (geradores) com breakdown por severidade.
- * @param dias "1" | "7" | "15" | "30" | "todos" (default "7")
+ *
+ * Regras:
+ * - Se periodo (from/to) existir → ignora dias
+ * - Caso contrário → usa dias
  */
-export async function getTopFirewalls(dias: string = "7"): Promise<TopFirewallItem[]> {
+export async function getTopFirewalls(
+  dias: string = "7",
+  periodo?: { from: string; to: string }
+): Promise<TopFirewallItem[]> {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
   const url = new URL(`${baseUrl}/api/acesso/wazuh/top-geradores`);
-  if (dias) url.searchParams.set("dias", dias);
+
+  // 🔹 PRIORIDADE TOTAL: calendário
+  if (periodo?.from && periodo?.to) {
+    url.searchParams.set("from", periodo.from);
+    url.searchParams.set("to", periodo.to);
+  } else if (dias) {
+    url.searchParams.set("dias", dias);
+  }
 
   const response = await fetch(url.toString(), {
     headers: {
@@ -41,14 +54,16 @@ export async function getTopFirewalls(dias: string = "7"): Promise<TopFirewallIt
   }
 
   const data = await response.json();
-  const lista = Array.isArray(data?.topGeradores) ? data.topGeradores : [];
+  const lista: any[] = Array.isArray(data?.topGeradores)
+    ? data.topGeradores
+    : [];
 
-  // Normaliza, tipa e ordena por total (desc), depois limita a 10
-  const normalizado = lista
-    .map((item: any) => ({
+  // 🔹 normalização + tipagem explícita
+  const normalizado: TopFirewallItem[] = lista
+    .map((item: any): TopFirewallItem => ({
       gerador: String(item?.gerador ?? item?.key ?? ""),
-      ip: String(item?.ip ?? "-"),
-      timestamp: item?.timestamp ? String(item.timestamp) : "-",
+      ip: item?.ip ? String(item.ip) : null,
+      timestamp: item?.timestamp ? String(item.timestamp) : null,
       total: Number(item?.total ?? item?.doc_count ?? 0),
       severidade: {
         baixo: Number(item?.severidade?.baixo ?? 0),
@@ -57,8 +72,10 @@ export async function getTopFirewalls(dias: string = "7"): Promise<TopFirewallIt
         critico: Number(item?.severidade?.critico ?? 0),
       },
     }))
-    .sort((a: TopFirewallItem, b: TopFirewallItem) => b.total - a.total)
-    .slice(0, 10); // ✅ Top 10 (ajuste aqui se quiser 5/8/etc.)
+    .sort(
+      (a: TopFirewallItem, b: TopFirewallItem) => b.total - a.total
+    )
+    .slice(0, 10);
 
   return normalizado;
 }

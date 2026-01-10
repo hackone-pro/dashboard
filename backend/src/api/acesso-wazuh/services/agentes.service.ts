@@ -1,45 +1,59 @@
 // src/api/acesso-wazuh/services/agentes.service.ts
+import axios from "axios";
+import https from "https";
 import { http } from "./utils/http";
 import { authHeader } from "./utils/auth";
 
 /* ============================================
    TOP AGENTES (syscheck)
 ============================================ */
-export async function buscarTopAgentes(tenant, dias) {
+export async function buscarTopAgentes(
+  tenant,
+  opts?: {
+    from?: string;
+    to?: string;
+    dias?: string;
+  }
+) {
   const clientName = tenant.wazuh_client_name;
-  if (!clientName) throw new Error("Tenant sem client_name definido");
+  if (!clientName) {
+    throw new Error("Tenant sem client_name definido");
+  }
 
+  const { from, to, dias = "1" } = opts ?? {};
+
+  // ----------------------------------
+  // FILTRO DE TEMPO (PRIORIDADE)
+  // ----------------------------------
   const timeFilter =
-    dias === "todos"
-      ? { match_all: {} }
-      : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
-          },
+    from && to
+      ? {
+        bool: {
+          should: [
+            { range: { "data.timestamp": { gte: from, lte: to } } },
+            { range: { "@timestamp": { gte: from, lte: to } } }
+          ],
+          minimum_should_match: 1
+        }
+      }
+      : dias === "todos"
+        ? { match_all: {} }
+        : {
+          bool: {
+            should: [
+              { range: { "data.timestamp": { gte: `now-${dias}d`, lte: "now" } } },
+              { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } }
+            ],
+            minimum_should_match: 1
+          }
         };
 
+
+  // ----------------------------------
+  // QUERY ÚNICA (syscheck)
+  // ----------------------------------
   const body = {
     size: 0,
-    stored_fields: ["*"],
-    script_fields: {},
-    docvalue_fields: [
-      { field: "timestamp", format: "date_time" },
-      { field: "syscheck.mtime_after", format: "date_time" },
-      { field: "syscheck.mtime_before", format: "date_time" },
-      { field: "data.vulnerability.published", format: "date_time" },
-      { field: "data.vulnerability.updated", format: "date_time" },
-      { field: "data.timestamp", format: "date_time" },
-      { field: "data.aws.createdAt", format: "date_time" },
-      { field: "data.aws.end", format: "date_time" },
-      { field: "data.aws.start", format: "date_time" },
-      { field: "data.aws.updatedAt", format: "date_time" }
-    ],
-    _source: {
-      excludes: ["@timestamp"],
-    },
     query: {
       bool: {
         must: [
@@ -47,7 +61,7 @@ export async function buscarTopAgentes(tenant, dias) {
           { match_phrase: { customer: clientName } },
         ],
         filter: [
-          { match_phrase: { "rule.groups": { query: "syscheck" } } },
+          { match_phrase: { "rule.groups": "syscheck" } },
         ],
         must_not: [
           { match_phrase: { "agent.name": "wazuhhackone" } },
@@ -69,32 +83,37 @@ export async function buscarTopAgentes(tenant, dias) {
     },
   };
 
-  const response = await http.post(
+  const response = await axios.post(
     `${tenant.wazuh_url}/wazuh-*/_search`,
     body,
-    { headers: authHeader(tenant) }
+    {
+      headers: authHeader(tenant),
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }
   );
 
   const agentes = response.data?.aggregations?.top_agentes_alertas?.buckets || [];
 
   return agentes.map((agente) => {
-    const total = agente.por_severidade.buckets.reduce(
-      (sum, item) => sum + item.doc_count,
-      0
-    );
+    const total =
+      agente.por_severidade?.buckets?.reduce(
+        (sum, item) => sum + item.doc_count,
+        0
+      ) || 0;
 
-    const score =
-      agente.por_severidade.buckets.reduce((acc, item) => {
+    const scoreBruto =
+      agente.por_severidade?.buckets?.reduce((acc, item) => {
+        const level = Number(item.key);
         const peso =
-          item.key >= 0 && item.key <= 6
-            ? 0.2
-            : item.key <= 11
-            ? 0.6
-            : item.key <= 14
-            ? 0.87
-            : 1.0;
+          level <= 6 ? 0.2 :
+            level <= 11 ? 0.6 :
+              level <= 14 ? 0.87 :
+                1.0;
+
         return acc + item.doc_count * peso;
-      }, 0) / (total || 1);
+      }, 0) || 0;
+
+    const score = total > 0 ? scoreBruto / total : 0;
 
     let nivel;
     if (score >= 1.0) nivel = "Crítico";
@@ -131,13 +150,13 @@ export async function buscarTopAlteracoesArquivo(tenant, dias) {
     dias === "todos"
       ? { match_all: {} }
       : {
-          range: {
-            "@timestamp": {
-              gte: `now-${diasFormatado}d`,
-              lte: "now",
-            },
+        range: {
+          "@timestamp": {
+            gte: `now-${diasFormatado}d`,
+            lte: "now",
           },
-        };
+        },
+      };
 
   const body = {
     size: 0,
@@ -205,30 +224,58 @@ export async function buscarTopAlteracoesArquivo(tenant, dias) {
 /* ============================================
    TOP AGENTES CIS
 ============================================ */
-export async function buscarTopAgentesCis(tenant, dias) {
+export async function buscarTopAgentesCis(
+  tenant,
+  time: { dias: string } | { from: string; to: string }
+) {
   const clientName = tenant.wazuh_client_name;
-  if (!clientName) throw new Error("Tenant sem client_name definido");
+  if (!clientName) {
+    throw new Error("Tenant sem client_name definido");
+  }
 
-  const timeFilter =
-    dias === "todos"
-      ? null
-      : {
-          range: {
-            "@timestamp": {
-              gte: `now-${dias}d`,
-              lte: "now",
-            },
-          },
-        };
+  // ----------------------------------
+  // FILTRO DE TEMPO (UNIFICADO)
+  // ----------------------------------
+  let timeFilter = null;
 
+  if ("from" in time && "to" in time) {
+    // intervalo absoluto (calendário)
+    timeFilter = {
+      range: {
+        "@timestamp": {
+          gte: time.from,
+          lte: time.to,
+        },
+      },
+    };
+  } else if (time.dias !== "todos") {
+    // intervalo relativo (dias)
+    timeFilter = {
+      range: {
+        "@timestamp": {
+          gte: `now-${time.dias}d`,
+          lte: "now",
+        },
+      },
+    };
+  }
+
+  // ----------------------------------
+  // CUSTOMER FILTER (SEMPRE APLICADO)
+  // ----------------------------------
+  const customerFilter = {
+    match_phrase: { customer: clientName },
+  };
+
+  // ----------------------------------
+  // BODY FINAL
+  // ----------------------------------
   const body = {
     size: 0,
     query: {
       bool: {
-        must: [],
         filter: [
-          { match_all: {} },
-          { match_phrase: { customer: clientName } },
+          customerFilter,
           { term: { "rule.groups": "sca" } },
           { term: { "data.sca.type": "summary" } },
           ...(timeFilter ? [timeFilter] : []),
@@ -237,7 +284,10 @@ export async function buscarTopAgentesCis(tenant, dias) {
     },
     aggs: {
       agentes: {
-        terms: { field: "agent.name", size: 20 },
+        terms: {
+          field: "agent.name",
+          size: 20,
+        },
         aggs: {
           ultimos_summary: {
             top_hits: {
@@ -257,7 +307,7 @@ export async function buscarTopAgentesCis(tenant, dias) {
     { headers: authHeader(tenant) }
   );
 
-  const buckets = response.data.aggregations?.agentes?.buckets ?? [];
+  const buckets = response.data?.aggregations?.agentes?.buckets ?? [];
 
   return buckets.map((b) => {
     const hit = b.ultimos_summary.hits.hits[0]?._source;
@@ -303,16 +353,16 @@ export async function buscarTopAgentesSyscheck(
   const timeFilter =
     from && to
       ? {
-          range: {
-            "@timestamp": {
-              gte: from,
-              lte: to,
-            },
+        range: {
+          "@timestamp": {
+            gte: from,
+            lte: to,
           },
-        }
+        },
+      }
       : dias === "todos"
-      ? { match_all: {} }
-      : {
+        ? { match_all: {} }
+        : {
           range: {
             "@timestamp": {
               gte: `now-${dias}d`,
@@ -387,10 +437,10 @@ export async function buscarTopAgentesSyscheck(
           item.key <= 6
             ? 0.2
             : item.key <= 11
-            ? 0.6
-            : item.key <= 14
-            ? 0.87
-            : 1.0;
+              ? 0.6
+              : item.key <= 14
+                ? 0.87
+                : 1.0;
         return acc + item.doc_count * peso;
       }, 0) || 0) / (total || 1);
 
