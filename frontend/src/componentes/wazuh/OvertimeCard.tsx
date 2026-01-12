@@ -5,7 +5,7 @@ import GraficoAreaStacked from "../graficos/GraficoAreaStacked";
 import { useTenant } from "../../context/TenantContext";
 
 export type OvertimeCardRef = {
-  carregar: () => void;
+  carregar: (params: { from: string; to: string }) => void;
 };
 
 const OvertimeCard = forwardRef<OvertimeCardRef>((props, ref) => {
@@ -14,11 +14,12 @@ const OvertimeCard = forwardRef<OvertimeCardRef>((props, ref) => {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = async () => {
+  const carregar = async (params: { from: string; to: string }) => {
     if (!tenantAtivo) return;
+  
     try {
       setCarregando(true);
-      const res = await getOvertimeEventos();
+      const res = await getOvertimeEventos(params);
       setData(res);
       setErro(null);
     } catch (err: any) {
@@ -29,7 +30,11 @@ const OvertimeCard = forwardRef<OvertimeCardRef>((props, ref) => {
   };
 
   useEffect(() => {
-    carregar();
+    // Últimas 24h automático
+    carregar({
+      from: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      to: new Date().toISOString(),
+    });
   }, [tenantAtivo]);
 
   useImperativeHandle(ref, () => ({

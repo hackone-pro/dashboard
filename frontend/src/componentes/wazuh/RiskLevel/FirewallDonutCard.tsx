@@ -1,37 +1,44 @@
 // src/components/wazuh/FirewallDonutCard.tsx
 import { useEffect, useMemo, useState } from "react";
-import { getTopFirewalls, TopFirewallItem } from "../../../services/wazuh/topfirewall.service";
+import {
+  getTopFirewalls,
+  TopFirewallItem,
+} from "../../../services/wazuh/topfirewall.service";
 import GraficoDonut from "../../graficos/GraficoDonut";
 import { useTenant } from "../../../context/TenantContext";
 import { GripVertical } from "lucide-react";
 
 interface FirewallDonutCardProps {
   dias: string;
+  periodo?: { from: string; to: string } | null;
   onChangeFiltro?: (valor: string | null) => void;
-  isWidget?: boolean; // 👈 novo
+  isWidget?: boolean;
 }
 
 export default function FirewallDonutCard({
   dias,
+  periodo,
   onChangeFiltro,
   isWidget = false,
 }: FirewallDonutCardProps) {
   const { tenantAtivo } = useTenant();
 
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-  const diasEfetivo = filtroLocal || dias;
+
+  // 🔹 prioridade TOTAL do calendário
+  const diasEfetivo = periodo ? null : filtroLocal || dias;
 
   const [dados, setDados] = useState<TopFirewallItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [idxSelecionado, setIdxSelecionado] = useState<number | null>(null);
 
-  // Reset filtro ao mudar o global
+  // 🔹 reseta select quando calendário muda
   useEffect(() => {
-    if (!filtroLocal) setFiltroLocal(null);
-  }, [dias]);
+    if (periodo) setFiltroLocal(null);
+  }, [periodo]);
 
-  // Buscar dados
+  // 🔹 busca dados
   useEffect(() => {
     if (!tenantAtivo) return;
     let ativo = true;
@@ -42,7 +49,12 @@ export default function FirewallDonutCard({
         setErro(null);
 
         const inicio = Date.now();
-        const res = await getTopFirewalls(diasEfetivo);
+
+        const res = await getTopFirewalls(
+          diasEfetivo || dias,
+          periodo || undefined
+        );
+
         if (!ativo) return;
 
         const elapsed = Date.now() - inicio;
@@ -60,10 +72,12 @@ export default function FirewallDonutCard({
     }
 
     fetch();
-    return () => { ativo = false };
-  }, [diasEfetivo, tenantAtivo]);
+    return () => {
+      ativo = false;
+    };
+  }, [diasEfetivo, periodo, tenantAtivo]);
 
-  // Aggregation
+  // 🔹 agregação (inalterada)
   const { baixo, medio, alto, critico, total } = useMemo(() => {
     const agg = { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };
     for (const it of dados) {
@@ -88,10 +102,8 @@ export default function FirewallDonutCard({
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-xl z-10" />
       )}
 
-      {/* HEADER — igual aos outros widgets */}
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-4 relative z-20">
-
-        {/* Título + drag (somente widget) */}
         <div className="flex items-center gap-2">
           {isWidget && (
             <GripVertical
@@ -99,16 +111,16 @@ export default function FirewallDonutCard({
               className="drag-handle cursor-grab active:cursor-grabbing text-white/50 hover:text-white transition"
             />
           )}
-
           <h3 className="text-sm text-white">Alertas de Firewall</h3>
         </div>
 
-        {/* Select */}
+        {/* SELECT (desabilitado com calendário) */}
         <select
-          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31] 
+          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
             ${isWidget ? "mr-8" : ""}
           `}
           value={filtroLocal || dias}
+          disabled={!!periodo}
           onChange={(e) => {
             const val = e.target.value;
             const novoValor = val === dias ? null : val;
@@ -125,14 +137,14 @@ export default function FirewallDonutCard({
         </select>
       </div>
 
-      {/* Error */}
+      {/* ERRO */}
       {erro && (
         <div className="text-xs text-red-400 bg-red-950/30 border border-red-900 rounded-md p-2 mb-3 relative z-20">
           {erro}
         </div>
       )}
 
-      {/* Chart */}
+      {/* GRÁFICO */}
       <div className="relative z-20">
         {carregando ? (
           <div className="w-full h-52 rounded-xl bg-[#ffffff0a] animate-pulse" />
@@ -151,15 +163,18 @@ export default function FirewallDonutCard({
         )}
       </div>
 
-      {/* Legenda */}
+      {/* LEGENDA */}
       <div className="flex gap-3 flex-wrap mt-4 text-[10px] text-gray-400 justify-center relative z-20">
         {labels.map((lb, i) => {
           const ativo = idxSelecionado === i;
           return (
             <div
               key={i}
-              className={`flex items-center gap-1 cursor-pointer transition-all ${ativo ? "font-semibold text-white scale-105" : "hover:text-white/80"
-                }`}
+              className={`flex items-center gap-1 cursor-pointer transition-all ${
+                ativo
+                  ? "font-semibold text-white scale-105"
+                  : "hover:text-white/80"
+              }`}
               onClick={() => setIdxSelecionado(ativo ? null : i)}
             >
               <span
@@ -174,7 +189,6 @@ export default function FirewallDonutCard({
           );
         })}
       </div>
-
     </div>
   );
 }

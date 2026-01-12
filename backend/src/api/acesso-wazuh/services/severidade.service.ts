@@ -1,21 +1,62 @@
-// src/api/acesso-wazuh/services/severidade.service.ts
 import { http } from "./utils/http";
-import { authHeader, customerFilter } from "./utils/auth";
+import { authHeader } from "./utils/auth";
 
-export async function buscarSeveridadeIndexer(tenant, dias: string) {
+interface Periodo {
+  from: string;
+  to: string;
+}
+
+export async function buscarSeveridadeIndexer(
+  tenant,
+  dias?: string,
+  periodo?: Periodo
+) {
   const clientName = tenant.wazuh_client_name;
-  if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  // FILTRO DE TEMPO (REGRA FINAL)
   const timeFilter =
-    dias === "todos"
+    periodo?.from && periodo?.to
+      ? {
+          range: {
+            "@timestamp": {
+              gte: periodo.from,
+              lte: periodo.to,
+            },
+          },
+        }
+      : dias === "todos"
       ? { match_all: {} }
-      : { range: { "@timestamp": { gte: `now-${dias}d`, lte: "now" } } };
+      : {
+          range: {
+            "@timestamp": {
+              gte: `now-${dias ?? "1"}d`,
+              lte: "now",
+            },
+          },
+        };
 
-  const body = {
+  const customerFilterUniversal = {
+    bool: {
+      should: [
+        { term: { "data.customer": clientName } },
+        { term: { "data.customer.keyword": clientName } },
+        { term: { customer: clientName } },
+        { term: { "customer.keyword": clientName } },
+        { term: { "fields.customer": clientName } },
+        { term: { "fields.customer.keyword": clientName } },
+      ],
+      minimum_should_match: 1,
+    },
+  };
+
+  const buildBody = (usarCustomer: boolean) => ({
     size: 0,
     query: {
       bool: {
-        must: [customerFilter(clientName), timeFilter],
+        must: [
+          timeFilter,
+          ...(usarCustomer ? [customerFilterUniversal] : []),
+        ],
       },
     },
     aggs: {
@@ -30,16 +71,38 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
           ],
         },
       },
+      total_eventos: {
+        value_count: {
+          field: "_id",
+        },
+      },
     },
-  };
+  });
 
-  const response = await http.post(
-    `${tenant.wazuh_url}/wazuh-*/_search`,
-    body,
-    { headers: authHeader(tenant) }
-  );
+  const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
 
-  const buckets = response.data?.aggregations?.severidade?.buckets || [];
+  let response;
+  let buckets = [];
+  let total = 0;
+
+  // 🔹 1ª tentativa — COM customer
+  response = await http.post(baseURL, buildBody(true), {
+    headers: authHeader(tenant),
+  });
+
+  buckets = response.data?.aggregations?.severidade?.buckets || [];
+  total = response.data?.aggregations?.total_eventos?.value || 0;
+
+  // 🔹 fallback — SEM customer
+  if (total === 0) {
+    response = await http.post(baseURL, buildBody(false), {
+      headers: authHeader(tenant),
+    });
+
+    buckets = response.data?.aggregations?.severidade?.buckets || [];
+    total = response.data?.aggregations?.total_eventos?.value || 0;
+  }
+
   const get = (k: string) =>
     buckets.find((x: any) => x.key === k)?.doc_count || 0;
 
@@ -48,6 +111,6 @@ export async function buscarSeveridadeIndexer(tenant, dias: string) {
     medio: get("Medium"),
     alto: get("High"),
     critico: get("Critical"),
-    total: buckets.reduce((acc, b) => acc + (b.doc_count || 0), 0),
+    total,
   };
 }

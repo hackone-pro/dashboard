@@ -9,9 +9,11 @@ export default {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
 
-      const { dias = "todos" } = ctx.query;
+      const { from, to, dias = "todos" } = ctx.query;
 
       const resultado = await buscarTopUsers(tenant, {
+        from: from ? String(from) : undefined,
+        to: to ? String(to) : undefined,
         dias: String(dias),
       });
 
@@ -21,5 +23,6 @@ export default {
       console.error("Erro ao buscar top users:", error);
       return ctx.internalServerError("Erro ao consultar top users");
     }
-  },
+  }
+
 };

@@ -25,16 +25,29 @@ export default {
       if (!tenant) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
-
+  
       const dias = ctx.query.dias || "7";
-
-      const resultado = await buscarTopGeradoresFirewall(tenant, dias);
-
+  
+      // suporte a calendário
+      const periodo =
+        ctx.query.from && ctx.query.to
+          ? {
+              from: ctx.query.from,
+              to: ctx.query.to,
+            }
+          : undefined;
+  
+      const resultado = await buscarTopGeradoresFirewall(
+        tenant,
+        dias,
+        periodo
+      );
+  
       return ctx.send({ topGeradores: resultado });
-
     } catch (error) {
       console.error("Erro ao buscar top geradores:", error);
       return ctx.internalServerError("Erro ao consultar top geradores");
     }
-  },
+  }
+  
 };

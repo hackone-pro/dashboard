@@ -6,16 +6,23 @@ import TopAgentsCard from "../componentes/wazuh/RiskLevel/TopAgentsCard";
 import TopAgentsCisCard from "../componentes/wazuh/RiskLevel/TopAgentsCisCard";
 import FirewallDonutCard from "../componentes/wazuh/RiskLevel/FirewallDonutCard";
 import FluxoIncidentes from "../componentes/iris/FluxoIncidentes";
+import DateRangePicker from "../componentes/DataRangePicker";
+
 import { getToken } from "../utils/auth";
-import { RiskLevelResposta } from "../services/wazuh/risklevel.service";
+import {
+  RiskLevelResposta,
+  Severidades,
+} from "../services/wazuh/risklevel.service";
 import { useTenant } from "../context/TenantContext";
+
+import { FiRotateCcw } from "react-icons/fi";
 
 export default function RiskLevel() {
   const token = getToken();
-  const { tenantAtivo } = useTenant(); // 👈 tenant só refaz o Gauge
+  const { tenantAtivo } = useTenant();
   const formatador = new Intl.NumberFormat("pt-BR");
 
-  // Filtros
+  // 🔹 Filtros
   const [dias, setDias] = useState<string>("1");
   const [diasFirewall, setDiasFirewall] = useState<string | null>(null);
   const [diasAgentes, setDiasAgentes] = useState<string | null>(null);
@@ -23,19 +30,36 @@ export default function RiskLevel() {
   const [diasCis, setDiasCis] = useState<string | null>(null);
   const [diasIris, setDiasIris] = useState<string | null>(null);
 
-  // Totais
-  const [totalAlertas, setTotalAlertas] = useState<number>(0);
+  const [periodo, setPeriodo] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+
+  // 🔹 Loading da severidade (controla skeleton)
+  const [loadingSeveridade, setLoadingSeveridade] = useState<boolean>(true);
+
+  // 🔹 Dados globais (FONTE ÚNICA)
+  const [severidades, setSeveridades] = useState<Severidades>({
+    baixo: 0,
+    medio: 0,
+    alto: 0,
+    critico: 0,
+    total: 0,
+  });
+
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
 
-  // Atualiza SOMENTE o Gauge
+  // 🔹 Fetch GLOBAL (RiskLevel é o dono do estado)
   useEffect(() => {
     if (!tenantAtivo) return;
 
     async function carregar() {
       try {
+        setLoadingSeveridade(true);
+
         const queryParams = new URLSearchParams({
-          dias,
+          ...(periodo ? { from: periodo.from, to: periodo.to } : { dias }),
           ...(diasFirewall ? { firewall: diasFirewall } : {}),
           ...(diasAgentes ? { agentes: diasAgentes } : {}),
           ...(diasSeveridade ? { severidade: diasSeveridade } : {}),
@@ -50,68 +74,79 @@ export default function RiskLevel() {
           }
         );
 
-        if (!res.ok) throw new Error("Falha ao buscar dados de risco");
+        if (!res.ok) {
+          throw new Error("Falha ao buscar dados de RiskLevel");
+        }
 
         const dados: RiskLevelResposta = await res.json();
-        setTotalAlertas(dados.severidades.total);
+
+        setSeveridades(dados.severidades);
         setIndiceRisco(dados.indiceRisco);
       } catch (err) {
-        console.error("❌ Erro ao carregar RiskLevel:", err);
+        console.error("Erro ao carregar RiskLevel:", err);
+      } finally {
+        setLoadingSeveridade(false);
       }
     }
 
     carregar();
   }, [
-    tenantAtivo, // 👈 dispara recarregamento do Gauge
+    tenantAtivo,
     dias,
+    periodo,
     diasFirewall,
     diasAgentes,
     diasSeveridade,
     diasCis,
     diasIris,
+    token,
   ]);
 
   return (
     <LayoutModel titulo="Risk Level">
-      {/* Bloco principal com Gauge + Severidade */}
+      {/* 🔹 Filtros */}
+      <div className="flex justify-end mt-5 mb-3 px-6">
+        <DateRangePicker
+          onApply={(payload) => {
+            setPeriodo(payload);
+          }}
+        />
+
+        <button
+          onClick={() => {
+            setPeriodo(null);
+            setDias("1");
+            setDiasFirewall(null);
+            setDiasAgentes(null);
+            setDiasSeveridade(null);
+            setDiasCis(null);
+            setDiasIris(null);
+          }}
+          className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors ml-3"
+        >
+          <FiRotateCcw className="w-4 h-4" />
+          Limpar filtros
+        </button>
+      </div>
+
+      {/* 🔹 Header */}
       <section>
-
-        {/* HEADER (total + select) */}
         <div className="cards p-6 rounded-xl flex justify-between items-center mb-5 gap-4">
-
-          {/* ESQUERDA: título */}
           <h2 className="text-white text-md font-medium">
             Nível de alertas
           </h2>
 
-          {/* DIREITA: total + select */}
-          <div className="flex items-center gap-4">
-            <p className="text-white text-base font-semibold">
-              {formatador.format(totalAlertas + totalIncidentes)} alertas totais
-            </p>
-
-            <select
-              value={dias}
-              onChange={(e) => setDias(e.target.value)}
-              className="text-white text-sm px-3 py-1 rounded-md 
-                 border border-[#3B2A70] outline-none bg-[#1a1a2e]"
-            >
-              <option value="1">24 horas</option>
-              <option value="2">48 horas</option>
-              <option value="7">7 dias</option>
-              <option value="15">15 dias</option>
-              <option value="30">30 dias</option>
-              <option value="todos">Todos</option>
-            </select>
-          </div>
-
+          <p className="text-white text-base font-semibold">
+            {formatador.format(
+              severidades.total + totalIncidentes
+            )}{" "}
+            alertas totais
+          </p>
         </div>
 
-
-        {/* GRID DE CARDS */}
+        {/* 🔹 Gauge + Severidade */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch">
-
-          {/* CARD DO GAUGE */}
+          {/* Gauge */}
           <div className="cards rounded-xl p-4 h-full flex flex-col justify-between">
             <div className="relative flex justify-center">
               <GraficoGauge valor={Math.round(indiceRisco)} />
@@ -120,8 +155,8 @@ export default function RiskLevel() {
                 src="/assets/img/icon-risk.png"
                 alt="Risco"
                 className="absolute z-20 w-6 h-6 top-1/2 left-1/2 
-                   -translate-x-1/2 -translate-y-[95%]
-                   pointer-events-none"
+                  -translate-x-1/2 -translate-y-[95%]
+                  pointer-events-none"
               />
             </div>
 
@@ -141,26 +176,45 @@ export default function RiskLevel() {
             </div>
           </div>
 
-          {/* CARD DE SEVERIDADE */}
+          {/* Severidade */}
           <div className="md:col-span-4 h-full">
-            <SeveridadeCard dias={diasSeveridade || dias} />
+            <SeveridadeCard
+              dados={severidades}
+              periodo={periodo}
+              loading={loadingSeveridade}
+            />
           </div>
-
         </div>
       </section>
 
-      {/* Bloco inferior com os outros cards */}
+      {/* 🔹 Cards inferiores */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-5 items-stretch">
-        <TopAgentsCard dias={diasAgentes || dias} onChangeFiltro={setDiasAgentes} />
-        <TopAgentsCisCard dias={diasCis || dias} onChangeFiltro={setDiasCis} />
+        <TopAgentsCard
+          dias={diasAgentes || dias}
+          periodo={periodo}
+          onChangeFiltro={setDiasAgentes}
+        />
+
+        <TopAgentsCisCard
+          dias={diasCis || dias}
+          periodo={periodo}
+          onChangeFiltro={setDiasCis}
+        />
+
 
         <div className="flex flex-col h-full">
-          <FirewallDonutCard dias={diasFirewall || dias} onChangeFiltro={setDiasFirewall} />
+          <FirewallDonutCard
+            dias={diasFirewall || dias}
+            periodo={periodo}
+            onChangeFiltro={setDiasFirewall}
+          />
+
           <div className="flex-1">
             <div className="cards rounded-xl p-6 shadow-md h-full">
               <FluxoIncidentes
                 token={token || ""}
                 diasGlobal={dias}
+                periodo={periodo}
                 onChangeFiltro={setDiasIris}
                 onUpdateTotais={setTotalIncidentes}
               />

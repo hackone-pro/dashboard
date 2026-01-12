@@ -9,17 +9,27 @@ export interface Severidade {
   total: number;
 }
 
-export async function getSeveridadeWazuh(dias: string | number = "1"): Promise<Severidade> {
+export async function getSeveridadeWazuh(
+  dias: string | number = "1",
+  periodo?: { from: string; to: string }
+): Promise<Severidade> {
   const token = getToken();
+  const baseUrl = import.meta.env.VITE_API_URL;
 
-  const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/acesso/wazuh/severidade?dias=${dias}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const url = new URL(`${baseUrl}/api/acesso/wazuh/severidade`);
+
+  if (periodo) {
+    url.searchParams.set("from", periodo.from);
+    url.searchParams.set("to", periodo.to);
+  } else {
+    url.searchParams.set("dias", String(dias));
+  }
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Erro ao buscar dados de severidade");
@@ -27,7 +37,6 @@ export async function getSeveridadeWazuh(dias: string | number = "1"): Promise<S
 
   const data = await response.json();
 
-  // ✅ Backend já devolve no formato certo
   return {
     critico: data.severidade?.critico || 0,
     alto: data.severidade?.alto || 0,
