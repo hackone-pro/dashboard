@@ -2,6 +2,8 @@
 import bcrypt from "bcryptjs";
 import axios from "axios";
 
+const ENABLE_LOGIN_ATTEMPT_LIMIT = process.env.ENABLE_LOGIN_ATTEMPT_LIMIT === "true";
+
 async function validarTurnstile(token: string, ip?: string) {
     const secret = process.env.CLOUDFLARE_TURNSTILE_SECRET;
 
@@ -32,20 +34,20 @@ export default {
         const { email, password, captchaToken } = ctx.request.body as any;
 
         const isDev =
-        process.env.NODE_ENV === "development" ||
-        ctx.request.hostname === "localhost" ||
-        ctx.request.ip === "127.0.0.1";
+            process.env.NODE_ENV === "development" ||
+            ctx.request.hostname === "localhost" ||
+            ctx.request.ip === "127.0.0.1";
 
         if (!isDev) {
             if (!captchaToken) {
                 return ctx.badRequest("Captcha não enviado");
             }
-    
+
             const captcha = await validarTurnstile(
                 captchaToken,
                 ctx.request.ip
             );
-    
+
             if (!captcha.success) {
                 return ctx.unauthorized("Falha na verificação do captcha");
             }
@@ -65,7 +67,11 @@ export default {
         }
 
         // @ts-ignore
-        if (user.blocked_time && new Date(user.blocked_time) > new Date()) {
+        if (
+            ENABLE_LOGIN_ATTEMPT_LIMIT &&
+            user.blocked_time &&
+            new Date(user.blocked_time) > new Date()
+        ) {
             const minutos = Math.ceil(
                 (new Date(user.blocked_time).getTime() - Date.now()) / 60000
             );
@@ -81,12 +87,12 @@ export default {
             let updateData: any = { login_attempts: novasTentativas };
 
             // Se chegou em 3 → bloqueia 15min
-            if (novasTentativas >= 3) {
+            if (ENABLE_LOGIN_ATTEMPT_LIMIT && novasTentativas >= 3) {
                 updateData = {
                     login_attempts: 0,
                     blocked_time: new Date(Date.now() + 15 * 60 * 1000),
                 };
-                // @ts-ignore
+
                 await strapi.db.query("plugin::users-permissions.user").update({
                     where: { id: user.id },
                     data: updateData,
