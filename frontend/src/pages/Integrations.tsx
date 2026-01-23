@@ -29,84 +29,98 @@ export default function Integrations() {
     return (
         <LayoutModel titulo="Integrações">
 
-            {/* ================= HEADER ================= */}
-            <section
-                className="relative p-8 rounded-2xl mb-8 overflow-hidden"
-                style={{
-                    background:
-                        "linear-gradient(90deg, rgba(77, 46, 148, 1) 0%, rgba(52, 11, 139, 1) 39%, rgba(85, 9, 138, 1) 76%, rgba(27, 14, 54, 1) 100%)",
-                }}
-            >
-                <div className="absolute right-[-140px] top-1/2 -translate-y-1/2 opacity-80 pointer-events-none">
-                    <img
-                        src="/assets/img/circle_integration.webp"
-                        className="w-[460px] md:w-[560px] lg:w-[640px]"
-                    />
-                </div>
+            <div className="cards p-6 rounded-2xl">
 
-                <div className="relative z-10 max-w-2xl">
-                    <h1 className="text-white text-3xl font-semibold mb-3">
-                        Integrações que conectam todo o seu ecossistema de segurança
-                    </h1>
-                    <p className="text-gray-300 text-sm leading-relaxed">
-                        Integrações nativas com as principais soluções de segurança para
-                        centralizar eventos, automatizar respostas e operar o SOC em tempo real.
-                    </p>
-                </div>
-            </section>
+                {/* ================= HEADER ================= */}
+                <section
+                    className="relative px-8 rounded-2xl mb-8 overflow-hidden"
+                    style={{
+                        background:
+                            "linear-gradient(90deg, rgba(77, 46, 148, 1) 0%, rgba(52, 11, 139, 1) 39%, rgba(85, 9, 138, 1) 76%, rgba(27, 14, 54, 1) 100%)",
+                    }}
+                >
+                    <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 items-center gap-6">
 
-            {/* ================= ABAS ================= */}
-            <section className="flex flex-wrap gap-3 mb-10">
-                {([
-                    "NG-SOC",
-                    "Firewall",
-                    "Monitoria",
-                    "Defesa de Endpoints (EDR/XDR)",
-                    "Proteção de Dados",
-                    "CSIRT",
-                    "Vulnerabilidades",
-                    "IAM",
-                ] as AbaIntegracao[]).map((aba) => {
-                    const isAtiva = aba === abaAtiva;
-                    const isLiberada = abasLiberadas.includes(aba);
+                        {/* TEXTO */}
+                        <div className="max-w-xl">
+                            <h1 className="text-white text-3xl font-semibold mb-3">
+                                Integrações que conectam todo o seu ecossistema de segurança
+                            </h1>
+                            <p className="text-gray-300 text-sm leading-relaxed">
+                                Integrações nativas com as principais soluções de segurança para
+                                centralizar eventos, automatizar respostas e operar o SOC em tempo real.
+                            </p>
+                        </div>
 
-                    return (
-                        <button
-                            key={aba}
-                            onClick={() => isLiberada && setAbaAtiva(aba)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all
+                        {/* IMAGEM */}
+                        <div className="relative flex justify-center md:justify-end">
+                            <img
+                                src="/assets/img/circle.png"
+                                alt="Integrações de Segurança"
+                                className="
+                            opacity-90
+                            select-none
+                            pointer-events-none"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <div className="bg-[#0A0617] p-6 rounded-lg">
+                    {/* ================= ABAS ================= */}
+                    <section className="flex flex-wrap gap-3 mb-10">
+                        {([
+                            "NG-SOC",
+                            "Firewall",
+                            "Monitoria",
+                            "Defesa de Endpoints (EDR/XDR)",
+                            "Proteção de Dados",
+                            "CSIRT",
+                            "Vulnerabilidades",
+                            "IAM",
+                        ] as AbaIntegracao[]).map((aba) => {
+                            const isAtiva = aba === abaAtiva;
+                            const isLiberada = abasLiberadas.includes(aba);
+
+                            return (
+                                <button
+                                    key={aba}
+                                    onClick={() => isLiberada && setAbaAtiva(aba)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all
                                 ${isAtiva
-                                    ? "bg-[#1b1b2b] hover:bg-[#744CD8] text-white"
-                                    : isLiberada
-                                        ? "bg-[#1b1b2b] text-gray-300 hover:bg-[#744CD8]"
-                                        : "bg-[#1b1b2b] text-gray-300 cursor-default"
-                                }`}
-                        >
-                            {/* ÍCONE */}
-                            {isLiberada ? (
-                                // @ts-ignore
-                                <IoIosLock
-                                    className={`w-4 h-4 ${isAtiva ? "text-white" : "text-white"
+                                            ? "bg-[#1b1b2b] hover:bg-[#744CD8] text-white"
+                                            : isLiberada
+                                                ? "bg-[#1b1b2b] text-gray-300 hover:bg-[#744CD8]"
+                                                : "bg-[#1b1b2b] text-gray-300 cursor-default"
                                         }`}
-                                />
-                            ) : (
-                                // @ts-ignore
-                                <IoIosLock className="w-4 h-4 text-white" />
-                            )}
+                                >
+                                    {/* ÍCONE */}
+                                    {isLiberada ? (
+                                        // @ts-ignore
+                                        <IoIosLock
+                                            className={`w-4 h-4 ${isAtiva ? "text-white" : "text-white"
+                                                }`}
+                                        />
+                                    ) : (
+                                        // @ts-ignore
+                                        <IoIosLock className="w-4 h-4 text-white" />
+                                    )}
 
-                            <span>{aba}</span>
-                        </button>
-                    );
-                })}
-            </section>
+                                    <span>{aba}</span>
+                                </button>
+                            );
+                        })}
+                    </section>
 
-            {/* ================= CONTEÚDO ================= */}
-            <section className="flex flex-col gap-12">
-                {abaAtiva === "NG-SOC" && <NgSocContent />}
-                {abaAtiva === "Firewall" && <FirewallContent />}
-                {abaAtiva === "Monitoria" && <MonitoriaContent />}
-                {abaAtiva === "Defesa de Endpoints (EDR/XDR)" && <EndpointsContent />}
-            </section>
+                    {/* ================= CONTEÚDO ================= */}
+                    <section className="flex flex-col gap-12">
+                        {abaAtiva === "NG-SOC" && <NgSocContent />}
+                        {abaAtiva === "Firewall" && <FirewallContent />}
+                        {abaAtiva === "Monitoria" && <MonitoriaContent />}
+                        {abaAtiva === "Defesa de Endpoints (EDR/XDR)" && <EndpointsContent />}
+                    </section>
+                </div>
+            </div>
         </LayoutModel>
     );
 }
