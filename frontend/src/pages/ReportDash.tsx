@@ -186,7 +186,7 @@ export default function ReportDash() {
         "Nível de Risco",
         "Vulnerabilidades Detectadas",
         "Top Hosts por Nível de Alertas",
-        "Segurança dos Servidores (CIS Score)",
+        // "Segurança dos Servidores (CIS Score)",
         "Top 5 Sistemas Operacionais Detectados",
         "Top Hosts por Alteração de Arquivos",
         "Top Hosts Alterados por Origem da Alteração",

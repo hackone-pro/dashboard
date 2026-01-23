@@ -846,11 +846,10 @@ export default function ReportView() {
             )}
 
             {/* ========================== SEÇÃO 5 — CIS Servicores ========================== */}
-            {temSecao("Segurança dos Servidores (CIS Score)") && (
+            {/* {temSecao("Segurança dos Servidores (CIS Score)") && (
                 <div className="cards rounded-2xl p-6 mb-6 border border-white/5 bg-[#0A0617]">
 
                     <div className="flex items-center gap-2 mb-4">
-                        {/* @ts-ignore */}
                         <CiServer className="text-purple-400 text-xl" />
                         <h3 className="text-white text-lg font-medium">
                             Nível de segurança dos servidores
@@ -880,7 +879,6 @@ export default function ReportView() {
                         </div>
                     </div>
 
-                    {/* Função para definir cor dinâmica */}
                     {(() => {
                         return null;
                     })()}
@@ -908,16 +906,13 @@ export default function ReportView() {
                                     return (
                                         <tr key={i} className="border-b border-white/5">
 
-                                            {/* HOST */}
                                             <td className="py-3 px-4 text-gray-300">
                                                 {item.host}
                                             </td>
 
-                                            {/* SCORE + BARRA */}
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-4">
 
-                                                    {/* Barra de Score */}
                                                     <div className="flex-1 h-2 rounded-full bg-[#1b1530] overflow-hidden">
                                                         <div
                                                             className="h-full rounded-full transition-all duration-300"
@@ -928,7 +923,6 @@ export default function ReportView() {
                                                         ></div>
                                                     </div>
 
-                                                    {/* Texto Score */}
                                                     <span
                                                         className="w-10 text-right font-semibold"
                                                         style={{ color: cor }}
@@ -946,7 +940,7 @@ export default function ReportView() {
                         </table>
                     </div>
                 </div>
-            )}
+            )} */}
 
             {/* ========================== SEÇÃO 5 — Top Sistemas Operacionais ========================== */}
             {temSecao("Top 5 Sistemas Operacionais Detectados") && (
