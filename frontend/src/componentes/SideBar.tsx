@@ -9,6 +9,7 @@ import { GoShieldLock } from "react-icons/go";
 import { AiOutlineAim } from "react-icons/ai";
 import { BsDatabaseLock } from "react-icons/bs";
 import { HiOutlineDocumentReport } from "react-icons/hi";
+import { RxTokens } from "react-icons/rx";
 
 
 import { useZabbixAtivo } from "../hooks/useZabbixAtivo";
@@ -275,6 +276,21 @@ export default function Sidebar() {
                     </li>
                 )}
 
+                <li className={clsx(
+                    "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                    isOpen ? "justify-start" : "justify-center"
+                )}>
+                    <Link to="/integrations" className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                        {/* @ts-ignore */}
+                        <RxTokens />
+                        {isOpen && <span>Integrações</span>}
+                    </Link>
+                </li>
+
+
                 <li
                     className="w-full relative group catalog-item"
                     onMouseEnter={() => {
@@ -392,7 +408,7 @@ export default function Sidebar() {
                             ))}
                         </ul>
                     </div>
-                    
+
 
                     {/* SUBITENS — HOVER (quando recolhida) */}
                     {!isOpen && (
