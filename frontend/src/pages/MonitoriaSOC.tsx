@@ -96,24 +96,24 @@ export default function MonitoriaSOC() {
     const ultimos30 = [...timeline.series]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-30);
-  
+
     categoriasX = ultimos30.map(item =>
       item.date.split("-").reverse().join("/")
     );
-  
+
     dadosUtilizados = ultimos30.map(item =>
       Number((item.used ?? 0).toFixed(4))
     );
-  
+
     dadosTotais = ultimos30.map(() => TOTAL_GB);
-  
+
     const maxUsado = Math.max(...dadosUtilizados, 0);
     yMaxVisual = Math.max(
       Math.ceil(maxUsado * 1.2),
       1
     );
   }
-  
+
 
   /* ============================
      DESCARTES — NÃO ALTERADO
@@ -240,6 +240,23 @@ export default function MonitoriaSOC() {
           <FirewallCard ref={firewallRef} />
           <ServidoresCard ref={servidoresRef} />
           <EdrCard ref={edrRef} />
+          <div className="cards rounded-2xl p-6">
+            <h3 className="text-white text-sm mb-4">Outros Coletores</h3>
+            <table className="w-full text-xs text-gray-400">
+              <thead className="fundo-dashboard">
+                <tr className="text-white">
+                  <th className="text-left py-2 px-3">Origem</th>
+                  <th className="text-center py-2">Status</th>
+                  <th className="text-center py-2">Último Log</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-white/5">
+                  <td colSpan={3} className="text-center py-6 text-gray-500">Nenhuma dado de coletores encontrado</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </section>
