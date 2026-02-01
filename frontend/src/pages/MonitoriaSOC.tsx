@@ -77,13 +77,18 @@ export default function MonitoriaSOC() {
     carregarTimeline();
     firewallRef.current?.carregar();
     servidoresRef.current?.carregar();
+    edrRef.current?.carregar();
   }, [tenantAtivo]);
 
   /* ============================
      GRÁFICO — ÚLTIMOS 30 DIAS
   ============================ */
 
-  const TOTAL_GB = timeline?.totalCapacity ?? 1024;
+  const TOTAL_GB =
+    tenantAtivo?.contract?.storage_gb ??
+    timeline?.totalCapacity ??
+    0;
+
   const totalUsado = timeline?.totalUsed ?? 0;
   const totalDisponivel = Math.max(TOTAL_GB - totalUsado, 0);
 
@@ -167,7 +172,10 @@ export default function MonitoriaSOC() {
 
             <div className="flex items-center gap-4 mt-4 flex-wrap">
               <span className="fundo-dashboard text-gray-400 px-3 py-2 rounded-md text-xs">
-                Total: <span className="font-bold">{TOTAL_GB} GB</span>
+                Total:{" "}
+                <span className="font-bold">
+                  {TOTAL_GB > 0 ? `${TOTAL_GB} GB` : "--"}
+                </span>
               </span>
 
               <span className="text-[#6366F1] badge-darkpink px-3 py-2 rounded-md text-xs">
@@ -241,7 +249,33 @@ export default function MonitoriaSOC() {
           <ServidoresCard ref={servidoresRef} />
           <EdrCard ref={edrRef} />
           <div className="cards rounded-2xl p-6">
-            <h3 className="text-white text-sm mb-4">Outros Coletores</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-white text-sm font-medium">
+                EDR
+              </h3>
+
+              <div className="flex items-center gap-4">
+                {tenantAtivo && (
+                  <span className="text-xs text-gray-400">
+                    <strong className="text-white">
+                      0
+                    </strong>{" "}
+                    /{" "}
+                    <strong className="text-white">
+                      0
+                    </strong>{" "}
+                    contratados
+                  </span>
+                )}
+
+                <button
+
+                  className="text-sm border border-[#1D1929] bg-[#0A0617] hover:bg-gray-700 text-gray-400 px-3 py-1 rounded-md transition"
+                >
+                  Atualizar
+                </button>
+              </div>
+            </div>
             <table className="w-full text-xs text-gray-400">
               <thead className="fundo-dashboard">
                 <tr className="text-white">

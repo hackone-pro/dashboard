@@ -5,8 +5,19 @@ import { getToken } from "../../utils/auth";
 export interface Tenant {
   id: number;
   cliente_name: string;
-  organizacao?: string; // ✅ novo campo opcional
+  organizacao?: string;
+  contract?: Contract | null;
 }
+
+export interface Contract {
+  name: string;
+  firewalls: number;
+  edr: number;
+  servers: number;
+  storage_gb: number;
+  active: boolean;
+}
+
 
 export interface TenantResponse {
   tenantAtivo: Tenant | null;

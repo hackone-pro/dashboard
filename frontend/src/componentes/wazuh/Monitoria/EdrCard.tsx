@@ -19,6 +19,10 @@ type EdrItemMonitor = {
     status: string;
 };
 
+/* ============================
+   HELPERS
+============================ */
+
 function formatIntegrationName(name: string) {
     const map: Record<string, string> = {
         "ms-graph": "Microsoft Defender",
@@ -31,7 +35,10 @@ function formatIntegrationName(name: string) {
 
 function getStatusByTimestamp(timestamp: string | null) {
     if (!timestamp) return "🔴";
-    const diffMinutes = (Date.now() - new Date(timestamp).getTime()) / 60000;
+
+    const diffMinutes =
+        (Date.now() - new Date(timestamp).getTime()) / 60000;
+
     if (diffMinutes <= 59) return "🟢";
     if (diffMinutes <= 119) return "🟡";
     return "🔴";
@@ -43,18 +50,26 @@ function getStatusIcon(status: string) {
     return "/assets/img/indicador-off.png";
 }
 
-const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
+/* ============================
+   COMPONENT
+============================ */
 
+const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
     const { tenantAtivo, loading: loadingTenant } = useTenant();
 
-    // 🔒 PERMISSÃO — apenas este cliente pode ver EDR
+    // 🔒 regra de permissão (mantida)
     const permitido =
         tenantAtivo?.cliente_name === "FEPA-PRD-FNL-0001";
 
     const [loading, setLoading] = useState(true);
     const [itens, setItens] = useState<EdrItemMonitor[]>([]);
     const [paginaAtual, setPaginaAtual] = useState(1);
+
     const porPagina = 5;
+
+    // 🔹 CONTRATO VINDO DO TENANT
+    const edrContratados =
+        tenantAtivo?.contract?.edr ?? 0;
 
     const totalPaginas = Math.ceil(itens.length / porPagina);
     const itensPaginados = itens.slice(
@@ -62,14 +77,23 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
         paginaAtual * porPagina
     );
 
+    /* ============================
+       LOAD
+    ============================ */
+
     async function carregar() {
         try {
             setLoading(true);
 
+            if (!permitido) {
+                setItens([]);
+                return;
+            }
+
             const logs = await getEdrList();
             const uniqueMap = new Map<string, EdrItemMonitor>();
 
-            logs.forEach((item) => {
+            logs.forEach(item => {
                 const integration = item.deviceName ?? "-";
 
                 if (!uniqueMap.has(integration)) {
@@ -85,11 +109,14 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
                 if (!a.timestamp && !b.timestamp) return 0;
                 if (!a.timestamp) return 1;
                 if (!b.timestamp) return -1;
-                return new Date(b.timestamp!).getTime() - new Date(a.timestamp!).getTime();
+                return (
+                    new Date(b.timestamp).getTime() -
+                    new Date(a.timestamp).getTime()
+                );
             });
 
             setItens(tabela);
-
+            setPaginaAtual(1);
         } catch (err) {
             console.error("Erro EdrCard:", err);
         } finally {
@@ -101,55 +128,34 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
         carregar,
     }));
 
+    // 🔹 RECARREGA AO TROCAR TENANT
     useEffect(() => {
-        if (permitido) carregar();
-    }, [tenantAtivo]);
+        if (!loadingTenant) carregar();
+    }, [tenantAtivo, loadingTenant]);
 
-    // 🔵 Tenant ainda carregando
-    if (loadingTenant) {
-        return (
-            <div className="cards rounded-2xl p-6">
-                <h3 className="text-white text-sm mb-4">EDR</h3>
-                <div className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="w-full h-6 bg-white/5 animate-pulse rounded" />
-                    ))}
-                </div>
-            </div>
-        );
-    }
+    /* ============================
+       HEADER (IGUAL FIREWALL)
+    ============================ */
 
-    // 🔒 Não permitido — layout padrão
-    if (!permitido) {
-        return (
-            <div className="cards rounded-2xl p-6">
-                <h3 className="text-white text-sm mb-4">EDR</h3>
+    const HeaderEDR = () => (
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="text-white text-sm font-medium">
+                EDR
+            </h3>
 
-                <table className="w-full text-xs text-gray-400">
-                    <thead className="fundo-dashboard">
-                        <tr className="text-white">
-                            <th className="text-left py-2 px-3">Origem</th>
-                            <th className="text-center py-2">Status</th>
-                            <th className="text-center py-2">Último Log</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr className="border-b border-white/5">
-                            <td colSpan={3} className="text-center py-6 text-gray-500">
-                                Nenhum dado de EDR encontrado
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        );
-    }
-
-    return (
-        <div className="cards rounded-2xl p-6">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-white text-sm">EDR</h3>
+            <div className="flex items-center gap-4">
+                {!loading && (
+                    <span className="text-xs text-gray-400">
+                        <strong className="text-white">
+                            {itens.length}
+                        </strong>{" "}
+                        /{" "}
+                        <strong className="text-white">
+                            {edrContratados}
+                        </strong>{" "}
+                        contratados
+                    </span>
+                )}
 
                 <button
                     onClick={carregar}
@@ -158,11 +164,50 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
                     Atualizar
                 </button>
             </div>
+        </div>
+    );
 
-            {loading ? (
+    /* ============================
+       RENDER
+    ============================ */
+
+    return (
+        <div className="cards rounded-2xl p-6">
+            <HeaderEDR />
+
+            {loadingTenant ? (
                 <div className="space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="w-full h-6 bg-white/5 animate-pulse rounded" />
+                        <div
+                            key={i}
+                            className="w-full h-6 bg-white/5 animate-pulse rounded"
+                        />
+                    ))}
+                </div>
+            ) : !permitido ? (
+                <table className="w-full text-xs text-gray-400">
+                    <thead className="fundo-dashboard">
+                        <tr className="text-white">
+                            <th className="text-left py-2 px-3">Origem</th>
+                            <th className="text-center py-2">Status</th>
+                            <th className="text-center py-2">Último Log</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr className="border-b border-white/5">
+                            <td colSpan={3} className="text-center py-6 text-gray-500">
+                                Nenhum dado de EDR encontrado
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            ) : loading ? (
+                <div className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className="w-full h-6 bg-white/5 animate-pulse rounded"
+                        />
                     ))}
                 </div>
             ) : (
@@ -179,7 +224,10 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
                         <tbody>
                             {itensPaginados.length === 0 ? (
                                 <tr className="border-b border-white/5">
-                                    <td colSpan={3} className="text-center py-6 text-gray-500 italic">
+                                    <td
+                                        colSpan={3}
+                                        className="text-center py-6 text-gray-500 italic"
+                                    >
                                         Nenhuma EDR encontrada
                                     </td>
                                 </tr>
@@ -189,7 +237,9 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
                                         key={index}
                                         className="border-b border-white/5 hover:bg-[#ffffff05] transition-colors"
                                     >
-                                        <td className="px-3 py-3">{edr.deviceName}</td>
+                                        <td className="px-3 py-3">
+                                            {edr.deviceName}
+                                        </td>
 
                                         <td className="text-center">
                                             <TooltipRight
@@ -221,13 +271,17 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
                         </tbody>
                     </table>
 
-                    {/* Paginação */}
                     <div className="flex justify-between items-center mt-4">
                         <button
                             disabled={paginaAtual === 1}
-                            onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
-                            className={`px-3 py-1 rounded-md text-xs border text-gray-400 
-                                ${paginaAtual === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5"}`}
+                            onClick={() =>
+                                setPaginaAtual(p => Math.max(1, p - 1))
+                            }
+                            className={`px-3 py-1 rounded-md text-xs border text-gray-400
+                  ${paginaAtual === 1
+                                    ? "opacity-30 cursor-not-allowed"
+                                    : "hover:bg-white/5"
+                                }`}
                         >
                             ← Anterior
                         </button>
@@ -239,10 +293,15 @@ const EdrCard = forwardRef<EdrCardRef>((props, ref) => {
                         <button
                             disabled={paginaAtual === totalPaginas}
                             onClick={() =>
-                                setPaginaAtual((p) => Math.min(totalPaginas, p + 1))
+                                setPaginaAtual(p =>
+                                    Math.min(totalPaginas, p + 1)
+                                )
                             }
-                            className={`px-3 py-1 rounded-md text-xs border text-gray-400 
-                                ${paginaAtual === totalPaginas ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5"}`}
+                            className={`px-3 py-1 rounded-md text-xs border text-gray-400
+                  ${paginaAtual === totalPaginas
+                                    ? "opacity-30 cursor-not-allowed"
+                                    : "hover:bg-white/5"
+                                }`}
                         >
                             Próxima →
                         </button>

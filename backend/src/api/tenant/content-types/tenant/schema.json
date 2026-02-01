@@ -59,6 +59,12 @@
       "relation": "oneToOne",
       "target": "api::zabbix-config.zabbix-config",
       "inversedBy": "tenant"
+    },
+    "contract": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::contract.contract",
+      "mappedBy": "tenant"
     }
   }
 }
