@@ -53,6 +53,12 @@
     },
     "organizacao": {
       "type": "string"
+    },
+    "contract": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::contract.contract",
+      "mappedBy": "tenant"
     }
   }
 }
