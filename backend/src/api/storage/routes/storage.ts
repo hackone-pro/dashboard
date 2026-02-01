@@ -12,5 +12,11 @@ export default {
       handler: "storage.internal",
       config: { policies: [] },
     },
+    {
+      method: "GET",
+      path: "/storage/timeline",
+      handler: "storage.timeline",
+      config: { policies: [] },
+    },
   ],
 };

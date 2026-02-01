@@ -39,6 +39,7 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
     const [loading, setLoading] = useState(true);
     const [firewalls, setFirewalls] = useState<FirewallMonitorItem[]>([]);
     const [paginaAtual, setPaginaAtual] = useState(1);
+    const firewallsContratados = 25;
     const porPagina = 5;
 
     const totalPaginas = Math.ceil(firewalls.length / porPagina);
