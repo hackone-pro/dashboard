@@ -64,9 +64,9 @@ export async function buscarSeveridadeIndexer(
         range: {
           field: "rule.level",
           ranges: [
-            { to: 7, key: "Low" },
-            { from: 7, to: 12, key: "Medium" },
-            { from: 12, to: 15, key: "High" },
+            { from: 0, to: 6, key: "Low" },
+            { from: 7, to: 11, key: "Medium" },
+            { from: 12, to: 14, key: "High" },
             { from: 15, key: "Critical" },
           ],
         },

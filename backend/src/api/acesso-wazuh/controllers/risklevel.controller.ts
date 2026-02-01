@@ -1,16 +1,21 @@
 import {
   buscarTopGeradoresFirewall,
   buscarTopAgentes,
-  buscarSeveridadeIndexer,
 } from "../services/acesso-wazuh";
 
 import { buscarIncidentesIris } from "../../acesso-iris/services/acesso-iris";
-
 import { getTenantAtivo } from "./_utils";
 
 /**
- * Cálculo do índice de Risk Level
- * Baseado na severidade mais alta presente
+ * =====================================================
+ * CÁLCULO FINAL DO ÍNDICE DE RISK LEVEL (OPERACIONAL)
+ *
+ * REGRAS:
+ * - SEM crítico → nunca passa de 70%
+ * - CRÍTICO domina
+ * - Alto e Médio influenciam com teto
+ * - Baixo nunca gera pânico
+ * =====================================================
  */
 function calcularRiskLevel({
   critico,
@@ -23,27 +28,27 @@ function calcularRiskLevel({
   medio: number;
   baixo: number;
 }) {
-  // CRÍTICO domina
+  // CRÍTICO → incidente real
   if (critico > 0) {
-    return Math.min(100, 80 + critico * 0.5);
+    return Math.min(100, 80 + Math.log10(1 + critico) * 8);
   }
 
-  // ALTO domina (MÉDIO só ajusta levemente)
+  // ALTO (sem crítico) → teto 70
   if (alto > 0) {
-    const impactoAlto = Math.min(30, alto * 1.5); // ALTO é o motor real
-    const ajusteMedio = Math.min(10, Math.log10(1 + medio) * 2); // MÉDIO limitado
+    const impactoAlto = Math.min(20, Math.log10(1 + alto) * 12);
+    const impactoMedio = Math.min(10, Math.log10(1 + medio) * 4);
 
-    return Math.min(80, 40 + impactoAlto + ajusteMedio);
+    return Math.min(70, 30 + impactoAlto + impactoMedio);
   }
 
-  // MÉDIO (quando não há ALTO)
+  // MÉDIO → teto 55
   if (medio > 0) {
-    return Math.min(60, 20 + Math.sqrt(medio) * 1.2);
+    return Math.min(55, 20 + Math.log10(1 + medio) * 10);
   }
 
-  // BAIXO
+  // BAIXO → teto 30
   if (baixo > 0) {
-    return Math.min(30, 10 + Math.log10(1 + baixo));
+    return Math.min(30, 10 + Math.log10(1 + baixo) * 4);
   }
 
   return 0;
@@ -53,97 +58,92 @@ export default {
   async riskLevel(ctx) {
     try {
       const userId = ctx.state.user?.id;
-      if (!userId) return ctx.unauthorized("Usuário não autenticado");
+      if (!userId) {
+        return ctx.unauthorized("Usuário não autenticado");
+      }
 
-      // 🔹 Período absoluto (calendário) — DEFINIR UMA VEZ
+      // =====================================================
+      // 🔹 FILTROS DE TEMPO
+      // =====================================================
       const periodo =
         ctx.query.from && ctx.query.to
           ? { from: ctx.query.from, to: ctx.query.to }
           : null;
 
-      // 🔹 Dias (fallback)
       const diasGlobal = ctx.query.dias || "1";
 
       const diasFirewall = ctx.query.firewall || diasGlobal;
       const diasAgentes = ctx.query.agentes || diasGlobal;
-      const diasSeveridade = ctx.query.severidade || diasGlobal;
       const diasIris = ctx.query.iris || diasGlobal;
 
-      // 🔹 Montagem correta do time do IRIS
       const timeIris = periodo
         ? { from: periodo.from, to: periodo.to }
         : { dias: diasIris };
 
-      // Tenant ativo
+      // =====================================================
+      // 🔹 TENANT
+      // =====================================================
       const tenant = await getTenantAtivo(ctx);
-      if (!tenant) return ctx.notFound("Tenant não encontrado ou inativo");
+      if (!tenant) {
+        return ctx.notFound("Tenant não encontrado ou inativo");
+      }
 
-      // 🔹 Buscar dados simultaneamente
-      const [fw, agentes, severidade, iris] = await Promise.all([
-        buscarTopGeradoresFirewall(
-          tenant,
-          diasFirewall,
-          periodo // (vamos alinhar esse service depois)
-        ),
-        buscarTopAgentes(
-          tenant,
-          {
-            dias: diasAgentes,
-            from: periodo?.from,
-            to: periodo?.to,
-          }
-        ),
-        buscarSeveridadeIndexer(
-          tenant,
-          diasSeveridade,
-          periodo
-        ),
-        buscarIncidentesIris(
-          tenant,
-          timeIris,
-          ctx.state.user
-        ),
+      // =====================================================
+      // 🔹 BUSCAS EM PARALELO (SOMENTE OPERACIONAL)
+      // =====================================================
+      const [firewalls, agentes, iris] = await Promise.all([
+        buscarTopGeradoresFirewall(tenant, diasFirewall, periodo),
+        buscarTopAgentes(tenant, {
+          dias: diasAgentes,
+          from: periodo?.from,
+          to: periodo?.to,
+        }),
+        buscarIncidentesIris(tenant, timeIris, ctx.state.user),
       ]);
 
-      // 🔹 Totais iniciais (Indexer)
-      let baixo = severidade.baixo || 0;
-      let medio = severidade.medio || 0;
-      let alto = severidade.alto || 0;
-      let critico = severidade.critico || 0;
-      let total = severidade.total || 0;
+      // =====================================================
+      // 🔹 SEVERIDADES OPERACIONAIS (CARD)
+      // =====================================================
+      let baixo = 0;
+      let medio = 0;
+      let alto = 0;
+      let critico = 0;
 
-      // 🔹 Firewall
-      fw.forEach((item) => {
-        baixo += item.severidade.baixo;
-        medio += item.severidade.medio;
-        alto += item.severidade.alto;
-        critico += item.severidade.critico;
-        total += item.total;
+      // 🔸 Firewall
+      firewalls.forEach((fw) => {
+        baixo += fw.severidade.baixo;
+        medio += fw.severidade.medio;
+        alto += fw.severidade.alto;
+        critico += fw.severidade.critico;
       });
 
-      // 🔹 Agentes
+      // 🔸 Hosts / Agentes
       agentes.forEach((agente) => {
         agente.severidades.forEach((s) => {
           if (s.key <= 6) baixo += s.doc_count;
           else if (s.key <= 11) medio += s.doc_count;
           else if (s.key <= 14) alto += s.doc_count;
           else critico += s.doc_count;
-
-          total += s.doc_count;
         });
       });
 
-      // 🔹 IRIS
+      // 🔸 IRIS
       if (iris && typeof iris === "object") {
         baixo += iris.baixo || 0;
         medio += iris.medio || 0;
         alto += iris.alto || 0;
         critico += iris.critico || 0;
-        total += iris.total || 0;
       }
 
-      // 🔹 Cálculo final do Risk Level
-      const risco = calcularRiskLevel({
+      // =====================================================
+      // 🔹 TOTAL DO CARD (APENAS SEVERIDADES)
+      // =====================================================
+      const total = baixo + medio + alto + critico;
+
+      // =====================================================
+      // 🔹 ÍNDICE DE RISCO (APENAS OPERACIONAL)
+      // =====================================================
+      const indiceRisco = calcularRiskLevel({
         critico,
         alto,
         medio,
@@ -151,18 +151,13 @@ export default {
       });
 
       // 🔹 Log técnico
-      if (periodo) {
-        strapi.log.info(
-          `RiskLevel (${periodo.from} → ${periodo.to}): ` +
-            `C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
-        );
-      } else {
-        strapi.log.info(
-          `RiskLevel (${diasGlobal}d): ` +
-            `C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
-        );
-      }
+      strapi.log.info(
+        `RiskLevel → C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
+      );
 
+      // =====================================================
+      // 🔹 RESPONSE FINAL
+      // =====================================================
       return ctx.send({
         severidades: {
           baixo,
@@ -171,13 +166,12 @@ export default {
           critico,
           total,
         },
-        indiceRisco: parseFloat(risco.toFixed(2)),
+        indiceRisco: parseFloat(indiceRisco.toFixed(2)),
         filtrosUsados: {
           diasGlobal,
           periodo,
           diasFirewall,
           diasAgentes,
-          diasSeveridade,
           diasIris,
         },
       });

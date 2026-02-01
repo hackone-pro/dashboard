@@ -137,10 +137,7 @@ export default function RiskLevel() {
           </h2>
 
           <p className="text-white text-base font-semibold">
-            {formatador.format(
-              severidades.total + totalIncidentes
-            )}{" "}
-            alertas totais
+          {formatador.format(severidades.total)} alertas totais
           </p>
         </div>
 
