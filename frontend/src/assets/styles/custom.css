@@ -915,3 +915,11 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
 .react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range, .react-datepicker__month-text--in-range, .react-datepicker__quarter-text--in-range, .react-datepicker__year-text--in-range){
   background-color: rgb(121 81 215 / 63%) !important;
 }
+
+.react-datepicker__header:not(.react-datepicker__header--has-time-select, .react-datepicker__header--middle, .react-datepicker__header--bottom) {
+  border-top-right-radius: 0 !important;
+}
+
+.react-datepicker__header {
+  border-top-left-radius: 0rem !important;
+}
