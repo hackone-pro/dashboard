@@ -15,7 +15,7 @@ export default function DateRangePicker({
   resetKey,
 }: {
   onApply: (payload: { from: string; to: string }) => void;
-  resetKey: number;
+  resetKey?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [periodoRapido, setPeriodoRapido] =
@@ -47,6 +47,7 @@ export default function DateRangePicker({
 
   // 🔄 RESET EXTERNO (botão "Limpar filtros")
   useEffect(() => {
+    if (resetKey === undefined) return;
     setPeriodoRapido("24h");
     setStartDate(null);
     setEndDate(null);
@@ -71,6 +72,8 @@ export default function DateRangePicker({
   }
 
   function aplicar() {
+    const agora = new Date();
+
     let from: Date;
     let to: Date;
 
@@ -86,6 +89,15 @@ export default function DateRangePicker({
       ({ from, to } = calcularPeriodo("24h"));
     }
 
+    // BLOQUEIO DE FUTURO (definitivo)
+    if (to > agora) {
+      to = agora;
+    }
+
+    if (from > agora) {
+      return; // opcional: pode mostrar toast aqui
+    }
+
     onApply({
       from: from.toISOString(),
       to: to.toISOString(),
@@ -93,6 +105,7 @@ export default function DateRangePicker({
 
     setOpen(false);
   }
+
 
   return (
     <div ref={containerRef} className="relative">
@@ -159,8 +172,18 @@ export default function DateRangePicker({
                 setEndDate(end);
               }}
               minDate={limiteInicio}
-              maxDate={startDate ? addDays(startDate, 30) : undefined}
+              maxDate={
+                startDate
+                  ? addDays(startDate, 30) > hoje
+                    ? hoje
+                    : addDays(startDate, 30)
+                  : hoje
+              }
+
               dateFormat="dd/MM/yyyy"
+              withPortal
+              popperPlacement="bottom-end"
+              popperClassName="z-[9999]"
             />
           </div>
 
