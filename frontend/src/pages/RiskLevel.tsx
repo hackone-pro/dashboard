@@ -22,7 +22,7 @@ export default function RiskLevel() {
   const { tenantAtivo } = useTenant();
   const formatador = new Intl.NumberFormat("pt-BR");
 
-  // 🔹 Filtros
+  // 🔹 Filtros globais
   const [dias, setDias] = useState<string>("1");
   const [diasFirewall, setDiasFirewall] = useState<string | null>(null);
   const [diasAgentes, setDiasAgentes] = useState<string | null>(null);
@@ -30,15 +30,20 @@ export default function RiskLevel() {
   const [diasCis, setDiasCis] = useState<string | null>(null);
   const [diasIris, setDiasIris] = useState<string | null>(null);
 
+  // 🔹 Período customizado
   const [periodo, setPeriodo] = useState<{
     from: string;
     to: string;
   } | null>(null);
 
-  // 🔹 Loading da severidade (controla skeleton)
-  const [loadingSeveridade, setLoadingSeveridade] = useState<boolean>(true);
+  // 🔹 Key para resetar DateRangePicker
+  const [resetFiltroKey, setResetFiltroKey] = useState<number>(0);
 
-  // 🔹 Dados globais (FONTE ÚNICA)
+  // 🔹 Loading da severidade
+  const [loadingSeveridade, setLoadingSeveridade] =
+    useState<boolean>(true);
+
+  // 🔹 Dados globais
   const [severidades, setSeveridades] = useState<Severidades>({
     baixo: 0,
     medio: 0,
@@ -50,7 +55,7 @@ export default function RiskLevel() {
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
 
-  // 🔹 Fetch GLOBAL (RiskLevel é o dono do estado)
+  // 🔹 Fetch GLOBAL
   useEffect(() => {
     if (!tenantAtivo) return;
 
@@ -107,6 +112,7 @@ export default function RiskLevel() {
       {/* 🔹 Filtros */}
       <div className="flex justify-end mt-5 mb-3 px-6">
         <DateRangePicker
+          resetKey={resetFiltroKey}
           onApply={(payload) => {
             setPeriodo(payload);
           }}
@@ -114,6 +120,7 @@ export default function RiskLevel() {
 
         <button
           onClick={() => {
+            // 🔄 limpa filtros
             setPeriodo(null);
             setDias("1");
             setDiasFirewall(null);
@@ -121,9 +128,13 @@ export default function RiskLevel() {
             setDiasSeveridade(null);
             setDiasCis(null);
             setDiasIris(null);
+
+            // 🔥 força reset do calendário
+            setResetFiltroKey((v) => v + 1);
           }}
           className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors ml-3"
         >
+          {/* @ts-ignore */}
           <FiRotateCcw className="w-4 h-4" />
           Limpar filtros
         </button>
@@ -137,7 +148,7 @@ export default function RiskLevel() {
           </h2>
 
           <p className="text-white text-base font-semibold">
-          {formatador.format(severidades.total)} alertas totais
+            {formatador.format(severidades.total)} alertas totais
           </p>
         </div>
 
@@ -197,7 +208,6 @@ export default function RiskLevel() {
           periodo={periodo}
           onChangeFiltro={setDiasCis}
         />
-
 
         <div className="flex flex-col h-full">
           <FirewallDonutCard
