@@ -17,7 +17,7 @@ import { getTenantAtivo } from "./_utils";
  * - Baixo nunca gera pânico
  * =====================================================
  */
-function calcularRiskLevel({
+ function calcularRiskLevel({
   critico,
   alto,
   medio,
@@ -28,31 +28,41 @@ function calcularRiskLevel({
   medio: number;
   baixo: number;
 }) {
-  // CRÍTICO → incidente real
+  // CRÍTICO — 75% → 100%
   if (critico > 0) {
-    return Math.min(100, 80 + Math.log10(1 + critico) * 8);
+    return Math.min(
+      100,
+      75 + Math.log10(1 + critico) * 10
+    );
   }
 
-  // ALTO (sem crítico) → teto 70
+  // ALTO — 50% → 75%
   if (alto > 0) {
-    const impactoAlto = Math.min(20, Math.log10(1 + alto) * 12);
-    const impactoMedio = Math.min(10, Math.log10(1 + medio) * 4);
-
-    return Math.min(70, 30 + impactoAlto + impactoMedio);
+    return Math.min(
+      75,
+      50 + Math.log10(1 + alto) * 8
+    );
   }
 
-  // MÉDIO → teto 55
+  // MÉDIO — 25% → 50%
   if (medio > 0) {
-    return Math.min(55, 20 + Math.log10(1 + medio) * 10);
+    return Math.min(
+      50,
+      25 + Math.log10(1 + medio) * 6
+    );
   }
 
-  // BAIXO → teto 30
+  // BAIXO — 0% → 25%
   if (baixo > 0) {
-    return Math.min(30, 10 + Math.log10(1 + baixo) * 4);
+    return Math.min(
+      25,
+      Math.log10(1 + baixo) * 5
+    );
   }
 
   return 0;
 }
+
 
 export default {
   async riskLevel(ctx) {
