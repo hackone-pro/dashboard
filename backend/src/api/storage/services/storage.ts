@@ -18,7 +18,7 @@ const STORAGE_DIR_DEV = process.cwd();
 const STORAGE_DIR = IS_DEV ? STORAGE_DIR_DEV : STORAGE_DIR_PROD;
 
 /* ============================
-   NORMALIZA TENANT
+   NORMALIZA TENANT (USO INTERNO)
 ============================ */
 function normalizarTenant(input: string) {
   return (input || "")
@@ -28,16 +28,18 @@ function normalizarTenant(input: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9\s_-]/g, "")
-    .replace(/[\s-]+/g, "_")
+    .replace(/[\s]+/g, "_")
     .replace(/_+/g, "_");
 }
 
 /* ============================
    LOCALIZA ARQUIVO DINÂMICO
+   ✔ aceita - ou _
+   ✔ ignora prd / pocXX
 ============================ */
 function localizarArquivo(
   tipo: "state" | "internal",
-  tenantKey: string
+  tenantFromDb: string
 ) {
   if (!fs.existsSync(STORAGE_DIR)) {
     throw new Error(`Diretório não encontrado: ${STORAGE_DIR}`);
@@ -45,23 +47,42 @@ function localizarArquivo(
 
   const arquivos = fs.readdirSync(STORAGE_DIR);
 
-  const regex = new RegExp(
-    `^.*-storage_${tipo}-${tenantKey}\\.json$`,
-    "i"
-  );
+  const tenantBase = tenantFromDb
+    .toString()
+    .trim()
+    .toLowerCase();
 
-  const encontrado = arquivos.find(nome => regex.test(nome));
+  const tenantNormalizado = normalizarTenant(tenantBase);
+
+  // variações possíveis do tenant no nome do arquivo
+  const variantes = new Set<string>([
+    tenantBase,
+    tenantNormalizado,
+    tenantNormalizado.replace(/_/g, "-"),
+    tenantNormalizado.replace(/-/g, "_"),
+  ]);
+
+  const encontrado = arquivos.find(nome => {
+    const lower = nome.toLowerCase();
+
+    if (!lower.includes(`storage_${tipo}`)) return false;
+    if (!lower.endsWith(".json")) return false;
+
+    return Array.from(variantes).some(v =>
+      lower.includes(`-${v}.json`)
+    );
+  });
 
   if (!encontrado) {
     throw new Error(
-      `Arquivo storage_${tipo} não encontrado para tenant="${tenantKey}"`
+      `Arquivo storage_${tipo} não encontrado para tenant="${tenantFromDb}"`
     );
   }
 
   const caminho = path.join(STORAGE_DIR, encontrado);
 
   strapi.log.info(
-    `📄 Storage (${tipo}) [${IS_DEV ? "DEV" : "PROD"}] → ${caminho}`
+    `📄 Storage (${tipo}) [${IS_DEV ? "DEV" : "PROD"}] → ${encontrado}`
   );
 
   return caminho;
@@ -72,9 +93,9 @@ function localizarArquivo(
 ============================ */
 function lerArquivo(
   tipo: "state" | "internal",
-  tenantKey: string
+  tenantFromDb: string
 ) {
-  const caminho = localizarArquivo(tipo, tenantKey);
+  const caminho = localizarArquivo(tipo, tenantFromDb);
   return JSON.parse(fs.readFileSync(caminho, "utf8"));
 }
 
@@ -97,8 +118,7 @@ function extrairNumeroGB(valor: string | number): number {
    STATE NORMALIZADO (SNAPSHOT)
 ============================ */
 function lerStateNormalizado(tenantFromDb: string) {
-  const tenantKey = normalizarTenant(tenantFromDb);
-  const raw = lerArquivo("state", tenantKey);
+  const raw = lerArquivo("state", tenantFromDb);
 
   return {
     used: extrairNumeroGB(raw["Em uso"]),
@@ -125,8 +145,9 @@ function extrairDataDaKey(key: string): string | null {
 ============================ */
 function normalizarLastSeen(
   lastSeen: Record<string, number>,
-  tenantKey: string
+  tenantFromDb: string
 ) {
+  const tenantKey = normalizarTenant(tenantFromDb);
   const porDia: Record<string, number> = {};
 
   for (const [key, valor] of Object.entries(lastSeen)) {
@@ -145,7 +166,7 @@ function normalizarLastSeen(
 }
 
 /* ============================
-   NORMALIZA DELETED (GLOBAL)
+   NORMALIZA DELETED (ARRAY)
 ============================ */
 function normalizarDeleted(lista: any[]) {
   const porDia: Record<string, number> = {};
@@ -168,15 +189,14 @@ function normalizarDeleted(lista: any[]) {
    GERAR TIMELINE
 ============================ */
 async function gerarTimeline(tenantFromDb: string) {
-  const tenantKey = normalizarTenant(tenantFromDb);
-  const internal = lerArquivo("internal", tenantKey);
+  const internal = lerArquivo("internal", tenantFromDb);
 
   const lastSeenRaw = internal?.last_seen ?? {};
   const deletedList = Array.isArray(internal?.deleted)
     ? internal.deleted
     : [];
 
-  const usoPorDia = normalizarLastSeen(lastSeenRaw, tenantKey);
+  const usoPorDia = normalizarLastSeen(lastSeenRaw, tenantFromDb);
   const deletadoPorDia = normalizarDeleted(deletedList);
 
   const datas = new Set([
