@@ -233,9 +233,30 @@ export default function MonitoriaSOC() {
           <FirewallCard ref={firewallRef} />
           <ServidoresCard ref={servidoresRef} />
           <EdrCard ref={edrRef} />
+          <div className="cards rounded-2xl p-6">
+            <h3 className="text-white text-sm mb-4">
+              Outros Coletores
+            </h3>
+            <table className="w-full text-xs text-gray-400">
+              <thead className="fundo-dashboard">
+                <tr className="text-white">
+                  <th className="text-left py-2 px-3">Origem</th>
+                  <th className="text-center py-2">Status</th>
+                  <th className="text-center py-2">Último Log</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-white/5">
+                  <td colSpan={3} className="text-center py-6 text-gray-500">
+                    Nenhuma dado de coletores encontrado
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </section>
-    </LayoutModel>
+    </LayoutModel >
   );
 }
