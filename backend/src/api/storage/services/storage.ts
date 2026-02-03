@@ -2,23 +2,23 @@ import fs from "fs";
 import path from "path";
 
 /* ============================
-   AMBIENTE
+   STORAGE DIRECTORY (MANUAL)
+   ATIVE APENAS UM
 ============================ */
-const IS_DEV = process.env.NODE_ENV === "development";
+
+// PRODUÇÃO (ative no servidor)
+const STORAGE_DIR = "/opt/storage_monitoring";
+
+// DESENVOLVIMENTO LOCAL (ative no localhost)
+// const STORAGE_DIR = process.cwd();
 
 /* ============================
-   DIRETÓRIOS
+   LOG DE CONFIRMAÇÃO
 ============================ */
-// PROD
-const STORAGE_DIR_PROD = "/opt/storage_monitoring";
-
-// DEV (raiz do projeto)
-const STORAGE_DIR_DEV = process.cwd();
-
-const STORAGE_DIR = IS_DEV ? STORAGE_DIR_DEV : STORAGE_DIR_PROD;
+strapi.log.warn(`📁 STORAGE_DIR ATIVO = ${STORAGE_DIR}`);
 
 /* ============================
-   NORMALIZA TENANT (USO INTERNO)
+   NORMALIZA TENANT
 ============================ */
 function normalizarTenant(input: string) {
   return (input || "")
@@ -54,7 +54,6 @@ function localizarArquivo(
 
   const tenantNormalizado = normalizarTenant(tenantBase);
 
-  // variações possíveis do tenant no nome do arquivo
   const variantes = new Set<string>([
     tenantBase,
     tenantNormalizado,
@@ -81,9 +80,7 @@ function localizarArquivo(
 
   const caminho = path.join(STORAGE_DIR, encontrado);
 
-  strapi.log.info(
-    `📄 Storage (${tipo}) [${IS_DEV ? "DEV" : "PROD"}] → ${encontrado}`
-  );
+  strapi.log.info(`📄 Storage (${tipo}) → ${encontrado}`);
 
   return caminho;
 }
