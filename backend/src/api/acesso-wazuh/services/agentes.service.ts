@@ -71,7 +71,8 @@ export async function buscarTopAgentes(
                 "access_control",
                 "vulnerability-detector",
                 "fortigate",
-                "windows"
+                "windows",
+                "syscheck"
               ]
             }
           }
@@ -90,7 +91,7 @@ export async function buscarTopAgentes(
         },
         aggs: {
           por_severidade: { terms: { field: "rule.level" } },
-          // por_evento: { terms: { field: "syscheck.event" } },
+          por_evento: { terms: { field: "syscheck.event" } },
         },
       },
     },
