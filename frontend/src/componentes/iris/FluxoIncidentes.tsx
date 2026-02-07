@@ -180,16 +180,18 @@ export default function FluxoIncidentesIris({
         <div className={`${isWidget ? "mr-8" : ""}`}>
           <select
             className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-            value={periodo ? "" : filtroLocal || diasEfetivo}
-            disabled={!!periodo}
+            value={disabled ? "" : filtroLocal || diasEfetivo}
+            disabled={disabled}
             onChange={(e) => {
+              if (disabled) return;
+
               const val = e.target.value;
               const novoValor = val === diasGlobal ? null : val;
               setFiltroLocal(novoValor);
               onChangeFiltro?.(novoValor);
             }}
           >
-            {/* opção invisível obrigatória para permitir vazio */}
+            {/* opção invisível obrigatória */}
             <option value="" hidden></option>
             <option value="1">24 horas</option>
             <option value="2">48 horas</option>
