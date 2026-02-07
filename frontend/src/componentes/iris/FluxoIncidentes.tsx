@@ -22,10 +22,11 @@ interface Periodo {
 interface Props {
   token: string;
   diasGlobal?: string;
-  periodo?: Periodo | null; // 👈 ADIÇÃO ÚNICA
+  periodo?: Periodo | null;
   onChangeFiltro?: (valor: string | null) => void;
   onUpdateTotais?: (total: number) => void;
   isWidget?: boolean;
+  disabled?: boolean;
 }
 
 export default function FluxoIncidentesIris({
@@ -35,6 +36,7 @@ export default function FluxoIncidentesIris({
   onChangeFiltro,
   onUpdateTotais,
   isWidget = false,
+  disabled = false,
 }: Props) {
   const { tenantAtivo } = useTenant();
 
