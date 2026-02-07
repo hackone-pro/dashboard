@@ -1,4 +1,4 @@
-import { SetStateAction, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DatePicker from "react-datepicker";
 import { ptBR } from "date-fns/locale";
 import { registerLocale } from "react-datepicker";
@@ -28,6 +28,7 @@ export default function DateRangePicker({
   const limiteInicio = new Date();
   limiteInicio.setMonth(limiteInicio.getMonth() - 12);
 
+  /* ================= CLICK FORA ================= */
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -45,9 +46,10 @@ export default function DateRangePicker({
     };
   }, [open]);
 
-  // 🔄 RESET EXTERNO (botão "Limpar filtros")
+  /* ================= RESET EXTERNO ================= */
   useEffect(() => {
     if (resetKey === undefined) return;
+
     setPeriodoRapido("24h");
     setStartDate(null);
     setEndDate(null);
@@ -89,14 +91,8 @@ export default function DateRangePicker({
       ({ from, to } = calcularPeriodo("24h"));
     }
 
-    // BLOQUEIO DE FUTURO (definitivo)
-    if (to > agora) {
-      to = agora;
-    }
-
-    if (from > agora) {
-      return; // opcional: pode mostrar toast aqui
-    }
+    if (to > agora) to = agora;
+    if (from > agora) return;
 
     onApply({
       from: from.toISOString(),
@@ -106,10 +102,8 @@ export default function DateRangePicker({
     setOpen(false);
   }
 
-
   return (
     <div ref={containerRef} className="relative">
-      {/* BOTÃO FILTROS */}
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"
@@ -119,7 +113,6 @@ export default function DateRangePicker({
         Filtros
       </button>
 
-      {/* MODAL */}
       {open && (
         <div
           className="
@@ -129,7 +122,7 @@ export default function DateRangePicker({
             min-w-[530px]
           "
         >
-          {/* LINHA 1 — PERÍODOS RÁPIDOS */}
+          {/* PERÍODOS RÁPIDOS */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             <span className="text-gray-400 text-sm mr-2">Dias:</span>
 
@@ -144,9 +137,10 @@ export default function DateRangePicker({
                     setEndDate(to);
                   }}
                   className={`px-3 py-1 rounded-md text-sm border transition
-                    ${periodoRapido === p
-                      ? "bg-purple-600/20 text-purple-300 border-purple-600"
-                      : "text-gray-400 border-[#1D1929] hover:border-purple-500"
+                    ${
+                      periodoRapido === p
+                        ? "bg-purple-600/20 text-purple-300 border-purple-600"
+                        : "text-gray-400 border-[#1D1929] hover:border-purple-500"
                     }`}
                 >
                   {p}
@@ -155,47 +149,38 @@ export default function DateRangePicker({
             )}
           </div>
 
-          {/* LINHA 2 — CALENDÁRIO RANGE (2 MESES) */}
-          <div className="mb-4">
-            <DatePicker
-              inline
-              locale="pt-BR"
-              selectsRange
-              monthsShown={2}
-              startDate={startDate}
-              endDate={endDate}
-              onChange={(dates: [Date | null, Date | null]) => {
-                const [start, end] = dates;
+          {/* CALENDÁRIO */}
+          <DatePicker
+            inline
+            locale="pt-BR"
+            selectsRange
+            monthsShown={2}
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(dates: [Date | null, Date | null]) => {
+              const [start, end] = dates;
+              setPeriodoRapido(null as any);
+              setStartDate(start);
+              setEndDate(end);
+            }}
+            minDate={limiteInicio}
+            maxDate={
+              startDate
+                ? addDays(startDate, 30) > hoje
+                  ? hoje
+                  : addDays(startDate, 30)
+                : hoje
+            }
+            dateFormat="dd/MM/yyyy"
+          />
 
-                setPeriodoRapido(null as any);
-                setStartDate(start);
-                setEndDate(end);
-              }}
-              minDate={limiteInicio}
-              maxDate={
-                startDate
-                  ? addDays(startDate, 30) > hoje
-                    ? hoje
-                    : addDays(startDate, 30)
-                  : hoje
-              }
-
-              dateFormat="dd/MM/yyyy"
-              withPortal
-              popperPlacement="bottom-end"
-              popperClassName="z-[9999]"
-            />
-          </div>
-
-          {/* LINHA 3 — APLICAR */}
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-4">
             <button
               onClick={aplicar}
               className="
-                flex items-center gap-2
                 bg-purple-600 hover:bg-purple-700
-                text-white px-4 py-2
-                rounded-md text-sm transition
+                text-white px-4 py-2 rounded-md
+                text-sm transition
               "
             >
               Aplicar filtros

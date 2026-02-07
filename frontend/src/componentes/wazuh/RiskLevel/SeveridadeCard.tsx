@@ -13,6 +13,7 @@ interface SeveridadeCardProps {
   loading?: boolean;
   periodo?: { from: string; to: string } | null;
   isWidget?: boolean;
+  disabled?: boolean;
 }
 
 export default function SeveridadeCard({

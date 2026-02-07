@@ -1,6 +1,9 @@
 // src/components/wazuh/TopAgentsCisCard.tsx
 import { useEffect, useMemo, useState } from "react";
-import { getTopAgentsCis, TopAgentCisItem } from "../../../services/wazuh/topagentscis";
+import {
+  getTopAgentsCis,
+  TopAgentCisItem,
+} from "../../../services/wazuh/topagentscis";
 import { useTenant } from "../../../context/TenantContext";
 import { GripVertical } from "lucide-react";
 
@@ -9,6 +12,7 @@ interface TopAgentsCisCardProps {
   periodo?: { from: string; to: string } | null;
   onChangeFiltro?: (valor: string | null) => void;
   isWidget?: boolean;
+  disabled?: boolean;
 }
 
 export default function TopAgentsCisCard({
@@ -16,6 +20,7 @@ export default function TopAgentsCisCard({
   periodo,
   onChangeFiltro,
   isWidget = false,
+  disabled = false,
 }: TopAgentsCisCardProps) {
   const { tenantAtivo } = useTenant();
 
@@ -26,6 +31,15 @@ export default function TopAgentsCisCard({
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
+
+  /* ============================
+     AO TRAVAR → LIMPA FILTRO LOCAL
+  ============================ */
+  useEffect(() => {
+    if (disabled) {
+      setFiltroLocal(null);
+    }
+  }, [disabled]);
 
   useEffect(() => {
     if (!tenantAtivo) return;
@@ -79,12 +93,28 @@ export default function TopAgentsCisCard({
 
   const getClassesPorScore = (p: number) => {
     if (p < 30)
-      return { bar: "bg-[#FB35B91A]", text: "text-[#F914AD]", border: "border-[#FB35B933]" };
+      return {
+        bar: "bg-[#FB35B91A]",
+        text: "text-[#F914AD]",
+        border: "border-[#FB35B933]",
+      };
     if (p < 40)
-      return { bar: "bg-[#6700FF1A]", text: "text-[#A855F7]", border: "border-[#6700FF33]" };
+      return {
+        bar: "bg-[#6700FF1A]",
+        text: "text-[#A855F7]",
+        border: "border-[#6700FF33]",
+      };
     if (p <= 75)
-      return { bar: "bg-[#6F58E61A]", text: "text-[#6366F1]", border: "border-[#6F58E633]" };
-    return { bar: "bg-[#1DD69A1A]", text: "text-[#1DD69A]", border: "border-[#1DD69A33]" };
+      return {
+        bar: "bg-[#6F58E61A]",
+        text: "text-[#6366F1]",
+        border: "border-[#6F58E633]",
+      };
+    return {
+      bar: "bg-[#1DD69A1A]",
+      text: "text-[#1DD69A]",
+      border: "border-[#1DD69A33]",
+    };
   };
 
   return (
@@ -106,17 +136,24 @@ export default function TopAgentsCisCard({
           </h3>
         </div>
 
+        {/* SELECT — VISUAL ORIGINAL */}
         <select
           className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
             ${isWidget ? "mr-8" : ""}`}
-          value={filtroLocal || dias}
+          value={disabled ? "" : filtroLocal || dias}
+          disabled={disabled}
           onChange={(e) => {
+            if (disabled) return;
+
             const val = e.target.value;
             const novoValor = val === dias ? null : val;
             setFiltroLocal(novoValor);
             onChangeFiltro?.(novoValor);
           }}
         >
+          {/* opção invisível obrigatória */}
+          <option value="" hidden></option>
+
           <option value="1">24 horas</option>
           <option value="2">48 horas</option>
           <option value="7">7 dias</option>
@@ -135,7 +172,10 @@ export default function TopAgentsCisCard({
       {carregando ? (
         <div className="flex flex-col gap-3 relative z-20">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="w-full h-8 rounded-md bg-[#ffffff0a] animate-pulse" />
+            <div
+              key={i}
+              className="w-full h-8 rounded-md bg-[#ffffff0a] animate-pulse"
+            />
           ))}
         </div>
       ) : (
@@ -146,7 +186,10 @@ export default function TopAgentsCisCard({
             </span>
           ) : (
             lista.map((item, i) => {
-              const p = Math.max(0, Math.min(100, Math.round(item.score_cis_percent)));
+              const p = Math.max(
+                0,
+                Math.min(100, Math.round(item.score_cis_percent))
+              );
               const { bar, text, border } = getClassesPorScore(p);
 
               return (
@@ -162,7 +205,9 @@ export default function TopAgentsCisCard({
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-between px-3 text-sm text-white">
-                    <span className="text-gray-400 truncate pr-2">{item.agent_name}</span>
+                    <span className="text-gray-400 truncate pr-2">
+                      {item.agent_name}
+                    </span>
                     <span className={text}>{p}%</span>
                   </div>
                 </div>

@@ -12,12 +12,12 @@ export async function buscarListaFirewalls(tenant) {
   const customerFilter = {
     bool: {
       should: [
-        { term: { "data.customer": clientName } },
-        { term: { "data.customer.keyword": clientName } },
-        { term: { customer: clientName } },
         { term: { "customer.keyword": clientName } },
-        { term: { "fields.customer": clientName } },
+        { term: { customer: clientName } },
+        { term: { "data.customer.keyword": clientName } },
+        { term: { "data.customer": clientName } },
         { term: { "fields.customer.keyword": clientName } },
+        { term: { "fields.customer": clientName } },
       ],
       minimum_should_match: 1,
     },
@@ -34,19 +34,24 @@ export async function buscarListaFirewalls(tenant) {
 
   const buildBody = (field: string) => ({
     size: 0,
-    query: { bool: { must: [customerFilter] } },
+    query: {
+      bool: {
+        must: [customerFilter],
+      },
+    },
     aggs: {
       firewalls: {
         terms: {
           field,
           size: 200,
-          order: { _key: "asc" },
+          order: { _count: "desc" },
         },
         aggs: {
-          get_ip: {
+          ultimo_log: {
             top_hits: {
-              _source: { includes: ["location"] },
               size: 1,
+              sort: [{ _doc: "desc" }],
+              _source: true,
             },
           },
         },
@@ -55,6 +60,7 @@ export async function buscarListaFirewalls(tenant) {
   });
 
   const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
+
   let buckets = [];
 
   for (const field of DEVNAME_FIELDS) {
@@ -67,24 +73,25 @@ export async function buscarListaFirewalls(tenant) {
 
       buckets = response.data?.aggregations?.firewalls?.buckets || [];
 
-      if (buckets.length > 0) {
-        console.log("🔥 Campo devname detectado:", field);
-        break;
-      }
-    } catch (err) {
+      if (buckets.length > 0) break;
+    } catch {
       continue;
     }
   }
 
   return buckets.map((b: any) => {
-    const hit = b.get_ip?.hits?.hits?.[0]?._source || {};
+    const hit = b.ultimo_log?.hits?.hits?.[0]?._source || {};
+
     return {
       id: b.key,
       nome: b.key,
-      location: hit.location || null,
+      location: hit.location ?? null,
+      timestamp: hit.timestamp ?? null,
     };
   });
 }
+
+
 
 /* ============================================
    TOP GERADORES DE FIREWALL

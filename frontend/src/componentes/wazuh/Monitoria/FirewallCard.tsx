@@ -43,7 +43,6 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
 
   const porPagina = 5;
 
-  // 🔹 CONTRATO VINDO DO TENANT
   const firewallsContratados =
     tenantAtivo?.contract?.firewalls ?? 0;
 
@@ -69,6 +68,7 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
           const timestamp =
             log10?.timestamp ??
             logLast?.timestamp ??
+            fw.timestamp ??
             null;
 
           return {
@@ -101,7 +101,6 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
     carregar,
   }));
 
-  // 🔹 RECARREGA AO TROCAR TENANT
   useEffect(() => {
     if (tenantAtivo) carregar();
   }, [tenantAtivo]);
