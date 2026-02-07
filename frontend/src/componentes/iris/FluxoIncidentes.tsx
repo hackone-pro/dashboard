@@ -178,7 +178,7 @@ export default function FluxoIncidentesIris({
         <div className={`${isWidget ? "mr-8" : ""}`}>
           <select
             className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-            value={filtroLocal || diasEfetivo}
+            value={periodo ? "" : filtroLocal || diasEfetivo}
             disabled={!!periodo}
             onChange={(e) => {
               const val = e.target.value;
@@ -187,6 +187,8 @@ export default function FluxoIncidentesIris({
               onChangeFiltro?.(novoValor);
             }}
           >
+            {/* opção invisível obrigatória para permitir vazio */}
+            <option value="" hidden></option>
             <option value="1">24 horas</option>
             <option value="2">48 horas</option>
             <option value="7">7 dias</option>
@@ -279,24 +281,24 @@ function agruparPorDia(
   const diasOrdenados =
     dias === 0
       ? (() => {
-          const todasDatas = [
-            ...Object.keys(contagemAbertos),
-            ...Object.keys(contagemAtribuidos),
-          ];
-          const minData = todasDatas.length
-            ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
-            : new Date();
-          const arr: string[] = [];
-          for (let d = new Date(minData); d <= hoje; d.setDate(d.getDate() + 1)) {
-            arr.push(d.toISOString().slice(0, 10));
-          }
-          return arr;
-        })()
+        const todasDatas = [
+          ...Object.keys(contagemAbertos),
+          ...Object.keys(contagemAtribuidos),
+        ];
+        const minData = todasDatas.length
+          ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
+          : new Date();
+        const arr: string[] = [];
+        for (let d = new Date(minData); d <= hoje; d.setDate(d.getDate() + 1)) {
+          arr.push(d.toISOString().slice(0, 10));
+        }
+        return arr;
+      })()
       : Array.from({ length: dias }).map((_, i) => {
-          const d = new Date(hoje);
-          d.setDate(hoje.getDate() - (dias - 1 - i));
-          return d.toISOString().slice(0, 10);
-        });
+        const d = new Date(hoje);
+        d.setDate(hoje.getDate() - (dias - 1 - i));
+        return d.toISOString().slice(0, 10);
+      });
 
   const categoriasX = diasOrdenados.map((d) => {
     const [ano, mes, dia] = d.split("-");

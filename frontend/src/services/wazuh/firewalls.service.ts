@@ -4,6 +4,7 @@ export interface FirewallInventarioItem {
   id: string;
   nome: string;
   location: string | null;
+  timestamp: string | null;
 }
 
 /**
@@ -33,11 +34,11 @@ export async function getFirewallsList(): Promise<FirewallInventarioItem[]> {
   const data = await response.json();
   const lista = Array.isArray(data?.firewalls) ? data.firewalls : [];
 
-  // Normaliza os campos recebidos
   const normalizado = lista.map((item: any) => ({
     id: String(item?.id ?? ""),
     nome: String(item?.nome ?? ""),
     location: item?.location ?? null,
+    timestamp: item?.timestamp ?? null,
   }));
 
   return normalizado;
