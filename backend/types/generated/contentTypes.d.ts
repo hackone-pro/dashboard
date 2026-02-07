@@ -373,6 +373,40 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiContractContract extends Struct.CollectionTypeSchema {
+  collectionName: 'contracts';
+  info: {
+    displayName: 'Contract';
+    pluralName: 'contracts';
+    singularName: 'contract';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    active: Schema.Attribute.Boolean;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    edr: Schema.Attribute.Integer;
+    firewalls: Schema.Attribute.Integer;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::contract.contract'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    servers: Schema.Attribute.Integer;
+    storage_gb: Schema.Attribute.Integer;
+    tenant: Schema.Attribute.Relation<'oneToOne', 'api::tenant.tenant'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiCustomDashboardCustomDashboard
   extends Struct.CollectionTypeSchema {
   collectionName: 'custom_dashboards';
@@ -452,6 +486,7 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
   attributes: {
     ativa: Schema.Attribute.Boolean;
     cliente_name: Schema.Attribute.String;
+    contract: Schema.Attribute.Relation<'oneToOne', 'api::contract.contract'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1078,6 +1113,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::contract.contract': ApiContractContract;
       'api::custom-dashboard.custom-dashboard': ApiCustomDashboardCustomDashboard;
       'api::report-entry.report-entry': ApiReportEntryReportEntry;
       'api::tenant.tenant': ApiTenantTenant;

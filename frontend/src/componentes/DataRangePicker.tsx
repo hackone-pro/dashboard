@@ -1,10 +1,9 @@
-// src/componentes/DataRangePicker.tsx
 import { SetStateAction, useEffect, useRef, useState } from "react";
 import DatePicker from "react-datepicker";
 import { ptBR } from "date-fns/locale";
 import { registerLocale } from "react-datepicker";
+import { addDays } from "date-fns";
 import { FaCalendarAlt } from "react-icons/fa";
-import { HiArrowLongRight } from "react-icons/hi2";
 import "react-datepicker/dist/react-datepicker.css";
 
 type PeriodoRapido = "24h" | "48h" | "7d" | "15d" | "30d";
@@ -13,18 +12,21 @@ registerLocale("pt-BR", ptBR);
 
 export default function DateRangePicker({
   onApply,
+  resetKey,
 }: {
   onApply: (payload: { from: string; to: string }) => void;
+  resetKey?: number;
 }) {
   const [open, setOpen] = useState(false);
-  const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
+  const [periodoRapido, setPeriodoRapido] =
+    useState<PeriodoRapido>("24h");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const hoje = new Date();
   const limiteInicio = new Date();
-  limiteInicio.setMonth(limiteInicio.getMonth() - 1);
+  limiteInicio.setMonth(limiteInicio.getMonth() - 12);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -42,6 +44,14 @@ export default function DateRangePicker({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [open]);
+
+  // 🔄 RESET EXTERNO (botão "Limpar filtros")
+  useEffect(() => {
+    if (resetKey === undefined) return;
+    setPeriodoRapido("24h");
+    setStartDate(null);
+    setEndDate(null);
+  }, [resetKey]);
 
   function calcularPeriodo(periodo: PeriodoRapido) {
     const agora = new Date();
@@ -62,6 +72,8 @@ export default function DateRangePicker({
   }
 
   function aplicar() {
+    const agora = new Date();
+
     let from: Date;
     let to: Date;
 
@@ -77,6 +89,15 @@ export default function DateRangePicker({
       ({ from, to } = calcularPeriodo("24h"));
     }
 
+    // BLOQUEIO DE FUTURO (definitivo)
+    if (to > agora) {
+      to = agora;
+    }
+
+    if (from > agora) {
+      return; // opcional: pode mostrar toast aqui
+    }
+
     onApply({
       from: from.toISOString(),
       to: to.toISOString(),
@@ -85,11 +106,12 @@ export default function DateRangePicker({
     setOpen(false);
   }
 
+
   return (
     <div ref={containerRef} className="relative">
       {/* BOTÃO FILTROS */}
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"
       >
         {/* @ts-ignore */}
@@ -100,75 +122,69 @@ export default function DateRangePicker({
       {/* MODAL */}
       {open && (
         <div
-          className="absolute right-0 mt-3 z-50 bg-[#0A0617] border border-[#1D1929] rounded-xl p-4 shadow-lg"
+          className="
+            absolute right-0 mt-3 z-50
+            bg-[#0A0617] border border-[#1D1929]
+            rounded-xl p-4 shadow-lg
+            min-w-[530px]
+          "
         >
-
           {/* LINHA 1 — PERÍODOS RÁPIDOS */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             <span className="text-gray-400 text-sm mr-2">Dias:</span>
 
-            {(["24h", "48h", "7d", "15d", "30d"] as PeriodoRapido[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  const { from, to } = calcularPeriodo(p);
-                  setPeriodoRapido(p);
-                  setStartDate(from);
-                  setEndDate(to);
-                }}
-                className={`px-3 py-1 rounded-md text-sm border transition
-                  ${periodoRapido === p
-                    ? "bg-purple-600/20 text-purple-300 border-purple-600"
-                    : "text-gray-400 border-[#1D1929] hover:border-purple-500"
-                  }`}
-              >
-                {p}
-              </button>
-            ))}
+            {(["24h", "48h", "7d", "15d", "30d"] as PeriodoRapido[]).map(
+              (p) => (
+                <button
+                  key={p}
+                  onClick={() => {
+                    const { from, to } = calcularPeriodo(p);
+                    setPeriodoRapido(p);
+                    setStartDate(from);
+                    setEndDate(to);
+                  }}
+                  className={`px-3 py-1 rounded-md text-sm border transition
+                    ${periodoRapido === p
+                      ? "bg-purple-600/20 text-purple-300 border-purple-600"
+                      : "text-gray-400 border-[#1D1929] hover:border-purple-500"
+                    }`}
+                >
+                  {p}
+                </button>
+              )
+            )}
           </div>
 
-          {/* LINHA 2 — CALENDÁRIOS */}
-          <div className="flex items-start gap-4 mb-4">
-            <div>
-              <span className="text-xs text-gray-500 block mb-1">
-                Data inicial
-              </span>
-              <DatePicker
-                selected={startDate}
-                onChange={(d: Date | null) => {
-                  setPeriodoRapido(null as any);
-                  setStartDate(d);
-                  setEndDate(null); // força escolher data final novamente
-                }}
-                minDate={limiteInicio}
-                maxDate={hoje}
-                dateFormat="dd/MM/yyyy"
-                inline
-                locale="pt-BR"
-              />
+          {/* LINHA 2 — CALENDÁRIO RANGE (2 MESES) */}
+          <div className="mb-4">
+            <DatePicker
+              inline
+              locale="pt-BR"
+              selectsRange
+              monthsShown={2}
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(dates: [Date | null, Date | null]) => {
+                const [start, end] = dates;
 
-            </div>
-            {/* @ts-ignore */}
-            <HiArrowLongRight className="text-gray-500 mt-10" />
+                setPeriodoRapido(null as any);
+                setStartDate(start);
+                setEndDate(end);
+              }}
+              minDate={limiteInicio}
+              maxDate={
+                startDate
+                  ? addDays(startDate, 30) > hoje
+                    ? hoje
+                    : addDays(startDate, 30)
+                  : hoje
+              }
 
-            <div>
-              <span className="text-xs text-gray-500 block mb-1">
-                Data final
-              </span>
-              <DatePicker
-                selected={endDate}
-                onChange={(d: Date | null) => {
-                  setPeriodoRapido(null as any);
-                  setEndDate(d);
-                }}
-                minDate={startDate ?? limiteInicio}
-                maxDate={hoje}
-                dateFormat="dd/MM/yyyy"
-                inline
-                locale="pt-BR"
-              />
-
-            </div>
+              dateFormat="dd/MM/yyyy"
+              withPortal
+              popperPlacement="bottom-end"
+              popperClassName="z-[9999]"
+            />
           </div>
 
           {/* LINHA 3 — APLICAR */}

@@ -77,7 +77,9 @@ export async function buscarTopPaisesAtaque(
             bool: {
               should: [
                 { term: { "rule.groups": "fortigate" } },
+                { term: { "rule.groups": "sophos_fw_ng" } },
                 { term: { "rule.groups": "fortianalyzer-like" } },
+                { term: { "decoder.name": "sophos_fw_ng" } },
                 { term: { "decoder.name": "fortianalyzer-like" } },
               ],
               minimum_should_match: 1,

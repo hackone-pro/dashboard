@@ -58,10 +58,23 @@ export async function buscarTopAgentes(
       bool: {
         must: [
           timeFilter,
-          { match_phrase: { customer: clientName } },
+          { match_phrase: { "customer": clientName } },
+          { match_phrase: { "agent.labels.customer": clientName } },
         ],
         filter: [
-          { match_phrase: { "rule.groups": "syscheck" } },
+          {
+            terms: {
+              "rule.groups": [
+                "attack",
+                "authentication_failed",
+                "invalid_login",
+                "access_control",
+                "vulnerability-detector",
+                "fortigate",
+                "windows"
+              ]
+            }
+          }
         ],
         must_not: [
           { match_phrase: { "agent.name": "wazuhhackone" } },
@@ -77,7 +90,7 @@ export async function buscarTopAgentes(
         },
         aggs: {
           por_severidade: { terms: { field: "rule.level" } },
-          por_evento: { terms: { field: "syscheck.event" } },
+          // por_evento: { terms: { field: "syscheck.event" } },
         },
       },
     },

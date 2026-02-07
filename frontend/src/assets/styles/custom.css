@@ -874,9 +874,9 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
 /*DATA PICKER RANGE*/
 .react-datepicker {
   background-color: #fff !important;
-  border: 3px solid #b27af8 !important;
   color: #202020 !important;
   font-size: 13px !important;
+  border: 0 !important;
 }
 
 .react-datepicker__header {
@@ -905,4 +905,21 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
 
 .react-datepicker__navigation-icon::before {
   border-color: #9ca3af;
+}
+
+.react-datepicker__day--in-range, 
+.react-datepicker__day--in-selecting-range:not([aria-disabled=true]):hover{
+  background-color: #7951d7 !important;
+}
+
+.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range, .react-datepicker__month-text--in-range, .react-datepicker__quarter-text--in-range, .react-datepicker__year-text--in-range){
+  background-color: rgb(121 81 215 / 63%) !important;
+}
+
+.react-datepicker__header:not(.react-datepicker__header--has-time-select, .react-datepicker__header--middle, .react-datepicker__header--bottom) {
+  border-top-right-radius: 0 !important;
+}
+
+.react-datepicker__header {
+  border-top-left-radius: 0rem !important;
 }

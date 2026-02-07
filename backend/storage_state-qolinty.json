@@ -1,0 +1,38 @@
+{
+    "4.x": {
+        "Em uso": "810.63 MB",
+        "Deletado": "0.00 GB",
+        "Total acumulado": "0.79 GB",
+        "Restante (de 1 TB)": "1023.21 GB"
+    },
+    "default": {
+        "Em uso": "61.26 GB",
+        "Deletado": "175.46 GB",
+        "Total acumulado": "236.72 GB",
+        "Restante (de 1 TB)": "787.28 GB"
+    },
+    "dora_retail": {
+        "Em uso": "1.70 GB",
+        "Deletado": "1.14 GB",
+        "Total acumulado": "2.84 GB",
+        "Restante (de 1 TB)": "1021.16 GB"
+    },
+    "qolinty": {
+        "Em uso": "33.19 GB",
+        "Deletado": "16.40 GB",
+        "Total acumulado": "49.59 GB",
+        "Restante (de 1 TB)": "974.41 GB"
+    },
+    "rede_hospitalar": {
+        "Em uso": "14.61 GB",
+        "Deletado": "0.00 GB",
+        "Total acumulado": "14.61 GB",
+        "Restante (de 1 TB)": "1009.39 GB"
+    },
+    "unknown": {
+        "Em uso": "1.16 GB",
+        "Deletado": "0.00 GB",
+        "Total acumulado": "1.16 GB",
+        "Restante (de 1 TB)": "1022.84 GB"
+    }
+}
