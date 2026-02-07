@@ -22,28 +22,37 @@ export default function RiskLevel() {
   const { tenantAtivo } = useTenant();
   const formatador = new Intl.NumberFormat("pt-BR");
 
-  // 🔹 Filtros globais
-  const [dias, setDias] = useState<string>("1");
+  /* ============================
+     FILTROS GLOBAIS
+  ============================ */
+  const [dias, setDias] = useState<string>("1"); // 24h
   const [diasFirewall, setDiasFirewall] = useState<string | null>(null);
   const [diasAgentes, setDiasAgentes] = useState<string | null>(null);
   const [diasSeveridade, setDiasSeveridade] = useState<string | null>(null);
   const [diasCis, setDiasCis] = useState<string | null>(null);
   const [diasIris, setDiasIris] = useState<string | null>(null);
 
-  // 🔹 Período customizado
+  /* ============================
+     PERÍODO CUSTOMIZADO
+  ============================ */
   const [periodo, setPeriodo] = useState<{
     from: string;
     to: string;
   } | null>(null);
 
-  // 🔹 Key para resetar DateRangePicker
+  // 🔒 trava selects quando relatório está ativo
+  const filtrosTravados = !!periodo;
+
+  /* ============================
+     RESET CALENDÁRIO
+  ============================ */
   const [resetFiltroKey, setResetFiltroKey] = useState<number>(0);
 
-  // 🔹 Loading da severidade
-  const [loadingSeveridade, setLoadingSeveridade] =
-    useState<boolean>(true);
+  /* ============================
+     DADOS
+  ============================ */
+  const [loadingSeveridade, setLoadingSeveridade] = useState<boolean>(true);
 
-  // 🔹 Dados globais
   const [severidades, setSeveridades] = useState<Severidades>({
     baixo: 0,
     medio: 0,
@@ -55,7 +64,9 @@ export default function RiskLevel() {
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
 
-  // 🔹 Fetch GLOBAL
+  /* ============================
+     FETCH GLOBAL
+  ============================ */
   useEffect(() => {
     if (!tenantAtivo) return;
 
@@ -109,7 +120,7 @@ export default function RiskLevel() {
 
   return (
     <LayoutModel titulo="Risk Level">
-      {/* 🔹 Filtros */}
+      {/* ================= FILTROS ================= */}
       <div className="flex justify-end mt-5 mb-3 px-6">
         <DateRangePicker
           resetKey={resetFiltroKey}
@@ -120,8 +131,9 @@ export default function RiskLevel() {
 
         <button
           onClick={() => {
-            // 🔄 limpa filtros
             setPeriodo(null);
+
+            // 🔁 volta tudo pra 24h
             setDias("1");
             setDiasFirewall(null);
             setDiasAgentes(null);
@@ -129,7 +141,6 @@ export default function RiskLevel() {
             setDiasCis(null);
             setDiasIris(null);
 
-            // 🔥 força reset do calendário
             setResetFiltroKey((v) => v + 1);
           }}
           className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors ml-3"
@@ -140,7 +151,7 @@ export default function RiskLevel() {
         </button>
       </div>
 
-      {/* 🔹 Header */}
+      {/* ================= HEADER ================= */}
       <section>
         <div className="cards p-6 rounded-xl flex justify-between items-center mb-5 gap-4">
           <h2 className="text-white text-md font-medium">
@@ -152,9 +163,8 @@ export default function RiskLevel() {
           </p>
         </div>
 
-        {/* 🔹 Gauge + Severidade */}
+        {/* ================= GAUGE + SEVERIDADE ================= */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch">
-          {/* Gauge */}
           <div className="cards rounded-xl p-4 h-full flex flex-col justify-between">
             <div className="relative flex justify-center">
               <GraficoGauge valor={Math.round(indiceRisco)} />
@@ -167,24 +177,8 @@ export default function RiskLevel() {
                   pointer-events-none"
               />
             </div>
-
-            <div className="flex justify-center gap-3 text-[10px] text-gray-400 mt-4 flex-wrap">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-[#1DD69A]" /> Baixo
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-[#6366F1]" /> Médio
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-[#A855F7]" /> Alto
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-[#F914AD]" /> Crítico
-              </span>
-            </div>
           </div>
 
-          {/* Severidade */}
           <div className="md:col-span-4 h-full">
             <SeveridadeCard
               dados={severidades}
@@ -195,18 +189,20 @@ export default function RiskLevel() {
         </div>
       </section>
 
-      {/* 🔹 Cards inferiores */}
+      {/* ================= CARDS ================= */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-5 items-stretch">
         <TopAgentsCard
           dias={diasAgentes || dias}
           periodo={periodo}
           onChangeFiltro={setDiasAgentes}
+          disabled={filtrosTravados}
         />
 
         <TopAgentsCisCard
           dias={diasCis || dias}
           periodo={periodo}
           onChangeFiltro={setDiasCis}
+          disabled={filtrosTravados}
         />
 
         <div className="flex flex-col h-full">
@@ -214,6 +210,7 @@ export default function RiskLevel() {
             dias={diasFirewall || dias}
             periodo={periodo}
             onChangeFiltro={setDiasFirewall}
+            disabled={filtrosTravados}
           />
 
           <div className="flex-1">
@@ -224,6 +221,7 @@ export default function RiskLevel() {
                 periodo={periodo}
                 onChangeFiltro={setDiasIris}
                 onUpdateTotais={setTotalIncidentes}
+                disabled={filtrosTravados}
               />
             </div>
           </div>

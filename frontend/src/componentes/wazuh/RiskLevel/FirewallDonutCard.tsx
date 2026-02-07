@@ -13,6 +13,7 @@ interface FirewallDonutCardProps {
   periodo?: { from: string; to: string } | null;
   onChangeFiltro?: (valor: string | null) => void;
   isWidget?: boolean;
+  disabled?: boolean;
 }
 
 export default function FirewallDonutCard({
@@ -20,12 +21,13 @@ export default function FirewallDonutCard({
   periodo,
   onChangeFiltro,
   isWidget = false,
+  disabled = false,
 }: FirewallDonutCardProps) {
   const { tenantAtivo } = useTenant();
 
   const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
 
-  // 🔹 prioridade TOTAL do calendário
+  // 🔹 prioridade TOTAL do calendário (inalterado)
   const diasEfetivo = periodo ? null : filtroLocal || dias;
 
   const [dados, setDados] = useState<TopFirewallItem[]>([]);
@@ -33,10 +35,15 @@ export default function FirewallDonutCard({
   const [erro, setErro] = useState<string | null>(null);
   const [idxSelecionado, setIdxSelecionado] = useState<number | null>(null);
 
-  // 🔹 reseta select quando calendário muda
+  /* ============================
+     🔒 AO TRAVAR → LIMPA FILTRO LOCAL
+     (SEM MUDAR VISUAL)
+  ============================ */
   useEffect(() => {
-    if (periodo) setFiltroLocal(null);
-  }, [periodo]);
+    if (disabled) {
+      setFiltroLocal(null);
+    }
+  }, [disabled]);
 
   // 🔹 busca dados
   useEffect(() => {
@@ -96,7 +103,6 @@ export default function FirewallDonutCard({
 
   return (
     <div className="cards rounded-xl mb-4 p-6 shadow-md h-full flex flex-col justify-between relative">
-
       {/* Overlay carregamento */}
       {carregando && (
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-xl z-10" />
@@ -114,20 +120,25 @@ export default function FirewallDonutCard({
           <h3 className="text-sm text-white">Alertas de Firewall</h3>
         </div>
 
-        {/* SELECT (desabilitado com calendário) */}
+        {/* SELECT — VISUAL ORIGINAL */}
         <select
           className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
             ${isWidget ? "mr-8" : ""}
           `}
-          value={filtroLocal || dias}
-          disabled={!!periodo}
+          value={disabled ? "" : filtroLocal || dias}
+          disabled={disabled}
           onChange={(e) => {
+            if (disabled) return;
+
             const val = e.target.value;
             const novoValor = val === dias ? null : val;
             setFiltroLocal(novoValor);
             onChangeFiltro?.(novoValor);
           }}
         >
+          {/* opção invisível obrigatória */}
+          <option value="" hidden></option>
+
           <option value="1">24 horas</option>
           <option value="2">48 horas</option>
           <option value="7">7 dias</option>
