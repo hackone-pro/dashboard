@@ -13,10 +13,11 @@ const formatPt = (n: number) =>
 
 interface Props {
   isWidget?: boolean;
+  agent?: string | null;
 }
 
 const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef, Props>(
-  ({ isWidget = false }, ref) => {
+  ({ isWidget = false, agent }, ref) => {
 
     const { tenantAtivo } = useTenant();
     const [topVulns, setTopVulns] = useState<TopVulnerabilidade[]>([]);
@@ -28,7 +29,12 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef, Props>(
 
       setCarregando(true);
       try {
-        const lista = await getTopVulnerabilidades("cve", 5, "todos");
+        const lista = await getTopVulnerabilidades(
+          "cve",
+          5,
+          "todos",
+          agent ?? undefined
+        );
         setTopVulns(lista);
         setErro(null);
       } catch (e: any) {
@@ -40,7 +46,7 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef, Props>(
 
     useEffect(() => {
       carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, agent]);
 
     useImperativeHandle(ref, () => ({ carregar }));
 

@@ -13,10 +13,11 @@ const formatPt = (n: number) =>
 
 interface Props {
   isWidget?: boolean;
+  agent?: string | null;
 }
 
 const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef, Props>(
-  ({ isWidget = false }, ref) => {
+  ({ isWidget = false, agent }, ref) => {
 
     const { tenantAtivo } = useTenant();
     const [topSo, setTopSo] = useState<TopOSVulnerabilidade[]>([]);
@@ -28,7 +29,11 @@ const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef, Props>(
       setCarregando(true);
 
       try {
-        const lista = await getTopOSVulnerabilidades(5, "todos");
+        const lista = await getTopOSVulnerabilidades(
+          5,
+          "todos",
+          agent ?? undefined
+        );
         setTopSo(lista);
         setErro(null);
       } catch (e: any) {
@@ -40,7 +45,7 @@ const TopOSVulnerabilidadeCard = forwardRef<TopOSVulnerabilidadeCardRef, Props>(
 
     useEffect(() => {
       carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, agent]);
 
     useImperativeHandle(ref, () => ({ carregar }));
 

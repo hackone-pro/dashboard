@@ -11,17 +11,22 @@ export interface TopOSVulnerabilidade {
  * Busca os top OS com mais vulnerabilidades.
  * @param size Quantidade de OS a retornar (default 5)
  * @param dias Intervalo de tempo ("1" | "7" | "15" | "30" | "todos")
+ * @param agent Nome do agente (opcional)
  */
 export async function getTopOSVulnerabilidades(
   size: number = 5,
-  dias: string = "todos"
+  dias: string = "todos",
+  agent?: string
 ): Promise<TopOSVulnerabilidade[]> {
+
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
   const url = new URL(`${baseUrl}/api/acesso/wazuh/vulnerabilidades/top-os`);
+
   if (size) url.searchParams.set("size", String(size));
   if (dias) url.searchParams.set("dias", dias);
+  if (agent) url.searchParams.set("agent", agent); // ✅ NOVO
 
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
@@ -42,6 +47,7 @@ export async function getTopOSVulnerabilidades(
   // Normaliza saída
   return lista.map((item: any) => {
     const severity: Record<string, number> = {};
+
     if (Array.isArray(item?.por_severidade)) {
       for (const s of item.por_severidade) {
         severity[s.key] = Number(s.doc_count || 0);
