@@ -11,14 +11,16 @@ export interface AnoVulnerabilidade {
  * Busca vulnerabilidades agrupadas por ano de publicação.
  * @param dias Intervalo de tempo ("1" | "7" | "15" | "30" | "todos")
  */
-export async function getAnoVulnerabilidades(
-  dias: string = "todos"
+ export async function getAnoVulnerabilidades(
+  dias: string = "todos",
+  agent?: string
 ): Promise<AnoVulnerabilidade[]> {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
   const url = new URL(`${baseUrl}/api/acesso/wazuh/vulnerabilidades/por-ano`);
   if (dias) url.searchParams.set("dias", dias);
+  if (agent) url.searchParams.set("agent", agent);
 
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },

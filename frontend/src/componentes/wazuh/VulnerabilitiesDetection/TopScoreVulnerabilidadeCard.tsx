@@ -14,10 +14,11 @@ export type TopScoreVulnerabilidadeCardRef = {
 
 interface Props {
   isWidget?: boolean;
+  agent?: string | null;
 }
 
 const TopScoreVulnerabilidadeCard = forwardRef<TopScoreVulnerabilidadeCardRef, Props>(
-  ({ isWidget = false }, ref) => {
+  ({ isWidget = false, agent }, ref) => {
     const { tenantAtivo } = useTenant();
     const [topScores, setTopScores] = useState<TopScoreItem[]>([]);
     const [carregando, setCarregando] = useState(true);
@@ -28,7 +29,11 @@ const TopScoreVulnerabilidadeCard = forwardRef<TopScoreVulnerabilidadeCardRef, P
 
       setCarregando(true);
       try {
-        const lista = await getTopScoresVulnerabilidades(5, "todos");
+        const lista = await getTopScoresVulnerabilidades(
+          5,
+          "todos",
+          agent ?? undefined
+        );
         setTopScores(lista);
         setErro(null);
       } catch (e: any) {
@@ -40,7 +45,7 @@ const TopScoreVulnerabilidadeCard = forwardRef<TopScoreVulnerabilidadeCardRef, P
 
     useEffect(() => {
       carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, agent]);
 
     useImperativeHandle(ref, () => ({ carregar }));
 

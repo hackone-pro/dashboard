@@ -1,3 +1,4 @@
+
 // src/components/wazuh/TopAgenteVulnerabilidadeCard.tsx
 import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { getTopAgentesVulnerabilidades, TopAgenteVulnerabilidade } from "../../../services/wazuh/agentesvulnerabilidades.service";
@@ -13,10 +14,11 @@ const formatPt = (n: number) =>
 
 interface Props {
   isWidget?: boolean;
+  agent?: string | null;
 }
 
 const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef, Props>(
-  ({ isWidget = false }, ref) => {
+  ({ isWidget = false, agent }, ref) => {
 
     const { tenantAtivo } = useTenant();
     const [topAgents, setTopAgents] = useState<TopAgenteVulnerabilidade[]>([]);
@@ -28,7 +30,7 @@ const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef,
       setCarregando(true);
 
       try {
-        const lista = await getTopAgentesVulnerabilidades(5, "todos");
+        const lista = await getTopAgentesVulnerabilidades(5, "todos", agent ?? undefined);
         setTopAgents(lista);
         setErro(null);
       } catch (e: any) {
@@ -40,7 +42,7 @@ const TopAgenteVulnerabilidadeCard = forwardRef<TopAgenteVulnerabilidadeCardRef,
 
     useEffect(() => {
       carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, agent]);
 
     useImperativeHandle(ref, () => ({ carregar }));
 

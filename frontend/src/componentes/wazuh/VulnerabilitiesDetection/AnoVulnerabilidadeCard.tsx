@@ -14,10 +14,11 @@ export type AnoVulnerabilidadeCardRef = {
 
 interface Props {
   isWidget?: boolean;
+  agent?: string | null;
 }
 
 const AnoVulnerabilidadeCard = forwardRef<AnoVulnerabilidadeCardRef, Props>(
-  ({ isWidget = false }, ref) => {
+  ({ isWidget = false, agent }, ref) => {
     const { tenantAtivo } = useTenant();
 
     const [anoVulns, setAnoVulns] = useState<AnoVulnerabilidade[]>([]);
@@ -29,7 +30,7 @@ const AnoVulnerabilidadeCard = forwardRef<AnoVulnerabilidadeCardRef, Props>(
 
       setCarregando(true);
       try {
-        const lista = await getAnoVulnerabilidades("todos");
+        const lista = await getAnoVulnerabilidades("todos", agent ?? undefined);
         setAnoVulns(lista);
         setErro(null);
       } catch (e: any) {
@@ -41,7 +42,7 @@ const AnoVulnerabilidadeCard = forwardRef<AnoVulnerabilidadeCardRef, Props>(
 
     useEffect(() => {
       carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, agent]);
 
     useImperativeHandle(ref, () => ({ carregar }));
 
