@@ -217,10 +217,10 @@ export function extrairSeveridadeDoTexto(descricao?: string): string | null {
 
   const v = match[1].toLowerCase();
 
-  if (v.startsWith("crit")) return "Crítico";
-  if (v.startsWith("alt")) return "Alto";
-  if (v.startsWith("med")) return "Médio";
-  if (v.startsWith("baix")) return "Baixo";
+  if (v.startsWith("crit")) return "Crítica";
+  if (v.startsWith("alt")) return "Alta";
+  if (v.startsWith("med")) return "Média";
+  if (v.startsWith("baix")) return "Baixa";
 
   return null;
 }
