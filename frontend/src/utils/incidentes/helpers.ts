@@ -194,10 +194,29 @@ export function detectarNivelPorNome(nome: string): string | null {
   return null;
 }
 
+/* ======================
+ * Severidade real (do texto)
+ * ====================== */
+
+export function extrairSeveridadeDoTexto(descricao?: string): string | null {
+  if (!descricao) return null;
+
+  const match = descricao.match(
+    /Severidade:\s*(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica)/i
+  );
+
+  return match ? match[1] : null;
+}
+
+
 // Limpa prefixos do título
 export function formatCaseName(name: string) {
   let s = (name || "").replace(/\u00A0/g, " ").replace(/\s+/g, " ").trimStart();
   s = s.replace(/^\s*#?\d+\s*[-–]\s*/i, "");
+  s = s.replace(
+    new RegExp(String.raw`\[\s*${NIVEIS_REGEX}\s*\]\s*[-–]\s*`, "i"),
+    ""
+  );
   s = s.replace(
     new RegExp(
       String.raw`^\s*\[\d{2}:\d{2}\s*[-–]\s*\d{2}\/\d{2}\/\d{4}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]\s*`,

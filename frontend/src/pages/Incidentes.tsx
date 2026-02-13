@@ -33,6 +33,7 @@ import {
   detectarNivelPorNome,
   formatCaseName,
   sentenceCase,
+  extrairSeveridadeDoTexto,
 } from "../utils/incidentes/helpers";
 
 import type { IconType } from "react-icons";
@@ -83,6 +84,12 @@ function severidadeRank(nivel: string) {
 }
 
 function nivelDoIncidente(i: PageIncidente) {
+
+  // PRIORIDADE 1 — Severidade real dentro do texto
+  const severidadeTexto = extrairSeveridadeDoTexto(i.case_description);
+  if (severidadeTexto) return severidadeTexto;
+
+  // PRIORIDADE 2 — Campo severity da API
   if (i.severity) {
     const s = i.severity.toLowerCase();
     if (s.includes("crit")) return "Crítico";
@@ -91,6 +98,7 @@ function nivelDoIncidente(i: PageIncidente) {
     if (s.includes("low") || s.includes("baix")) return "Baixo";
   }
 
+  // PRIORIDADE 3 — Detectar no título
   const manual = detectarNivelPorNome(i.case_name || "");
   if (manual) return manual;
 
@@ -100,7 +108,7 @@ function nivelDoIncidente(i: PageIncidente) {
   if (nome.includes("méd") || nome.includes("media")) return "Médio";
   if (nome.includes("baix")) return "Baixo";
 
-  // 👇 ÚNICO AJUSTE: se não houver classification_id, retorna "Médio"
+  // PRIORIDADE 4 — classification_id
   if (!i.classification_id) return "Médio";
 
   return mapNivelPorClassificationId(i.classification_id as any);
@@ -666,8 +674,7 @@ export default function Incidentes() {
                   const dataBR = inc.case_open_date;
                   const agenteOrigem = inc.case_name;
 
-                  const nivelManual = detectarNivelPorNome(inc.case_name || "");
-                  const nivel = nivelManual || mapNivelPorClassificationId(inc.classification_id as any);
+                  const nivel = nivelDoIncidente(inc);
                   const badge = getCorBadge(nivel);
                   const status = statusPT(inc.state_name);
 
