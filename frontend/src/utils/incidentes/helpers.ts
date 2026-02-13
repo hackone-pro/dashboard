@@ -201,11 +201,28 @@ export function detectarNivelPorNome(nome: string): string | null {
 export function extrairSeveridadeDoTexto(descricao?: string): string | null {
   if (!descricao) return null;
 
-  const match = descricao.match(
-    /Severidade:\s*(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica)/i
+  const textoLimpo = descricao
+    .replace(/\*\*/g, "")       // remove **
+    .replace(/`/g, "")          // remove crase
+    .replace(/^\s*-\s*/gm, "")  // remove "- " no início das linhas
+    .replace(/\u00A0/g, " ")    // remove espaço especial
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // remove acentos de verdade
+
+  const match = textoLimpo.match(
+    /Severidade\s*:\s*(Baixo|Baixa|Medio|Media|Alto|Alta|Critico|Critica)/i
   );
 
-  return match ? match[1] : null;
+  if (!match) return null;
+
+  const v = match[1].toLowerCase();
+
+  if (v.startsWith("crit")) return "Crítico";
+  if (v.startsWith("alt")) return "Alto";
+  if (v.startsWith("med")) return "Médio";
+  if (v.startsWith("baix")) return "Baixo";
+
+  return null;
 }
 
 
