@@ -85,10 +85,15 @@ function severidadeRank(nivel: string) {
 
 function nivelDoIncidente(i: PageIncidente) {
 
-  // PRIORIDADE 1 — Severidade real dentro do texto
+  // PRIORIDADE ÚNICA — Severidade real dentro do texto
   const severidadeTexto = extrairSeveridadeDoTexto(i.case_description);
   if (severidadeTexto) return severidadeTexto;
 
+  // ----------------------------------------------------
+  // LÓGICA ANTIGA (MANTIDA COMO BACKUP)
+  // ----------------------------------------------------
+
+  /*
   // PRIORIDADE 2 — Campo severity da API
   if (i.severity) {
     const s = i.severity.toLowerCase();
@@ -112,7 +117,12 @@ function nivelDoIncidente(i: PageIncidente) {
   if (!i.classification_id) return "Médio";
 
   return mapNivelPorClassificationId(i.classification_id as any);
+  */
+
+  // Caso não encontre Severidade no texto
+  return "Médio";
 }
+
 
 
 function matchSeveridade(nivelItem: string, filtro: string) {
