@@ -60,7 +60,7 @@ export default function TopUseCPU() {
           <thead className="fundo-dashboard">
             <tr className="text-white">
               <th className="text-center py-2 px-3 font-normal">Host</th>
-              <th className="text-center font-normal">CPU agora</th>
+              <th className="text-center font-normal">CPU</th>
               <th className="text-center font-normal">Uso de RAM</th>
               <th className="text-center font-normal">Processos</th>
               <th className="text-center font-normal">Severidade</th>
