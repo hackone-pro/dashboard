@@ -48,7 +48,7 @@ export default function FirewallsRamCard() {
             Top Firewalls – Saúde e Tráfego
           </h3>
           <p className="text-gray-400 text-sm">
-            Uso de memória via SNMP
+            Consumo de Recursos
           </p>
         </div>
       </div>
@@ -68,7 +68,8 @@ export default function FirewallsRamCard() {
           <thead className="fundo-dashboard">
             <tr className="text-white">
               <th className="py-2 px-3 font-normal">Firewall</th>
-              <th className="font-normal">Uso de RAM</th>
+              <th className="font-normal">Tráfego (Mbps)</th>
+              <th className="font-normal">CPU %</th>
               <th className="font-normal">Sessões</th>
               <th className="font-normal">Severidade</th>
             </tr>
@@ -96,6 +97,24 @@ export default function FirewallsRamCard() {
                   </td>
 
                   {/* RAM */}
+                  <td>
+                    <div className="flex items-center gap-2 justify-center">
+                      <div className="w-24 h-2 bg-white/10 rounded">
+                        <div
+                          className="h-2 rounded bg-[#A855F7]"
+                          style={{
+                            width: `${fw.ram_used_percent ?? 0}%`,
+                          }}
+                        />
+                      </div>
+
+                      <div className="text-gray-400 text-[11px]">
+                        {bytesToGB(fw.ram_used_bytes)} /{" "}
+                        {bytesToGB(fw.ram_total_bytes)} GB
+                      </div>
+                    </div>
+                  </td>
+
                   <td>
                     <div className="flex items-center gap-2 justify-center">
                       <div className="w-24 h-2 bg-white/10 rounded">

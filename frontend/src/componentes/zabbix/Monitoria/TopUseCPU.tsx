@@ -38,9 +38,9 @@ export default function TopUseCPU() {
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="text-white text-md">Top hosts por uso de CPU</h3>
+          <h3 className="text-white text-md">Top hosts por uso</h3>
           <p className="text-gray-400 text-sm">
-            Utilização de CPU em tempo real
+            Utilização em tempo real
           </p>
         </div>
       </div>

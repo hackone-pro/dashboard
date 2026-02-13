@@ -2,10 +2,9 @@
  * Serviço de integração com Zabbix via JSON-RPC utilizando API Token (Bearer)
  *
  * Responsabilidade:
- * - Consultar a API do Zabbix
- * - Identificar firewalls monitorados
- * - Determinar status real do monitoramento SNMP
- * - Trazer uso de RAM + processos (proc.num)
+ * - Identificar hosts com class=firewall (via template tag)
+ * - Determinar status real do monitoramento
+ * - Trazer uso de RAM + processos + sessões
  */
 
 import axios from "axios";
@@ -66,25 +65,37 @@ export async function buscarFirewalls(tenant: any) {
     const token = cfg.zabbix_token;
 
     /**
-     * 1️⃣ Hosts com interface SNMP
+     * Buscar templates com class=firewall
+     */
+    const templates = await zabbixRequest(url, token, "template.get", {
+      output: ["templateid"],
+      tags: [
+        {
+          tag: "class",
+          value: "firewall",
+          operator: 1,
+        },
+      ],
+    });
+
+    const templateids = templates.map((t: any) => t.templateid);
+
+    if (!templateids.length) return [];
+
+    /**
+     * Buscar hosts vinculados aos templates firewall
      */
     const hosts = await zabbixRequest(url, token, "host.get", {
       output: ["hostid", "name", "status"],
       selectInterfaces: "extend",
+      templateids,
+      status: 0, // apenas ativos
     });
 
-    if (!Array.isArray(hosts)) return [];
-
-    const firewalls = hosts.filter((h: any) => {
-      if (h.status !== "0") return false;
-      if (!Array.isArray(h.interfaces)) return false;
-      return h.interfaces.some((i: any) => i.type === "2");
-    });
-
-    if (!firewalls.length) return [];
+    if (!Array.isArray(hosts) || !hosts.length) return [];
 
     /**
-     * 2️⃣ Mapa base
+     * Mapa base
      */
     const fwMap = new Map<
       string,
@@ -100,8 +111,8 @@ export async function buscarFirewalls(tenant: any) {
       }
     >();
 
-    for (const h of firewalls) {
-      const snmp = h.interfaces.find((i: any) => i.type === "2");
+    for (const h of hosts) {
+      const snmp = h.interfaces?.find((i: any) => i.type === "2");
       const available = snmp?.available;
 
       fwMap.set(h.hostid, {
@@ -121,10 +132,13 @@ export async function buscarFirewalls(tenant: any) {
       });
     }
 
+    const hostids = Array.from(fwMap.keys());
+
     /**
-     * 3️⃣ RAM disponível (SNMP – Fortigate)
+     * RAM disponível (Fortigate SNMP)
      */
     const ramItems = await zabbixRequest(url, token, "item.get", {
+      hostids,
       filter: {
         key_: ["vm.memory.available[fgSysMemFree.0]"],
       },
@@ -143,11 +157,11 @@ export async function buscarFirewalls(tenant: any) {
       acc.ramAvailable = Number.isNaN(value) ? null : value;
     }
 
-
     /**
-     * 4️⃣ PROCESSOS (proc.num)
+     * PROCESSOS (proc.num)
      */
     const procItems = await zabbixRequest(url, token, "item.get", {
+      hostids,
       search: {
         key_: "proc.num",
       },
@@ -167,9 +181,10 @@ export async function buscarFirewalls(tenant: any) {
     }
 
     /**
-* 5️⃣ Sessões ativas (IPv4 Active sessions)
-*/
+     * Sessões ativas
+     */
     const sessionItems = await zabbixRequest(url, token, "item.get", {
+      hostids,
       filter: {
         key_: ["net.ipv4.sessions[fgSysSesCount.0]"],
       },
@@ -188,9 +203,8 @@ export async function buscarFirewalls(tenant: any) {
       acc.sessions = Number.isNaN(value) ? null : value;
     }
 
-
     /**
-     * 5️⃣ Retorno final (compatível com os cards)
+     * Retorno final (compatível com os cards)
      */
     return Array.from(fwMap.values()).map((fw) => {
       const total = RAM_BASELINE_BYTES;
@@ -221,7 +235,6 @@ export async function buscarFirewalls(tenant: any) {
         sessions: fw.sessions,
       };
     });
-
   } catch (err) {
     throw err;
   }

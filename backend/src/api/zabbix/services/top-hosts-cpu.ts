@@ -1,8 +1,6 @@
 /**
  * Serviço Zabbix — Top Hosts por CPU (tempo real)
- * CPU: system.cpu.util[,idle]
- * Processes: proc.num
- * RAM: vm.memory.size[total|available]
+ * Busca TODOS os hosts ativos
  */
 
  import axios from "axios";
@@ -47,13 +45,25 @@
    const now = Math.floor(Date.now() / 1000);
  
    /**
-    * 1️⃣ CPU idle items
+    * Buscar todos hosts ativos
+    */
+   const hosts = await zabbixRequest(url, token, "host.get", {
+     output: ["hostid", "name"],
+     status: 0,
+   });
+ 
+   if (!Array.isArray(hosts) || !hosts.length) return [];
+ 
+   const hostids = hosts.map((h: any) => h.hostid);
+ 
+   /**
+    * Buscar CPU idle items
     */
    const cpuItems = await zabbixRequest(url, token, "item.get", {
+     hostids,
      search: {
        key_: "system.cpu.util[,idle]",
      },
-     groupids: ["2", "4", "22"],
      output: ["itemid"],
      selectHosts: ["hostid", "name"],
    });
@@ -61,7 +71,7 @@
    if (!Array.isArray(cpuItems) || !cpuItems.length) return [];
  
    /**
-    * 2️⃣ Inicializar hosts
+    * Inicializar mapa
     */
    const hostsMap = new Map<
      string,
@@ -92,7 +102,7 @@
    }
  
    /**
-    * 3️⃣ CPU history (último 1 minuto)
+    * Buscar histórico CPU (último minuto)
     */
    const history = await zabbixRequest(url, token, "history.get", {
      history: 0,
@@ -117,11 +127,11 @@
    }
  
    /**
-    * 4️⃣ TOTAL DE PROCESSOS
+    * Buscar proc.num
     */
    const procItems = await zabbixRequest(url, token, "item.get", {
+     hostids,
      filter: { key_: ["proc.num"] },
-     groupids: ["2", "4", "22"],
      output: ["lastvalue"],
      selectHosts: ["hostid"],
    });
@@ -138,13 +148,13 @@
    }
  
    /**
-    * 5️⃣ RAM (total + available)
+    * Buscar RAM
     */
    const ramItems = await zabbixRequest(url, token, "item.get", {
+     hostids,
      filter: {
        key_: ["vm.memory.size[total]", "vm.memory.size[available]"],
      },
-     groupids: ["2", "4", "22"],
      output: ["key_", "lastvalue"],
      selectHosts: ["hostid"],
    });
@@ -169,7 +179,7 @@
    }
  
    /**
-    * 6️⃣ Retorno final (RAM em GB)
+    * Montar retorno final
     */
    return Array.from(hostsMap.values())
      .map((h) => {
