@@ -130,5 +130,3 @@ const Ativos = forwardRef<AtivosCardRef, Props>(
 );
 
 export default Ativos;
-
-

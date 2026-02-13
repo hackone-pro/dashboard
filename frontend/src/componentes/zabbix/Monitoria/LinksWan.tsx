@@ -1,183 +1,182 @@
-import { useEffect, useState } from "react";
+// src/componentes/zabbix/Monitoria/FirewallCard.tsx
+
+import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import ReactApexChart from "react-apexcharts";
+
 import {
-  getZabbixLinksWan,
-  LinkWanItem,
-} from "../../../services/zabbix/links-wan";
-import SeveridadeBadge from "./SeveridadeBadge";
+    getZabbixFirewalls,
+    FirewallItem as ZabbixFirewallItem
+} from "../../../services/zabbix/firewalls.service";
 
-export default function LinksWanCard() {
-  const [loading, setLoading] = useState(true);
-  const [links, setLinks] = useState<LinkWanItem[]>([]);
-  const [paginaAtual, setPaginaAtual] = useState(1);
+export type FirewallCardRef = {
+    carregar: () => void;
+};
 
-  const porPagina = 4;
-  const totalPaginas = Math.ceil(links.length / porPagina);
+type FirewallItem = {
+    nome: string;
+    status: "online" | "offline";
+    x: number;
+    y: number;
+};
 
-  const linksPaginados = links.slice(
-    (paginaAtual - 1) * porPagina,
-    paginaAtual * porPagina
-  );
+const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
 
-  async function carregar() {
-    try {
-      setLoading(true);
-      const res = await getZabbixLinksWan();
+    const [firewalls, setFirewalls] = useState<FirewallItem[]>([]);
 
-      const ordenados = [...res.links].sort(
-        (a, b) => (Number(b.trafego_mbps) || 0) - (Number(a.trafego_mbps) || 0)
-      );
+    async function carregarFirewalls() {
+        try {
+            const lista: ZabbixFirewallItem[] = await getZabbixFirewalls();
 
-      setLinks(ordenados);
-      setPaginaAtual(1);
-    } catch (err) {
-      console.error("Erro Links WAN:", err);
-      setLinks([]);
-    } finally {
-      setLoading(false);
+            const normalizado: FirewallItem[] = lista.map(item => ({
+                nome: item.name,
+                status: item.online ? "online" : "offline",
+                x: Math.random() * 100,
+                y: Math.random() * 100
+            }));
+
+            setFirewalls(normalizado);
+        } catch (err) {
+            console.error("Erro ao carregar Firewalls do Zabbix:", err);
+            setFirewalls([]);
+        }
     }
-  }
 
+    useImperativeHandle(ref, () => ({
+        carregar() {
+            carregarFirewalls();
+        }
+    }));
 
-  useEffect(() => {
-    carregar();
-  }, []);
+    useEffect(() => {
+        carregarFirewalls();
+    }, []);
 
-  return (
-    <div className="cards rounded-2xl p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h3 className="text-white text-md">Links WAN / Internet</h3>
-          <p className="text-gray-400 text-sm">
-            Consumo de Links de Internet
-          </p>
+    // ==========================================================
+    // 📊 GRÁFICO — SCATTER CLOUD + GRID HORIZONTAL
+    // ==========================================================
+
+    const scatterSeries = [
+        {
+            name: "Firewalls",
+            data: firewalls.map(fw => ({
+                x: fw.x,
+                y: fw.y,
+                nome: fw.nome,
+                status: fw.status
+            }))
+        }
+    ];
+
+    const scatterOptions: ApexCharts.ApexOptions = {
+        chart: {
+            type: "scatter",
+            height: 240,
+            toolbar: { show: false },
+            zoom: { enabled: false },
+            foreColor: "#AAA",
+            animations: {
+                enabled: true,
+                speed: 600
+            }
+        },
+
+        // ⭐ Linhas horizontais de ponta a ponta
+        grid: {
+            show: true,
+            borderColor: "rgba(255,255,255,0.08)",
+            strokeDashArray: 4,
+            yaxis: { lines: { show: true } },
+            xaxis: { lines: { show: false } }
+        },
+
+        markers: {
+            size: 14,
+            strokeWidth: 2,
+            strokeColors: "#1a1a1a",
+            hover: { size: 20 }
+        },
+
+        colors: firewalls.map(fw =>
+            fw.status === "online" ? "#1DD69A" : "#EC4899"
+        ),
+
+        xaxis: {
+            min: 0,
+            max: 100,
+            labels: { show: false },
+            axisTicks: { show: false },
+            axisBorder: { show: false }
+        },
+
+        yaxis: {
+            min: 0,
+            max: 100,
+            labels: { show: false }
+        },
+
+        tooltip: {
+            theme: "dark",
+            custom: ({ seriesIndex, dataPointIndex, w }) => {
+                const fw = w.config.series[seriesIndex].data[dataPointIndex];
+                const cor = fw.status === "online" ? "#1DD69A" : "#EC4899";
+
+                return `
+                    <div style="padding:10px;">
+                        <strong>${fw.nome}</strong><br/>
+                        Status:
+                        <span style="color:${cor}; font-weight:bold;">
+                            ${fw.status.toUpperCase()}
+                        </span>
+                    </div>
+                `;
+            }
+        },
+
+        legend: { show: false }
+    };
+
+    return (
+        <div className="cards rounded-2xl p-6 flex flex-col card zabbix-card">
+
+            <h3 className="text-white">Firewall</h3>
+            <p className="text-gray-400 text-sm mb-4">
+                Quantidade de Firewalls
+            </p>
+            <p className="text-white text-xs">
+                Total de Firewalls: {firewalls.length}
+            </p>
+
+            <div className="flex-1">
+                <ReactApexChart
+                    options={scatterOptions}
+                    series={scatterSeries}
+                    type="scatter"
+                    height="100%"
+                />
+            </div>
+
+            <div className="flex justify-end gap-4 mt-5">
+
+                <div className="flex items-center gap-2">
+                    <span
+                        className="inline-block w-3 h-3 rounded-full"
+                        style={{ backgroundColor: "#1DD69A" }}
+                    ></span>
+                    <span className="text-xs text-gray-400">Online</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span
+                        className="inline-block w-3 h-3 rounded-full"
+                        style={{ backgroundColor: "#EC4899" }}
+                    ></span>
+                    <span className="text-xs text-gray-400">Offline</span>
+                </div>
+
+            </div>
+
         </div>
-      </div>
+    );
+});
 
-      {/* Skeleton */}
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-full h-8 bg-white/5 animate-pulse rounded"
-            />
-          ))}
-        </div>
-      ) : (
-        <>
-          <table className="w-full text-sm text-gray-400 text-center">
-            <thead className="fundo-dashboard">
-              <tr className="text-white">
-                <th className="text-center py-2 px-3">Device</th>
-                <th className="text-center">Link</th>
-                <th className="text-center">Tráfego (Mbps)</th>
-                <th className="text-center">Capacidade</th>
-                <th className="text-center">Severidade</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {linksPaginados.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center py-6 text-gray-500 italic"
-                  >
-                    Nenhum link WAN encontrado
-                  </td>
-                </tr>
-              ) : (
-                linksPaginados.map((l, idx) => (
-                  <tr
-                    key={idx}
-                    className="border-b border-white/5 hover:bg-[#ffffff05] transition"
-                  >
-                    <td className="px-3 py-3">{l.firewall}</td>
-                    <td>{l.link}</td>
-
-                    {/* Barra de Uso */}
-                    <td>
-                      <div className="flex items-center gap-2 justify-center">
-                        <div className="w-24 h-2 bg-white/10 rounded">
-                          <div
-                            className={`h-2 rounded ${l.severidade === "critico"
-                                ? "bg-[#EC4899]"
-                                : l.severidade === "alto"
-                                  ? "bg-[#A855F7]"
-                                  : l.severidade === "medio"
-                                    ? "bg-[#6366F1]"
-                                    : "bg-[#1DD69A]"
-                              }`}
-                            style={{
-                              width: `${Math.min(
-                                l.uso_percentual ?? 0,
-                                100
-                              )}%`,
-                            }}
-                          />
-                        </div>
-
-                        <div className="text-gray-400 text-[11px] whitespace-nowrap">
-                          {l.trafego_mbps.toFixed(1)} Mbps
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Capacidade */}
-                    <td className="text-gray-400">
-                      {l.capacidade_mbps >= 1000
-                        ? `${(l.capacidade_mbps / 1000).toFixed(1)} Gbps`
-                        : `${l.capacidade_mbps} Mbps`}
-                    </td>
-
-                    <td className="text-center">
-                      <SeveridadeBadge nivel={l.severidade} />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          {/* Paginação */}
-          <div className="flex justify-between items-center mt-4">
-            <button
-              disabled={paginaAtual === 1}
-              onClick={() =>
-                setPaginaAtual((p) => Math.max(1, p - 1))
-              }
-              className={`px-3 py-1 rounded-md text-xs border text-gray-400
-                ${paginaAtual === 1
-                  ? "opacity-30 cursor-not-allowed"
-                  : "hover:bg-white/5"
-                }`}
-            >
-              ← Anterior
-            </button>
-
-            <span className="text-gray-400 text-xs">
-              Página {paginaAtual} de {totalPaginas}
-            </span>
-
-            <button
-              disabled={paginaAtual === totalPaginas}
-              onClick={() =>
-                setPaginaAtual((p) =>
-                  Math.min(totalPaginas, p + 1)
-                )
-              }
-              className={`px-3 py-1 rounded-md text-xs border text-gray-400
-                ${paginaAtual === totalPaginas
-                  ? "opacity-30 cursor-not-allowed"
-                  : "hover:bg-white/5"
-                }`}
-            >
-              Próxima →
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+export default FirewallCard;

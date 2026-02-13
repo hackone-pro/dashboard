@@ -12,6 +12,9 @@ import { HiOutlineDocumentReport } from "react-icons/hi";
 import { RxTokens } from "react-icons/rx";
 
 
+import { useZabbixAtivo } from "../hooks/useZabbixAtivo";
+
+
 import clsx from 'clsx';
 
 export default function Sidebar() {
@@ -23,6 +26,9 @@ export default function Sidebar() {
 
     const enableIntegrations =
         import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
+
+    const enableConfig =
+        import.meta.env.VITE_ENABLE_CONFIG === "true";
 
     return (
         <div className={clsx(
@@ -410,6 +416,7 @@ export default function Sidebar() {
                         </ul>
                     </div>
 
+
                     {/* SUBITENS — HOVER (quando recolhida) */}
                     {!isOpen && (
                         <div
@@ -518,26 +525,23 @@ export default function Sidebar() {
                         </div>
                     )}
                 </li>
-
-                <li className={clsx(
-                    "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
-                    isOpen ? "justify-start" : "justify-center"
-                )}>
-                    <Link to="/config" className={clsx(
+                
+                {enableConfig && (
+                    <li className={clsx(
                         "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                         isOpen ? "justify-start" : "justify-center"
                     )}>
-                        {/* @ts-ignore */}
-                        <CiSettings />
-                        {isOpen && <span>Configurações</span>}
-                    </Link>
-                </li>
+                        <Link to="/config" className={clsx(
+                            "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                            isOpen ? "justify-start" : "justify-center"
+                        )}>
+                            <CiSettings />
+                            {isOpen && <span>Configurações</span>}
+                        </Link>
+                    </li>
+                )}
 
             </ul>
         </div>
     );
-}
-
-function useZabbixAtivo(): { ativo: any; loading: any; } {
-    throw new Error('Function not implemented.');
 }
