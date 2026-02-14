@@ -3,6 +3,11 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.8.4.0]
+- Inclusão filtro Agentes - Detecção de Vulnerabildiades
+- Ajuste Cluster - Detecção de Vulnerabilidade
+- Novo filtro no titulo - Incidentes
+
 ## [v1.8.3.7]
 - Alterações Selects cards risklevel
 - Ajuste no card Firewalls para buscar todos os logs - Monitoria
