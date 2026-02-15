@@ -3,6 +3,24 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.8.4.0]
+- Inclusão filtro Agentes - Detecção de Vulnerabildiades
+- Ajuste Cluster - Detecção de Vulnerabilidade
+- Novo filtro no titulo - Incidentes
+
+## [v1.8.3.7]
+- Alterações Selects cards risklevel
+- Ajuste no card Firewalls para buscar todos os logs - Monitoria
+
+## [v1.8.3.6]
+- Ajuste Gráfico Volume - Monitoria
+- Inclusão de Contratos - Monitoria
+- Ajuste Top Hosts sem syscheck
+- Ajuste Calendario + Indice de Risco
+- Ajuste bordas e validação proximo mes
+- Storage flag
+
+
 ## [v1.7.3.6]
 - Ajuste conflito em incidentes "Atribuidos" no gráfico.
 - Ajuste Cálculo do RiskLevel
