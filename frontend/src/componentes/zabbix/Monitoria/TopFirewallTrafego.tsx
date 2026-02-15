@@ -30,9 +30,9 @@ export default function FirewallsRamCard() {
 
   function severidadePorCPU(cpu?: number | null) {
     if (typeof cpu !== "number") return "baixo";
-    if (cpu >= 90) return "critico";
-    if (cpu >= 75) return "alto";
-    if (cpu >= 50) return "medio";
+    if (cpu >= 80) return "critico";
+    if (cpu >= 60) return "alto";
+    if (cpu >= 30) return "medio";
     return "baixo";
   }
 

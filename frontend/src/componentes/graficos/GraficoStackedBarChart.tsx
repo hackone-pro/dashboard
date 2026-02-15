@@ -38,7 +38,7 @@ export default function GraficoStackedBarChart({
         horizontal: horizontal,
         borderRadius: 4,
         columnWidth: "50%",
-        distributed: distributed,
+        distributed: true,
       },
     },
 
@@ -68,7 +68,7 @@ export default function GraficoStackedBarChart({
     legend: {
       position: "top",
       inverseOrder: true,
-      show: mostrarLegenda,
+      show: false,
       labels: { colors: "#99a1af" },
     },
 
@@ -89,12 +89,5 @@ export default function GraficoStackedBarChart({
     },
   };
 
-  return (
-    <Chart
-      options={options}
-      series={series}
-      type="bar"
-      height="100%"
-    />
-  );
+  return <Chart options={options} series={series} type="bar" height="100%" />;
 }

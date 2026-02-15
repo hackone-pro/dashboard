@@ -113,11 +113,7 @@ const Ativos = forwardRef<AtivosCardRef, Props>(
     const valores = dados.grupos.map((g) => g.total);
 
     return (
-      <div
-        className={`flex flex-col justify-start relative h-full
-          ${isWidget}
-        `}
-      >
+      <div className="h-[250px] w-full">
         <GraficoStackedBarChart
           categorias={categorias}
           series={[

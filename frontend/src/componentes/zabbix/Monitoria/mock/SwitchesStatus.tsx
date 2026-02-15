@@ -33,7 +33,7 @@ const SwitchesCard = forwardRef<SwitchesCardRef>((props, ref) => {
     }));
 
     // ==========================================================
-    // GRÁFICO — SCATTER
+    // GRÁFICO — SCATTER CLOUD
     // ==========================================================
 
     const scatterSeries = [
