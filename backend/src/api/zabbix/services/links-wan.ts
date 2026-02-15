@@ -1,10 +1,5 @@
 /**
- * Serviço Zabbix — Links WAN (Saúde por RAM do Firewall)
- *
- * Conceito:
- * - Link WAN não consome RAM
- * - A RAM vem do FIREWALL
- * - Cada link herda a saúde do firewall
+ * Serviço Zabbix — Links WAN (Tráfego Real + Capacidade)
  */
 
  import axios from "axios";
@@ -38,7 +33,43 @@
    return response.data.result;
  }
  
- const RAM_BASELINE_BYTES = 4 * 1024 * 1024 * 1024; // 4GB visual padrão
+ /**
+  * Equipamentos válidos (Firewall + Roteadores de borda)
+  */
+ function isEquipamentoBorda(hostname: string): boolean {
+   return (
+     hostname.startsWith("FGT") ||
+     hostname.startsWith("Fortinet") ||
+     hostname.startsWith("RTR-")
+   );
+ }
+ 
+ /**
+  * Interfaces válidas para WAN
+  */
+ function isInterfaceWanValida(nomeInterface: string): boolean {
+   const nome = nomeInterface.toLowerCase();
+ 
+   if (
+     nome.includes("fortilink") ||
+     nome.includes("ssl.root") ||
+     nome.includes("naf.root") ||
+     nome.includes("l2t.root") ||
+     nome.includes("loopback") ||
+     nome.includes("vo0") ||
+     nome.includes("ens")
+   ) {
+     return false;
+   }
+ 
+   return (
+     nome.includes("port") ||
+     nome.includes("wan") ||
+     nome.includes("et") ||
+     nome.includes("gi") ||
+     nome.includes("eth")
+   );
+ }
  
  export async function buscarLinksWan(tenant: any) {
    const cfg = tenant.zabbix_config;
@@ -49,128 +80,111 @@
    const token = cfg.zabbix_token;
  
    /**
-    * 1️⃣ Buscar RAM dos firewalls (SNMP)
+    * 1️⃣ Buscar todos hosts ativos
     */
-   const ramItems = await zabbixRequest(url, token, "item.get", {
-     filter: {
-       key_: [
-         "vm.memory.available[fgSysMemFree.0]",
-         "vm.memory.total[fgSysMemCapacity.0]",
-       ],
-     },
-     output: ["key_", "lastvalue"],
-     selectHosts: ["hostid", "name"],
+   const hosts = await zabbixRequest(url, token, "host.get", {
+     output: ["hostid", "name"],
+     status: 0,
    });
  
-   const ramMap = new Map<
-     string,
-     { total: number | null; available: number | null }
-   >();
+   if (!hosts.length) return [];
  
-   for (const r of ramItems) {
-     const hostInfo = r.hosts?.[0];
-     if (!hostInfo) continue;
+   const hostsValidos = hosts.filter((h: any) =>
+     isEquipamentoBorda(h.name)
+   );
  
-     if (!ramMap.has(hostInfo.name)) {
-       ramMap.set(hostInfo.name, { total: null, available: null });
-     }
+   if (!hostsValidos.length) return [];
  
-     const acc = ramMap.get(hostInfo.name)!;
-     const value = Number(r.lastvalue);
- 
-     if (Number.isNaN(value)) continue;
- 
-     if (r.key_.includes("MemCapacity")) acc.total = value;
-     if (r.key_.includes("MemFree")) acc.available = value;
-   }
+   const hostids = hostsValidos.map((h: any) => h.hostid);
  
    /**
-    * 2️⃣ Buscar itens de interface (somente para identificar LINKS)
+    * 2️⃣ Buscar itens relacionados a interfaces
     */
    const items = await zabbixRequest(url, token, "item.get", {
+     hostids,
      search: {
        key_: "net.if.",
      },
-     output: ["itemid", "name", "key_"],
-     selectHosts: ["name"],
+     output: ["hostid", "name", "key_", "lastvalue"],
    });
  
-   if (!Array.isArray(items)) return [];
- 
-   const links: any[] = [];
+   const linkMap = new Map<string, any>();
  
    for (const item of items) {
-     const hostName = item.hosts?.[0]?.name;
+     const hostName =
+       hostsValidos.find((h: any) => h.hostid === item.hostid)?.name;
+ 
      if (!hostName) continue;
  
-     // Apenas firewalls
-     if (
-       !hostName.startsWith("FGT") &&
-       !hostName.toLowerCase().includes("forti")
-     ) {
-       continue;
+     if (!isInterfaceWanValida(item.name)) continue;
+ 
+     const match = item.key_.match(/\.(\d+)\]/);
+     if (!match) continue;
+ 
+     const index = match[1];
+     const key = `${hostName}_${index}`;
+ 
+     if (!linkMap.has(key)) {
+       linkMap.set(key, {
+         firewall: hostName,
+         link: `port${index}`,
+         in_mbps: 0,
+         out_mbps: 0,
+         speed_bps: 0,
+       });
      }
  
-     // Aceitar apenas interfaces reais
-     if (
-       !item.key_.includes("ifHCInOctets") &&
-       !item.key_.includes("ifHCOutOctets")
-     ) {
-       continue;
+     const acc = linkMap.get(key);
+     const value = Number(item.lastvalue);
+     if (Number.isNaN(value)) continue;
+ 
+     // Entrada
+     if (item.key_.includes("ifHCInOctets")) {
+       acc.in_mbps = (value * 8) / 1_000_000;
      }
  
-     /**
-      * RAM herdada do firewall
-      */
-     const ram = ramMap.get(hostName);
+     // Saída
+     if (item.key_.includes("ifHCOutOctets")) {
+       acc.out_mbps = (value * 8) / 1_000_000;
+     }
  
-     const ramTotal =
-       ram?.total && ram.total > 0 ? ram.total : RAM_BASELINE_BYTES;
- 
-     const ramAvailable =
-       ram?.available !== null && ram?.available !== undefined
-         ? Math.min(ram.available, ramTotal)
-         : ramTotal;
- 
-     const ramUsed = Math.max(0, ramTotal - ramAvailable);
- 
-     const ramUsedPercent = Number(
-       ((ramUsed / ramTotal) * 100).toFixed(2)
-     );
- 
-     /**
-      * Severidade baseada em RAM
-      */
-     let severidade: "baixo" | "medio" | "alto" | "critico" = "baixo";
- 
-     if (ramUsedPercent >= 90) severidade = "critico";
-     else if (ramUsedPercent >= 75) severidade = "alto";
-     else if (ramUsedPercent >= 50) severidade = "medio";
- 
-     /**
-      * Normalizar nome do link
-      */
-     const link = item.name
-       .replace("Interface", "")
-       .replace("Bits received", "")
-       .replace("Bits sent", "")
-       .replace(/[():]/g, "")
-       .trim();
- 
-     links.push({
-       firewall: hostName,
-       link,
- 
-       // 🔹 RAM
-       ram_total_bytes: ramTotal,
-       ram_available_bytes: ramAvailable,
-       ram_used_bytes: ramUsed,
-       ram_used_percent: ramUsedPercent,
- 
-       severidade,
-     });
+     // Capacidade
+     if (item.key_.includes("net.if.speed")) {
+       acc.speed_bps = value;
+     }
    }
  
-   return links;
+   /**
+    * 3️⃣ Montar resultado final
+    */
+   const result = Array.from(linkMap.values())
+     .map((l) => {
+       const trafego = Number((l.in_mbps + l.out_mbps).toFixed(2));
+       const capacidade = Number((l.speed_bps / 1_000_000).toFixed(0));
+ 
+       const uso =
+         capacidade > 0
+           ? Number(((trafego / capacidade) * 100).toFixed(2))
+           : 0;
+ 
+       let severidade: "baixo" | "medio" | "alto" | "critico" = "baixo";
+ 
+       if (uso >= 90) severidade = "critico";
+       else if (uso >= 75) severidade = "alto";
+       else if (uso >= 50) severidade = "medio";
+ 
+       return {
+         firewall: l.firewall,
+         link: l.link,
+         trafego_mbps: trafego,
+         capacidade_mbps: capacidade,
+         uso_percentual: uso,
+         severidade,
+       };
+     })
+     .filter((l) => l.capacidade_mbps > 0)
+     .sort((a, b) => b.trafego_mbps - a.trafego_mbps);
+ 
+   return result;
  }
  

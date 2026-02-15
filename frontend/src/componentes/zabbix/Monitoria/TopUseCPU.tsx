@@ -81,8 +81,8 @@ export default function TopUseCPU() {
               hosts.map((h) => {
                 const ramPercent =
                   typeof h.ram_used_gb === "number" &&
-                  typeof h.ram_total_gb === "number" &&
-                  h.ram_total_gb > 0
+                    typeof h.ram_total_gb === "number" &&
+                    h.ram_total_gb > 0
                     ? (h.ram_used_gb / h.ram_total_gb) * 100
                     : null;
 
@@ -119,14 +119,15 @@ export default function TopUseCPU() {
                               style={{ width: `${Math.min(ramPercent, 100)}%` }}
                             />
                           </div>
+
                           <div className="text-gray-400 text-[11px] whitespace-nowrap">
-                            {h.ram_used_gb!.toFixed(1)} GB /{" "}
-                            {h.ram_total_gb!.toFixed(0)} GB
+                            {ramPercent.toFixed(1)}%
                           </div>
                         </div>
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
+
                     </td>
 
                     {/* Processos */}

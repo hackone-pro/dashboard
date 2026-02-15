@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getTopSwitchesCPU, TopSwitchCPUItem } from "../../../services/zabbix/top-switches-cpu";
+import GraficoDonutLimpo from "../../graficos/GraficoDonutLimpo";
+
 
 const SEVERITY_STYLE: Record<string, string> = {
     critico: "border-[#EC4899]",
@@ -30,15 +32,15 @@ export default function TopSwitchesCPU() {
 
     function LegendaItem({ cor, label }: { cor: string; label: string }) {
         return (
-          <div className="flex items-center gap-1">
-            <span
-              className="w-2.5 h-2.5 rounded-xs"
-              style={{ backgroundColor: cor }}
-            />
-            <span>{label}</span>
-          </div>
+            <div className="flex items-center gap-1">
+                <span
+                    className="w-2.5 h-2.5 rounded-xs"
+                    style={{ backgroundColor: cor }}
+                />
+                <span>{label}</span>
+            </div>
         );
-      }
+    }
 
     return (
         <div>
@@ -75,23 +77,50 @@ export default function TopSwitchesCPU() {
                 <div className="h-32 bg-white/5 rounded-xl animate-pulse" />
             ) : (
                 <div className="grid grid-cols-5 gap-4">
-                    {switches.map((sw) => (
-                        <div
-                            key={sw.hostid}
-                            className={`rounded-xl border bg-[#0A0617]
-              flex flex-col items-center justify-center h-32
-              transition-all
-              ${SEVERITY_STYLE[sw.severity]}`}
-                        >
-                            <span className="text-gray-300 text-xs mb-1">
-                                {sw.name}
-                            </span>
+                    {switches.map((sw) => {
+                        const cpu = Math.min(100, Math.max(0, sw.cpu));
 
-                            <span className="text-white text-lg font-semibold">
-                                {sw.cpu.toFixed(1)}%
-                            </span>
-                        </div>
-                    ))}
+                        const corMapa: Record<string, string> = {
+                            critico: "#EC4899",
+                            alto: "#A855F7",
+                            medio: "#6366F1",
+                            baixo: "#1DD69A",
+                        };
+
+                        const severityFinal = cpu === 0 ? "baixo" : sw.severity;
+                        const cor = corMapa[severityFinal] ?? "#6366F1";
+
+                        const seriesDonut =
+                            cpu === 0
+                                ? [100] // donut todo verde
+                                : [cpu, 100 - cpu];
+
+                        const labelsDonut =
+                            cpu === 0
+                                ? ["Saudável"]
+                                : ["CPU", "Livre"];
+
+                        return (
+                            <div
+                                key={sw.hostid}
+                                className={`rounded-xl bg-[#0A0617]
+                                    flex flex-col items-center justify-center p-4
+                                    transition-all
+                                    ${SEVERITY_STYLE[severityFinal]}`}
+                            >
+
+                                <GraficoDonutLimpo
+                                    valor={cpu}
+                                    cor={cor}
+                                />
+
+                                <span className="text-gray-400 text-xs mt-2">
+                                    {sw.name}
+                                </span>
+
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

@@ -6,7 +6,7 @@ import { buscarTopSwitchesCPU, buscarSwitchesStatus } from "../services/top-swit
 import { buscarAlertasZabbix } from "../services/alerts";
 import { buscarAtivosZabbix } from "../services/actives";
 import { buscarVpnZabbix } from "../services/vpn";
-import { buscarTopRoutersSeveridade } from "../services/routers";
+import { buscarTopRoutersCPU } from "../services/routers";
 import { buscarLinksWan } from "../services/links-wan";
 
 export default {
@@ -184,17 +184,19 @@ export default {
   
       const limit = ctx.query.limit ? Number(ctx.query.limit) : 5;
   
-      const result = await buscarTopRoutersSeveridade(tenant, limit);
+      const result = await buscarTopRoutersCPU(tenant, limit);
   
       return ctx.send({
-        total: result.routers.length,
+        total: result.total,
         routers: result.routers,
       });
+  
     } catch (err) {
-      console.error("Erro routers Zabbix:", err);
-      return ctx.internalServerError("Erro ao buscar roteadores");
+      console.error("Erro routers CPU Zabbix:", err);
+      return ctx.internalServerError("Erro ao buscar CPU dos roteadores");
     }
   },
+  
 
   async linksWan(ctx) {
     try {

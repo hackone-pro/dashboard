@@ -51,7 +51,7 @@ const SwitchesCard = forwardRef<SwitchesCardRef>((props, ref) => {
     }, []);
 
     // ==========================================================
-    // 📊 GRÁFICO — SCATTER CLOUD (IGUAL AO FIREWALL)
+    // GRÁFICO — SCATTER CLOUD
     // ==========================================================
 
     const scatterSeries = [
@@ -146,7 +146,7 @@ const SwitchesCard = forwardRef<SwitchesCardRef>((props, ref) => {
             <h3 className="text-white mb-4">Switches</h3>
 
             <p className="text-gray-400 text-sm mb-2">
-                Quantidade de Switches Monitorados
+                Status dos Switches Monitorados
             </p>
 
             {/* STATUS RESUMO */}
