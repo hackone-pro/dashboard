@@ -1,6 +1,6 @@
 import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
 import { GripVertical } from "lucide-react";
-import GraficoBarHorizontal from "../../graficos/GraficoBarraHorizontal";
+import GraficoStackedBarChart from "../../graficos/GraficoStackedBarChart";
 import { getZabbixAtivos, ZabbixGrupoAtivo } from "../../../services/zabbix/ativos";
 import { useTenant } from "../../../context/TenantContext";
 
@@ -113,16 +113,16 @@ const Ativos = forwardRef<AtivosCardRef, Props>(
     const valores = dados.grupos.map((g) => g.total);
 
     return (
-      <div
-        className={`flex flex-col justify-start relative h-full
-          ${isWidget}
-        `}
-      >
-        <GraficoBarHorizontal
+      <div className="h-[250px] w-full">
+        <GraficoStackedBarChart
           categorias={categorias}
-          valores={valores}
-          nomeSerie="Ativos"
-          cor="#8B5CF6"
+          series={[
+            {
+              name: "Ativos",
+              data: valores,
+            },
+          ]}
+          cores={["#8B5CF6"]}
         />
       </div>
     );
@@ -130,3 +130,5 @@ const Ativos = forwardRef<AtivosCardRef, Props>(
 );
 
 export default Ativos;
+
+

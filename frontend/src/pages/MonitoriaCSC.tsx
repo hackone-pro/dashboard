@@ -67,13 +67,13 @@ export default function MonitoriaSOC() {
         ================================= */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
+          <div className="cards rounded-2xl p-6">
+            <h3 className="text-white mb-4">Ativos monitorados</h3>
+            <Ativos />
+          </div>
+
           {/* CARD – Firewall */}
           <FirewallCard ref={firewallRef} />
-
-          {/* CARD – CPU e memória */}
-          <div className="cards rounded-2xl p-6 zabbix-card">
-            <TopHostsCPU />
-          </div>
 
           {/* CARD – Problemas por severidade */}
           <div className="cards rounded-2xl p-6 flex flex-col zabbix-card">
@@ -113,17 +113,16 @@ export default function MonitoriaSOC() {
         ================================= */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-          <div className="cards rounded-2xl p-6">
-            <h3 className="text-white mb-4">Ativos monitorados</h3>
-            <Ativos />
-          </div>
+        <SwitchesStatusCard />
 
           <div className="cards rounded-2xl p-6">
             <h3 className="text-white mb-4">VPN</h3>
             <VPN />
           </div>
 
-          <SwitchesStatusCard />
+          <div className="cards rounded-2xl p-6 zabbix-card">
+            <TopHostsCPU />
+          </div>
 
         </div>
 
@@ -131,6 +130,7 @@ export default function MonitoriaSOC() {
             LINHA 5 – WAN + ROTEADORES
         ================================= */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* CARD – CPU e memória */}
 
           <LinksWanCard />
 

@@ -27,7 +27,7 @@ export default function VPN() {
     <div className="h-full flex flex-col">
 
       {/* Título */}
-      <p className="text-gray-400 text-sm mb-4">Status dos túneis VPN</p>
+      <p className="text-gray-400 text-sm mb-4">Status e Volume de tráfego por VPN</p>
 
       {/* Loading */}
       {loading && (
