@@ -14,10 +14,11 @@ export type TopOSGraficoCardRef = {
 
 interface Props {
   isWidget?: boolean;
+  agent?: string | null;
 }
 
 const TopOSGraficoCard = forwardRef<TopOSGraficoCardRef, Props>(
-  ({ isWidget = false }, ref) => {
+  ({ isWidget = false, agent }, ref) => {
     const { tenantAtivo } = useTenant();
     const [topSo, setTopSo] = useState<TopOSVulnerabilidade[]>([]);
     const [carregando, setCarregando] = useState(true);
@@ -28,7 +29,11 @@ const TopOSGraficoCard = forwardRef<TopOSGraficoCardRef, Props>(
       setCarregando(true);
 
       try {
-        const lista = await getTopOSVulnerabilidades(5, "todos");
+        const lista = await getTopOSVulnerabilidades(
+          5,
+          "todos",
+          agent ?? undefined
+        );
         setTopSo(lista);
         setErro(null);
       } catch (e: any) {
@@ -40,7 +45,7 @@ const TopOSGraficoCard = forwardRef<TopOSGraficoCardRef, Props>(
 
     useEffect(() => {
       carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, agent]);
 
     useImperativeHandle(ref, () => ({ carregar }));
 
@@ -96,7 +101,9 @@ const TopOSGraficoCard = forwardRef<TopOSGraficoCardRef, Props>(
             ${isWidget ? "p-6" : "p-4"}
           `}
         >
-          <span className="text-xs text-gray-400">Sem vulnerabilidades de OS</span>
+          <span className="text-xs text-gray-400">
+            Sem vulnerabilidades de OS
+          </span>
         </div>
       );
     }
@@ -110,7 +117,6 @@ const TopOSGraficoCard = forwardRef<TopOSGraficoCardRef, Props>(
           ${isWidget ? "p-6" : "p-4"}
         `}
       >
-        {/* HEADER → com drag-handle igual aos outros widgets */}
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
             {isWidget && (

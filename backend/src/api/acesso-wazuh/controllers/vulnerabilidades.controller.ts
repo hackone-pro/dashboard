@@ -26,10 +26,14 @@ export default {
                 return ctx.notFound("Tenant não encontrado ou inativo");
             }
 
-            const resultado = await buscarVulnSeveridades(tenant);
+            const { dias = "todos", agent } = ctx.query;
+
+            const resultado = await buscarVulnSeveridades(tenant, {
+                dias: String(dias),
+                agent: agent ? String(agent) : undefined,
+            });
 
             return ctx.send({ aggregations: resultado });
-
         } catch (error) {
             console.error("Erro ao buscar vulnerabilidades resumo:", error);
             return ctx.internalServerError("Erro ao consultar vulnerabilidades resumo");
@@ -44,12 +48,13 @@ export default {
                 return ctx.notFound("Tenant não encontrado ou inativo");
             }
 
-            const { by = "cve", size = "5", dias = "todos" } = ctx.query;
+            const { by = "cve", size = "5", dias = "todos", agent } = ctx.query;
 
             const resultado = await buscarTopVulnerabilidades(tenant, {
                 by: validarBy(by),
                 size: Number(size),
                 dias: String(dias),
+                agent: agent ? String(agent) : undefined,
             });
 
             return ctx.send({ topVulnerabilidades: resultado });
@@ -68,11 +73,12 @@ export default {
                 return ctx.notFound("Tenant não encontrado ou inativo");
             }
 
-            const { size = "5", dias = "todos" } = ctx.query;
+            const { size = "5", dias = "todos", agent } = ctx.query;
 
             const resultado = await buscarTopOSVulnerabilidades(tenant, {
                 size: Number(size),
                 dias: String(dias),
+                agent: agent ? String(agent) : undefined,
             });
 
             return ctx.send({ topOS: resultado });
@@ -91,14 +97,14 @@ export default {
                 return ctx.notFound("Tenant não encontrado ou inativo");
             }
 
-            const { size = "5", dias = "todos" } = ctx.query;
+            const { size = "5", dias = "todos", agent } = ctx.query;
 
             const resultado = await buscarTopAgentesVulnerabilidades(tenant, {
                 size: Number(size),
                 dias: String(dias),
+                agent: agent ? String(agent) : undefined,
             });
 
-            // 🔥 Agora envia o ARRAY diretamente
             return ctx.send(resultado);
 
         } catch (error) {
@@ -111,23 +117,28 @@ export default {
     async topPackagesVulnerabilidades(ctx) {
         try {
             const tenant = await getTenantAtivo(ctx);
-            if (!tenant) return ctx.notFound("Tenant não encontrado ou inativo");
-    
-            const { size = "5", dias = "todos" } = ctx.query;
-    
+            if (!tenant) {
+                return ctx.notFound("Tenant não encontrado ou inativo");
+            }
+
+            const { size = "5", dias = "todos", agent } = ctx.query;
+
             const resultado = await buscarTopPackagesVulnerabilidades(tenant, {
                 size: Number(size),
                 dias: String(dias),
+                agent: agent ? String(agent) : undefined,
             });
-    
+
             return ctx.send({ topPackages: resultado });
-    
+
         } catch (error) {
             console.error("Erro ao buscar top Packages vulnerabilidades:", error);
-            return ctx.internalServerError("Erro ao consultar top Packages vulneráveis");
+            return ctx.internalServerError(
+                "Erro ao consultar top Packages vulnerabilidades"
+            );
         }
     },
-    
+
 
     //  6) Top scores de vulnerabilidades (CVSS)
     async topScoresVulnerabilidades(ctx) {
@@ -137,11 +148,12 @@ export default {
                 return ctx.notFound("Tenant não encontrado ou inativo");
             }
 
-            const { size = "5", dias = "todos" } = ctx.query;
+            const { size = "5", dias = "todos", agent } = ctx.query;
 
             const resultado = await buscarTopScoresVulnerabilidades(tenant, {
                 size: Number(size),
                 dias: String(dias),
+                agent: agent ? String(agent) : undefined,
             });
 
             return ctx.send({ topScores: resultado });
@@ -160,10 +172,11 @@ export default {
                 return ctx.notFound("Tenant não encontrado ou inativo");
             }
 
-            const { dias = "todos" } = ctx.query;
+            const { dias = "todos", agent } = ctx.query;
 
             const resultado = await buscarVulnerabilidadesPorAno(tenant, {
                 dias: String(dias),
+                agent: agent ? String(agent) : undefined,
             });
 
             return ctx.send({ porAno: resultado });

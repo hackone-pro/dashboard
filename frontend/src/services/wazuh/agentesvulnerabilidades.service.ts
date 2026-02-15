@@ -9,15 +9,18 @@ export interface TopAgenteVulnerabilidade {
 
 export async function getTopAgentesVulnerabilidades(
   size: number = 5,
-  dias: string = "todos"
+  dias: string = "todos",
+  agent?: string
 ): Promise<TopAgenteVulnerabilidade[]> {
 
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
   const url = new URL(`${baseUrl}/api/acesso/wazuh/vulnerabilidades/top-agentes`);
+
   if (size) url.searchParams.set("size", String(size));
   if (dias) url.searchParams.set("dias", dias);
+  if (agent) url.searchParams.set("agent", agent);
 
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
@@ -40,6 +43,6 @@ export async function getTopAgentesVulnerabilidades(
   return lista.map((item: any) => ({
     agent: String(item.agent ?? "Desconhecido"),
     total: Number(item.total ?? 0),
-    severity: item.severity ? { ...item.severity } : {}
+    severity: item.severity ? { ...item.severity } : {},
   }));
 }

@@ -10,12 +10,15 @@ export interface VulnSeveridades {
   total?: number;
 }
 
-export async function getVulnSeveridades(): Promise<VulnSeveridades> {
+export async function getVulnSeveridades(agent?: string): Promise<VulnSeveridades> {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
+  const params = new URLSearchParams();
+  if (agent) params.append("agent", agent);
+
   const response = await fetch(
-    `${baseUrl}/api/acesso/wazuh/vulnerabilidades/severidade`,
+    `${baseUrl}/api/acesso/wazuh/vulnerabilidades/severidade?${params.toString()}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
 
@@ -29,7 +32,6 @@ export async function getVulnSeveridades(): Promise<VulnSeveridades> {
   }
 
   const data = await response.json();
-
   const aggs = data?.aggregations ?? {};
 
   return {

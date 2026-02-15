@@ -194,10 +194,46 @@ export function detectarNivelPorNome(nome: string): string | null {
   return null;
 }
 
+/* ======================
+ * Severidade real (do texto)
+ * ====================== */
+
+export function extrairSeveridadeDoTexto(descricao?: string): string | null {
+  if (!descricao) return null;
+
+  const textoLimpo = descricao
+    .replace(/\*\*/g, "")       // remove **
+    .replace(/`/g, "")          // remove crase
+    .replace(/^\s*-\s*/gm, "")  // remove "- " no início das linhas
+    .replace(/\u00A0/g, " ")    // remove espaço especial
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // remove acentos de verdade
+
+  const match = textoLimpo.match(
+    /Severidade\s*:\s*(Baixo|Baixa|Medio|Media|Alto|Alta|Critico|Critica)/i
+  );
+
+  if (!match) return null;
+
+  const v = match[1].toLowerCase();
+
+  if (v.startsWith("crit")) return "Crítica";
+  if (v.startsWith("alt")) return "Alta";
+  if (v.startsWith("med")) return "Média";
+  if (v.startsWith("baix")) return "Baixa";
+
+  return null;
+}
+
+
 // Limpa prefixos do título
 export function formatCaseName(name: string) {
   let s = (name || "").replace(/\u00A0/g, " ").replace(/\s+/g, " ").trimStart();
   s = s.replace(/^\s*#?\d+\s*[-–]\s*/i, "");
+  s = s.replace(
+    new RegExp(String.raw`\[\s*${NIVEIS_REGEX}\s*\]\s*[-–]\s*`, "i"),
+    ""
+  );
   s = s.replace(
     new RegExp(
       String.raw`^\s*\[\d{2}:\d{2}\s*[-–]\s*\d{2}\/\d{2}\/\d{4}\]\s*[-–]\s*${NIVEIS_REGEX}\s*[-–]\s*`,

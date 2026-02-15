@@ -14,7 +14,8 @@ export interface TopPackageVulnerabilidade {
  */
  export async function getTopPackagesVulnerabilidades(
   size: number = 5,
-  dias: string = "todos"
+  dias: string = "todos",
+  agent?: string | null
 ): Promise<TopPackageVulnerabilidade[]> {
 
   const token = getToken();
@@ -23,6 +24,10 @@ export interface TopPackageVulnerabilidade {
   const url = new URL(`${baseUrl}/api/acesso/wazuh/vulnerabilidades/top-packages`);
   url.searchParams.set("size", String(size));
   url.searchParams.set("dias", dias);
+
+  if (agent) {
+    url.searchParams.set("agent", agent);
+  }
 
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
@@ -38,21 +43,11 @@ export interface TopPackageVulnerabilidade {
   }
 
   const data = await response.json();
-
-  // 🔥 backend retorna { topPackages: [...] }
   const lista = Array.isArray(data?.topPackages) ? data.topPackages : [];
 
-  return lista.map((item: any) => {
-    const severity: Record<string, number> = {};
-
-    if (item?.severity && typeof item.severity === "object") {
-      Object.assign(severity, item.severity);
-    }
-
-    return {
-      package: String(item?.package ?? item?.key ?? "Desconhecido"),
-      total: Number(item?.total ?? item?.doc_count ?? 0),
-      severity,
-    };
-  });
+  return lista.map((item: any) => ({
+    package: String(item?.package ?? item?.key ?? "Desconhecido"),
+    total: Number(item?.total ?? item?.doc_count ?? 0),
+    severity: item?.severity ?? {},
+  }));
 }

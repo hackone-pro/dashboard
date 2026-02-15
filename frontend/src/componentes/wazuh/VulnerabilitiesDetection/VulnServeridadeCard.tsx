@@ -12,6 +12,7 @@ export type VulnSeveridadeCardRef = {
 
 interface Props {
   onAtualizar?: () => void;
+  agent?: string | null;
   isWidget?: boolean;
 }
 
@@ -19,7 +20,7 @@ const formatPt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
 
 const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(
-  ({ onAtualizar, isWidget = false }, ref) => {
+  ({ onAtualizar, isWidget = false, agent }, ref) => {
     const { tenantAtivo } = useTenant();
     const [data, setData] = useState<VulnSeveridades | null>(null);
     const [loading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(
       setLoading(true);
 
       try {
-        const res = await getVulnSeveridades();
+        const res = await getVulnSeveridades(agent ?? undefined);
         setData(res);
         setErr(null);
       } catch (e: any) {
@@ -42,7 +43,7 @@ const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(
 
     useEffect(() => {
       carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, agent]);
 
     useImperativeHandle(ref, () => ({
       carregar,
