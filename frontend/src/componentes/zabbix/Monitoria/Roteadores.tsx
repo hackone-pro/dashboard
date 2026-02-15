@@ -109,6 +109,8 @@ export default function Roteadores() {
             },
           ]}
           cores={cores}
+          stacked={false}
+          distributed={true}
         />
       </div>
     </div>
