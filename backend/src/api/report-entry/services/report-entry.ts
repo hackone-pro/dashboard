@@ -22,6 +22,36 @@ import {
   isBefore
 } from "date-fns";
 
+function calcularRiskLevel({
+  critico,
+  alto,
+  medio,
+  baixo,
+}: {
+  critico: number;
+  alto: number;
+  medio: number;
+  baixo: number;
+}) {
+  if (critico > 0) {
+    return Math.min(100, 75 + Math.log10(1 + critico) * 10);
+  }
+
+  if (alto > 0) {
+    return Math.min(75, 50 + Math.log10(1 + alto) * 8);
+  }
+
+  if (medio > 0) {
+    return Math.min(50, 25 + Math.log10(1 + medio) * 6);
+  }
+
+  if (baixo > 0) {
+    return Math.min(25, Math.log10(1 + baixo) * 5);
+  }
+
+  return 0;
+}
+
 export default factories.createCoreService(
   "api::report-entry.report-entry",
   ({ strapi }) => ({
@@ -59,73 +89,85 @@ export default factories.createCoreService(
      * ====================================================
      */
     async calcularRiskLevelCompleto(tenant, dias, user) {
+
       let baixo = 0;
       let medio = 0;
       let alto = 0;
       let critico = 0;
-      let total = 0;
+
+      const diasString = String(dias);
 
       // =============================
       // 1. FIREWALL
       // =============================
-      const firewall = await buscarTopGeradoresFirewall(tenant, dias);
+      const firewall = await buscarTopGeradoresFirewall(
+        tenant,
+        diasString,
+        null
+      );
 
       firewall.forEach((item) => {
         baixo += item.severidade.baixo || 0;
         medio += item.severidade.medio || 0;
         alto += item.severidade.alto || 0;
         critico += item.severidade.critico || 0;
-        total += item.total || 0;
       });
 
       // =============================
       // 2. AGENTES
       // =============================
-      const agentes = await buscarTopAgentes(tenant, dias);
+      const agentes = await buscarTopAgentes(tenant, {
+        from: undefined,
+        to: undefined,
+        dias: diasString,
+      });
 
       agentes.forEach((ag) => {
-        const lista = ag.levels || [];
-
-        lista.forEach((nivel) => {
-          const lvl = Number(nivel.rule_level) || 0;
-
-          if (lvl <= 6) baixo++;
-          else if (lvl <= 11) medio++;
-          else if (lvl <= 14) alto++;
-          else critico++;
-
-          total++;
+        const severidades = ag.severidades || [];
+      
+        severidades.forEach((s) => {
+          const lvl = Number(s.key) || 0;
+      
+          if (lvl <= 6) baixo += s.doc_count;
+          else if (lvl <= 11) medio += s.doc_count;
+          else if (lvl <= 14) alto += s.doc_count;
+          else critico += s.doc_count;
         });
       });
 
       // =============================
       // 3. IRIS
       // =============================
-      const iris = await buscarIncidentesIris(tenant, dias, user);
+      const iris = await buscarIncidentesIris(
+        tenant,
+        { dias: diasString },
+        user
+      );
 
-      baixo += iris.baixo || 0;
-      medio += iris.medio || 0;
-      alto += iris.alto || 0;
-      critico += iris.critico || 0;
-      total += iris.total || 0;
+      baixo += iris?.baixo || 0;
+      medio += iris?.medio || 0;
+      alto += iris?.alto || 0;
+      critico += iris?.critico || 0;
+
+      strapi.log.info(
+        `RELATORIO → C=${critico}, A=${alto}, M=${medio}, B=${baixo}`
+      );
 
       // =============================
-      // 4. CÁLCULO OFICIAL DO RISCO
+      // 4. CÁLCULO NOVO (IGUAL DASHBOARD)
       // =============================
-      let risco = 0;
+      const risco = calcularRiskLevel({
+        critico,
+        alto,
+        medio,
+        baixo,
+      });
 
-      if (total > 0) {
-        risco =
-          ((baixo * 0.2) +
-            (medio * 0.6) +
-            (alto * 0.8) +
-            (critico * 1.0)) /
-          total * 100;
-      }
+      strapi.log.info(`RISCO REAL → ${risco}`);
+      strapi.log.info(`ARREDONDADO → ${Math.round(risco)}`);
 
-      // Arredonda para número inteiro. Ex.: 72
       return {
-        gauge: Number(risco.toFixed(0)),
+        gauge: Math.round(risco),
       };
     },
 
@@ -523,15 +565,15 @@ export default factories.createCoreService(
         )
         .slice(0, 5);
 
-        return {
-          total,
-          abertos,
-          fechados,
-          atribuidos,
-          nao_atribuidos,
-          lista: filtrados,
-          ultimos,
-        };
+      return {
+        total,
+        abertos,
+        fechados,
+        atribuidos,
+        nao_atribuidos,
+        lista: filtrados,
+        ultimos,
+      };
     },
 
     /**
