@@ -30,7 +30,9 @@ export default function Login() {
     if (!el) return;
 
     el.innerHTML = "";
-
+      
+        setLoading(false);
+      
     (window as any).turnstile.render(el, {
       sitekey: TURNSTILE_SITE_KEY,
       theme: "dark",
@@ -59,7 +61,7 @@ export default function Login() {
       }
 
       toastSuccess("Login realizado com sucesso!");
-      navigate("/dashboard");
+      navigate(getRedirectPath(data.user));
     } catch (err: any) {
       setCaptchaToken(null);
       toastError(err.message || "Erro ao tentar login");

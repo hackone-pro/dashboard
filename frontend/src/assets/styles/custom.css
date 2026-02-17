@@ -1,3 +1,4 @@
+
 /*--- TEMA CLARO ---*/
 body.tema-claro a svg,
 body.tema-claro button svg {
@@ -331,8 +332,10 @@ header button.toggle {
 
 /*SCROLL*/
 .lista-secoes {
-  scrollbar-width: thin;              /* Firefox */
-  scrollbar-color: #484D64 #252835;   /* Firefox */
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: #484D64 #252835;
+  /* Firefox */
 }
 
 /* Chrome, Edge, Safari */
@@ -346,12 +349,10 @@ header button.toggle {
 }
 
 .lista-secoes::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    #252835,
-    #484D64,
-    #252835
-  );
+  background: linear-gradient(180deg,
+      #252835,
+      #484D64,
+      #252835);
   border-radius: 10px;
 }
 
@@ -361,15 +362,19 @@ header button.toggle {
   --toastify-color-success: #8b5cf6 !important;
   --toastify-color-error: #F914AD !important;
 }
-.Toastify__toast--success{
-  color:#8b5cf6 !important;
+
+.Toastify__toast--success {
+  color: #8b5cf6 !important;
 }
-.Toastify__toast--error{
+
+.Toastify__toast--error {
   color: #F914AD;
 }
-.Toastify__progress-bar--success{
+
+.Toastify__progress-bar--success {
   background: #8b5cf6;
 }
+
 .Toastify__progress-bar--error {
   background: #F914AD !important;
 }
@@ -884,7 +889,7 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
   border-bottom: 0;
 }
 
-.react-datepicker__current-month{
+.react-datepicker__current-month {
   color: #fff !important;
 }
 
@@ -907,12 +912,12 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
   border-color: #9ca3af;
 }
 
-.react-datepicker__day--in-range, 
-.react-datepicker__day--in-selecting-range:not([aria-disabled=true]):hover{
+.react-datepicker__day--in-range,
+.react-datepicker__day--in-selecting-range:not([aria-disabled=true]):hover {
   background-color: #7951d7 !important;
 }
 
-.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range, .react-datepicker__month-text--in-range, .react-datepicker__quarter-text--in-range, .react-datepicker__year-text--in-range){
+.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range, .react-datepicker__month-text--in-range, .react-datepicker__quarter-text--in-range, .react-datepicker__year-text--in-range) {
   background-color: rgb(121 81 215 / 63%) !important;
 }
 
@@ -922,4 +927,26 @@ ESTILO ESPECÍFICO DE IMPRESSÃO
 
 .react-datepicker__header {
   border-top-left-radius: 0rem !important;
+}
+
+/*SWIPER*/
+.swiper {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.swiper-wrapper {
+  max-width: 100%;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+  background: #5F3CB6;
+  border-radius: 20px;
+  color: #fff !important;
+}
+
+.swiper-button-prev svg,
+.swiper-button-next svg {
+  width: 10px !important;
 }

@@ -3,13 +3,13 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Sidebar from "./SideBar";
 import TenantSelector from "./TenantSelector";
-import { logout } from "../utils/auth";
 import { toastSuccess } from "../utils/toast";
 import { FiLogOut } from "react-icons/fi";
 import { AiFillSun, AiFillQuestionCircle } from "react-icons/ai";
 import { FaWhatsapp, FaMoon } from "react-icons/fa";
 import { IoIosArrowForward } from "react-icons/io";
 
+import { useAuth } from "../context/AuthContext";
 
 interface LayoutModelProps {
   children: ReactNode;
@@ -21,7 +21,8 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   const location = useLocation();
   const [temaClaro, setTemaClaro] = useState<boolean | undefined>(undefined);
   const isServicePage = location.pathname.startsWith("/service/");
-
+  const { logout } = useAuth();
+  
   // Verificar tema salvo
   useEffect(() => {
     const temaSalvo = localStorage.getItem("tema") === "claro";
@@ -52,7 +53,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   const handleLogout = () => {
     logout();
     toastSuccess("Logout realizado com sucesso!");
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   if (temaClaro === undefined) return null;
@@ -82,10 +83,10 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   }
 
   return (
-    <div className="flex">
-      <Sidebar />
+    <div className="flex min-w-0">
+    <Sidebar />
 
-      <div className="flex-1 px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300">
+    <div className="flex-1 min-w-0 px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300 overflow-x-hidden">
         {/* Header */}
         <header className="flex items-center px-6 rounded-xl justify-between mb-4 no-print">
           {/* 🔹 Esquerda - Título */}
