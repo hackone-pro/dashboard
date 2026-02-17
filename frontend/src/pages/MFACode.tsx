@@ -28,9 +28,22 @@ export default function VerifyCode() {
     /* Redireciona APENAS quando o token existir */
     useEffect(() => {
         if (token) {
-            navigate("/dashboard", { replace: true });
+            const storedUser = localStorage.getItem("user");
+
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+
+                if (user?.user_role?.slug === "admin") {
+                    navigate("/multitenant-manager", { replace: true });
+                } else {
+                    navigate("/dashboard", { replace: true });
+                }
+            } else {
+                navigate("/dashboard", { replace: true });
+            }
         }
     }, [token, navigate]);
+
 
     useEffect(() => {
         if (secondsLeft <= 0) return;

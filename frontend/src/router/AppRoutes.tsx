@@ -17,6 +17,9 @@ import ResetPassword from '../pages/ResetPassword';
 import ServiceModel from '../pages/ServicesModel';
 import MonitoriaSoc from '../pages/MonitoriaSOC';
 import VerifyCode from '../pages/MFACode';
+import MultiTenantManager from '../pages/MultiTenantManager';
+import AdminRoute from './AdminRoute';
+import PublicRoute from "./PublicRoute";
 
 export default function AppRoutes() {
   return (
@@ -27,11 +30,11 @@ export default function AppRoutes() {
           <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/verify-code" element={<VerifyCode />} />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/verify-code" element={<PublicRoute><VerifyCode /></PublicRoute>} />
           <Route path="/forgot-password" element=<ForgotPassword /> />
           <Route path="/reset-password" element=<ResetPassword /> />
-          
+
           {/* Protegidas */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
@@ -41,11 +44,12 @@ export default function AppRoutes() {
           <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
           <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
           <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
-          <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
+          <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>} />
           <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
           <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
           <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
-          
+          <Route path="/multitenant-manager" element={<PrivateRoute><AdminRoute><MultiTenantManager /></AdminRoute></PrivateRoute>} />
+
         </Routes>
       </BrowserRouter>
     </>

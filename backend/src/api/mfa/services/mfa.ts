@@ -75,6 +75,9 @@ export default {
       .query("plugin::users-permissions.user")
       .findOne({
         where: { mfa_token: mfaToken },
+        populate: {
+          user_role: true,
+        },
       });
 
     if (!user) {
@@ -107,7 +110,18 @@ export default {
 
     return {
       jwt,
-      user,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        user_role: user.user_role
+          ? {
+              id: user.user_role.id,
+              name: user.user_role.name,
+              slug: user.user_role.slug,
+            }
+          : null,
+      },
     };
   },
 };

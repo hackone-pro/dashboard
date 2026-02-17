@@ -18,8 +18,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    clearToken();
-    setTokenState(null);
+    clearToken();          // remove token do localStorage
+    setTokenState(null);   // limpa estado React
+  
+    // limpar dados adicionais
+    localStorage.removeItem("user");
+    localStorage.removeItem("remember_email");
+  
+    sessionStorage.removeItem("mfa_token");
+    sessionStorage.removeItem("mfa_email");
   };
 
   // Caso o token mude em outra aba

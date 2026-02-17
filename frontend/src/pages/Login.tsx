@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { toastSuccess, toastError } from "../utils/toast";
 import { loginAttempt } from "../services/auth/loginAttemps.service";
 import { useAuth } from "../context/AuthContext";
+import { getRedirectPath } from "../utils/redirect";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -28,7 +29,9 @@ export default function Login() {
       if ("mfaRequired" in data) {
         sessionStorage.setItem("mfa_token", data.mfaToken);
         sessionStorage.setItem("mfa_email", email);
-
+      
+        setLoading(false);
+      
         navigate("/verify-code", { replace: true });
         return;
       }
@@ -42,7 +45,7 @@ export default function Login() {
       }
 
       toastSuccess("Login realizado com sucesso!");
-      navigate("/dashboard", { replace: true });
+      navigate(getRedirectPath(data.user), { replace: true });
 
     } catch (err: any) {
       toastError(err.message || "Erro ao tentar login");
