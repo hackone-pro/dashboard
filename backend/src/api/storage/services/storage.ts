@@ -7,15 +7,15 @@ import path from "path";
 ============================ */
 
 // PRODUÇÃO (ative no servidor)
-const STORAGE_DIR = "/opt/storage_monitoring";
+// const STORAGE_DIR = "/opt/storage_monitoring";
 
 // DESENVOLVIMENTO LOCAL (ative no localhost)
-// const STORAGE_DIR = process.cwd();
+const STORAGE_DIR = process.cwd();
 
 /* ============================
    LOG DE CONFIRMAÇÃO
 ============================ */
-strapi.log.warn(`📁 STORAGE_DIR ATIVO = ${STORAGE_DIR}`);
+console.warn(`📁 STORAGE_DIR ATIVO = ${STORAGE_DIR}`);
 
 /* ============================
    NORMALIZA TENANT
@@ -126,6 +126,18 @@ function lerStateNormalizado(tenantFromDb: string) {
   };
 }
 
+function lerStateUsedGB(tenantFromDb: string): number {
+  const raw = lerArquivo("state", tenantFromDb);
+
+  // Formato novo (seu exemplo):
+  if (raw && typeof raw.used !== "undefined") {
+    return extrairNumeroGB(raw.used);
+  }
+
+  // Formato antigo:
+  return extrairNumeroGB(raw?.["Em uso"]);
+}
+
 /* ============================
    EXTRAI DATA yyyy-mm-dd
 ============================ */
@@ -230,6 +242,7 @@ async function gerarTimeline(tenantFromDb: string) {
 ============================ */
 export default {
   lerArquivo,
+  lerStateUsedGB,
   lerStateNormalizado,
   gerarTimeline,
 };
