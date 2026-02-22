@@ -473,6 +473,41 @@ export interface ApiReportEntryReportEntry extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiTenantSummaryTenantSummary
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'tenant_summaries';
+  info: {
+    displayName: 'Tenant Summary';
+    pluralName: 'tenant-summaries';
+    singularName: 'tenant-summary';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    critical_inc: Schema.Attribute.Integer;
+    high_inc: Schema.Attribute.Integer;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::tenant-summary.tenant-summary'
+    > &
+      Schema.Attribute.Private;
+    period: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    risk: Schema.Attribute.Decimal;
+    snapshot_at: Schema.Attribute.DateTime;
+    tenant: Schema.Attribute.Relation<'manyToOne', 'api::tenant.tenant'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    volume_gb: Schema.Attribute.Decimal;
+  };
+}
+
 export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
   collectionName: 'tenants';
   info: {
@@ -501,6 +536,10 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
     organizacao: Schema.Attribute.String;
     owner_name: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
+    tenant_summaries: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::tenant-summary.tenant-summary'
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1149,6 +1188,7 @@ declare module '@strapi/strapi' {
       'api::contract.contract': ApiContractContract;
       'api::custom-dashboard.custom-dashboard': ApiCustomDashboardCustomDashboard;
       'api::report-entry.report-entry': ApiReportEntryReportEntry;
+      'api::tenant-summary.tenant-summary': ApiTenantSummaryTenantSummary;
       'api::tenant.tenant': ApiTenantTenant;
       'api::user-multi-tenant.user-multi-tenant': ApiUserMultiTenantUserMultiTenant;
       'api::user-role.user-role': ApiUserRoleUserRole;

@@ -6,38 +6,16 @@ import path from "path";
 ============================ */
 const IS_DEV = process.env.NODE_ENV === "development";
 
-/* ============================
-   CAMINHOS
-============================ */
-// PRODUÇÃO
-const STORAGE_STATE_PROD = "/opt/storage_monitoring/storage_state.json";
-const STORAGE_INTERNAL_PROD = "/opt/storage_monitoring/storage_internal.json";
+// PRODUÇÃO (ative no servidor)
+// const STORAGE_DIR = "/opt/storage_monitoring";
 
-// DEV
-const STORAGE_STATE_DEV = path.join(process.cwd(), "storage_state_dev.json");
-const STORAGE_INTERNAL_DEV = path.join(process.cwd(), "storage_internal_dev.json");
-
-const PATHS = {
-  state: IS_DEV ? STORAGE_STATE_DEV : STORAGE_STATE_PROD,
-  internal: IS_DEV ? STORAGE_INTERNAL_DEV : STORAGE_INTERNAL_PROD,
-};
+// DESENVOLVIMENTO LOCAL (ative no localhost)
+const STORAGE_DIR = process.cwd();
 
 /* ============================
    LEITURA DE ARQUIVO
 ============================ */
-function lerArquivo(tipo: "state" | "internal") {
-  const caminho = PATHS[tipo];
-
-  if (!fs.existsSync(caminho)) {
-    throw new Error(`Arquivo não encontrado: ${caminho}`);
-  }
-
-  strapi.log.info(
-    `📄 Storage (${tipo}) [${IS_DEV ? "DEV" : "PROD"}] → ${caminho}`
-  );
-
-  return JSON.parse(fs.readFileSync(caminho, "utf8"));
-}
+console.warn(`📁 STORAGE_DIR ATIVO = ${STORAGE_DIR}`);
 
 /* ============================
    NORMALIZA TENANT
@@ -57,7 +35,113 @@ function normalizarTenant(input: string) {
 }
 
 /* ============================
-   EXTRAI DATA (yyyy-mm-dd)
+   LOCALIZA ARQUIVO DINÂMICO
+   ✔ aceita - ou _
+   ✔ ignora prd / pocXX
+============================ */
+function localizarArquivo(
+  tipo: "state" | "internal",
+  tenantFromDb: string
+) {
+  if (!fs.existsSync(STORAGE_DIR)) {
+    throw new Error(`Diretório não encontrado: ${STORAGE_DIR}`);
+  }
+
+  const arquivos = fs.readdirSync(STORAGE_DIR);
+
+  const tenantBase = tenantFromDb
+    .toString()
+    .trim()
+    .toLowerCase();
+
+  const tenantNormalizado = normalizarTenant(tenantBase);
+
+  const variantes = new Set<string>([
+    tenantBase,
+    tenantNormalizado,
+    tenantNormalizado.replace(/_/g, "-"),
+    tenantNormalizado.replace(/-/g, "_"),
+  ]);
+
+  const encontrado = arquivos.find(nome => {
+    const lower = nome.toLowerCase();
+
+    if (!lower.includes(`storage_${tipo}`)) return false;
+    if (!lower.endsWith(".json")) return false;
+
+    return Array.from(variantes).some(v =>
+      lower.includes(`-${v}.json`)
+    );
+  });
+
+  if (!encontrado) {
+    throw new Error(
+      `Arquivo storage_${tipo} não encontrado para tenant="${tenantFromDb}"`
+    );
+  }
+
+  const caminho = path.join(STORAGE_DIR, encontrado);
+
+  strapi.log.info(`📄 Storage (${tipo}) → ${encontrado}`);
+
+  return caminho;
+}
+
+/* ============================
+   LEITURA DE ARQUIVO
+============================ */
+function lerArquivo(
+  tipo: "state" | "internal",
+  tenantFromDb: string
+) {
+  const caminho = localizarArquivo(tipo, tenantFromDb);
+  return JSON.parse(fs.readFileSync(caminho, "utf8"));
+}
+
+/* ============================
+   EXTRAI NÚMERO (GB)
+============================ */
+function extrairNumeroGB(valor: string | number): number {
+  if (typeof valor === "number") return valor;
+  if (!valor) return 0;
+
+  return Number(
+    valor
+      .toString()
+      .replace(",", ".")
+      .replace(/[^\d.]/g, "")
+  );
+}
+
+/* ============================
+   STATE NORMALIZADO (SNAPSHOT)
+============================ */
+function lerStateNormalizado(tenantFromDb: string) {
+  const raw = lerArquivo("state", tenantFromDb);
+
+  return {
+    used: extrairNumeroGB(raw["Em uso"]),
+    deleted: extrairNumeroGB(raw["Deletado"]),
+    totalAccumulated: extrairNumeroGB(raw["Total acumulado"]),
+    remaining: extrairNumeroGB(raw["Restante (de 1 TB)"]),
+    totalCapacity: 1024,
+  };
+}
+
+function lerStateUsedGB(tenantFromDb: string): number {
+  const raw = lerArquivo("state", tenantFromDb);
+
+  // Formato novo (seu exemplo):
+  if (raw && typeof raw.used !== "undefined") {
+    return extrairNumeroGB(raw.used);
+  }
+
+  // Formato antigo:
+  return extrairNumeroGB(raw?.["Em uso"]);
+}
+
+/* ============================
+   EXTRAI DATA yyyy-mm-dd
 ============================ */
 function extrairDataDaKey(key: string): string | null {
   const match = key.match(/(\d{4})\.(\d{2})\.(\d{2})$/);
@@ -175,5 +259,7 @@ async function gerarTimeline(tenantFromDb: string) {
 ============================ */
 export default {
   lerArquivo,
+  lerStateUsedGB,
+  lerStateNormalizado,
   gerarTimeline,
 };

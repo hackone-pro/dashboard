@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "tenant_summaries",
+  "info": {
+    "singularName": "tenant-summary",
+    "pluralName": "tenant-summaries",
+    "displayName": "Tenant Summary"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant",
+      "inversedBy": "tenant_summaries"
+    },
+    "risk": {
+      "type": "decimal"
+    },
+    "period": {
+      "type": "integer"
+    },
+    "snapshot_at": {
+      "type": "datetime"
+    },
+    "critical_inc": {
+      "type": "integer"
+    },
+    "high_inc": {
+      "type": "integer"
+    },
+    "volume_gb": {
+      "type": "decimal"
+    }
+  }
+}
