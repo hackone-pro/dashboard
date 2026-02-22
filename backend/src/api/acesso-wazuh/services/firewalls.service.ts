@@ -50,8 +50,13 @@ export async function buscarListaFirewalls(tenant) {
           ultimo_log: {
             top_hits: {
               size: 1,
-              sort: [{ _doc: "desc" }],
-              _source: true,
+
+              // 🔥 CORREÇÃO CRÍTICA
+              sort: [{ "@timestamp": { order: "desc" } }],
+
+              _source: {
+                includes: ["@timestamp", "location"],
+              },
             },
           },
         },
@@ -86,7 +91,9 @@ export async function buscarListaFirewalls(tenant) {
       id: b.key,
       nome: b.key,
       location: hit.location ?? null,
-      timestamp: hit.timestamp ?? null,
+
+      // 🔥 CORREÇÃO DEFINITIVA
+      timestamp: hit["@timestamp"] ?? null,
     };
   });
 }

@@ -34,6 +34,9 @@
     },
     "volume_gb": {
       "type": "decimal"
+    },
+    "logs_offline": {
+      "type": "integer"
     }
   }
 }
