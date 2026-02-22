@@ -156,7 +156,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
             <TenantSelector />
             {/* WhatsApp */}
             <a
-              href="https://hackone.com.br/consultoria-aberturachamado"
+              href="https://hackone.com.br/h1ca"
               target="_blank"
               rel="noopener noreferrer"
               className="flex header items-center gap-2 text-gray-400 border hover:text-white border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
@@ -198,7 +198,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
         {/* Rodapé */}
         <footer className="text-right text-gray-500 text-xs mt-4">
-          Versão 1.8.4.0
+          Versão 1.8.4.1
         </footer>
 
       </div>
