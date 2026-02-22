@@ -1,17 +1,22 @@
 import { calcularRiskOperacionalTenant } from "../src/api/acesso-wazuh/services/risklevel.service";
 import storageService from "../src/api/storage/services/storage";
+import { getFirewallsOfflinePorTenant } from "../src/api/admin-multitenant/services/admin-multitenant";
 
 export default {
   snapshotRiskDebug: {
     task: async ({ strapi }) => {
       const startTime = Date.now();
 
-      strapi.log.info("🔥 SNAPSHOT RISK INICIADO");
+      strapi.log.info("SNAPSHOT RISK INICIADO");
 
       let success = 0;
       let fail = 0;
 
       try {
+        // ============================
+        // BUSCA TENANTS ATIVOS
+        // ============================
+
         const tenants = await strapi.db
           .query("api::tenant.tenant")
           .findMany({
@@ -22,6 +27,10 @@ export default {
           });
 
         strapi.log.info(`📦 Tenants encontrados: ${tenants.length}`);
+
+        // ============================
+        // BUSCA SNAPSHOTS EXISTENTES
+        // ============================
 
         const snapshots = await strapi
           .documents("api::tenant-summary.tenant-summary")
@@ -38,12 +47,18 @@ export default {
           }
         }
 
+        // ============================
+        // PROCESSAMENTO POR TENANT
+        // ============================
+
         for (const tenant of tenants) {
           strapi.log.info(
             `➡️ Processando tenant ${tenant.id} - ${tenant.organizacao}`
           );
 
           try {
+
+            // 🔥 CALCULA RISK
             const result = await calcularRiskOperacionalTenant(tenant, {
               diasFirewall: "1",
               diasAgentes: "1",
@@ -51,9 +66,7 @@ export default {
             });
 
             if (!result || typeof result.indiceRisco !== "number") {
-              strapi.log.warn(
-                `⚠️ Risk inválido para tenant ${tenant.id}`
-              );
+              strapi.log.warn(`⚠️ Risk inválido para tenant ${tenant.id}`);
               fail++;
               continue;
             }
@@ -64,12 +77,31 @@ export default {
 
             let volumeGB = 0;
             try {
-              volumeGB = Number(storageService.lerStateUsedGB(tenant.organizacao).toFixed(2));
+              volumeGB = Number(
+                storageService.lerStateUsedGB(tenant.organizacao).toFixed(2)
+              );
             } catch (err) {
-              strapi.log.warn(`⚠️ Falha ao ler state.used para tenant ${tenant.id}`);
+              strapi.log.warn(
+                `⚠️ Falha ao ler state.used para tenant ${tenant.id}`
+              );
             }
 
+            // ============================
+            // CALCULA FIREWALLS OFFLINE
+            // ============================
+
+            const offlineMap = await getFirewallsOfflinePorTenant([tenant]);
+            const firewallsOffline = offlineMap[tenant.id] || 0;
+
+            strapi.log.info(
+              `🔴 Firewalls offline (${tenant.organizacao}): ${firewallsOffline}`
+            );
+
             const existing = snapshotMap.get(tenant.documentId);
+
+            // ============================
+            // UPDATE OU CREATE
+            // ============================
 
             if (existing) {
               await strapi
@@ -83,6 +115,7 @@ export default {
                     critical_inc: result.severidades.critico,
                     high_inc: result.severidades.alto,
                     volume_gb: volumeGB,
+                    logs_offline: firewallsOffline,
                   },
                 });
 
@@ -100,6 +133,7 @@ export default {
                     critical_inc: result.severidades.critico,
                     high_inc: result.severidades.alto,
                     volume_gb: volumeGB,
+                    logs_offline: firewallsOffline,
                   },
                 });
 

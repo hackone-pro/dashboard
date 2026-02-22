@@ -496,6 +496,7 @@ export interface ApiTenantSummaryTenantSummary
       'api::tenant-summary.tenant-summary'
     > &
       Schema.Attribute.Private;
+    logs_offline: Schema.Attribute.Integer;
     period: Schema.Attribute.Integer;
     publishedAt: Schema.Attribute.DateTime;
     risk: Schema.Attribute.Decimal;

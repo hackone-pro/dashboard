@@ -1,6 +1,81 @@
+import { buscarListaFirewalls, buscarTopGeradoresFirewall } from "../../acesso-wazuh/services/firewalls.service";
+
 // ======================================================
 // FUNÇÕES INTERNAS
 // ======================================================
+
+async function getTenantCompleto(tenantId: number) {
+  return await strapi.db
+    .query("api::tenant.tenant")
+    .findOne({
+      where: { id: tenantId },
+      select: [
+        "id",
+        "organizacao",
+        "documentId",
+        "wazuh_url",
+        "wazuh_client_name",
+        "wazuh_username",
+        "wazuh_password",
+      ],
+    });
+}
+
+async function getFirewallsOfflinePorTenant(tenants: any[]) {
+  const resultado: Record<number, number> = {};
+
+  for (const tenant of tenants) {
+    try {
+
+      const tenantCompleto = await getTenantCompleto(tenant.id);
+
+      if (!tenantCompleto?.wazuh_client_name) {
+        resultado[tenant.id] = 0;
+        continue;
+      }
+
+      const inventario = await buscarListaFirewalls(tenantCompleto);
+      const logs10 = await buscarTopGeradoresFirewall(tenantCompleto, "10min");
+      const logsLast = await buscarTopGeradoresFirewall(tenantCompleto, "todos");
+
+      let totalOffline = 0;
+
+      for (const fw of inventario) {
+        const log10 = logs10.find((l: any) => l.gerador === fw.id);
+        const logLast = logsLast.find((l: any) => l.gerador === fw.id);
+
+        const timestamp =
+          log10?.timestamp ??
+          logLast?.timestamp ??
+          fw.timestamp ??
+          null;
+
+        if (!timestamp) {
+          totalOffline++;
+          continue;
+        }
+
+        const diffMinutes =
+          (Date.now() - new Date(timestamp).getTime()) / 1000 / 60;
+
+        if (diffMinutes > 119) {
+          totalOffline++;
+        }
+      }
+
+      resultado[tenant.id] = totalOffline;
+
+    } catch (err) {
+      strapi.log.error(
+        `Erro ao calcular firewalls offline tenant ${tenant.id}`,
+        err
+      );
+      resultado[tenant.id] = 0;
+    }
+  }
+
+  return resultado;
+}
 
 // Buscar tenants admin (somente id + nome)
 async function getTenantsAdmin(user: any) {
@@ -144,6 +219,7 @@ export default {
   
       const ativosPorTenant = await getAtivosPorTenant(tenantIds);
       const riskMap = await getRiskSnapshotPorTenants(tenantDocumentIds);
+      const firewallsOfflineMap = await getFirewallsOfflinePorTenant(tenants);
   
       const resultado = tenants.map((tenant) => {
   
@@ -163,6 +239,7 @@ export default {
             critical_inc: snap.critical_inc,
             high_inc: snap.high_inc,
             volume_gb: snap.volume_gb,
+            firewalls_offline: firewallsOfflineMap[tenant.id] || 0,
           },
         };
       });
@@ -174,5 +251,6 @@ export default {
       throw err;
     }
   }
-  
 };
+
+export { getFirewallsOfflinePorTenant };
