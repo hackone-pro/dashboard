@@ -59,6 +59,12 @@
       "relation": "oneToOne",
       "target": "api::contract.contract",
       "mappedBy": "tenant"
+    },
+    "tenant_summaries": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::tenant-summary.tenant-summary",
+      "mappedBy": "tenant"
     }
   }
 }

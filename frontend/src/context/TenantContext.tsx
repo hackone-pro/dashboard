@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { getTenants, changeTenant, Tenant } from "../services/tenant/tenant.service";
-import { useAuth } from "./AuthContext"; // ✅ usa o token reativo
+import { useAuth } from "./AuthContext";
 
 interface TenantContextType {
   tenantAtivo: Tenant | null;
@@ -17,12 +17,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
 
-  const { token } = useAuth(); // ✅ token agora é reativo
+  const { token } = useAuth();
 
   useEffect(() => {
     const carregarTenants = async () => {
       if (!token) {
-        // 👇 se deslogou, limpa tudo
+        // se deslogou, limpa tudo
         setTenants([]);
         setTenantAtivo(null);
         setLoading(false);

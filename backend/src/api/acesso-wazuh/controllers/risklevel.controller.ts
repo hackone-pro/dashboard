@@ -1,68 +1,5 @@
-import {
-  buscarTopGeradoresFirewall,
-  buscarTopAgentes,
-} from "../services/acesso-wazuh";
-
-import { buscarIncidentesIris } from "../../acesso-iris/services/acesso-iris";
+import { calcularRiskOperacionalTenant } from "../services/risklevel.service";
 import { getTenantAtivo } from "./_utils";
-
-/**
- * =====================================================
- * CÁLCULO FINAL DO ÍNDICE DE RISK LEVEL (OPERACIONAL)
- *
- * REGRAS:
- * - SEM crítico → nunca passa de 70%
- * - CRÍTICO domina
- * - Alto e Médio influenciam com teto
- * - Baixo nunca gera pânico
- * =====================================================
- */
- function calcularRiskLevel({
-  critico,
-  alto,
-  medio,
-  baixo,
-}: {
-  critico: number;
-  alto: number;
-  medio: number;
-  baixo: number;
-}) {
-  // CRÍTICO — 75% → 100%
-  if (critico > 0) {
-    return Math.min(
-      100,
-      75 + Math.log10(1 + critico) * 10
-    );
-  }
-
-  // ALTO — 50% → 75%
-  if (alto > 0) {
-    return Math.min(
-      75,
-      50 + Math.log10(1 + alto) * 8
-    );
-  }
-
-  // MÉDIO — 25% → 50%
-  if (medio > 0) {
-    return Math.min(
-      50,
-      25 + Math.log10(1 + medio) * 6
-    );
-  }
-
-  // BAIXO — 0% → 25%
-  if (baixo > 0) {
-    return Math.min(
-      25,
-      Math.log10(1 + baixo) * 5
-    );
-  }
-
-  return 0;
-}
-
 
 export default {
   async riskLevel(ctx) {
@@ -86,97 +23,47 @@ export default {
       const diasAgentes = ctx.query.agentes || diasGlobal;
       const diasIris = ctx.query.iris || diasGlobal;
 
-      const timeIris = periodo
-        ? { from: periodo.from, to: periodo.to }
-        : { dias: diasIris };
-
       // =====================================================
       // 🔹 TENANT
       // =====================================================
       const tenant = await getTenantAtivo(ctx);
+
+      strapi.log.info("========== TENANT INDIVIDUAL ==========");
+      strapi.log.info(JSON.stringify(tenant, null, 2));
+
       if (!tenant) {
         return ctx.notFound("Tenant não encontrado ou inativo");
       }
 
       // =====================================================
-      // 🔹 BUSCAS EM PARALELO (SOMENTE OPERACIONAL)
+      // 🔹 CÁLCULO CENTRALIZADO NO SERVICE
       // =====================================================
-      const [firewalls, agentes, iris] = await Promise.all([
-        buscarTopGeradoresFirewall(tenant, diasFirewall, periodo),
-        buscarTopAgentes(tenant, {
-          dias: diasAgentes,
-          from: periodo?.from,
-          to: periodo?.to,
-        }),
-        buscarIncidentesIris(tenant, timeIris, ctx.state.user),
-      ]);
+      const resultado = await calcularRiskOperacionalTenant(
+        tenant,
+        {
+          diasFirewall,
+          diasAgentes,
+          diasIris,
+          periodo,
+          user: ctx.state.user,
+        }
+      );
 
-      // =====================================================
-      // 🔹 SEVERIDADES OPERACIONAIS (CARD)
-      // =====================================================
-      let baixo = 0;
-      let medio = 0;
-      let alto = 0;
-      let critico = 0;
-
-      // 🔸 Firewall
-      firewalls.forEach((fw) => {
-        baixo += fw.severidade.baixo;
-        medio += fw.severidade.medio;
-        alto += fw.severidade.alto;
-        critico += fw.severidade.critico;
-      });
-
-      // 🔸 Hosts / Agentes
-      agentes.forEach((agente) => {
-        agente.severidades.forEach((s) => {
-          if (s.key <= 6) baixo += s.doc_count;
-          else if (s.key <= 11) medio += s.doc_count;
-          else if (s.key <= 14) alto += s.doc_count;
-          else critico += s.doc_count;
-        });
-      });
-
-      // 🔸 IRIS
-      if (iris && typeof iris === "object") {
-        baixo += iris.baixo || 0;
-        medio += iris.medio || 0;
-        alto += iris.alto || 0;
-        critico += iris.critico || 0;
-      }
-
-      // =====================================================
-      // 🔹 TOTAL DO CARD (APENAS SEVERIDADES)
-      // =====================================================
-      const total = baixo + medio + alto + critico;
-
-      // =====================================================
-      // 🔹 ÍNDICE DE RISCO (APENAS OPERACIONAL)
-      // =====================================================
-      const indiceRisco = calcularRiskLevel({
-        critico,
-        alto,
-        medio,
-        baixo,
-      });
-
-      // 🔹 Log técnico
+      // Log técnico opcional
       strapi.log.info(
-        `RiskLevel → C=${critico}, A=${alto}, M=${medio}, B=${baixo}, Total=${total}`
+        `RiskLevel → C=${resultado.severidades.critico}, ` +
+        `A=${resultado.severidades.alto}, ` +
+        `M=${resultado.severidades.medio}, ` +
+        `B=${resultado.severidades.baixo}, ` +
+        `Total=${resultado.severidades.total}`
       );
 
       // =====================================================
       // 🔹 RESPONSE FINAL
       // =====================================================
       return ctx.send({
-        severidades: {
-          baixo,
-          medio,
-          alto,
-          critico,
-          total,
-        },
-        indiceRisco: parseFloat(indiceRisco.toFixed(2)),
+        severidades: resultado.severidades,
+        indiceRisco: resultado.indiceRisco,
         filtrosUsados: {
           diasGlobal,
           periodo,
@@ -185,6 +72,7 @@ export default {
           diasIris,
         },
       });
+
     } catch (error) {
       console.error("Erro ao calcular RiskLevel:", error);
       return ctx.internalServerError("Erro ao calcular RiskLevel");
