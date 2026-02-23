@@ -40,6 +40,9 @@
     },
     "ativos": {
       "type": "integer"
+    },
+    "tenant_numeric_id": {
+      "type": "integer"
     }
   }
 }

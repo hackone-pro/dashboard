@@ -28,8 +28,8 @@ export default {
       // =====================================================
       const tenant = await getTenantAtivo(ctx);
 
-      strapi.log.info("========== TENANT INDIVIDUAL ==========");
-      strapi.log.info(JSON.stringify(tenant, null, 2));
+      // strapi.log.info("========== TENANT INDIVIDUAL ==========");
+      // strapi.log.info(JSON.stringify(tenant, null, 2));
 
       if (!tenant) {
         return ctx.notFound("Tenant não encontrado ou inativo");

@@ -503,6 +503,7 @@ export interface ApiTenantSummaryTenantSummary
     risk: Schema.Attribute.Decimal;
     snapshot_at: Schema.Attribute.DateTime;
     tenant: Schema.Attribute.Relation<'manyToOne', 'api::tenant.tenant'>;
+    tenant_numeric_id: Schema.Attribute.Integer;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
