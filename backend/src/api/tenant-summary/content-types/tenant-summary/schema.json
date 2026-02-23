@@ -37,6 +37,12 @@
     },
     "logs_offline": {
       "type": "integer"
+    },
+    "ativos": {
+      "type": "integer"
+    },
+    "tenant_numeric_id": {
+      "type": "integer"
     }
   }
 }
