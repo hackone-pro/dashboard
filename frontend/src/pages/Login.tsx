@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toastSuccess, toastError } from "../utils/toast";
 import { loginAttempt } from "../services/auth/loginAttemps.service";
 import { useAuth } from "../context/AuthContext";
+import { getRedirectPath } from "../utils/redirect";
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+const ENABLE_TURNSTILE =
+  import.meta.env.VITE_ENABLE_TURNSTILE === "true";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,65 +16,91 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const isLocalhost =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1";
-
   /* ==========================
-     Turnstile (SEM impacto visual)
+     TURNSTILE (somente se habilitado)
   ========================== */
   useEffect(() => {
-    if (!TURNSTILE_SITE_KEY || !(window as any).turnstile) return;
+    if (!ENABLE_TURNSTILE) return;
+    if (!TURNSTILE_SITE_KEY) return;
+    if (!(window as any).turnstile) return;
 
     const el = document.getElementById("turnstile-container");
     if (!el) return;
 
     el.innerHTML = "";
-      
-        setLoading(false);
-      
+
     (window as any).turnstile.render(el, {
-      sitekey: TURNSTILE_SITE_KEY,
+      sitekey: TURNSTILE_SITE_KEY!,
       theme: "dark",
       callback: (token: string) => setCaptchaToken(token),
       "expired-callback": () => setCaptchaToken(null),
       "error-callback": () => setCaptchaToken(null),
     });
-  }, []);
+  }, [ENABLE_TURNSTILE]);
 
+  /* ==========================
+     LOGIN
+  ========================== */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
-    if (!isLocalhost && !captchaToken) {
+    const emailNorm = email.trim().toLowerCase();
+
+    if (ENABLE_TURNSTILE && !captchaToken) {
       toastError("Confirme que você não é um robô.");
       return;
     }
 
-    try {
-      const data = await loginAttempt(email, senha, captchaToken!);
+    setLoading(true);
 
+    try {
+      const data = await loginAttempt(
+        emailNorm,
+        senha,
+        ENABLE_TURNSTILE && captchaToken
+          ? captchaToken
+          : undefined
+      );
+
+      /* ==========================
+         MFA (type guard correto)
+      ========================== */
+      if ("mfaRequired" in data) {
+        sessionStorage.setItem("mfa_token", data.mfaToken);
+        sessionStorage.setItem("mfa_email", emailNorm);
+        navigate("/verify-code");
+        return;
+      }
+
+      /* ==========================
+         LOGIN DIRETO
+      ========================== */
       login(data.jwt);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       if (remember) {
-        localStorage.setItem("remember_email", email);
+        localStorage.setItem("remember_email", emailNorm);
       }
 
       toastSuccess("Login realizado com sucesso!");
       navigate(getRedirectPath(data.user));
+
     } catch (err: any) {
       setCaptchaToken(null);
       toastError(err.message || "Erro ao tentar login");
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-[#0e0b1b]">
-      {/* Coluna ESQUERDA – bloco do formulário */}
+      {/* Coluna ESQUERDA */}
       <div className="relative flex items-center">
         <div className="absolute inset-0 bg-[#151026]" />
         <div
@@ -104,7 +134,9 @@ export default function Login() {
           <form onSubmit={handleLogin} className="mt-10 space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-xs text-gray-300 mb-2">Email</label>
+              <label className="block text-xs text-gray-300 mb-2">
+                Email
+              </label>
               <input
                 type="email"
                 value={email}
@@ -117,7 +149,9 @@ export default function Login() {
 
             {/* Senha */}
             <div>
-              <label className="block text-xs text-gray-300 mb-2">Senha</label>
+              <label className="block text-xs text-gray-300 mb-2">
+                Senha
+              </label>
               <div className="relative">
                 <input
                   type={showPass ? "text" : "password"}
@@ -137,43 +171,32 @@ export default function Login() {
               </div>
             </div>
 
-            {/* 🔐 Turnstile (invisível no layout) */}
-            {!isLocalhost && (
-              <div id="turnstile-container" className="flex justify-center" />
+            {/* Turnstile */}
+            {ENABLE_TURNSTILE && (
+              <div
+                id="turnstile-container"
+                className="flex justify-center"
+              />
             )}
 
             {/* Botão */}
             <button
               type="submit"
-              className="w-full rounded-xl py-3 font-medium text-white shadow-lg shadow-violet-700/30 transition-transform hover:-translate-y-0.5 focus:outline-none"
-              style={{
-                background:
-                  "linear-gradient(90deg, #6C2CF5 0%, #7C4DFF 40%, #7B61FF 100%)",
-              }}
+              disabled={loading}
+              className="w-full rounded-xl py-3 font-medium text-white bg-gradient-to-r from-violet-600 to-indigo-500 hover:opacity-90 disabled:opacity-60"
             >
-              Login
+              {loading ? "Entrando..." : "Login"}
             </button>
-
-            <div className="text-xs text-gray-400 text-center">
-              Não tem uma conta?{" "}
-              <a
-                href="https://hackone.com.br/whatsappsuporte"
-                target="_blank"
-                className="text-violet-300 hover:text-violet-200"
-              >
-                Fale com o suporte
-              </a>
-            </div>
           </form>
         </div>
       </div>
 
-      {/* Coluna DIREITA – imagem */}
+      {/* Coluna DIREITA */}
       <div className="relative hidden lg:block">
         <img
           src="/assets/img/mockup-alta.webp"
           alt="Dashboard preview"
-          className="relative h-full w-full object-cover"
+          className="h-full w-full object-cover"
         />
       </div>
     </div>

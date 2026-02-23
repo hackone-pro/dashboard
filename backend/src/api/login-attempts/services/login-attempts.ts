@@ -18,12 +18,10 @@ async function validarTurnstile(token: string, ip?: string) {
     new URLSearchParams({
       secret,
       response: token,
-      ...(ip && { remoteip: ip }),
+      ...(ip && { remoteip: ip } as any),
     }),
     {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       timeout: 5000,
     }
   );
@@ -35,24 +33,26 @@ export default {
   async login(ctx) {
     const { email, password, captchaToken } = ctx.request.body as any;
 
-        if (!email || !password) {
-            return ctx.badRequest("Email e senha são obrigatórios");
-        }
+    const emailNorm = (email || "").trim().toLowerCase();
+    const passNorm = (password || "").toString();
+
+    if (!emailNorm || !passNorm) {
+      return ctx.badRequest("Email e senha são obrigatórios");
+    }
 
     // =========================
     // CAPTCHA (se habilitado)
     // =========================
     if (ENABLE_TURNSTILE) {
       if (!captchaToken) {
+        // mais seguro ser genérico, mas mantive sua mensagem
         return ctx.badRequest("Captcha não enviado");
       }
 
-      const captcha = await validarTurnstile(
-        captchaToken,
-        ctx.request.ip
-      );
+      const captcha = await validarTurnstile(captchaToken, ctx.request.ip);
 
       if (!captcha.success) {
+        // pode ser genérico também; mantive sua mensagem
         return ctx.unauthorized("Falha na verificação do captcha");
       }
     }
@@ -62,14 +62,14 @@ export default {
     // =========================
     const user = await strapi.db
       .query("plugin::users-permissions.user")
-      .findOne({ 
-        where: { email },
-        populate: ["user_role"], 
+      .findOne({
+        where: { email: emailNorm },
+        populate: ["user_role"],
       });
 
-        if (!user) {
-            return ctx.badRequest("Credenciais inválidas.");
-        }
+    if (!user) {
+      return ctx.badRequest("Credenciais inválidas.");
+    }
 
     // =========================
     // BLOQUEIO TEMPORÁRIO
@@ -87,66 +87,55 @@ export default {
       );
     }
 
+    // ✅ GARANTE PASSWORD CARREGADA (evita bcrypt crash)
+    if (!user.password) {
+      return ctx.badRequest("Credenciais inválidas.");
+    }
+
     // =========================
     // VALIDA SENHA
     // =========================
-    const senhaCorreta = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const senhaCorreta = await bcrypt.compare(passNorm, user.password);
 
-        if (!senhaCorreta) {
-            const novasTentativas = (user.login_attempts || 0) + 1;
-            let updateData: any = { login_attempts: novasTentativas };
+    if (!senhaCorreta) {
+      const novasTentativas = (user.login_attempts || 0) + 1;
+      let updateData: any = { login_attempts: novasTentativas };
 
-      if (
-        ENABLE_LOGIN_ATTEMPT_LIMIT &&
-        novasTentativas >= 3
-      ) {
+      if (ENABLE_LOGIN_ATTEMPT_LIMIT && novasTentativas >= 3) {
         updateData = {
           login_attempts: 0,
           blocked_time: new Date(Date.now() + 15 * 60 * 1000),
         };
 
-        await strapi.db
-          .query("plugin::users-permissions.user")
-          .update({
-            where: { id: user.id },
-            data: updateData,
-          });
-
-        return ctx.forbidden(
-          "Login bloqueado. Tente novamente em 15 minutos."
-        );
-      }
-
-      await strapi.db
-        .query("plugin::users-permissions.user")
-        .update({
+        await strapi.db.query("plugin::users-permissions.user").update({
           where: { id: user.id },
           data: updateData,
         });
 
-            return ctx.badRequest("Credenciais inválidas.");
-        }
+        return ctx.forbidden("Login bloqueado. Tente novamente em 15 minutos.");
+      }
+
+      await strapi.db.query("plugin::users-permissions.user").update({
+        where: { id: user.id },
+        data: updateData,
+      });
+
+      return ctx.badRequest("Credenciais inválidas.");
+    }
 
     // =========================
     // RESET TENTATIVAS
     // =========================
-    await strapi.db
-      .query("plugin::users-permissions.user")
-      .update({
-        where: { id: user.id },
-        data: { login_attempts: 0, blocked_time: null },
-      });
+    await strapi.db.query("plugin::users-permissions.user").update({
+      where: { id: user.id },
+      data: { login_attempts: 0, blocked_time: null },
+    });
 
     // =========================
     // MFA (se habilitado)
     // =========================
     if (ENABLE_MFA) {
-      const { mfaToken } = await strapi
-        .service("api::mfa.mfa")
-        .sendCode(user);
+      const { mfaToken } = await strapi.service("api::mfa.mfa").sendCode(user);
 
       return ctx.send({
         mfaRequired: true,
@@ -162,8 +151,7 @@ export default {
       .service("jwt")
       .issue({ id: user.id });
 
-    const { password: _, reset_token, reset_expire, ...safeUser } =
-      user;
+    const { password: _pw, reset_token, reset_expire, ...safeUser } = user;
 
     return ctx.send({
       jwt,

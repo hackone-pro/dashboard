@@ -7,7 +7,6 @@ import ThreatMap from '../pages/ThreatMap';
 import Incidentes from '../pages/Incidentes';
 import VulnerabilitiesDetection from '../pages/VulnerabilitiesDetection';
 import ArchivesIntegrity from '../pages/ArchivesIntegrity';
-// import Reports from '../pages/Reports';
 import ReportDash from '../pages/ReportDash';
 import ReportView from '../pages/ReportView';
 import Config from '../pages/Config';
@@ -25,43 +24,35 @@ import PublicRoute from "./PublicRoute";
 
 export default function AppRoutes() {
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
+    <BrowserRouter>
+      <Routes>
 
-          {/* Auth */}
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/verify-code" element={<PublicRoute><VerifyCode /></PublicRoute>} />
-          <Route path="/forgot-password" element=<ForgotPassword /> />
-          <Route path="/reset-password" element=<ResetPassword /> />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* Protegidas */}
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
-          <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
-          <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
-          <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
-          <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
-          <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
-          <Route path="/monitoria-csc" element={<PrivateRoute><MonitoriaCSC /></PrivateRoute>} />
-          <Route path="/integrations" element={<PrivateRoute><Integrations /></PrivateRoute>} />
-          <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
-          <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
-y          <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
-          <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
-          <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
-          <Route path="/forgot-password" element=<ForgotPassword /> />
-          <Route path="/reset-password" element=<ResetPassword /> />
-          <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>} />
-          <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
-          <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
-          <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
-          <Route path="/multitenant-manager" element={<PrivateRoute><AdminRoute><MultiTenantManager /></AdminRoute></PrivateRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/verify-code" element={<PublicRoute><VerifyCode /></PublicRoute>} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-        </Routes>
-      </BrowserRouter>
-    </>
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
+        <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
+        <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
+        <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
+        <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
+        <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
+        <Route path="/monitoria-csc" element={<PrivateRoute><MonitoriaCSC /></PrivateRoute>} />
+        <Route path="/integrations" element={<PrivateRoute><Integrations /></PrivateRoute>} />
+        <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
+        <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>} />
+        <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
+        <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
+        <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
+        <Route path="/multitenant-manager" element={<PrivateRoute><AdminRoute><MultiTenantManager /></AdminRoute></PrivateRoute>} />
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
+
+      </Routes>
+    </BrowserRouter>
   );
 }

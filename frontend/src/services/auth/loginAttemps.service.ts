@@ -1,4 +1,3 @@
-import { getToken } from "../../utils/auth"; // se precisar do token
 const API_URL = import.meta.env.VITE_API_URL;
 
 export interface LoginResponse {
@@ -6,11 +5,18 @@ export interface LoginResponse {
   user: any;
 }
 
+export interface MfaResponse {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+export type LoginApiResponse = LoginResponse | MfaResponse;
+
 export async function loginAttempt(
   email: string,
   password: string,
-  captchaToken: string
-): Promise<LoginResponse> {
+  captchaToken?: string
+): Promise<LoginApiResponse> {
 
   const res = await fetch(`${API_URL}/api/auth/login-attempts`, {
     method: "POST",
