@@ -1,13 +1,25 @@
 import { calcularRiskOperacionalTenant } from "../src/api/acesso-wazuh/services/risklevel.service";
 import storageService from "../src/api/storage/services/storage";
-import { getFirewallsOfflinePorTenant } from "../src/api/admin-multitenant/services/admin-multitenant";
+import {
+  getFirewallsOfflinePorTenant,
+  getAtivosPorTenant,
+} from "../src/api/admin-multitenant/services/admin-multitenant";
+
+let isRunning = false; // 🔒 Lock anti-sobreposição
 
 export default {
   snapshotRiskDebug: {
     task: async ({ strapi }) => {
-      const startTime = Date.now();
 
-      strapi.log.info("SNAPSHOT RISK INICIADO");
+      if (isRunning) {
+        strapi.log.warn("⚠️ Snapshot já está em execução. Pulando ciclo.");
+        return;
+      }
+
+      isRunning = true;
+
+      const startTime = Date.now();
+      strapi.log.info("🚀 SNAPSHOT RISK INICIADO");
 
       let success = 0;
       let fail = 0;
@@ -26,25 +38,24 @@ export default {
             },
           });
 
+        if (!tenants.length) {
+          strapi.log.warn("⚠️ Nenhum tenant ativo encontrado.");
+          return;
+        }
+
         strapi.log.info(`📦 Tenants encontrados: ${tenants.length}`);
 
         // ============================
-        // BUSCA SNAPSHOTS EXISTENTES
+        // CALCULA ATIVOS (UMA VEZ)
         // ============================
 
-        const snapshots = await strapi
-          .documents("api::tenant-summary.tenant-summary")
-          .findMany({
-            filters: { period: 1 },
-            populate: ["tenant"],
-          });
+        const tenantIds = tenants.map(t => t.id);
+        let ativosMap: Record<number, number> = {};
 
-        const snapshotMap = new Map();
-
-        for (const snap of snapshots) {
-          if (snap.tenant?.documentId) {
-            snapshotMap.set(snap.tenant.documentId, snap);
-          }
+        try {
+          ativosMap = await getAtivosPorTenant(tenantIds);
+        } catch (err) {
+          strapi.log.error("❌ Erro ao calcular ativos:", err);
         }
 
         // ============================
@@ -52,21 +63,61 @@ export default {
         // ============================
 
         for (const tenant of tenants) {
-          strapi.log.info(
-            `➡️ Processando tenant ${tenant.id} - ${tenant.organizacao}`
-          );
 
           try {
 
-            // 🔥 CALCULA RISK
-            const result = await calcularRiskOperacionalTenant(tenant, {
-              diasFirewall: "1",
-              diasAgentes: "1",
-              diasIris: "1",
-            });
+            const ativos = ativosMap[tenant.id] || 0;
 
-            if (!result || typeof result.indiceRisco !== "number") {
-              strapi.log.warn(`⚠️ Risk inválido para tenant ${tenant.id}`);
+            strapi.log.info(
+              `➡️ ${tenant.organizacao} | Ativos: ${ativos}`
+            );
+
+            // ============================
+            // CALCULA RISK
+            // ============================
+
+            let result;
+
+            try {
+              result = await calcularRiskOperacionalTenant(tenant, {
+                diasFirewall: "1",
+                diasAgentes: "1",
+                diasIris: "1",
+              });
+            } catch (err) {
+              strapi.log.error(
+                `❌ Wazuh offline ou erro externo (${tenant.organizacao})`,
+                err
+              );
+              fail++;
+              continue; // NÃO atualiza snapshot
+            }
+
+            // ============================
+            // VALIDAÇÃO RIGOROSA
+            // ============================
+
+            if (
+              !result ||
+              typeof result.indiceRisco !== "number" ||
+              isNaN(result.indiceRisco)
+            ) {
+              strapi.log.warn(
+                `⚠️ Risk inválido para ${tenant.organizacao}. Snapshot NÃO atualizado.`
+              );
+              fail++;
+              continue;
+            }
+
+            // Proteção opcional contra retorno zerado suspeito
+            if (
+              result.indiceRisco === 0 &&
+              result.severidades?.critico === 0 &&
+              result.severidades?.alto === 0
+            ) {
+              strapi.log.warn(
+                `⚠️ Dados suspeitos (todos 0) para ${tenant.organizacao}. Mantendo último snapshot.`
+              );
               fail++;
               continue;
             }
@@ -78,62 +129,71 @@ export default {
             let volumeGB = 0;
             try {
               volumeGB = Number(
-                storageService.lerStateUsedGB(tenant.organizacao).toFixed(2)
+                storageService
+                  .lerStateUsedGB(tenant.organizacao)
+                  .toFixed(2)
               );
-            } catch (err) {
+            } catch {
               strapi.log.warn(
-                `⚠️ Falha ao ler state.used para tenant ${tenant.id}`
+                `⚠️ Falha ao ler volume para ${tenant.organizacao}`
               );
             }
 
             // ============================
-            // CALCULA FIREWALLS OFFLINE
+            // FIREWALLS OFFLINE
             // ============================
 
-            const offlineMap = await getFirewallsOfflinePorTenant([tenant]);
-            const firewallsOffline = offlineMap[tenant.id] || 0;
-
-            strapi.log.info(
-              `🔴 Firewalls offline (${tenant.organizacao}): ${firewallsOffline}`
-            );
-
-            const existing = snapshotMap.get(tenant.documentId);
+            let firewallsOffline = 0;
+            try {
+              const offlineMap = await getFirewallsOfflinePorTenant([tenant]);
+              firewallsOffline = offlineMap[tenant.id] || 0;
+            } catch (err) {
+              strapi.log.error(
+                `❌ Erro ao calcular offline (${tenant.organizacao})`,
+                err
+              );
+            }
 
             // ============================
-            // UPDATE OU CREATE
+            // UPDATE OU CREATE (BUSCA DIRETA)
             // ============================
+
+            const existing = await strapi
+              .documents("api::tenant-summary.tenant-summary")
+              .findFirst({
+                filters: {
+                  tenant: tenant.documentId,
+                  period: 1,
+                },
+              });
+
+            const data = {
+              risk: result.indiceRisco,
+              period: 1,
+              snapshot_at: new Date(),
+              critical_inc: result.severidades.critico,
+              high_inc: result.severidades.alto,
+              volume_gb: volumeGB,
+              logs_offline: firewallsOffline,
+              ativos: ativos,
+            };
 
             if (existing) {
               await strapi
                 .documents("api::tenant-summary.tenant-summary")
                 .update({
                   documentId: existing.documentId,
-                  data: {
-                    risk: result.indiceRisco,
-                    period: 1,
-                    snapshot_at: new Date(),
-                    critical_inc: result.severidades.critico,
-                    high_inc: result.severidades.alto,
-                    volume_gb: volumeGB,
-                    logs_offline: firewallsOffline,
-                  },
+                  data,
                 });
 
               strapi.log.info(`♻️ Atualizado → ${tenant.organizacao}`);
-
             } else {
               await strapi
                 .documents("api::tenant-summary.tenant-summary")
                 .create({
                   data: {
                     tenant: tenant.documentId,
-                    risk: result.indiceRisco,
-                    period: 1,
-                    snapshot_at: new Date(),
-                    critical_inc: result.severidades.critico,
-                    high_inc: result.severidades.alto,
-                    volume_gb: volumeGB,
-                    logs_offline: firewallsOffline,
+                    ...data,
                   },
                 });
 
@@ -144,7 +204,7 @@ export default {
 
           } catch (err: any) {
             strapi.log.error(
-              `❌ ERRO ao processar tenant ${tenant.id}: ${err.message}`
+              `❌ ERRO inesperado tenant ${tenant.id}: ${err.message}`
             );
             fail++;
           }
@@ -158,6 +218,8 @@ export default {
 
       } catch (err: any) {
         strapi.log.error("❌ ERRO GERAL DO SNAPSHOT:", err.message);
+      } finally {
+        isRunning = false; // 🔓 Libera lock SEMPRE
       }
     },
 

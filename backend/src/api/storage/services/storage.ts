@@ -7,10 +7,10 @@ import path from "path";
 ============================ */
 
 // PRODUÇÃO (ative no servidor)
-// const STORAGE_DIR = "/opt/storage_monitoring";
+const STORAGE_DIR = "/opt/storage_monitoring";
 
 // DESENVOLVIMENTO LOCAL (ative no localhost)
-const STORAGE_DIR = process.cwd();
+// const STORAGE_DIR = process.cwd();
 
 /* ============================
    LOG DE CONFIRMAÇÃO

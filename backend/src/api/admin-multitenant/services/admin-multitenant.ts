@@ -253,4 +253,4 @@ export default {
   }
 };
 
-export { getFirewallsOfflinePorTenant };
+export { getFirewallsOfflinePorTenant, getAtivosPorTenant };

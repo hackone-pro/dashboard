@@ -37,6 +37,9 @@
     },
     "logs_offline": {
       "type": "integer"
+    },
+    "ativos": {
+      "type": "integer"
     }
   }
 }

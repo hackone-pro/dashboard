@@ -11,13 +11,24 @@ export interface AdminSummaryItem {
   incidentes_alto: number;
   volume_gb: number;
   logs: number;
+  snapshot_at?: string | null;
 }
 
-export async function getAdminSummary(): Promise<AdminSummaryItem[]> {
+export async function getAdminSummary(tenantId?: number): Promise<AdminSummaryItem[]> {
   const token = getToken();
 
+  const queryParams = new URLSearchParams({
+    populate: "tenant",
+    "filters[period][$eq]": "1",
+    sort: "risk:desc",
+  });
+
+  if (tenantId) {
+    queryParams.append("filters[tenant][id][$eq]", String(tenantId));
+  }
+
   const res = await fetch(
-    `${API_URL}/api/tenant-summaries?populate=tenant&filters[period][$eq]=1&sort=risk:desc`,
+    `${API_URL}/api/tenant-summaries?${queryParams.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -35,22 +46,34 @@ export async function getAdminSummary(): Promise<AdminSummaryItem[]> {
 
   const data = json?.data ?? [];
 
-  // 🔥 FILTRA TENANTS NULOS OU SEM ORGANIZAÇÃO
   const filtrado = data.filter(
     (item: any) =>
-      item.tenant &&
-      item.tenant.organizacao &&
-      item.risk !== null
+      item?.tenant &&
+      item?.tenant?.id &&
+      item?.tenant?.organizacao
   );
 
-  return filtrado.map((item: any) => ({
+  const map = new Map<number, any>();
+
+  for (const item of filtrado) {
+    const tId = item.tenant.id;
+
+    if (!map.has(tId)) {
+      map.set(tId, item);
+    }
+  }
+
+  const unicos = Array.from(map.values());
+
+  return unicos.map((item: any) => ({
     tenantId: item.tenant.id,
     organizacao: item.tenant.organizacao,
-    ativos: 0, // se quiser buscar depois
+    ativos: item.ativos ?? 0,
     risco: item.risk ?? 0,
     incidentes_critico: item.critical_inc ?? 0,
     incidentes_alto: item.high_inc ?? 0,
     volume_gb: item.volume_gb ?? 0,
     logs: item.logs_offline ?? 0,
+    snapshot_at: item.snapshot_at ?? null,
   }));
 }

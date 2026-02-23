@@ -485,6 +485,7 @@ export interface ApiTenantSummaryTenantSummary
     draftAndPublish: false;
   };
   attributes: {
+    ativos: Schema.Attribute.Integer;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
