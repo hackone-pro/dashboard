@@ -14,9 +14,11 @@ export default {
         });
 
       if (!fullUser?.tenant)
-        return ctx.notFound("Tenant não encontrado para este usuário");
+        return ctx.notFound("Tenant não encontrado");
 
-      const dados = await storageService.lerArquivo("state");
+      const tenantFromDb = fullUser.tenant.cliente_name || "";
+
+      const dados = storageService.lerStateNormalizado(tenantFromDb);
       return ctx.send(dados);
     } catch (err) {
       strapi.log.error("❌ Erro storage state:", err);
@@ -26,18 +28,8 @@ export default {
 
   async internal(ctx) {
     try {
-      const dados = await storageService.lerArquivo("internal");
-      return ctx.send(dados);
-    } catch (err) {
-      strapi.log.error("❌ Erro storage internal:", err);
-      return ctx.internalServerError("Erro ao acessar storage internal.");
-    }
-  },
-
-  async timeline(ctx) {
-    try {
       const user = ctx.state.user;
-      if (!user) return ctx.unauthorized();
+      if (!user) return ctx.unauthorized("Usuário não autenticado");
 
       const fullUser = await strapi.db
         .query("plugin::users-permissions.user")
@@ -49,7 +41,36 @@ export default {
       if (!fullUser?.tenant)
         return ctx.notFound("Tenant não encontrado");
 
-      // 👇 aqui pode vir "Qolinty", "Dora Retail", etc.
+      const tenantFromDb = fullUser.tenant.cliente_name || "";
+      const tenantKey = tenantFromDb;
+
+      const dados = storageService.lerArquivo(
+        "internal",
+        tenantKey
+      );
+
+      return ctx.send(dados);
+    } catch (err) {
+      strapi.log.error("❌ Erro storage internal:", err);
+      return ctx.internalServerError("Erro ao acessar storage internal.");
+    }
+  },
+
+  async timeline(ctx) {
+    try {
+      const user = ctx.state.user;
+      if (!user) return ctx.unauthorized("Usuário não autenticado");
+
+      const fullUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: { id: user.id },
+          populate: { tenant: true },
+        });
+
+      if (!fullUser?.tenant)
+        return ctx.notFound("Tenant não encontrado");
+
       const tenantFromDb = fullUser.tenant.cliente_name || "";
 
       const dados = await storageService.gerarTimeline(tenantFromDb);

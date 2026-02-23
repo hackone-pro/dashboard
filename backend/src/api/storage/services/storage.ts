@@ -2,25 +2,23 @@ import fs from "fs";
 import path from "path";
 
 /* ============================
-   AMBIENTE
+   STORAGE DIRECTORY (MANUAL)
+   ATIVE APENAS UM
 ============================ */
-const IS_DEV = process.env.NODE_ENV === "development";
 
 // PRODUÇÃO (ative no servidor)
-// const STORAGE_DIR = "/opt/storage_monitoring";
+const STORAGE_DIR = "/opt/storage_monitoring";
 
 // DESENVOLVIMENTO LOCAL (ative no localhost)
-const STORAGE_DIR = process.cwd();
+// const STORAGE_DIR = process.cwd();
 
 /* ============================
-   LEITURA DE ARQUIVO
+   LOG DE CONFIRMAÇÃO
 ============================ */
-console.warn(`📁 STORAGE_DIR ATIVO = ${STORAGE_DIR}`);
+strapi.log.warn(`📁 STORAGE_DIR ATIVO = ${STORAGE_DIR}`);
 
 /* ============================
    NORMALIZA TENANT
-   "Qolinty" -> "qolinty"
-   "Dora Retail" -> "dora_retail"
 ============================ */
 function normalizarTenant(input: string) {
   return (input || "")
@@ -30,7 +28,7 @@ function normalizarTenant(input: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9\s_-]/g, "")
-    .replace(/[\s-]+/g, "_")
+    .replace(/[\s]+/g, "_")
     .replace(/_+/g, "_");
 }
 
@@ -128,18 +126,6 @@ function lerStateNormalizado(tenantFromDb: string) {
   };
 }
 
-function lerStateUsedGB(tenantFromDb: string): number {
-  const raw = lerArquivo("state", tenantFromDb);
-
-  // Formato novo (seu exemplo):
-  if (raw && typeof raw.used !== "undefined") {
-    return extrairNumeroGB(raw.used);
-  }
-
-  // Formato antigo:
-  return extrairNumeroGB(raw?.["Em uso"]);
-}
-
 /* ============================
    EXTRAI DATA yyyy-mm-dd
 ============================ */
@@ -153,21 +139,18 @@ function extrairDataDaKey(key: string): string | null {
 
 /* ============================
    NORMALIZA LAST_SEEN
-   (HISTÓRICO DE USO REAL)
 ============================ */
 function normalizarLastSeen(
   lastSeen: Record<string, number>,
-  tenantKey: string
+  tenantFromDb: string
 ) {
+  const tenantKey = normalizarTenant(tenantFromDb);
   const porDia: Record<string, number> = {};
 
   for (const [key, valor] of Object.entries(lastSeen)) {
     if (typeof valor !== "number") continue;
 
     const keyLower = key.toLowerCase();
-
-    // garante que a key pertence ao tenant
-    // ex: wazuh-alerts-qolinty-2026.01.27
     if (!keyLower.includes(`-${tenantKey}-`)) continue;
 
     const data = extrairDataDaKey(keyLower);
@@ -180,15 +163,15 @@ function normalizarLastSeen(
 }
 
 /* ============================
-   NORMALIZA DELETED
+   NORMALIZA DELETED (ARRAY)
 ============================ */
 function normalizarDeleted(lista: any[]) {
   const porDia: Record<string, number> = {};
 
   (lista || []).forEach(item => {
     if (!item?.data || typeof item.volume !== "number") return;
+    if (item.data === "desconhecida") return;
 
-    // dd/mm/yyyy → yyyy-mm-dd
     const [dia, mes, ano] = String(item.data).split("/");
     if (!dia || !mes || !ano) return;
 
@@ -200,24 +183,17 @@ function normalizarDeleted(lista: any[]) {
 }
 
 /* ============================
-   GERAR TIMELINE (FINAL)
+   GERAR TIMELINE
 ============================ */
 async function gerarTimeline(tenantFromDb: string) {
-  const tenantKey = normalizarTenant(tenantFromDb);
+  const internal = lerArquivo("internal", tenantFromDb);
 
-  // 🔹 STATE: apenas snapshot (não usado na timeline)
-  const state = lerArquivo("state");
-
-  // 🔹 INTERNAL: fonte real de histórico
-  const internal = lerArquivo("internal");
-
-  // 🔑 USO DIÁRIO REAL
   const lastSeenRaw = internal?.last_seen ?? {};
+  const deletedList = Array.isArray(internal?.deleted)
+    ? internal.deleted
+    : [];
 
-  // 🔑 DELETADO POR TENANT
-  const deletedList = internal?.deleted?.[tenantKey] ?? [];
-
-  const usoPorDia = normalizarLastSeen(lastSeenRaw, tenantKey);
+  const usoPorDia = normalizarLastSeen(lastSeenRaw, tenantFromDb);
   const deletadoPorDia = normalizarDeleted(deletedList);
 
   const datas = new Set([
@@ -241,13 +217,8 @@ async function gerarTimeline(tenantFromDb: string) {
 
   const safeTotalUsed = Math.max(totalUsed, 0);
 
-  // 🧪 LOG FINAL
-  strapi.log.info(
-    `📦 Storage timeline tenant="${tenantFromDb}" -> key="${tenantKey}" | usedDays=${Object.keys(usoPorDia).length} | delDays=${Object.keys(deletadoPorDia).length} | series=${series.length}`
-  );
-
   return {
-    totalCapacity: 1024, // GB
+    totalCapacity: 1024,
     totalUsed: Number(safeTotalUsed.toFixed(4)),
     usagePercent: Number(((safeTotalUsed / 1024) * 100).toFixed(2)),
     series,
@@ -259,7 +230,6 @@ async function gerarTimeline(tenantFromDb: string) {
 ============================ */
 export default {
   lerArquivo,
-  lerStateUsedGB,
   lerStateNormalizado,
   gerarTimeline,
 };
