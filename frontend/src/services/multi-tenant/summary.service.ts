@@ -28,7 +28,7 @@ export async function getAdminSummary(tenantId?: number): Promise<AdminSummaryIt
   }
 
   const res = await fetch(
-    `${API_URL}/api/tenant-summaries?${queryParams.toString()}`,
+    `${API_URL}/api/admin/multitenant/summary`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -36,44 +36,20 @@ export async function getAdminSummary(tenantId?: number): Promise<AdminSummaryIt
     }
   );
 
-  const json = await res.json();
+  const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      json?.error?.message || "Erro ao buscar tenant summaries"
-    );
+    throw new Error(data?.error?.message || "Erro ao buscar summary");
   }
 
-  const data = json?.data ?? [];
-
-  const filtrado = data.filter(
-    (item: any) =>
-      item?.tenant &&
-      item?.tenant?.id &&
-      item?.tenant?.organizacao
-  );
-
-  const map = new Map<number, any>();
-
-  for (const item of filtrado) {
-    const tId = item.tenant.id;
-
-    if (!map.has(tId)) {
-      map.set(tId, item);
-    }
-  }
-
-  const unicos = Array.from(map.values());
-
-  return unicos.map((item: any) => ({
-    tenantId: item.tenant.id,
-    organizacao: item.tenant.organizacao,
-    ativos: item.ativos ?? 0,
-    risco: item.risk ?? 0,
-    incidentes_critico: item.critical_inc ?? 0,
-    incidentes_alto: item.high_inc ?? 0,
-    volume_gb: item.volume_gb ?? 0,
-    logs: item.logs_offline ?? 0,
-    snapshot_at: item.snapshot_at ?? null,
+  return data.map((item: any) => ({
+    tenantId: item.tenantId,
+    organizacao: item.organizacao,
+    ativos: item.summary?.ativos ?? 0,
+    risco: item.summary?.risk ?? 0,
+    incidentes_critico: item.summary?.critical_inc ?? 0,
+    incidentes_alto: item.summary?.high_inc ?? 0,
+    volume_gb: item.summary?.volume_gb ?? 0,
+    logs: item.summary?.firewalls_offline ?? 0,
   }));
 }

@@ -211,40 +211,45 @@ export default {
   async summary(user: any) {
     try {
       const tenants = await getTenantsAdmin(user);
-  
       if (tenants.length === 0) return [];
   
-      const tenantIds = tenants.map((t) => t.id);
-      const tenantDocumentIds = tenants.map((t) => t.documentId);
+      const tenantIds = tenants.map(t => t.id);
   
-      const ativosPorTenant = await getAtivosPorTenant(tenantIds);
-      const riskMap = await getRiskSnapshotPorTenants(tenantDocumentIds);
-      const firewallsOfflineMap = await getFirewallsOfflinePorTenant(tenants);
+      // BUSCA APENAS SNAPSHOT SALVO PELO CRON
+      const snapshots = await (strapi as any)
+        .documents("api::tenant-summary.tenant-summary")
+        .findMany({
+          filters: {
+            period: 1,
+            tenant_numeric_id: { $in: tenantIds },
+          },
+          fields: [
+            "risk",
+            "critical_inc",
+            "high_inc",
+            "volume_gb",
+            "logs_offline",
+            "ativos",
+            "tenant_numeric_id"
+          ],
+        });
   
-      const resultado = tenants.map((tenant) => {
-  
-        const snap = riskMap[tenant.documentId] ?? {
-          risk: 0,
-          critical_inc: 0,
-          high_inc: 0,
-          volume_gb: 0,
-        };
+      return snapshots.map((snap: any) => {
+        const tenant = tenants.find(t => t.id === snap.tenant_numeric_id);
   
         return {
-          tenantId: tenant.id,
-          organizacao: tenant.organizacao,
+          tenantId: snap.tenant_numeric_id,
+          organizacao: tenant?.organizacao ?? "N/A",
           summary: {
-            ativos: ativosPorTenant[tenant.id] || 0,
-            risk: snap.risk,
-            critical_inc: snap.critical_inc,
-            high_inc: snap.high_inc,
-            volume_gb: snap.volume_gb,
-            firewalls_offline: firewallsOfflineMap[tenant.id] || 0,
+            ativos: snap.ativos ?? 0,
+            risk: snap.risk ?? 0,
+            critical_inc: snap.critical_inc ?? 0,
+            high_inc: snap.high_inc ?? 0,
+            volume_gb: snap.volume_gb ?? 0,
+            firewalls_offline: snap.logs_offline ?? 0,
           },
         };
       });
-  
-      return resultado;
   
     } catch (err) {
       strapi.log.error("❌ Erro no summary:", err);
