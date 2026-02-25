@@ -17,7 +17,7 @@ export async function getAdminSummary(): Promise<AdminSummaryItem[]> {
   const token = getToken();
 
   const res = await fetch(
-    `${API_URL}/api/tenant-summaries?populate=tenant&filters[period][$eq]=1&sort=risk:desc`,
+    `${API_URL}/api/admin/multitenant/summary`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -25,32 +25,20 @@ export async function getAdminSummary(): Promise<AdminSummaryItem[]> {
     }
   );
 
-  const json = await res.json();
+  const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      json?.error?.message || "Erro ao buscar tenant summaries"
-    );
+    throw new Error(data?.error?.message || "Erro ao buscar summary");
   }
 
-  const data = json?.data ?? [];
-
-  // 🔥 FILTRA TENANTS NULOS OU SEM ORGANIZAÇÃO
-  const filtrado = data.filter(
-    (item: any) =>
-      item.tenant &&
-      item.tenant.organizacao &&
-      item.risk !== null
-  );
-
-  return filtrado.map((item: any) => ({
-    tenantId: item.tenant.id,
-    organizacao: item.tenant.organizacao,
-    ativos: 0, // se quiser buscar depois
-    risco: item.risk ?? 0,
-    incidentes_critico: item.critical_inc ?? 0,
-    incidentes_alto: item.high_inc ?? 0,
-    volume_gb: item.volume_gb ?? 0,
-    logs: item.logs_offline ?? 0,
+  return data.map((item: any) => ({
+    tenantId: item.tenantId,
+    organizacao: item.organizacao,
+    ativos: item.summary?.ativos ?? 0,
+    risco: item.summary?.risk ?? 0,
+    incidentes_critico: item.summary?.critical_inc ?? 0,
+    incidentes_alto: item.summary?.high_inc ?? 0,
+    volume_gb: item.summary?.volume_gb ?? 0,
+    logs: item.summary?.firewalls_offline ?? 0,
   }));
 }
