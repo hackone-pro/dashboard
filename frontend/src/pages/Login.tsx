@@ -78,11 +78,8 @@ export default function Login() {
         return;
       }
 
-      /* ==========================
-         LOGIN DIRETO
-      ========================== */
-      login(data.jwt);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // login direto (fallback)
+      login(data.jwt, data.user);
 
       if (remember) {
         localStorage.setItem("remember_email", emailNorm);

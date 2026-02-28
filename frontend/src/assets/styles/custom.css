@@ -69,6 +69,8 @@ input:focus-visible {
   box-shadow: none !important;
 }
 
+
+
 .badge {
   width: 55px;
   text-align: center;
@@ -173,12 +175,24 @@ header button {
   background-color: #540093;
 }
 
+button.logout {
+  background-color: transparent !important;
+}
+
+button.logout:hover{
+  background-color:#4a06dd28 !important;
+}
+
 header button:hover {
   background-color: #6a01bb;
 }
 
 .logout {
-  color: #fff;
+  color: var(--color-gray-400) !important;
+}
+
+.logout:hover{
+  color: var(--color-purple-300) !important;
 }
 
 li {
