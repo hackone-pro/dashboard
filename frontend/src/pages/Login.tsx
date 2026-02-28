@@ -37,8 +37,7 @@ export default function Login() {
       }
 
       // login direto (fallback)
-      login(data.jwt);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      login(data.jwt, data.user);
 
       if (remember) {
         localStorage.setItem("remember_email", email);

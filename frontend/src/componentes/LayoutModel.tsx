@@ -1,13 +1,16 @@
 // src/componentes/LayoutModel.tsx
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Sidebar from "./SideBar";
 import TenantSelector from "./TenantSelector";
 import { toastSuccess } from "../utils/toast";
-import { FiLogOut } from "react-icons/fi";
+import { FiLogOut} from "react-icons/fi";
 import { AiFillSun, AiFillQuestionCircle } from "react-icons/ai";
-import { FaWhatsapp, FaMoon } from "react-icons/fa";
+import { FaWhatsapp, FaMoon, FaUserCog } from "react-icons/fa";
 import { IoIosArrowForward } from "react-icons/io";
+import { PiNetwork } from "react-icons/pi";
+
+import { CiSettings } from "react-icons/ci";
 
 import { useAuth } from "../context/AuthContext";
 
@@ -20,9 +23,14 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [temaClaro, setTemaClaro] = useState<boolean | undefined>(undefined);
+  const [perfilOpen, setPerfilOpen] = useState(false);
+  const perfilRef = useRef<HTMLDivElement>(null);
+
   const isServicePage = location.pathname.startsWith("/service/");
-  const { logout } = useAuth();
-  
+  const { logout, user } = useAuth();
+
+  const isAdmin = user?.user_role?.slug === "admin";
+
   // Verificar tema salvo
   useEffect(() => {
     const temaSalvo = localStorage.getItem("tema") === "claro";
@@ -40,6 +48,22 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
     }
   }, [titulo]);
 
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        perfilRef.current &&
+        !perfilRef.current.contains(event.target as Node)
+      ) {
+        setPerfilOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Alternar tema
   const alternarTema = () => {
@@ -84,9 +108,9 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
   return (
     <div className="flex min-w-0">
-    <Sidebar />
+      <Sidebar />
 
-    <div className="flex-1 min-w-0 px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300 overflow-x-hidden">
+      <div className="flex-1 min-w-0 px-6 py-4 fundo-dashboard texto-dashboard transition-colors duration-300 overflow-x-hidden">
         {/* Header */}
         <header className="flex items-center px-6 rounded-xl justify-between mb-4 no-print">
           {/* 🔹 Esquerda - Título */}
@@ -105,7 +129,6 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                 <>
                   {/* @ts-ignore */}
                   <IoIosArrowForward />
-
                   <Link
                     to="/services-catalog"
                     className="hover:text-white transition"
@@ -114,7 +137,6 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                   </Link>
                   {/* @ts-ignore */}
                   <IoIosArrowForward />
-
                   <span className="text-gray-300">
                     {titulo}
                   </span>
@@ -144,7 +166,6 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                 })
               )}
             </nav>
-
           </div>
 
           {/* 🔹 Centro - TenantSelector centralizado */}
@@ -155,6 +176,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
           {/* 🔹 Direita - Botões */}
           <div className="flex items-center gap-3">
             <TenantSelector />
+
             {/* WhatsApp */}
             <a
               href="https://hackone.com.br/h1ca"
@@ -167,15 +189,57 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
               Suporte
             </a>
 
-            {/* Sair */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center header gap-2 text-gray-400 login border border-[#1D1929] hover:text-white px-4 py-2 rounded-md text-sm transition"
-            >
-              {/* @ts-ignore */}
-              <FiLogOut className="text-gray-300" />
-              Sair
-            </button>
+            {/* Perfil / Sair */}
+            {isAdmin ? (
+              <div className="relative" ref={perfilRef}>
+                <button
+                  onClick={() => setPerfilOpen(!perfilOpen)}
+                  className="flex items-center header gap-2 text-gray-400 border border-none hover:text-white px-4 py-2 rounded-md text-sm transition"
+                >
+                  <FaUserCog className="text-gray-300 text-[22px]" />
+                  {/* {user?.username || "Perfil"} */}
+                </button>
+
+                {perfilOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-[#1e1735] backdrop-blur-sm border border-[#4B06DD]/30 shadow-xl z-50 overflow-hidden">
+                    <Link
+                      to="/multitenant-manager"
+                      className="block px-4 py-3 text-sm text-gray-400 hover:bg-[#4B06DD]/20 hover:text-purple-300 duration-300 transition"
+                      onClick={() => setPerfilOpen(false)}
+                    >
+                      <PiNetwork className="inline mr-2 text-lg" />
+                      Gestão Multi-Tenant
+                    </Link>
+                    <Link
+                      to="/config"
+                      className="block px-4 py-3 text-sm text-gray-400 hover:bg-[#4B06DD]/20 hover:text-purple-300 duration-300 transition"
+                      onClick={() => setPerfilOpen(false)}
+                    >
+                      <CiSettings className="inline mr-2 text-lg" />
+                      Configurações
+                    </Link>
+                    <div className="border-t border-[#1D1929]" />
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-400 hover:bg-[#4B06DD]/20 hover:text-purple-300 duration-300 transition logout"
+                    >
+                      <FiLogOut className="inline mr-2" />
+                      Sair
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="flex items-center header gap-2 text-gray-300 login bg-none border border-[#1D1929] hover:bg-[#4B06DD]/20 hover:text-purple-300 duration-300 transition logout"
+              >
+                {/* @ts-ignore */}
+                <FiLogOut className="text-gray-300" />
+                Sair
+              </button>
+            )}
 
             {/* Toggle Tema */}
             {/* <button
@@ -193,7 +257,6 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
           </div>
         </header>
 
-
         {/* Conteúdo da página */}
         {children}
 
@@ -201,7 +264,6 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
         <footer className="text-right text-gray-500 text-xs mt-4">
           Versão 1.8.4.1
         </footer>
-
       </div>
     </div>
   );
