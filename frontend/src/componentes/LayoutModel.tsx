@@ -4,7 +4,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import Sidebar from "./SideBar";
 import TenantSelector from "./TenantSelector";
 import { toastSuccess } from "../utils/toast";
-import { FiLogOut} from "react-icons/fi";
+import { FiLogOut } from "react-icons/fi";
 import { AiFillSun, AiFillQuestionCircle } from "react-icons/ai";
 import { FaWhatsapp, FaMoon, FaUserCog } from "react-icons/fa";
 import { IoIosArrowForward } from "react-icons/io";
@@ -50,6 +50,8 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
+    if (!perfilOpen) return;
+
     function handleClickOutside(event: MouseEvent) {
       if (
         perfilRef.current &&
@@ -58,12 +60,12 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
         setPerfilOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [perfilOpen]);
 
   // Alternar tema
   const alternarTema = () => {
@@ -196,6 +198,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                   onClick={() => setPerfilOpen(!perfilOpen)}
                   className="flex items-center header gap-2 text-gray-400 border border-none hover:text-white px-4 py-2 rounded-md text-sm transition"
                 >
+                  {/* @ts-ignore */}
                   <FaUserCog className="text-gray-300 text-[22px]" />
                   {/* {user?.username || "Perfil"} */}
                 </button>
@@ -207,6 +210,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                       className="block px-4 py-3 text-sm text-gray-400 hover:bg-[#4B06DD]/20 hover:text-purple-300 duration-300 transition"
                       onClick={() => setPerfilOpen(false)}
                     >
+                      {/* @ts-ignore */}
                       <PiNetwork className="inline mr-2 text-lg" />
                       Gestão Multi-Tenant
                     </Link>
@@ -215,6 +219,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                       className="block px-4 py-3 text-sm text-gray-400 hover:bg-[#4B06DD]/20 hover:text-purple-300 duration-300 transition"
                       onClick={() => setPerfilOpen(false)}
                     >
+                      {/* @ts-ignore */}
                       <CiSettings className="inline mr-2 text-lg" />
                       Configurações
                     </Link>
@@ -224,6 +229,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-3 text-sm text-gray-400 hover:bg-[#4B06DD]/20 hover:text-purple-300 duration-300 transition logout"
                     >
+                      {/* @ts-ignore */}
                       <FiLogOut className="inline mr-2" />
                       Sair
                     </button>
