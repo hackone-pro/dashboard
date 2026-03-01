@@ -60,10 +60,10 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
         setPerfilOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     };
   }, [perfilOpen]);
 
