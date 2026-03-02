@@ -3,24 +3,25 @@ FROM node:20 AS builder
 
 WORKDIR /app
 
+COPY package*.json ./
+RUN npm install
+
 COPY . .
+RUN npm run build
 
-RUN npm install && npm run build
 
-# Etapa 2: servir com serve
-FROM node:20
+# Etapa 2: runtime com nginx
+FROM nginx:alpine
 
-WORKDIR /app
+# Remove default config
+RUN rm -rf /usr/share/nginx/html/*
 
-# Copia o .env.production como .env (usado no build do Vite)
-COPY .env.production .env
+# Copia build
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copia apenas o build
-COPY --from=builder /app/dist /app/dist
+# Config SPA
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Instala o `serve`
-RUN npm install -g serve
+EXPOSE 80
 
-EXPOSE 3000
-
-CMD ["serve", "-s", "dist", "--listen", "tcp://0.0.0.0:3000", "--no-clipboard"]
+CMD ["nginx", "-g", "daemon off;"]
