@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CiSettings, CiMap, CiHome, CiGlobe } from "react-icons/ci";
 import { PiNotebook, PiWarningLight, PiSkullLight, PiShareNetworkDuotone, PiLockKeyLight } from "react-icons/pi";
 import { HiOutlineBars3, HiOutlineIdentification } from "react-icons/hi2";
+import { HiOutlineDocumentReport } from "react-icons/hi";
 import { VscSearchFuzzy, VscFileSymlinkDirectory } from "react-icons/vsc";
 import { TbChartInfographic, TbHeartRateMonitor, TbCloudLock } from "react-icons/tb";
 import { GoShieldLock } from "react-icons/go";
@@ -500,7 +501,7 @@ export default function Sidebar() {
                     </li>
                 )}
 
-                {/* <li className={clsx(
+                <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
                 )}>
@@ -512,7 +513,7 @@ export default function Sidebar() {
                         <CiSettings />
                         {isOpen && <span>Configurações</span>}
                     </Link>
-                </li> */}
+                </li>
 
             </ul>
         </div>

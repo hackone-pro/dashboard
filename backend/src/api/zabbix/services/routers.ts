@@ -1,5 +1,5 @@
 /**
- * Serviço Zabbix — Top 5 Roteadores (Firewalls) por alertas ativos (EVENTOS)
+ * Serviço Zabbix — Top Roteadores por uso de CPU
  */
 
  import axios from "axios";
@@ -33,7 +33,10 @@
    return response.data.result;
  }
  
- export async function buscarTopRoutersSeveridade(tenant: any, limit = 5) {
+ export async function buscarTopRoutersCPU(
+   tenant: any,
+   limit = 5
+ ) {
    const cfg = tenant.zabbix_config;
    if (!cfg?.enabled) return { routers: [] };
  
@@ -42,80 +45,81 @@
    const token = cfg.zabbix_token;
  
    /**
-    * Buscar EVENTOS ativos (mesma fonte do card Alertas)
+    * 1️⃣ Buscar templates com tag class=roteador
     */
-   const eventos = await zabbixRequest(url, token, "event.get", {
-     output: ["eventid", "severity"],
-     selectHosts: ["name"],
-     value: 1,
+   const templates = await zabbixRequest(url, token, "template.get", {
+     output: ["templateid"],
+     tags: [
+       {
+         tag: "class",
+         value: "roteador",
+         operator: 1,
+       },
+     ],
    });
  
-   if (!Array.isArray(eventos)) return { routers: [] };
+   const templateids = templates.map((t: any) => t.templateid);
+   if (!templateids.length) return { routers: [] };
  
    /**
-    * Agrupar alertas (eventos) por roteador/firewall
+    * 2️⃣ Buscar hosts vinculados a esses templates
     */
-   const mapa: Record<
-     string,
-     {
-       name: string;
-       critico: number;
-       high: number;
-       average: number;
-       warning: number;
-       total: number;
-     }
-   > = {};
+   const hosts = await zabbixRequest(url, token, "host.get", {
+     output: ["hostid", "name"],
+     templateids,
+     status: 0,
+   });
  
-   for (const e of eventos) {
-     const host = e.hosts?.[0];
-     if (!host) continue;
+   if (!hosts.length) return { routers: [] };
  
-     const hostName: string = host.name;
+   const hostids = hosts.map((h: any) => h.hostid);
  
-     // 🔹 critério de firewall / roteador
-     if (
-       !hostName.startsWith("FGT") &&
-       !hostName.toLowerCase().includes("forti")
-     ) {
-       continue;
-     }
+   /**
+    * 3️⃣ Buscar itens de CPU
+    */
+   const items = await zabbixRequest(url, token, "item.get", {
+     hostids,
+     search: {
+       key_: "cpu",
+     },
+     output: ["hostid", "lastvalue", "name", "key_"],
+   });
  
-     if (!mapa[hostName]) {
-       mapa[hostName] = {
-         name: hostName,
-         critico: 0,
-         high: 0,
-         average: 0,
-         warning: 0,
-         total: 0,
-       };
-     }
+   const routers: any[] = [];
  
-     // 🔹 1 EVENTO = 1 ALERTA
-     mapa[hostName].total++;
+   for (const host of hosts) {
+     const cpuItem = items.find(
+       (i: any) =>
+         i.hostid === host.hostid &&
+         (
+           i.key_.includes("system.cpu.util") ||
+           i.key_.includes("cpu.util") ||
+           i.key_.includes("system.cpu.load")
+         )
+     );
  
-     switch (String(e.severity)) {
-       case "5":
-         mapa[hostName].critico++;
-         break;
-       case "4":
-         mapa[hostName].high++;
-         break;
-       case "3":
-         mapa[hostName].average++;
-         break;
-       case "2":
-         mapa[hostName].warning++;
-         break;
-       default:
-         break;
-     }
+     if (!cpuItem) continue;
+ 
+     const cpu = Number(cpuItem.lastvalue);
+     if (Number.isNaN(cpu)) continue;
+ 
+     let severidade: "baixo" | "medio" | "alto" | "critico" = "baixo";
+ 
+     if (cpu >= 80) severidade = "critico";
+     else if (cpu >= 60) severidade = "alto";
+     else if (cpu >= 30) severidade = "medio";
+ 
+     routers.push({
+       name: host.name,
+       cpu_percent: Number(cpu.toFixed(1)),
+       severidade,
+     });
    }
  
    return {
-     routers: Object.values(mapa)
-       .sort((a, b) => b.total - a.total)
+     total: routers.length,
+     routers: routers
+       .sort((a, b) => b.cpu_percent - a.cpu_percent)
        .slice(0, limit),
    };
  }

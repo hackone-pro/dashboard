@@ -1,6 +1,6 @@
 /**
- * Serviço Zabbix — Ativos por Host Group (dinâmico)
- * Fonte: hostgroup.get + selectHosts
+ * Serviço Zabbix — Ativos por CLASS (tag do template)
+ * Classes: firewall, roteador, os
  */
 
  import axios from "axios";
@@ -38,54 +38,69 @@
  }
  
  /**
-  * Retorna TODOS os grupos existentes no Zabbix
-  * com a quantidade real de hosts em cada um
+  * Retorna ativos agrupados por CLASS (tag do template)
   */
- export async function buscarAtivosZabbix(tenant: any) {
+  export async function buscarAtivosZabbix(tenant: any) {
    const cfg = tenant.zabbix_config;
+ 
    if (!cfg?.enabled) {
-     return {
-       total: 0,
-       grupos: [],
-     };
+     return { total: 0, grupos: [] };
    }
  
-   const host = cfg.zabbix_url
-     ?.replace(/^https?:\/\//, "")
-     .trim();
- 
+   const host = cfg.zabbix_url?.replace(/^https?:\/\//, "").trim();
    const url = `http://${host}/zabbix/api_jsonrpc.php`;
    const token = cfg.zabbix_token;
  
-   /**
-    * Buscar todos os host groups + hosts
-    */
-   const groups = await zabbixRequest(url, token, "hostgroup.get", {
-     output: ["groupid", "name"],
-     selectHosts: ["hostid"],
-   });
+   const classesDesejadas = ["firewall", "roteador", "servidor", "switch"];
  
-   if (!Array.isArray(groups)) {
-     return {
-       total: 0,
-       grupos: [],
-     };
+   const nomesPlural: Record<string, string> = {
+     firewall: "FIREWALLS",
+     roteador: "ROTEADORES",
+     servidor: "SERVIDORES",
+     switch: "SWITCHS"
+   };
+ 
+   const grupos = [];
+ 
+   for (const className of classesDesejadas) {
+ 
+     // Buscar templates da class
+     const templates = await zabbixRequest(url, token, "template.get", {
+       output: ["templateid"],
+       tags: [
+         {
+           tag: "class",
+           value: className,
+           operator: 1
+         }
+       ]
+     });
+ 
+     const templateids = templates.map((t: any) => t.templateid);
+ 
+     let total = 0;
+ 
+     // Buscar hosts vinculados aos templates
+     if (templateids.length > 0) {
+       const hosts = await zabbixRequest(url, token, "host.get", {
+         output: ["hostid"],
+         templateids
+       });
+ 
+       total = Array.isArray(hosts) ? hosts.length : 0;
+     }
+ 
+     grupos.push({
+       groupid: className,
+       name: nomesPlural[className] ?? className.toUpperCase(),
+       total
+     });
    }
- 
-   /**
-    * Montar resposta SEM qualquer regra fixa
-    */
-   const grupos = groups.map((g: any) => ({
-     groupid: g.groupid,
-     name: g.name,
-     total: Array.isArray(g.hosts) ? g.hosts.length : 0,
-   }));
  
    const total = grupos.reduce((sum, g) => sum + g.total, 0);
  
    return {
      total,
-     grupos,
+     grupos
    };
  }
- 

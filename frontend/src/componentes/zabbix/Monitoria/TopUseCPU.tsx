@@ -38,9 +38,9 @@ export default function TopUseCPU() {
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="text-white text-md">Top hosts por uso de CPU</h3>
+          <h3 className="text-white text-md">Top hosts por uso</h3>
           <p className="text-gray-400 text-sm">
-            Utilização de CPU em tempo real
+            Utilização em tempo real
           </p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export default function TopUseCPU() {
           <thead className="fundo-dashboard">
             <tr className="text-white">
               <th className="text-center py-2 px-3 font-normal">Host</th>
-              <th className="text-center font-normal">CPU agora</th>
+              <th className="text-center font-normal">CPU</th>
               <th className="text-center font-normal">Uso de RAM</th>
               <th className="text-center font-normal">Processos</th>
               <th className="text-center font-normal">Severidade</th>
@@ -81,8 +81,8 @@ export default function TopUseCPU() {
               hosts.map((h) => {
                 const ramPercent =
                   typeof h.ram_used_gb === "number" &&
-                  typeof h.ram_total_gb === "number" &&
-                  h.ram_total_gb > 0
+                    typeof h.ram_total_gb === "number" &&
+                    h.ram_total_gb > 0
                     ? (h.ram_used_gb / h.ram_total_gb) * 100
                     : null;
 
@@ -119,14 +119,15 @@ export default function TopUseCPU() {
                               style={{ width: `${Math.min(ramPercent, 100)}%` }}
                             />
                           </div>
+
                           <div className="text-gray-400 text-[11px] whitespace-nowrap">
-                            {h.ram_used_gb!.toFixed(1)} GB /{" "}
-                            {h.ram_total_gb!.toFixed(0)} GB
+                            {ramPercent.toFixed(1)}%
                           </div>
                         </div>
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
+
                     </td>
 
                     {/* Processos */}

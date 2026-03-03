@@ -1,27 +1,19 @@
 import { getToken } from "../../utils/auth";
 
-/**
- * Severidades por roteador (firewall)
- */
-export interface RouterSeveridade {
+export interface RouterCPU {
   name: string;
-  high: number;
-  average: number;
-  warning: number;
-  total: number;
+  cpu_percent: number;
+  severidade: "baixo" | "medio" | "alto" | "critico";
 }
 
-export interface RoutersSeveridadeResponse {
+export interface RoutersCPUResponse {
   total: number;
-  routers: RouterSeveridade[];
+  routers: RouterCPU[];
 }
 
-/**
- * Busca Top 5 roteadores (firewalls) por severidade no Zabbix
- */
 export async function getZabbixRouters(
   limit: number = 5
-): Promise<RoutersSeveridadeResponse> {
+): Promise<RoutersCPUResponse> {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
@@ -34,8 +26,7 @@ export async function getZabbixRouters(
   });
 
   if (!response.ok) {
-    console.error("Erro ao consultar roteadores Zabbix:", response.status);
-    throw new Error("Erro ao consultar roteadores do Zabbix");
+    throw new Error("Erro ao consultar roteadores CPU");
   }
 
   return response.json();

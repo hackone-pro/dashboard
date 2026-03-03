@@ -3,14 +3,10 @@ import { getToken } from "../../utils/auth";
 export interface LinkWanItem {
   firewall: string;
   link: string;
+
   trafego_mbps: number;
   capacidade_mbps: number;
   uso_percentual: number;
-
-  ram_total_bytes: number;
-  ram_available_bytes: number;
-  ram_used_bytes: number;
-  ram_used_percent: number;
 
   severidade: "baixo" | "medio" | "alto" | "critico";
 }
