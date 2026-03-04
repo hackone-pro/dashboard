@@ -3,18 +3,18 @@ import { useRef } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import { useZabbixAtivo } from "../hooks/useZabbixAtivo";
 
-import FirewallCard, { FirewallCardRef } from "../componentes/zabbix/Monitoria/mock/FirewallCard";
-import TopHostsCPU from "../componentes/zabbix/Monitoria/mock/TopHostsCPU";
-import SeveridadeDonutCard from "../componentes/zabbix/Monitoria/mock/Severidade";
-import TopSwitchesCPU from "../componentes/zabbix/Monitoria/mock/TopSwitchesCPU";
-import SwitchesStatusCard from "../componentes/zabbix/Monitoria/mock/SwitchesStatus";
-import AlertasZabbix from "../componentes/zabbix/Monitoria/mock/Alertas";
-import Ativos from "../componentes/zabbix/Monitoria/mock/Ativos";
-import VPN from "../componentes/zabbix/Monitoria/mock/VPN";
-import Roteadores from "../componentes/zabbix/Monitoria/mock/Roteadores";
-import LinksWanCard from "../componentes/zabbix/Monitoria/mock/LinksWan";
-import TopUseCPU from "../componentes/zabbix/Monitoria/mock/TopUseCPU";
-import FirewallsRamCard from "../componentes/zabbix/Monitoria/mock/TopFirewallTrafego";
+import FirewallCard, { FirewallCardRef } from "../componentes/zabbix/Monitoria/FirewallCard";
+import TopHostsCPU from "../componentes/zabbix/Monitoria/TopHostsCPU";
+import SeveridadeDonutCard from "../componentes/zabbix/Monitoria/Severidade";
+import TopSwitchesCPU from "../componentes/zabbix/Monitoria/TopSwitchesCPU";
+import SwitchesStatusCard from "../componentes/zabbix/Monitoria/SwitchesStatus";
+import AlertasZabbix from "../componentes/zabbix/Monitoria/Alertas";
+import Ativos from "../componentes/zabbix/Monitoria/Ativos";
+import VPN from "../componentes/zabbix/Monitoria/VPN";
+import Roteadores from "../componentes/zabbix/Monitoria/Roteadores";
+import LinksWanCard from "../componentes/zabbix/Monitoria/LinksWan";
+import TopUseCPU from "../componentes/zabbix/Monitoria/TopUseCPU";
+import FirewallsRamCard from "../componentes/zabbix/Monitoria/TopFirewallTrafego";
 
 export default function MonitoriaSOC() {
   // ref obrigatório para usar <FirewallCard ref={firewallRef}>
