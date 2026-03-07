@@ -36,6 +36,7 @@ export async function buscarTopMitreTechniques(tenant, dias) {
                 { match_phrase: { "data.customer": clientName } },
                 { match_phrase: { "fields.customer": clientName } },
                 { match_phrase: { "data.devname": clientName } },
+                { match_phrase: { "manager.name": `manager-${clientName}` } }
               ],
               minimum_should_match: 1,
             },
@@ -114,6 +115,7 @@ export async function buscarTopMitreTactics(tenant, dias) {
                 { match_phrase: { "data.customer": clientName } },
                 { match_phrase: { "fields.customer": clientName } },
                 { match_phrase: { "data.devname": clientName } },
+                { match_phrase: { "manager.name": `manager-${clientName}` } }
               ],
               minimum_should_match: 1,
             },
