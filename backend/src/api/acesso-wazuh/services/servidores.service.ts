@@ -5,14 +5,18 @@ export async function buscarListaServidores(tenant) {
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  const managerName = `manager-${clientName}`;
+
   const body = {
     size: 0,
     query: {
       bool: {
-        must: [
+        should: [
           { match_phrase: { customer: clientName } },
-          { match_phrase: { "manager.name": `manager-${clientName}` } }
-        ]
+          { match_phrase: { "agent.labels.customer": clientName } },
+          { match_phrase: { "manager.name": managerName } }
+        ],
+        minimum_should_match: 1
       }
     },
     aggs: {
