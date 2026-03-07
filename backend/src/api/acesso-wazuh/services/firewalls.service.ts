@@ -18,6 +18,7 @@ export async function buscarListaFirewalls(tenant) {
         { term: { "data.customer": clientName } },
         { term: { "fields.customer.keyword": clientName } },
         { term: { "fields.customer": clientName } },
+        { term: { "manager.name": `manager-${clientName}` } }
       ],
       minimum_should_match: 1,
     },
@@ -154,6 +155,7 @@ export async function buscarTopGeradoresFirewall(
         { term: { "customer.keyword": clientName } },
         { term: { "fields.customer": clientName } },
         { term: { "fields.customer.keyword": clientName } },
+        { term: { "manager.name": `manager-${clientName}` } }
       ],
       minimum_should_match: 1,
     },
