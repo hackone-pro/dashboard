@@ -13,28 +13,31 @@ export async function buscarTopUsers(
 ): Promise<TopUserItem[]> {
 
   const clientName = tenant.wazuh_client_name;
+
   if (!clientName) {
     throw new Error("Tenant sem wazuh_client_name definido");
   }
 
+  const managerName = `manager-${clientName}`;
+
   const { from, to, dias = "todos" } = opts ?? {};
 
   // ----------------------------------
-  // FILTRO DE TEMPO (PRIORIDADE)
+  // FILTRO DE TEMPO
   // ----------------------------------
   const timeFilter =
     from && to
       ? {
-        range: {
-          "@timestamp": {
-            gte: from,
-            lte: to,
+          range: {
+            "@timestamp": {
+              gte: from,
+              lte: to,
+            },
           },
-        },
-      }
+        }
       : dias === "todos"
-        ? { match_all: {} }
-        : {
+      ? { match_all: {} }
+      : {
           range: {
             "@timestamp": {
               gte: `now-${dias}d`,
@@ -45,18 +48,27 @@ export async function buscarTopUsers(
 
   const body = {
     size: 0,
+
     query: {
       bool: {
         filter: [
           timeFilter,
-          customerFilter(clientName),
           { match_phrase: { "rule.groups": "syscheck" } },
         ],
+
+        should: [
+          { match_phrase: { "manager.name": managerName } },
+          { match_phrase: { customer: clientName } },
+        ],
+
+        minimum_should_match: 1,
+
         must_not: [
           { term: { "agent.name": "wazuhhackone" } },
         ],
       },
     },
+
     aggs: {
       top_users: {
         terms: {
