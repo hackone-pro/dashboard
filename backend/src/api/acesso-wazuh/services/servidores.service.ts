@@ -10,7 +10,8 @@ export async function buscarListaServidores(tenant) {
     query: {
       bool: {
         must: [
-          { match_phrase: { customer: clientName } }
+          { match_phrase: { customer: clientName } },
+          { match_phrase: { "manager.name": `manager-${clientName}` } }
         ]
       }
     },
