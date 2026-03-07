@@ -68,6 +68,8 @@ export async function buscarTopPaisesAtaque(
                 { term: { "data.customer": clientName } },
                 { term: { customer: clientName } },
                 { term: { "fields.customer": clientName } },
+                { term: { "agent.labels.customer": clientName } },
+                { term: { "manager.name": `manager-${clientName}` } }
               ],
               minimum_should_match: 1,
             },
@@ -79,6 +81,7 @@ export async function buscarTopPaisesAtaque(
                 { term: { "rule.groups": "fortigate" } },
                 { term: { "rule.groups": "fortianalyzer-like" } },
                 { term: { "decoder.name": "fortianalyzer-like" } },
+                { term: { "decoder.name": "fortigate-firewall-v5" } },
               ],
               minimum_should_match: 1,
             },
