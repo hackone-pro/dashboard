@@ -318,13 +318,6 @@ export async function buscarRuleDistribution(
     { headers: authHeader(tenant) }
   );
 
-<<<<<<< HEAD
-  return (response.data?.aggregations?.rules?.buckets ?? []).map((b: any) => ({
-    rule: String(b.key ?? "Desconhecido"),
-    count: Number(b.doc_count ?? 0),
-  }));
-}
-=======
   return (response.data?.aggregations?.rules?.buckets ?? []).map((b: any) => {
     const rule = String(b.key ?? "Desconhecido");
   
@@ -334,4 +327,3 @@ export async function buscarRuleDistribution(
     };
   });
 }
->>>>>>> dd5ca55 (Ajuste concluido ambiente 01)
