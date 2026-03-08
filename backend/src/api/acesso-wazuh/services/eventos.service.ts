@@ -29,42 +29,58 @@ export async function buscarEventosOvertime(
   }
 ): Promise<OvertimeResponse> {
   const clientName = tenant.wazuh_client_name;
+
   if (!clientName) {
     throw new Error("Tenant sem wazuh_client_name definido");
   }
 
+  const managerName = `manager-${clientName}`;
   const { from, to } = opts ?? {};
 
   // ============================================================
-  // TIME FILTER ABSOLUTO (from / to)
+  // TIME FILTER
   // ============================================================
   const timeFilter =
     from && to
       ? {
-        range: {
-          "@timestamp": {
-            gte: from,
-            lte: to,
+          range: {
+            "@timestamp": {
+              gte: from,
+              lte: to,
+            },
           },
-        },
-      }
+        }
       : null;
 
   // ============================================================
-  // 🔥 QUERY ÚNICA PADRÃO
+  // QUERY
   // ============================================================
   const body = {
     size: 0,
     query: {
       bool: {
         filter: [
-          customerFilter(clientName),
           { match_phrase: { "rule.groups": "syscheck" } },
           ...(timeFilter ? [timeFilter] : []),
         ],
 
+        should: [
+          {
+            match_phrase: {
+              "manager.name": managerName,
+            },
+          },
+          {
+            match_phrase: {
+              customer: clientName,
+            },
+          },
+        ],
+
+        minimum_should_match: 1,
       },
     },
+
     aggs: {
       por_dia: {
         date_histogram: {
@@ -79,10 +95,12 @@ export async function buscarEventosOvertime(
         },
         aggs: {
           acoes: {
-            terms: { field: "syscheck.event" }
-          }
-        }
-      }
+            terms: {
+              field: "syscheck.event",
+            },
+          },
+        },
+      },
     },
   };
 
@@ -95,7 +113,7 @@ export async function buscarEventosOvertime(
   const buckets = response.data?.aggregations?.por_dia?.buckets ?? [];
 
   // ============================================================
-  // 🔥 LABELS (dd/MM)
+  // LABELS
   // ============================================================
   const labels = buckets.map((b: any) => {
     const d = new Date(b.key_as_string);
@@ -106,7 +124,7 @@ export async function buscarEventosOvertime(
   });
 
   // ============================================================
-  // 🔥 DATASETS
+  // DATASETS
   // ============================================================
   const tipos = [
     { key: "modified", label: "Modificado" },
@@ -135,7 +153,6 @@ export async function buscarEventosOvertime(
   return { labels, datasets };
 }
 
-
 /* ======================================================
    2) SUMMARY (30 MIN POR INTERVALO)
 ====================================================== */
@@ -146,18 +163,20 @@ export async function buscarEventosSummary(
   const clientName = tenant.wazuh_client_name;
   if (!clientName) throw new Error("Tenant sem client_name definido");
 
+  const managerName = `manager-${clientName}`;
+
   const { from, to, dias = "todos" } = opts ?? {};
 
   const timeFilter =
     from && to
       ? {
-        range: {
-          "@timestamp": { gte: from, lte: to },
-        },
-      }
+          range: {
+            "@timestamp": { gte: from, lte: to },
+          },
+        }
       : dias === "todos"
-        ? { match_all: {} }
-        : {
+      ? { match_all: {} }
+      : {
           range: {
             "@timestamp": { gte: `now-${dias}d`, lte: "now" },
           },
@@ -167,18 +186,25 @@ export async function buscarEventosSummary(
     size: 0,
     query: {
       bool: {
-        must: [
-          timeFilter,
-          { match_phrase: { customer: clientName } },
-        ],
+        must: [timeFilter],
+
         filter: [
           { match_phrase: { "rule.groups": "syscheck" } },
         ],
+
+        should: [
+          { match_phrase: { "manager.name": managerName } },
+          { match_phrase: { customer: clientName } },
+        ],
+
+        minimum_should_match: 1,
+
         must_not: [
           { term: { "agent.name": "wazuhhackone" } },
         ],
       },
     },
+
     aggs: {
       por_intervalo: {
         date_histogram: {
@@ -228,9 +254,10 @@ export async function buscarRuleDistribution(
     throw new Error("Tenant sem client_name definido");
   }
 
+  const managerName = `manager-${clientName}`;
+
   const { from, to, dias = "todos" } = opts ?? {};
 
-  // 🔥 PRIORIDADE TOTAL PARA FROM / TO
   const timeFilter =
     from && to
       ? {
@@ -258,14 +285,22 @@ export async function buscarRuleDistribution(
       bool: {
         must: [
           timeFilter,
-          { match_phrase: { customer: clientName } },
           { match_phrase: { "rule.groups": "syscheck" } },
         ],
+
+        should: [
+          { match_phrase: { "manager.name": managerName } },
+          { match_phrase: { customer: clientName } },
+        ],
+
+        minimum_should_match: 1,
+
         must_not: [
           { match_phrase: { "agent.name": "wazuhhackone" } },
         ],
       },
     },
+
     aggs: {
       rules: {
         terms: {
@@ -283,8 +318,12 @@ export async function buscarRuleDistribution(
     { headers: authHeader(tenant) }
   );
 
-  return (response.data?.aggregations?.rules?.buckets ?? []).map((b: any) => ({
-    rule: String(b.key ?? "Desconhecido"),
-    count: Number(b.doc_count ?? 0),
-  }));
+  return (response.data?.aggregations?.rules?.buckets ?? []).map((b: any) => {
+    const rule = String(b.key ?? "Desconhecido");
+  
+    return {
+      rule: rule.length > 80 ? rule.slice(0, 80) + "..." : rule,
+      count: Number(b.doc_count ?? 0),
+    };
+  });
 }
