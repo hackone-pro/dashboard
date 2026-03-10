@@ -7,15 +7,16 @@ import ThreatMap from '../pages/ThreatMap';
 import Incidentes from '../pages/Incidentes';
 import VulnerabilitiesDetection from '../pages/VulnerabilitiesDetection';
 import ArchivesIntegrity from '../pages/ArchivesIntegrity';
-import Reports from '../pages/Reports';
-import ServicesCatalog from '../pages/ServicesCatalog';
 import ReportDash from '../pages/ReportDash';
 import ReportView from '../pages/ReportView';
 import Config from '../pages/Config';
 import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
 import ServiceModel from '../pages/ServicesModel';
+import ServicesCatalog from '../pages/ServicesCatalog';
 import MonitoriaSoc from '../pages/MonitoriaSOC';
+import MonitoriaCSC from '../pages/MonitoriaCSC';
+import Integrations from '../pages/Integrations';
 import VerifyCode from '../pages/MFACode';
 import MultiTenantManager from '../pages/MultiTenantManager';
 import AdminRoute from './AdminRoute';
@@ -26,17 +27,15 @@ const enableIntegrations =
 
 export default function AppRoutes() {
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          {/* Redirect inicial */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+    <BrowserRouter>
+      <Routes>
 
-          {/* Auth */}
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/verify-code" element={<PublicRoute><VerifyCode /></PublicRoute>} />
-          <Route path="/forgot-password" element=<ForgotPassword /> />
-          <Route path="/reset-password" element=<ResetPassword /> />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/verify-code" element={<PublicRoute><VerifyCode /></PublicRoute>} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
@@ -63,8 +62,9 @@ export default function AppRoutes() {
         <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
         <Route path="/multitenant-manager" element={<PrivateRoute><AdminRoute><MultiTenantManager /></AdminRoute></PrivateRoute>} />
 
-        </Routes>
-      </BrowserRouter>
-    </>
+        <Route path="*" element={<Navigate to="/login" replace />} />
+
+      </Routes>
+    </BrowserRouter>
   );
 }
