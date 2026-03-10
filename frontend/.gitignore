@@ -1,0 +1,26 @@
+.env
+.env.production
+.env.*.local
+*.log
+frontend/Dockerfile.dev
+backend/Dockerfile.dev
+backend/Dockerfile.prod
+
+# Uploads do Strapi (se não quiser versionar)
+backend/public/uploads/
+
+# Docker
+docker-compose.override.yml
+
+# Editor config
+.idea/
+.vscode/
+
+# SOs
+*.bak
+*.tar.gz
+*.zip
+*.tgz
+
+# Test coverage
+coverage/
