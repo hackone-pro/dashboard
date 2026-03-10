@@ -19,6 +19,8 @@ interface LayoutModelProps {
   titulo?: string;
 }
 
+const whatsappSupport = import.meta.env.VITE_WHATSAPP_SUPPORT || "#";
+
 export default function LayoutModel({ children, titulo }: LayoutModelProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -182,7 +184,7 @@ export default function LayoutModel({ children, titulo }: LayoutModelProps) {
 
             {/* WhatsApp */}
             <a
-              href="https://hackone.com.br/h1ca"
+              href={whatsappSupport}
               target="_blank"
               rel="noopener noreferrer"
               className="flex header items-center gap-2 text-gray-400 border hover:text-white border-[#1D1929] px-4 py-2 rounded-md text-sm transition"
