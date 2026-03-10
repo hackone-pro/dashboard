@@ -523,25 +523,6 @@ export default function Sidebar() {
                     )}
                 </li>
 
-                {/* =========================
-                    MONITORIA CSC (ZABBIX)
-                ========================= */}
-                {!loading && ativo && (
-                    <li>
-                        <Link
-                            to="/monitoria-csc"
-                            className={clsx(
-                                "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
-                                isOpen ? "justify-start" : "justify-center"
-                            )}
-                        >
-                            {/* @ts-ignore */}
-                            <TbHeartRateMonitor className="text-[18px]" />
-                            {isOpen && <span>Monitoria</span>}
-                        </Link>
-                    </li>
-                )}
-
                 <li className={clsx(
                     "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
                     isOpen ? "justify-start" : "justify-center"
