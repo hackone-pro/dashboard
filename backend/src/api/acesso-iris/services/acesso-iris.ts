@@ -164,3 +164,30 @@ export async function buscarIncidentesIris(
     return { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };
   }
 }
+
+export async function atualizarCasoIris(tenant, caseId, dados) {
+  try {
+    const url = `${tenant.iris_url}/manage/cases/update/${caseId}`;
+
+    const response = await axios.post(
+      url,
+      dados,
+      {
+        headers: {
+          Authorization: `Bearer ${tenant.iris_apikey}`,
+          "Content-Type": "application/json",
+        },
+        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      }
+    );
+
+    return response.data;
+
+  } catch (err) {
+    strapi.log.error(
+      "❌ Erro ao atualizar caso no IRIS:",
+      err?.response?.data || err
+    );
+    throw err;
+  }
+}

@@ -69,7 +69,7 @@ export async function buscarTopPaisesAtaque(
                 { term: { customer: clientName } },
                 { term: { "fields.customer": clientName } },
                 { term: { "agent.labels.customer": clientName } },
-                { term: { "manager.name": `manager-${clientName}` } }
+                { term: { "agent.name": `manager-${clientName}` } }
               ],
               minimum_should_match: 1,
             },

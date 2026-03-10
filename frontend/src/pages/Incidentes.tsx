@@ -1,6 +1,9 @@
 // src/pages/Incidentes.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import Swal from "sweetalert2";
+import { toastSuccess, toastError } from "../utils/toast";
+
 import LayoutModel from "../componentes/LayoutModel";
 import DescricaoFormatada from "../componentes/iris/DescricaoFormatada";
 import GraficoDonutIncidentes from "../componentes/graficos/GraficoDonutIncidentes";
@@ -11,7 +14,7 @@ import { getTodosCasos } from "../services/iris/cases.service";
 import { getToken } from "../utils/auth";
 
 import { GoGraph } from "react-icons/go";
-import { FaLockOpen, FaRegCheckCircle, FaSort, FaSearch } from "react-icons/fa";
+import { FaLockOpen, FaRegCheckCircle, FaSort, FaSearch, FaRegEdit } from "react-icons/fa";
 import { HiLockClosed } from "react-icons/hi";
 import { VscError } from "react-icons/vsc";
 import { FiRotateCcw } from "react-icons/fi";
@@ -254,6 +257,9 @@ export default function Incidentes() {
   const [animReady, setAnimReady] = useState(false);
   const [busca, setBusca] = useState("");
   const [periodo, setPeriodo] = useState<{ from: string; to: string } | null>(null);
+
+  const [modalAnaliseOpen, setModalAnaliseOpen] = useState(false);
+  const [incidenteSelecionado, setIncidenteSelecionado] = useState<number | null>(null);
 
 
   // useEffect(() => {
@@ -719,8 +725,101 @@ export default function Incidentes() {
                           </span>
                         </div>
                         <div className="col-span-2 flex justify-center">
-                          <button onClick={() => setExpandido(c => (c === id ? null : id))} className="px-3 py-1.5 btn hover:bg-purple-600 text-[12px] text-white rounded-md">
+                          <button onClick={() => setExpandido(c => (c === id ? null : id))} className="mx-2 px-3 py-1.5 btn hover:bg-purple-600 text-[12px] text-white rounded-md">
                             {aberto ? "Recolher —" : "Ver detalhes  +"}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              const { value: formValues } = await Swal.fire({
+                                title: `Analise do Incidente #${id}`,
+                                html: `
+                                <div class="mt-5" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left">
+
+                                  <div>
+                                    <label class="text-sm text-gray-300">Status</label>
+                                    <select id="swal-status"
+                                      class="w-full mt-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3">
+                                      <option value="open">Aberto</option>
+                                      <option value="closed">Fechado</option>
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label class="text-sm text-gray-300">Analista</label>
+                                    <select id="swal-verdict"
+                                      class="w-full mt-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3">
+                                      <option value="positivo">Usuario 1</option>
+                                      <option value="falso_positivo">Usuário 2</option>
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label class="text-sm text-gray-300">Severidade</label>
+                                    <select id="swal-severity"
+                                      class="w-full mt-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3">
+                                      <option value="low">Baixo</option>
+                                      <option value="medium">Médio</option>
+                                      <option value="high">Alto</option>
+                                      <option value="critical">Crítico</option>
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label class="text-sm text-gray-300">Classificação</label>
+                                    <select id="swal-classificacao"
+                                      class="w-full mt-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3">
+                                      <option value="">Nenhum</option>
+                                      <option value="positivo">Positivo</option>
+                                      <option value="falso_positivo">Falso Positivo</option>
+                                    </select>
+                                  </div>
+
+                                </div>
+
+                                <div style="margin-top:16px; text-align:left;">
+                                  <label class="text-sm text-gray-300">Notas da Análise</label>
+                                  <textarea
+                                    id="swal-notas"
+                                    rows="4"
+                                    class="w-full mt-2 rounded-xl bg-[#383838] border border-[#2c2450] text-gray-100 px-4 py-3"
+                                  ></textarea>
+                                </div>
+
+                                `,
+                                background: "#0A0617",
+                                iconColor: "#A855F7",
+                                color: "#fff",
+                                confirmButtonText: "Salvar",
+                                showCancelButton: true,
+                                reverseButtons: true,
+                                cancelButtonText: "Cancelar",
+                                confirmButtonColor: "#A855F7",
+                                cancelButtonColor: "#4B5563",
+                                customClass: {
+                                  popup: "rounded-2xl shadow-lg border border-[#3c2d6e]",
+                                },
+                                focusConfirm: false,
+
+                                preConfirm: () => {
+                                  return {
+                                    status: (document.getElementById("swal-status") as HTMLSelectElement)?.value,
+                                    verdict: (document.getElementById("swal-verdict") as HTMLSelectElement)?.value,
+                                    severidade: (document.getElementById("swal-severity") as HTMLSelectElement)?.value,
+                                    classificacao: (document.getElementById("swal-classificacao") as HTMLSelectElement)?.value,
+                                    notas: (document.getElementById("swal-notas") as HTMLTextAreaElement)?.value,
+                                  };
+                                },
+                              });
+
+                              if (formValues) {
+                                console.log("Análise:", formValues);
+                                toastSuccess("Análise registrada!");
+                              }
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-[#744CD8] hover:bg-[#5f3ac6] text-[12px] text-white rounded-md transition"
+                          >
+                            {/* @ts-ignore */}
+                            <FaRegEdit size={12} /> Editar
                           </button>
                         </div>
                       </div>
