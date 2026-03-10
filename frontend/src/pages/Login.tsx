@@ -197,7 +197,7 @@ export default function Login() {
             <div className="text-xs text-gray-400 text-center">
               Não tem uma conta?{" "}
               <a
-                href="https://hackone.com.br/h1ca"
+                href={whatsappSupport}
                 target="_blank"
                 className="text-violet-300 hover:text-violet-200"
               >
