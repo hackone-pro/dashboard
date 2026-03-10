@@ -18,6 +18,11 @@ export default function Sidebar() {
     const [isNgsocOpen, setIsNgsocOpen] = useState(false);
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
+    const { ativo, loading } = useZabbixAtivo();
+
+    const enableIntegrations =
+        import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
+
     return (
         <div className={clsx(
             "bg-[#161125] text-white min-h-screen p-3 transition-all duration-300 flex flex-col sidebar z-999",
@@ -250,6 +255,41 @@ export default function Sidebar() {
                         </div>
                     )}
                 </li>
+
+                {/* =========================
+                    MONITORIA CSC (ZABBIX)
+                ========================= */}
+                {!loading && ativo && (
+                    <li>
+                        <Link
+                            to="/monitoria-csc"
+                            className={clsx(
+                                "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                                isOpen ? "justify-start" : "justify-center"
+                            )}
+                        >
+                            {/* @ts-ignore */}
+                            <TbHeartRateMonitor className="text-[18px]" />
+                            {isOpen && <span>Monitoria</span>}
+                        </Link>
+                    </li>
+                )}
+
+                {enableIntegrations && (
+                    <li className={clsx(
+                        "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                        isOpen ? "justify-start" : "justify-center"
+                    )}>
+                        <Link to="/integrations" className={clsx(
+                            "flex items-center gap-3 hover:text-purple-400 cursor-pointer transition-all duration-300",
+                            isOpen ? "justify-start" : "justify-center"
+                        )}>
+                            {/* @ts-ignore */}
+                            <RxTokens />
+                            {isOpen && <span>Integrações</span>}
+                        </Link>
+                    </li>
+                )}
 
                 <li
                     className="w-full relative group catalog-item"

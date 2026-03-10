@@ -21,6 +21,9 @@ import MultiTenantManager from '../pages/MultiTenantManager';
 import AdminRoute from './AdminRoute';
 import PublicRoute from "./PublicRoute";
 
+const enableIntegrations =
+  import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
+
 export default function AppRoutes() {
   return (
     <>
@@ -35,20 +38,30 @@ export default function AppRoutes() {
           <Route path="/forgot-password" element=<ForgotPassword /> />
           <Route path="/reset-password" element=<ResetPassword /> />
 
-          {/* Protegidas */}
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
-          <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
-          <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
-          <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
-          <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
-          <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
-          <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
-          <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>} />
-          <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
-          <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
-          <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
-          <Route path="/multitenant-manager" element={<PrivateRoute><AdminRoute><MultiTenantManager /></AdminRoute></PrivateRoute>} />
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
+        <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
+        <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
+        <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
+        <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
+        <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
+        <Route path="/monitoria-csc" element={<PrivateRoute><MonitoriaCSC /></PrivateRoute>} />
+        {enableIntegrations && (
+          <Route
+            path="/integrations"
+            element={
+              <PrivateRoute>
+                <Integrations />
+              </PrivateRoute>
+            }
+          />
+        )}
+        <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
+        <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>} />
+        <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
+        <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
+        <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
+        <Route path="/multitenant-manager" element={<PrivateRoute><AdminRoute><MultiTenantManager /></AdminRoute></PrivateRoute>} />
 
         </Routes>
       </BrowserRouter>
