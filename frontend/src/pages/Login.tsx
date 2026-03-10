@@ -4,6 +4,8 @@ import { toastSuccess, toastError } from "../utils/toast";
 import { loginAttempt } from "../services/auth/loginAttemps.service";
 import { useAuth } from "../context/AuthContext";
 
+const whatsappSupport = import.meta.env.VITE_WHATSAPP_SUPPORT || "#";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
