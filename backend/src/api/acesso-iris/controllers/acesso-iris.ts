@@ -1,4 +1,5 @@
 import { buscarCasos } from "../services/acesso-iris";
+import { atualizarCasoIris } from "../services/acesso-iris";
 import {
   parse,
   isAfter,
@@ -108,7 +109,7 @@ export default {
         ? casosResponse.data
         : [];
 
-      // 🔽 trata query param ?range=7d etc
+      // trata query param ?range=7d etc
       const range = ctx.query.range || "1d"; // default 24h
 
       let dias = 1;
@@ -139,4 +140,66 @@ export default {
       return ctx.internalServerError("Erro ao buscar casos recentes");
     }
   },
+
+
+  // ======================================================
+  // UPDATE Cases
+  // ======================================================
+  async updateCase(ctx) {
+    try {
+  
+      const user = ctx.state.user;
+  
+      const { caseId, status, severity, outcome } = ctx.request.body;
+  
+      const fullUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: { id: user.id },
+          populate: { tenant: true },
+        });
+  
+      if (!fullUser?.tenant)
+        return ctx.notFound("Tenant não encontrado");
+  
+      const mapStatus = {
+        open: 3,
+        closed: 9
+      };
+  
+      const payload: any = {};
+  
+      // estado do incidente (open / closed)
+      if (status) {
+        payload.state_id = mapStatus[status] || 3;
+      }
+  
+      // severidade
+      if (severity) {
+        payload.severity_id = Number(severity);
+      }
+  
+      // outcome (false positive / legitimate)
+      if (outcome) {
+        payload.status_id = Number(outcome);
+      }
+  
+      const result = await atualizarCasoIris(
+        fullUser.tenant,
+        caseId,
+        payload
+      );
+  
+      return ctx.send(result);
+  
+    } catch (err) {
+  
+      strapi.log.error(
+        "Erro update IRIS:",
+        err?.response?.data || err
+      );
+  
+      return ctx.internalServerError("Erro ao atualizar caso");
+    }
+  }
 };

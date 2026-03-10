@@ -5,7 +5,7 @@ export default {
       path: "/acesso/iris/manage/cases/list",
       handler: "acesso-iris.listCases",
       config: {
-        policies: [], // 👈 correto no v5
+        policies: [],
       },
     },
     {
@@ -13,7 +13,15 @@ export default {
       path: "/acesso/iris/manage/cases/recent",
       handler: "acesso-iris.listarRecentes",
       config: {
-        policies: [], // 👈 correto no v5
+        policies: [],
+      },
+    },
+    {
+      method: "POST",
+      path: "/acesso/iris/manage/cases/update",
+      handler: "acesso-iris.updateCase",
+      config: {
+        policies: [],
       },
     },
   ],
