@@ -10,6 +10,8 @@ const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 const ENABLE_TURNSTILE =
   import.meta.env.VITE_ENABLE_TURNSTILE === "true";
 
+const whatsappSupport = import.meta.env.VITE_WHATSAPP_SUPPORT || "#";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
