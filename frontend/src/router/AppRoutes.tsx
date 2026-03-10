@@ -19,6 +19,9 @@ import MonitoriaSoc from '../pages/MonitoriaSOC';
 import MonitoriaCSC from '../pages/MonitoriaCSC';
 import Integrations from '../pages/Integrations';
 
+const enableIntegrations =
+  import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
+
 export default function AppRoutes() {
   return (
     <>
@@ -34,10 +37,19 @@ export default function AppRoutes() {
           <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
           <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
           <Route path="/monitoria-csc" element={<PrivateRoute><MonitoriaCSC /></PrivateRoute>} />
-          <Route path="/integrations" element={<PrivateRoute><Integrations /></PrivateRoute>} />
+          {enableIntegrations && (
+            <Route
+              path="/integrations"
+              element={
+                <PrivateRoute>
+                  <Integrations />
+                </PrivateRoute>
+              }
+            />
+          )}
           <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
-          <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>}/>
-y          <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
+          <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>} />
+          <Route path="/relatorios/report-view" element={<PrivateRoute><ReportView /></PrivateRoute>} />
           <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
           <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
           <Route path="/forgot-password" element=<ForgotPassword /> />
