@@ -1,5 +1,4 @@
-import { buscarCasos } from "../services/acesso-iris";
-import { atualizarCasoIris } from "../services/acesso-iris";
+import { buscarCasos, atualizarCasoIris, buscarUsuariosIris } from "../services/acesso-iris";
 import {
   parse,
   isAfter,
@@ -46,8 +45,8 @@ export default {
       const casos = Array.isArray(dataResponse)
         ? dataResponse
         : Array.isArray(dataResponse?.data)
-        ? dataResponse.data
-        : [];
+          ? dataResponse.data
+          : [];
 
       // 🔥 filtro real por data (IRIS usa MM/DD/YYYY)
       const filtrados = casos.filter((caso) => {
@@ -106,8 +105,8 @@ export default {
       const casos = Array.isArray(casosResponse)
         ? casosResponse
         : Array.isArray(casosResponse?.data)
-        ? casosResponse.data
-        : [];
+          ? casosResponse.data
+          : [];
 
       // trata query param ?range=7d etc
       const range = ctx.query.range || "1d"; // default 24h
@@ -147,58 +146,79 @@ export default {
   // ======================================================
   async updateCase(ctx) {
     try {
-  
+
       const user = ctx.state.user;
-  
-      const { caseId, status, severity, outcome } = ctx.request.body;
-  
+      const { caseId, status, severity, outcome, owner, notas, descricaoAtual } = ctx.request.body;
       const fullUser = await strapi.db
         .query("plugin::users-permissions.user")
         .findOne({
           where: { id: user.id },
           populate: { tenant: true },
         });
-  
+
       if (!fullUser?.tenant)
         return ctx.notFound("Tenant não encontrado");
-  
+
       const mapStatus = {
         open: 3,
         closed: 9
       };
-  
+
+      const mapOutcome = {
+        positivo: 5,
+        falso_positivo: 1,  // confirme o id correto no seu IRIS
+      };
+
       const payload: any = {};
-  
+
       // estado do incidente (open / closed)
       if (status) {
         payload.state_id = mapStatus[status] || 3;
       }
-  
+      
       // severidade
       if (severity) {
         payload.severity_id = Number(severity);
       }
-  
+
       // outcome (false positive / legitimate)
       if (outcome) {
-        payload.status_id = Number(outcome);
+        payload.status_id = mapOutcome[outcome] ?? Number(outcome);
       }
-  
+
+      if (descricaoAtual !== undefined) {
+        payload.case_description = descricaoAtual + (notas || "");
+      }
+
+      //owner
+      if (owner) {
+        const usuariosIris = await buscarUsuariosIris(fullUser.tenant);
+        const usuarioIris = usuariosIris.find(
+          (u) => u.user_name === owner
+        );
+
+        if (usuarioIris) {
+          payload.owner_id = usuarioIris.user_id;
+        } else {
+          strapi.log.warn(`Usuário IRIS não encontrado: ${owner}`);
+        }
+      }
+
       const result = await atualizarCasoIris(
         fullUser.tenant,
         caseId,
         payload
       );
-  
+
       return ctx.send(result);
-  
+
     } catch (err) {
-  
+
       strapi.log.error(
         "Erro update IRIS:",
         err?.response?.data || err
       );
-  
+
       return ctx.internalServerError("Erro ao atualizar caso");
     }
   }

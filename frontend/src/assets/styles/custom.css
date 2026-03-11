@@ -74,6 +74,7 @@ input:focus-visible {
 .badge {
   width: 55px;
   text-align: center;
+  display: inline-block;
 }
 
 .badge-pink {

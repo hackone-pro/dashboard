@@ -165,6 +165,30 @@ export async function buscarIncidentesIris(
   }
 }
 
+export async function buscarUsuariosIris(tenant) {
+  try {
+    const irisUrl = `${tenant.iris_url}/manage/users/list`;
+    const response = await axios.get(
+      irisUrl,
+      {
+        headers: {
+          Authorization: `Bearer ${tenant.iris_apikey}`,
+        },
+        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      }
+    );
+    const usuarios = response.data?.data || [];
+    return usuarios;
+  } catch (err) {
+
+    strapi.log.error(
+      "❌ Erro ao buscar usuários do IRIS:",
+      err?.response?.data || err
+    );
+    throw err;
+  }
+}
+
 export async function atualizarCasoIris(tenant, caseId, dados) {
   try {
     const url = `${tenant.iris_url}/manage/cases/update/${caseId}`;
