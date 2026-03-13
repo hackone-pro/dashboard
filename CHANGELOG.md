@@ -3,10 +3,20 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.8.4.3]
+- Ajustes e correções de pequenos bugs da padronização
+
+## [v1.8.4.2]
+- Padronização de requests para o novo ambiente
+
+## [v1.8.4.1]
+- Estrutura Mock Monitoria CSC (Zabbix)
+
 ## [v1.8.4.0]
 - Inclusão filtro Agentes - Detecção de Vulnerabildiades
 - Ajuste Cluster - Detecção de Vulnerabilidade
 - Novo filtro no titulo - Incidentes
+- Ajuste do Nivel de Risco - Relatórios
 
 ## [v1.8.3.7]
 - Alterações Selects cards risklevel
