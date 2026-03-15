@@ -101,6 +101,7 @@ export default function AgentSelectFilter({
           cursor-pointer
         "
       >
+        {/* @ts-ignore */}
         <FaFilter className="w-4 h-4 text-purple-400" />
 
         <span className={selected ? "text-white" : "text-gray-400"}>
@@ -156,7 +157,7 @@ export default function AgentSelectFilter({
                 <span
                   className={`
                     w-6 h-6 flex items-center justify-center
-                    border border-[#271E3F]
+                    border border-[#271E3F] rounded-full
                     ${!selected ? "border-[#554b74]" : ""}
                   `}
                 >
@@ -214,7 +215,7 @@ export default function AgentSelectFilter({
                     <span
                       className={`
                         w-6 h-6 flex items-center justify-center
-                        border border-[#271E3F]
+                        border border-[#271E3F] rounded-full
                         ${ativo ? "border-[#554b74]" : ""}
                       `}
                     >
