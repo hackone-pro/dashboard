@@ -3,6 +3,9 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 
 ---
 
+## [v1.8.4.4]
+- Inclusão modal com Editar Incidentes
+
 ## [v1.8.4.3]
 - Ajustes e correções de pequenos bugs da padronização
 
