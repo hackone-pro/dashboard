@@ -59,9 +59,19 @@ export default factories.createCoreController(
       try {
         const tenant = await getTenantAtivo(ctx);
         if (!tenant) return ctx.notFound("Tenant não encontrado ou inativo");
-
+    
         const knex = strapi.db.connection;
-
+    
+        const page = Number(ctx.query.page || 1);
+        const pageSize = 5;
+        const offset = (page - 1) * pageSize;
+    
+        // Total de registros para calcular páginas
+        const [{ total }] = await knex("report_entries")
+          .where({ tenant: tenant.cliente_name })
+          .whereNull("published_at")
+          .count("id as total");
+    
         const relatorios = await knex("report_entries")
           .select(
             "id",
@@ -75,10 +85,19 @@ export default factories.createCoreController(
           .where({ tenant: tenant.cliente_name })
           .whereNull("published_at")
           .orderBy("created_at", "desc")
-          .limit(50);
-
-        return ctx.send({ data: relatorios });
-
+          .limit(pageSize)
+          .offset(offset);
+    
+        return ctx.send({
+          data: relatorios,
+          meta: {
+            page,
+            pageSize,
+            total: Number(total),
+            pageCount: Math.ceil(Number(total) / pageSize),
+          },
+        });
+    
       } catch (error) {
         console.error("Erro ao buscar relatórios:", error);
         return ctx.internalServerError("Erro ao consultar relatórios");

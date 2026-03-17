@@ -41,11 +41,11 @@ export async function gerarRelatorio(
   return json.data;
 }
 
-export async function listarRelatorios() {
+export async function listarRelatorios(page = 1) {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
-  const response = await fetch(`${baseUrl}/api/report-entries`, {
+  const response = await fetch(`${baseUrl}/api/report-entries?page=${page}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -56,7 +56,10 @@ export async function listarRelatorios() {
   }
 
   const data = await response.json();
-  return data.data || [];
+  return {
+    data: data.data || [],
+    meta: data.meta || {},
+  };
 }
 
 export async function buscarRelatorioPorNome(nome: string) {
