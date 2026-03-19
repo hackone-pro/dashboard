@@ -54,7 +54,13 @@ export async function buscarListaFirewalls(tenant) {
             top_hits: {
               size: 1,
               sort: [{ "@timestamp": { order: "desc" } }],
-              _source: { includes: ["@timestamp", "location"] },
+              _source: {
+                includes: [
+                  "@timestamp",
+                  "timestamp",
+                  "location",
+                ],
+              },
             },
           },
           logs_recentes: {
@@ -93,9 +99,18 @@ export async function buscarListaFirewalls(tenant) {
 
   return buckets.map((b: any) => {
     const hit = b.ultimo_log?.hits?.hits?.[0]?._source || {};
-    const timestamp = hit["@timestamp"] ?? null;
+  
+    // Prioriza timestamp do firewall, fallback para @timestamp do Elasticsearch
+    let timestamp: string | null = null;
+  
+    if (hit.timestamp && !isNaN(Number(hit.timestamp))) {
+      timestamp = new Date(Number(hit.timestamp) * 1000).toISOString();
+    } else if (hit["@timestamp"]) {
+      timestamp = hit["@timestamp"];
+    }
+  
     const logsRecentes = b.logs_recentes?.doc_count ?? 0;
-
+  
     return {
       id: b.key,
       nome: b.key,
