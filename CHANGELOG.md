@@ -4,6 +4,8 @@ Todas as mudanças de versões do projeto serão documentadas aqui.
 ---
 
 ## [v1.8.4.4]
+- Página Mockada: SOC Analytics
+- Algoritmo RiskLevel
 - Inclusão modal com Editar Incidentes
 - Refatoração Página Incidentes (Frontend)
 
