@@ -16,7 +16,6 @@ export async function gerarRelatorio(
   period: string,
   sections: string[]
 ): Promise<ReportEntry> {
-
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
@@ -39,14 +38,14 @@ export async function gerarRelatorio(
   }
 
   const json = await response.json();
-  return json.data; // ← Strapi retorna { data: { ...objetoDoRelatorio } }
+  return json.data;
 }
 
-export async function listarRelatorios() {
+export async function listarRelatorios(page = 1) {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
-  const response = await fetch(`${baseUrl}/api/report-entries?sort=createdAt:desc`, {
+  const response = await fetch(`${baseUrl}/api/report-entries?page=${page}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -57,18 +56,18 @@ export async function listarRelatorios() {
   }
 
   const data = await response.json();
-
-  return data.data || [];
+  return {
+    data: data.data || [],
+    meta: data.meta || {},
+  };
 }
-
 
 export async function buscarRelatorioPorNome(nome: string) {
   const token = getToken();
   const baseUrl = import.meta.env.VITE_API_URL;
 
-  const url = `${baseUrl}/api/report-entries?filters[nome][$eq]=${nome}&populate=*`;
-
-  // console.log("🌐 URL chamada:", url);
+  // ← rota search que retorna snapshot completo com JSON já parseado
+  const url = `${baseUrl}/api/report-entries/search?nome=${encodeURIComponent(nome)}`;
 
   const response = await fetch(url, {
     headers: {
@@ -76,22 +75,18 @@ export async function buscarRelatorioPorNome(nome: string) {
     },
   });
 
+  if (!response.ok) {
+    throw new Error("Erro ao buscar relatório");
+  }
+
   const json = await response.json();
 
-  // console.log("🔍 JSON bruto vindo da API:");
-  // console.log(JSON.stringify(json, null, 2));
-
-  if (!json?.data?.length) {
+  if (!json?.data) {
     console.warn("⚠️ Nenhum relatório encontrado.");
     return null;
   }
 
-  const item = json.data[0];
-
-  // console.log("📦 Item retornado:", item);
-
-  // SEU STRAPI NÃO USA ATTRIBUTES → retorna direto
-  return item;
+  return json.data;
 }
 
 export async function deletarRelatorio(id: number) {

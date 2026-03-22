@@ -1,94 +1,55 @@
 import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
-import { getTopFirewalls } from "../../../services/wazuh/topfirewall.service";
-import { getFirewallsList } from "../../../services/wazuh/firewalls.service";
+import { getFirewallsList, FirewallInventarioItem} from "../../../services/wazuh/firewalls.service";
 import { useTenant } from "../../../context/TenantContext";
-
 import TooltipRight from "../../TooltipRight";
 
 export type FirewallCardRef = {
   carregar: () => void;
 };
 
-type FirewallMonitorItem = {
-  nome: string;
-  ip: string;
-  timestamp: string | null;
-  status: string;
-};
-
-function getStatusByTimestamp(timestamp: string | null) {
-  if (!timestamp) return "🔴";
-
-  const logDate = new Date(timestamp).getTime();
-  const now = Date.now();
-  const diffMinutes = (now - logDate) / 1000 / 60;
-
-  if (diffMinutes <= 59) return "🟢";
-  if (diffMinutes <= 119) return "🟡";
-  return "🔴";
+// Status vindo do backend — sem cálculo no frontend
+function getStatusIcon(ativo: boolean) {
+  return ativo
+    ? "/assets/img/indicador-on.png"
+    : "/assets/img/indicador-off.png";
 }
 
-function getStatusIcon(status: string) {
-  if (status === "🟢") return "/assets/img/indicador-on.png";
-  if (status === "🟡") return "/assets/img/indicador-warning.png";
-  return "/assets/img/indicador-off.png";
-}
-
-const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
+const FirewallCard = forwardRef<FirewallCardRef>((_, ref) => {
   const { tenantAtivo } = useTenant();
 
   const [loading, setLoading] = useState(true);
-  const [firewalls, setFirewalls] = useState<FirewallMonitorItem[]>([]);
+  const [firewalls, setFirewalls] = useState<FirewallInventarioItem[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
 
   const porPagina = 5;
-
-  const firewallsContratados =
-    tenantAtivo?.contract?.firewalls ?? 0;
-
+  const firewallsContratados = tenantAtivo?.contract?.firewalls ?? 0;
   const totalPaginas = Math.ceil(firewalls.length / porPagina);
+
   const firewallsPaginados = firewalls.slice(
     (paginaAtual - 1) * porPagina,
     paginaAtual * porPagina
   );
 
+  const ativos = firewalls.filter((fw) => fw.ativo).length;
+  const inativos = firewalls.filter((fw) => !fw.ativo).length;
+
   async function carregar() {
     try {
       setLoading(true);
 
-      const inventario = await getFirewallsList();
-      const logs10 = await getTopFirewalls("10min");
-      const logsLast = await getTopFirewalls("todos");
+      // ✅ Uma única chamada — backend já resolve tudo
+      const dados = await getFirewallsList();
 
-      const tabela = inventario
-        .map((fw) => {
-          const log10 = logs10.find((l) => l.gerador === fw.id);
-          const logLast = logsLast.find((l) => l.gerador === fw.id);
+      // Ativos primeiro, depois inativos; dentro de cada grupo ordena por timestamp desc
+      const ordenados = dados.sort((a, b) => {
+        if (a.ativo !== b.ativo) return a.ativo ? -1 : 1;
+        if (!a.timestamp && !b.timestamp) return 0;
+        if (!a.timestamp) return 1;
+        if (!b.timestamp) return -1;
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
 
-          const timestamp =
-            log10?.timestamp ??
-            logLast?.timestamp ??
-            fw.timestamp ??
-            null;
-
-          return {
-            nome: fw.nome,
-            ip: fw.location ?? "-",
-            timestamp,
-            status: getStatusByTimestamp(timestamp),
-          };
-        })
-        .sort((a, b) => {
-          if (!a.timestamp && !b.timestamp) return 0;
-          if (!a.timestamp) return 1;
-          if (!b.timestamp) return -1;
-          return (
-            new Date(b.timestamp).getTime() -
-            new Date(a.timestamp).getTime()
-          );
-        });
-
-      setFirewalls(tabela);
+      setFirewalls(ordenados);
       setPaginaAtual(1);
     } catch (err) {
       console.error("Erro FirewallCard:", err);
@@ -97,9 +58,7 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
     }
   }
 
-  useImperativeHandle(ref, () => ({
-    carregar,
-  }));
+  useImperativeHandle(ref, () => ({ carregar }));
 
   useEffect(() => {
     if (tenantAtivo) carregar();
@@ -107,41 +66,45 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
 
   return (
     <div className="cards rounded-2xl p-6">
+      {/* Cabeçalho */}
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-white text-sm font-medium">
-          Firewall
-        </h3>
+        <h3 className="text-white text-sm font-medium">Firewall</h3>
 
         <div className="flex items-center gap-4">
           {!loading && (
-            <span className="text-xs text-gray-400">
-              <strong className="text-white">
-                {firewalls.length}
-              </strong>{" "}
-              /{" "}
-              <strong className="text-white">
-                {firewallsContratados}
-              </strong>{" "}
-              contratados
-            </span>
+            <>
+              {/* Contadores ativos/inativos */}
+              {/* <span className="text-xs text-gray-400">
+                <span className="text-green-400 font-bold">{ativos}</span> ativos
+                {" · "}
+                <span className="text-red-400 font-bold">{inativos}</span> inativos
+              </span> */}
+
+              {/* Total contratado */}
+              <span className="text-xs text-gray-400">
+                <strong className="text-white">{firewalls.length}</strong>
+                {" / "}
+                <strong className="text-white">{firewallsContratados}</strong>
+                {" "}contratados
+              </span>
+            </>
           )}
 
           <button
             onClick={carregar}
-            className="text-sm border border-[#1D1929] bg-[#0A0617] hover:bg-gray-700 text-gray-400 px-3 py-1 rounded-md transition"
+            disabled={loading}
+            className="text-sm border border-[#1D1929] bg-[#0A0617] hover:bg-gray-700 text-gray-400 px-3 py-1 rounded-md transition disabled:opacity-50"
           >
-            Atualizar
+            {loading ? "Atualizando..." : "Atualizar"}
           </button>
         </div>
       </div>
 
+      {/* Loading skeleton */}
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-full h-6 bg-white/5 animate-pulse rounded"
-            />
+            <div key={i} className="w-full h-6 bg-white/5 animate-pulse rounded" />
           ))}
         </div>
       ) : (
@@ -159,10 +122,7 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
             <tbody>
               {firewallsPaginados.length === 0 ? (
                 <tr className="border-b border-white/5">
-                  <td
-                    colSpan={4}
-                    className="text-center py-6 text-gray-500 italic"
-                  >
+                  <td colSpan={4} className="text-center py-6 text-gray-500 italic">
                     Nenhum dado de firewall encontrado
                   </td>
                 </tr>
@@ -172,31 +132,34 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
                     key={index}
                     className="border-b border-white/5 hover:bg-[#ffffff05] transition-colors"
                   >
+                    {/* Nome */}
                     <td className="px-3 py-3">{fw.nome}</td>
-                    <td>{fw.ip}</td>
 
+                    {/* IP */}
+                    <td>{fw.location ?? "-"}</td>
+
+                    {/* Indicador — vem do backend */}
                     <td className="text-center">
                       <TooltipRight
-                        status={fw.status}
+                        status={fw.ativo ? "🟢" : "🔴"}
                         text={
-                          fw.status === "🟢"
-                            ? "Recebendo logs\n(menos de 1h)"
-                            : fw.status === "🟡"
-                            ? "Sem receber logs\n(mais de 1h)"
-                            : "Sem receber logs\n(mais de 2h)"
+                          fw.ativo
+                            ? `Recebendo logs\n(${fw.logsRecentes} nas últimas 24h)`
+                            : "Sem receber logs\n(mais de 24h)"
                         }
                       >
                         <img
-                          src={getStatusIcon(fw.status)}
+                          src={getStatusIcon(fw.ativo)}
                           alt="status"
                           className="w-6 h-3 mx-auto"
                         />
                       </TooltipRight>
                     </td>
 
+                    {/* Último log — ativos mostram data, inativos mostram tempo relativo */}
                     <td className="text-center">
                       {fw.timestamp
-                        ? new Date(fw.timestamp).toLocaleString()
+                        ? new Date(fw.timestamp).toLocaleString("pt-BR")
                         : "-"}
                     </td>
                   </tr>
@@ -205,38 +168,27 @@ const FirewallCard = forwardRef<FirewallCardRef>((props, ref) => {
             </tbody>
           </table>
 
+          {/* Paginação */}
           <div className="flex justify-between items-center mt-4">
             <button
               disabled={paginaAtual === 1}
-              onClick={() =>
-                setPaginaAtual((p) => Math.max(1, p - 1))
-              }
-              className={`px-3 py-1 rounded-md text-xs border text-gray-400 
-                ${
-                  paginaAtual === 1
-                    ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-white/5"
+              onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+              className={`px-3 py-1 rounded-md text-xs border text-gray-400 ${paginaAtual === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5"
                 }`}
             >
               ← Anterior
             </button>
 
             <span className="text-gray-400 text-xs">
-              Página {paginaAtual} de {totalPaginas}
+              Página {paginaAtual} de {Math.max(totalPaginas, 1)}
             </span>
 
             <button
-              disabled={paginaAtual === totalPaginas}
-              onClick={() =>
-                setPaginaAtual((p) =>
-                  Math.min(totalPaginas, p + 1)
-                )
-              }
-              className={`px-3 py-1 rounded-md text-xs border text-gray-400 
-                ${
-                  paginaAtual === totalPaginas
-                    ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-white/5"
+              disabled={paginaAtual === totalPaginas || totalPaginas === 0}
+              onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+              className={`px-3 py-1 rounded-md text-xs border text-gray-400 ${paginaAtual === totalPaginas || totalPaginas === 0
+                  ? "opacity-30 cursor-not-allowed"
+                  : "hover:bg-white/5"
                 }`}
             >
               Próxima →

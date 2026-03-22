@@ -6,7 +6,7 @@ import TopAgentsCard from "../componentes/wazuh/RiskLevel/TopAgentsCard";
 import TopAgentsCisCard from "../componentes/wazuh/RiskLevel/TopAgentsCisCard";
 import FirewallDonutCard from "../componentes/wazuh/RiskLevel/FirewallDonutCard";
 import FluxoIncidentes from "../componentes/iris/FluxoIncidentes";
-import DateRangePicker from "../componentes/DataRangePicker";
+import DateRangePicker, { DateRangePayload } from "../componentes/DataRangePicker";
 
 import { getToken } from "../utils/auth";
 import {
@@ -24,24 +24,17 @@ export default function RiskLevel() {
 
   /* ============================
      FILTROS GLOBAIS
+     
+     - dias: janela canônica ("1", "7", "15", "30")
+       Usado pelo riskLevel e pelos cards quando não
+       há range customizado.
+     
+     - periodo: range customizado do calendário { from, to }
+       Quando preenchido, os cards usam from/to.
+       O riskLevel usa o baseline de "1" como fallback.
   ============================ */
-  const [dias, setDias] = useState<string>("1"); // 24h
-  const [diasFirewall, setDiasFirewall] = useState<string | null>(null);
-  const [diasAgentes, setDiasAgentes] = useState<string | null>(null);
-  const [diasSeveridade, setDiasSeveridade] = useState<string | null>(null);
-  const [diasCis, setDiasCis] = useState<string | null>(null);
-  const [diasIris, setDiasIris] = useState<string | null>(null);
-
-  /* ============================
-     PERÍODO CUSTOMIZADO
-  ============================ */
-  const [periodo, setPeriodo] = useState<{
-    from: string;
-    to: string;
-  } | null>(null);
-
-  // 🔒 trava selects quando relatório está ativo
-  const filtrosTravados = !!periodo;
+  const [dias, setDias] = useState<string>("1");
+  const [periodo, setPeriodo] = useState<{ from: string; to: string } | null>(null);
 
   /* ============================
      RESET CALENDÁRIO
@@ -65,6 +58,30 @@ export default function RiskLevel() {
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
 
   /* ============================
+     HANDLER DO FILTRO
+     
+     Períodos rápidos (24h, 7d, 15d, 30d):
+       → seta dias, limpa periodo
+       → riskLevel usa baseline correto da janela
+     
+     Range customizado do calendário:
+       → seta periodo, mantém dias="1" para o riskLevel
+       → cards usam from/to para exibição
+  ============================ */
+  function handleFiltro(payload: DateRangePayload) {
+    if (payload.dias) {
+      // Período rápido — janela canônica
+      setDias(payload.dias);
+      setPeriodo(null);
+    } else {
+      // Range customizado — cards usam from/to,
+      // riskLevel usa baseline de "1" (fallback)
+      setPeriodo({ from: payload.from!, to: payload.to! });
+      setDias("1");
+    }
+  }
+
+  /* ============================
      FETCH GLOBAL
   ============================ */
   useEffect(() => {
@@ -74,14 +91,14 @@ export default function RiskLevel() {
       try {
         setLoadingSeveridade(true);
 
-        const queryParams = new URLSearchParams({
-          ...(periodo ? { from: periodo.from, to: periodo.to } : { dias }),
-          ...(diasFirewall ? { firewall: diasFirewall } : {}),
-          ...(diasAgentes ? { agentes: diasAgentes } : {}),
-          ...(diasSeveridade ? { severidade: diasSeveridade } : {}),
-          ...(diasCis ? { cis: diasCis } : {}),
-          ...(diasIris ? { iris: diasIris } : {}),
-        }).toString();
+        // Monta os query params:
+        // - Período rápido → dias=7 (sem from/to)
+        // - Range customizado → from/to (riskLevel usa fallback "1" internamente)
+        const queryParams = new URLSearchParams(
+          periodo
+            ? { from: periodo.from, to: periodo.to }
+            : { dias }
+        ).toString();
 
         const res = await fetch(
           `${import.meta.env.VITE_API_URL}/api/acesso/wazuh/riskLevel?${queryParams}`,
@@ -106,17 +123,7 @@ export default function RiskLevel() {
     }
 
     carregar();
-  }, [
-    tenantAtivo,
-    dias,
-    periodo,
-    diasFirewall,
-    diasAgentes,
-    diasSeveridade,
-    diasCis,
-    diasIris,
-    token,
-  ]);
+  }, [tenantAtivo, dias, periodo, token]);
 
   return (
     <LayoutModel titulo="Risk Level">
@@ -124,23 +131,13 @@ export default function RiskLevel() {
       <div className="flex justify-end mt-5 mb-3 px-6">
         <DateRangePicker
           resetKey={resetFiltroKey}
-          onApply={(payload) => {
-            setPeriodo(payload);
-          }}
+          onApply={handleFiltro}
         />
 
         <button
           onClick={() => {
-            setPeriodo(null);
-
-            // 🔁 volta tudo pra 24h
             setDias("1");
-            setDiasFirewall(null);
-            setDiasAgentes(null);
-            setDiasSeveridade(null);
-            setDiasCis(null);
-            setDiasIris(null);
-
+            setPeriodo(null);
             setResetFiltroKey((v) => v + 1);
           }}
           className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors ml-3"
@@ -172,7 +169,7 @@ export default function RiskLevel() {
               <img
                 src="/assets/img/icon-risk.png"
                 alt="Risco"
-                className="absolute z-20 w-6 h-6 top-1/2 left-1/2 
+                className="absolute z-20 w-6 h-6 top-1/2 left-1/2
                   -translate-x-1/2 -translate-y-[95%]
                   pointer-events-none"
               />
@@ -182,7 +179,6 @@ export default function RiskLevel() {
           <div className="md:col-span-4 h-full">
             <SeveridadeCard
               dados={severidades}
-              periodo={periodo}
               loading={loadingSeveridade}
             />
           </div>
@@ -192,25 +188,19 @@ export default function RiskLevel() {
       {/* ================= CARDS ================= */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-5 items-stretch">
         <TopAgentsCard
-          dias={diasAgentes || dias}
+          dias={dias}
           periodo={periodo}
-          onChangeFiltro={setDiasAgentes}
-          disabled={filtrosTravados}
         />
 
         <TopAgentsCisCard
-          dias={diasCis || dias}
+          dias={dias}
           periodo={periodo}
-          onChangeFiltro={setDiasCis}
-          disabled={filtrosTravados}
         />
 
         <div className="flex flex-col h-full">
           <FirewallDonutCard
-            dias={diasFirewall || dias}
+            dias={dias}
             periodo={periodo}
-            onChangeFiltro={setDiasFirewall}
-            disabled={filtrosTravados}
           />
 
           <div className="flex-1">
@@ -219,9 +209,7 @@ export default function RiskLevel() {
                 token={token || ""}
                 diasGlobal={dias}
                 periodo={periodo}
-                onChangeFiltro={setDiasIris}
                 onUpdateTotais={setTotalIncidentes}
-                disabled={filtrosTravados}
               />
             </div>
           </div>

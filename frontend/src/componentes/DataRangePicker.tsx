@@ -8,18 +8,33 @@ import "react-datepicker/dist/react-datepicker.css";
 
 type PeriodoRapido = "24h" | "48h" | "7d" | "15d" | "30d";
 
+// Períodos rápidos mapeados para dias (janelas canônicas do backend)
+const MAPA_DIAS: Record<PeriodoRapido, string> = {
+  "24h": "1",
+  "48h": "2",
+  "7d":  "7",
+  "15d": "15",
+  "30d": "30",
+};
+
 registerLocale("pt-BR", ptBR);
+
+// Payload diferenciado:
+// - períodos rápidos → { dias: "7" }
+// - range customizado → { from: string; to: string }
+export type DateRangePayload =
+  | { dias: string; from?: undefined; to?: undefined }
+  | { from: string; to: string; dias?: undefined };
 
 export default function DateRangePicker({
   onApply,
   resetKey,
 }: {
-  onApply: (payload: { from: string; to: string }) => void;
+  onApply: (payload: DateRangePayload) => void;
   resetKey?: number;
 }) {
   const [open, setOpen] = useState(false);
-  const [periodoRapido, setPeriodoRapido] =
-    useState<PeriodoRapido>("24h");
+  const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -39,66 +54,53 @@ export default function DateRangePicker({
         setOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
   /* ================= RESET EXTERNO ================= */
   useEffect(() => {
     if (resetKey === undefined) return;
-
     setPeriodoRapido("24h");
     setStartDate(null);
     setEndDate(null);
   }, [resetKey]);
 
-  function calcularPeriodo(periodo: PeriodoRapido) {
+  function calcularDatas(periodo: PeriodoRapido) {
     const agora = new Date();
-
-    const mapa: Record<PeriodoRapido, number> = {
-      "24h": 1,
-      "48h": 2,
-      "7d": 7,
-      "15d": 15,
-      "30d": 30,
-    };
-
-    const from = new Date(
-      agora.getTime() - mapa[periodo] * 24 * 60 * 60 * 1000
-    );
-
+    const dias  = Number(MAPA_DIAS[periodo]);
+    const from  = new Date(agora.getTime() - dias * 24 * 60 * 60 * 1000);
     return { from, to: agora };
   }
 
   function aplicar() {
     const agora = new Date();
 
-    let from: Date;
-    let to: Date;
-
+    // ─── Período rápido → passa dias diretamente (não from/to)
     if (periodoRapido) {
-      ({ from, to } = calcularPeriodo(periodoRapido));
-    } else if (startDate && endDate) {
-      from = new Date(startDate);
-      from.setHours(0, 0, 0, 0);
-
-      to = new Date(endDate);
-      to.setHours(23, 59, 59, 999);
-    } else {
-      ({ from, to } = calcularPeriodo("24h"));
+      onApply({ dias: MAPA_DIAS[periodoRapido] });
+      setOpen(false);
+      return;
     }
 
-    if (to > agora) to = agora;
-    if (from > agora) return;
+    // ─── Range customizado do calendário → passa from/to
+    if (startDate && endDate) {
+      const from = new Date(startDate);
+      from.setHours(0, 0, 0, 0);
 
-    onApply({
-      from: from.toISOString(),
-      to: to.toISOString(),
-    });
+      const to = new Date(endDate);
+      to.setHours(23, 59, 59, 999);
 
+      if (to > agora) to.setTime(agora.getTime());
+      if (from > agora) return;
+
+      onApply({ from: from.toISOString(), to: to.toISOString() });
+      setOpen(false);
+      return;
+    }
+
+    // ─── Fallback: 24h
+    onApply({ dias: "1" });
     setOpen(false);
   }
 
@@ -126,27 +128,25 @@ export default function DateRangePicker({
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             <span className="text-gray-400 text-sm mr-2">Dias:</span>
 
-            {(["24h", "48h", "7d", "15d", "30d"] as PeriodoRapido[]).map(
-              (p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    const { from, to } = calcularPeriodo(p);
-                    setPeriodoRapido(p);
-                    setStartDate(from);
-                    setEndDate(to);
-                  }}
-                  className={`px-3 py-1 rounded-md text-sm border transition
-                    ${
-                      periodoRapido === p
-                        ? "bg-purple-600/20 text-purple-300 border-purple-600"
-                        : "text-gray-400 border-[#1D1929] hover:border-purple-500"
-                    }`}
-                >
-                  {p}
-                </button>
-              )
-            )}
+            {(["24h", "48h", "7d", "15d", "30d"] as PeriodoRapido[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  const { from, to } = calcularDatas(p);
+                  setPeriodoRapido(p);
+                  setStartDate(from);
+                  setEndDate(to);
+                }}
+                className={`px-3 py-1 rounded-md text-sm border transition
+                  ${
+                    periodoRapido === p
+                      ? "bg-purple-600/20 text-purple-300 border-purple-600"
+                      : "text-gray-400 border-[#1D1929] hover:border-purple-500"
+                  }`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
 
           {/* CALENDÁRIO */}
@@ -159,6 +159,7 @@ export default function DateRangePicker({
             endDate={endDate}
             onChange={(dates: [Date | null, Date | null]) => {
               const [start, end] = dates;
+              // Seleção manual no calendário → limpa período rápido
               setPeriodoRapido(null as any);
               setStartDate(start);
               setEndDate(end);

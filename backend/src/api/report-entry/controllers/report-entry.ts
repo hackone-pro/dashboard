@@ -1,7 +1,3 @@
-/**
- * report-entry controller (extendido)
- */
-
 import { factories } from "@strapi/strapi";
 import { getTenantAtivo } from "../../acesso-wazuh/controllers/_utils";
 
@@ -13,73 +9,114 @@ export default factories.createCoreController(
       try {
         const service = strapi.service("api::report-entry.report-entry");
         const result = await service.gerarRelatorio(ctx);
-
         return ctx.send({
           ok: true,
           message: "Relatório gerado com sucesso",
           data: result,
         });
-
       } catch (error) {
         console.error("Erro ao gerar relatório:", error);
         return ctx.internalServerError("Erro ao gerar relatório");
       }
     },
 
-    async delete(ctx) {
+    async search(ctx) {
       try {
-        const { id } = ctx.params;
+        const { nome } = ctx.query;
+        if (!nome) return ctx.badRequest("Parâmetro 'nome' é obrigatório");
 
-        const deleted = await strapi.entityService.delete(
-          "api::report-entry.report-entry",
-          id
-        );
+        const knex = strapi.db.connection;
 
-        return {
-          ok: true,
-          message: "Relatório excluído",
-          data: deleted,
-        };
+        const resultado = await knex("report_entries")
+          .select("*")
+          .where({ nome })
+          .whereNull("published_at")
+          .first();
+
+        if (!resultado) {
+          return ctx.notFound("Relatório não encontrado");
+        }
+
+        if (typeof resultado.snapshot === "string") {
+          try { resultado.snapshot = JSON.parse(resultado.snapshot); }
+          catch (e) { resultado.snapshot = {}; }
+        }
+
+        if (typeof resultado.sections === "string") {
+          try { resultado.sections = JSON.parse(resultado.sections); }
+          catch (e) { resultado.sections = []; }
+        }
+
+        return ctx.send({ data: resultado });
 
       } catch (error) {
-        console.error("Erro ao deletar relatório:", error);
-        return ctx.internalServerError("Erro ao deletar relatório");
+        console.error("Erro ao buscar relatório:", error);
+        return ctx.internalServerError("Erro ao buscar relatório");
       }
     },
 
     async find(ctx) {
       try {
         const tenant = await getTenantAtivo(ctx);
-        if (!tenant) {
-          return ctx.notFound("Tenant não encontrado ou inativo");
-        }
+        if (!tenant) return ctx.notFound("Tenant não encontrado ou inativo");
+    
+        const knex = strapi.db.connection;
     
         const page = Number(ctx.query.page || 1);
-        const pageSize = Number(ctx.query.pageSize || 10);
+        const pageSize = 5;
+        const offset = (page - 1) * pageSize;
     
-        const resultado = await strapi.entityService.findMany(
-          "api::report-entry.report-entry",
-          {
-            filters: {
-              tenant: tenant.cliente_name,
-            },
-            sort: ["createdAt:desc"] as any, // ✅ CAMELCASE
-            pagination: {
-              page,
-              pageSize,
-            },
-          }
-        );
+        // Total de registros para calcular páginas
+        const [{ total }] = await knex("report_entries")
+          .where({ tenant: tenant.cliente_name })
+          .whereNull("published_at")
+          .count("id as total");
     
-        return { data: resultado };
+        const relatorios = await knex("report_entries")
+          .select(
+            "id",
+            "nome",
+            "period",
+            "tenant",
+            "progress",
+            "created_at as createdAt",
+            "updated_at as updatedAt"
+          )
+          .where({ tenant: tenant.cliente_name })
+          .whereNull("published_at")
+          .orderBy("created_at", "desc")
+          .limit(pageSize)
+          .offset(offset);
+    
+        return ctx.send({
+          data: relatorios,
+          meta: {
+            page,
+            pageSize,
+            total: Number(total),
+            pageCount: Math.ceil(Number(total) / pageSize),
+          },
+        });
     
       } catch (error) {
         console.error("Erro ao buscar relatórios:", error);
         return ctx.internalServerError("Erro ao consultar relatórios");
       }
-    }
-    
-    
+    },
+
+    async delete(ctx) {
+      try {
+        const { id } = ctx.params;
+        const deleted = await strapi.entityService.delete(
+          "api::report-entry.report-entry",
+          id
+        );
+        return { ok: true, message: "Relatório excluído", data: deleted };
+      } catch (error) {
+        console.error("Erro ao deletar relatório:", error);
+        return ctx.internalServerError("Erro ao deletar relatório");
+      }
+    },
 
   })
 );

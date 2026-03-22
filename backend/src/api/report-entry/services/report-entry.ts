@@ -7,7 +7,7 @@ import { factories } from "@strapi/strapi";
 // Services usados
 import { buscarVulnSeveridades, buscarTopOSVulnerabilidades } from "../../acesso-wazuh/services/vulnerabilidades.service";
 import { buscarTopGeradoresFirewall } from "../../acesso-wazuh/services/firewalls.service";
-import { buscarTopAgentes, buscarTopAgentesCis, buscarTopAlteracoesArquivo } from "../../acesso-wazuh/services/agentes.service";
+import { buscarTopAgentes, buscarTopAgentesCis, buscarTopAlteracoesArquivo, buscarTopAgentesSyscheck } from "../../acesso-wazuh/services/agentes.service";
 import { buscarIncidentesIris, buscarCasos } from "../../acesso-iris/services/acesso-iris";
 import { buscarTopUsers } from "../../acesso-wazuh/services/usuarios.service";
 import { buscarDadosReport } from "../../n-eight-n/services/n-eight-n";
@@ -58,74 +58,66 @@ export default factories.createCoreService(
      * FUNÇÃO: CALCULA O RISKLEVEL COMPLETO (FIRE, AGENTS, IRIS)
      * ====================================================
      */
-    async calcularRiskLevelCompleto(tenant, dias, user) {
+     async calcularRiskLevelCompleto(tenant, dias, user) {
+      const diasFirewall = dias;
+      const diasAgentes = dias;
+      const diasIris = dias;
+    
       let baixo = 0;
       let medio = 0;
       let alto = 0;
       let critico = 0;
-      let total = 0;
-
+    
       // =============================
       // 1. FIREWALL
       // =============================
-      const firewall = await buscarTopGeradoresFirewall(tenant, dias);
-
-      firewall.forEach((item) => {
-        baixo += item.severidade.baixo || 0;
-        medio += item.severidade.medio || 0;
-        alto += item.severidade.alto || 0;
-        critico += item.severidade.critico || 0;
-        total += item.total || 0;
+      const firewall = await buscarTopGeradoresFirewall(tenant, diasFirewall);
+      firewall?.forEach((fw: any) => {
+        baixo += fw?.severidade?.baixo || 0;
+        medio += fw?.severidade?.medio || 0;
+        alto += fw?.severidade?.alto || 0;
+        critico += fw?.severidade?.critico || 0;
       });
-
+    
       // =============================
       // 2. AGENTES
       // =============================
-      const agentes = await buscarTopAgentes(tenant, dias);
-
-      agentes.forEach((ag) => {
-        const lista = ag.levels || [];
-
-        lista.forEach((nivel) => {
-          const lvl = Number(nivel.rule_level) || 0;
-
-          if (lvl <= 6) baixo++;
-          else if (lvl <= 11) medio++;
-          else if (lvl <= 14) alto++;
-          else critico++;
-
-          total++;
+      const agentes = await buscarTopAgentes(tenant, { dias: diasAgentes });
+      agentes?.forEach((agente: any) => {
+        agente?.severidades?.forEach((s: any) => {
+          if (s.key <= 6) baixo += s.doc_count || 0;
+          else if (s.key <= 11) medio += s.doc_count || 0;
+          else if (s.key <= 14) alto += s.doc_count || 0;
+          else critico += s.doc_count || 0;
         });
       });
-
+    
       // =============================
       // 3. IRIS
       // =============================
-      const iris = await buscarIncidentesIris(tenant, dias, user);
-
-      baixo += iris.baixo || 0;
-      medio += iris.medio || 0;
-      alto += iris.alto || 0;
-      critico += iris.critico || 0;
-      total += iris.total || 0;
-
-      // =============================
-      // 4. CÁLCULO OFICIAL DO RISCO
-      // =============================
-      let risco = 0;
-
-      if (total > 0) {
-        risco =
-          ((baixo * 0.2) +
-            (medio * 0.6) +
-            (alto * 0.8) +
-            (critico * 1.0)) /
-          total * 100;
+      const iris = await buscarIncidentesIris(tenant, { dias: diasIris }, user);
+      if (iris && typeof iris === "object") {
+        baixo += iris.baixo || 0;
+        medio += iris.medio || 0;
+        alto += iris.alto || 0;
+        critico += iris.critico || 0;
       }
-
-      // Arredonda para número inteiro. Ex.: 72
+    
+      // =============================
+      // 4. CÁLCULO — mesma fórmula do risklevel.service
+      // =============================
+      function calcularRiskLevel({ critico, alto, medio, baixo }) {
+        if (critico > 0) return Math.min(100, 75 + Math.log10(1 + critico) * 10);
+        if (alto > 0) return Math.min(75, 50 + Math.log10(1 + alto) * 8);
+        if (medio > 0) return Math.min(50, 25 + Math.log10(1 + medio) * 6);
+        if (baixo > 0) return Math.min(25, Math.log10(1 + baixo) * 5);
+        return 0;
+      }
+    
+      const indiceRisco = calcularRiskLevel({ critico, alto, medio, baixo });
+    
       return {
-        gauge: Number(risco.toFixed(0)),
+        gauge: parseFloat(indiceRisco.toFixed(0)),
       };
     },
 
@@ -136,7 +128,7 @@ export default factories.createCoreService(
    * ============================================================
    */
     async coletarTopHosts(tenant, dias) {
-      const agentes = await buscarTopAgentes(tenant, dias);
+      const agentes = await buscarTopAgentes(tenant, { dias });
 
       // Caso não venha nada
       if (!agentes || agentes.length === 0) return [];
@@ -227,7 +219,7 @@ export default factories.createCoreService(
    * ============================================================
    */
     async coletarTopHostsAlteracoes(tenant, dias) {
-      const agentes = await buscarTopAgentes(tenant, dias);
+      const agentes = await buscarTopAgentesSyscheck(tenant, { dias });
 
       if (!agentes || agentes.length === 0) return [];
 
@@ -282,34 +274,25 @@ export default factories.createCoreService(
      * RESUMO DE AÇÕES NOS ARQUIVOS (syscheck)
      * ============================================================
     */
-    async coletarResumoAcoesArquivos(tenant, dias) {
-
-      // usamos buscarTopAgentes, pois ele já traz modified/added/deleted
-      const agentes = await buscarTopAgentes(tenant, dias);
-
+     async coletarResumoAcoesArquivos(tenant, dias) {
+      // ← usa buscarTopAgentesSyscheck em vez de buscarTopAgentes
+      const agentes = await buscarTopAgentesSyscheck(tenant, { dias });
+    
       if (!agentes || agentes.length === 0) {
-        return {
-          modificados: 0,
-          adicionados: 0,
-          deletados: 0,
-        };
+        return { modificados: 0, adicionados: 0, deletados: 0 };
       }
-
+    
       let modificados = 0;
       let adicionados = 0;
       let deletados = 0;
-
+    
       for (const ag of agentes) {
         modificados += Number(ag.modified ?? 0);
         adicionados += Number(ag.added ?? 0);
         deletados += Number(ag.deleted ?? 0);
       }
-
-      return {
-        modificados,
-        adicionados,
-        deletados,
-      };
+    
+      return { modificados, adicionados, deletados };
     },
 
     /**

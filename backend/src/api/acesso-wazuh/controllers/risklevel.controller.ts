@@ -71,6 +71,7 @@ export default {
           diasAgentes,
           diasIris,
         },
+        _debug: (resultado as any)._debug,
       });
 
     } catch (error) {

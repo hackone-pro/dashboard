@@ -23,6 +23,8 @@ export default function ReportDash() {
     const [loading, setLoading] = useState(false);
     const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
     const [progresso, setProgresso] = useState(0);
+    const [paginaAtual, setPaginaAtual] = useState(1);
+    const [totalPaginas, setTotalPaginas] = useState(1);
 
     const [openPeriodo, setOpenPeriodo] = useState(false);
     const botaoPeriodoRef = useRef<HTMLButtonElement | null>(null);
@@ -39,11 +41,11 @@ export default function ReportDash() {
     useEffect(() => {
         async function carregar() {
             if (!tenantAtivo) return;
-
             try {
                 setLoading(true);
-                const lista = await listarRelatorios();
-                setRelatorios(lista);
+                const resultado = await listarRelatorios(paginaAtual);
+                setRelatorios(resultado.data);
+                setTotalPaginas(resultado.meta.pageCount || 1);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -51,7 +53,7 @@ export default function ReportDash() {
             }
         }
         carregar();
-    }, [tenantAtivo]);
+    }, [tenantAtivo, paginaAtual]);
 
     const [filtroSecoes, setFiltroSecoes] = useState("");
     const secoesRef = useRef<HTMLDivElement | null>(null);
@@ -319,7 +321,7 @@ export default function ReportDash() {
                                                             w-full flex items-center gap-3 p-3 rounded-md text-left
                                                             transition-colors
                                                             ${ativo
-                                                                                                            ? `
+                                                                ? `
                                                                 bg-[#250E5D] text-white
                                                                 before:absolute before:top-0 before:left-0 before:w-full before:h-[1px]
                                                                 before:bg-gradient-to-r before:from-[#3A0F80] before:via-[#AE29CA] before:to-[#3A0F80]
@@ -340,8 +342,8 @@ export default function ReportDash() {
                                                                 transition-all
                                                                 ${ativo ? "border-[#554b74]" : ""}
                                                                 `}
-                                                                                                        >
-                                                             <svg className={`
+                                                        >
+                                                            <svg className={`
                                                                     w-4 h-4
                                                                     transition-all
                                                                     ${ativo ? "opacity-100 scale-100 text-[#939393]" : "opacity-0 scale-75"}
@@ -665,6 +667,46 @@ export default function ReportDash() {
                         </div>
                     );
                 })}
+
+                {/* PAGINAÇÃO */}
+                {totalPaginas > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-4">
+
+                        <button
+                            onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
+                            disabled={paginaAtual === 1}
+                            className="px-3 py-1.5 rounded-lg text-sm border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        >
+                            ← Anterior
+                        </button>
+
+                        {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(p => (
+                            <button
+                                key={p}
+                                onClick={() => setPaginaAtual(p)}
+                                className={`
+                                    px-3 py-1.5 rounded-lg text-sm border transition
+                                    ${paginaAtual === p
+                                        ? "bg-purple-600 border-purple-500 text-white"
+                                        : "border-white/10 text-gray-400 hover:bg-white/5"
+                                    }
+                                `}
+                            >
+                                {p}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))}
+                            disabled={paginaAtual === totalPaginas}
+                            className="px-3 py-1.5 rounded-lg text-sm border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        >
+                            Próxima →
+                        </button>
+
+                    </div>
+                )}
+
             </div>
         </LayoutModel>
     );

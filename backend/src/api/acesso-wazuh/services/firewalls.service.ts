@@ -2,6 +2,8 @@
 import { http } from "./utils/http";
 import { authHeader } from "./utils/auth";
 
+const THRESHOLD_INATIVO_HORAS = 24;
+
 /* ============================================
    LISTA DE FIREWALLS
 ============================================ */
@@ -18,7 +20,7 @@ export async function buscarListaFirewalls(tenant) {
         { term: { "data.customer": clientName } },
         { term: { "fields.customer.keyword": clientName } },
         { term: { "fields.customer": clientName } },
-        { term: { "manager.name": `manager-${clientName}` } }
+        { term: { "manager.name": `manager-${clientName}` } },
       ],
       minimum_should_match: 1,
     },
@@ -51,12 +53,23 @@ export async function buscarListaFirewalls(tenant) {
           ultimo_log: {
             top_hits: {
               size: 1,
-
-              // 🔥 CORREÇÃO CRÍTICA
               sort: [{ "@timestamp": { order: "desc" } }],
-
               _source: {
-                includes: ["@timestamp", "location"],
+                includes: [
+                  "@timestamp",
+                  "timestamp",
+                  "location",
+                ],
+              },
+            },
+          },
+          logs_recentes: {
+            filter: {
+              range: {
+                "@timestamp": {
+                  gte: `now-${THRESHOLD_INATIVO_HORAS}h`,
+                  lte: "now",
+                },
               },
             },
           },
@@ -66,20 +79,19 @@ export async function buscarListaFirewalls(tenant) {
   });
 
   const baseURL = `${tenant.wazuh_url}/wazuh-*/_search`;
-
-  let buckets = [];
+  let buckets: any[] = [];
 
   for (const field of DEVNAME_FIELDS) {
     try {
-      const response = await http.post(
-        baseURL,
-        buildBody(field),
-        { headers: authHeader(tenant) }
-      );
+      const response = await http.post(baseURL, buildBody(field), {
+        headers: authHeader(tenant),
+      });
 
       buckets = response.data?.aggregations?.firewalls?.buckets || [];
-
-      if (buckets.length > 0) break;
+      if (buckets.length > 0) {
+        console.log(`Campo devname detectado: ${field}`);
+        break;
+      }
     } catch {
       continue;
     }
@@ -87,14 +99,25 @@ export async function buscarListaFirewalls(tenant) {
 
   return buckets.map((b: any) => {
     const hit = b.ultimo_log?.hits?.hits?.[0]?._source || {};
-
+  
+    // Prioriza timestamp do firewall, fallback para @timestamp do Elasticsearch
+    let timestamp: string | null = null;
+  
+    if (hit.timestamp && !isNaN(Number(hit.timestamp))) {
+      timestamp = new Date(Number(hit.timestamp) * 1000).toISOString();
+    } else if (hit["@timestamp"]) {
+      timestamp = hit["@timestamp"];
+    }
+  
+    const logsRecentes = b.logs_recentes?.doc_count ?? 0;
+  
     return {
       id: b.key,
       nome: b.key,
       location: hit.location ?? null,
-
-      // 🔥 CORREÇÃO DEFINITIVA
-      timestamp: hit["@timestamp"] ?? null,
+      timestamp,
+      ativo: logsRecentes > 0,
+      logsRecentes,
     };
   });
 }
