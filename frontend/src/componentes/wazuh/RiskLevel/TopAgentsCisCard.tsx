@@ -10,36 +10,20 @@ import { GripVertical } from "lucide-react";
 interface TopAgentsCisCardProps {
   dias: string;
   periodo?: { from: string; to: string } | null;
-  onChangeFiltro?: (valor: string | null) => void;
   isWidget?: boolean;
-  disabled?: boolean;
 }
 
 export default function TopAgentsCisCard({
   dias,
   periodo,
-  onChangeFiltro,
   isWidget = false,
-  disabled = false,
 }: TopAgentsCisCardProps) {
   const { tenantAtivo } = useTenant();
-
-  const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-  const diasEfetivo = filtroLocal || dias;
 
   const [itens, setItens] = useState<TopAgentCisItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
-
-  /* ============================
-     AO TRAVAR → LIMPA FILTRO LOCAL
-  ============================ */
-  useEffect(() => {
-    if (disabled) {
-      setFiltroLocal(null);
-    }
-  }, [disabled]);
 
   useEffect(() => {
     if (!tenantAtivo) return;
@@ -54,7 +38,7 @@ export default function TopAgentsCisCard({
         const inicio = Date.now();
 
         const data = await getTopAgentsCis(
-          periodo ? undefined : diasEfetivo,
+          periodo ? undefined : dias,
           periodo ?? undefined
         );
 
@@ -81,7 +65,7 @@ export default function TopAgentsCisCard({
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo, periodo, tenantAtivo]);
+  }, [dias, periodo, tenantAtivo]);
 
   const lista = useMemo(
     () =>
@@ -123,6 +107,7 @@ export default function TopAgentsCisCard({
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-xl z-10" />
       )}
 
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-4 relative z-20">
         <div className="flex items-center gap-2">
           {isWidget && (
@@ -135,32 +120,6 @@ export default function TopAgentsCisCard({
             Auditoria CIS - Top Servidores
           </h3>
         </div>
-
-        {/* SELECT — VISUAL ORIGINAL */}
-        <select
-          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
-            ${isWidget ? "mr-8" : ""}`}
-          value={disabled ? "" : filtroLocal || dias}
-          disabled={disabled}
-          onChange={(e) => {
-            if (disabled) return;
-
-            const val = e.target.value;
-            const novoValor = val === dias ? null : val;
-            setFiltroLocal(novoValor);
-            onChangeFiltro?.(novoValor);
-          }}
-        >
-          {/* opção invisível obrigatória */}
-          <option value="" hidden></option>
-
-          <option value="1">24 horas</option>
-          <option value="2">48 horas</option>
-          <option value="7">7 dias</option>
-          <option value="15">15 dias</option>
-          <option value="30">30 dias</option>
-          <option value="todos">Todos</option>
-        </select>
       </div>
 
       {erro && (

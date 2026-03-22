@@ -9,37 +9,20 @@ import { GripVertical } from "lucide-react";
 interface TopAgentsCardProps {
   dias: string;
   periodo?: { from: string; to: string } | null;
-  onChangeFiltro?: (valor: string | null) => void;
   isWidget?: boolean;
-  disabled?: boolean;
 }
 
 export default function TopAgentsCard({
   dias,
   periodo,
-  onChangeFiltro,
   isWidget = false,
-  disabled = false,
 }: TopAgentsCardProps) {
   const { tenantAtivo } = useTenant();
-
-  const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-  const diasEfetivo = filtroLocal || dias;
 
   const [agentes, setAgentes] = useState<TopAgentItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
-
-  /* ============================
-     AO TRAVAR → LIMPA FILTRO LOCAL
-     (SEM IMPACTO VISUAL)
-  ============================ */
-  useEffect(() => {
-    if (disabled) {
-      setFiltroLocal(null);
-    }
-  }, [disabled]);
 
   useEffect(() => {
     if (!tenantAtivo) return;
@@ -57,7 +40,7 @@ export default function TopAgentsCard({
         const data = await getTopAgents(
           periodo
             ? { from: periodo.from, to: periodo.to }
-            : { dias: diasEfetivo }
+            : { dias }
         );
 
         if (!ativo) return;
@@ -83,10 +66,10 @@ export default function TopAgentsCard({
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo, periodo, tenantAtivo]);
+  }, [dias, periodo, tenantAtivo]);
 
   // -----------------------------
-  // 🦴 SKELETON (ORIGINAL)
+  // 🦴 SKELETON
   // -----------------------------
   if (carregando) {
     return (
@@ -101,8 +84,7 @@ export default function TopAgentsCard({
             {["Hosts", "Crítico", "Alto", "Médio", "Baixo"].map((col, i) => (
               <div
                 key={i}
-                className={`${i === 0 ? "w-[40%] text-left pl-2" : "w-[15%] text-center"
-                  }`}
+                className={`${i === 0 ? "w-[40%] text-left pl-2" : "w-[15%] text-center"}`}
               >
                 <div className="h-3 bg-[#ffffff12] rounded animate-pulse mx-auto w-16" />
               </div>
@@ -138,7 +120,7 @@ export default function TopAgentsCard({
   }
 
   // -----------------------------
-  // ERRO (ORIGINAL)
+  // ERRO
   // -----------------------------
   if (erro) {
     return (
@@ -152,7 +134,7 @@ export default function TopAgentsCard({
 
   return (
     <div className="cards p-6 rounded-2xl shadow-lg flex-grow transition-all duration-300 relative">
-      {/* 🔹 HEADER — ORIGINAL */}
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-5 relative z-20">
         <div className="flex items-center gap-2">
           {isWidget && (
@@ -163,35 +145,9 @@ export default function TopAgentsCard({
           )}
           <h3 className="text-sm text-white">Top Hosts</h3>
         </div>
-
-        <select
-          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
-            ${isWidget ? "mr-8" : ""} 
-          `}
-          value={disabled ? "" : filtroLocal || dias}
-          onChange={(e) => {
-            if (disabled) return;
-
-            const val = e.target.value;
-            const novoValor = val === dias ? null : val;
-            setFiltroLocal(novoValor);
-            onChangeFiltro?.(novoValor);
-          }}
-          disabled={disabled}
-        >
-          <option value="" hidden></option>
-
-          <option value="1">24 horas</option>
-          <option value="2">48 horas</option>
-          <option value="7">7 dias</option>
-          <option value="15">15 dias</option>
-          <option value="30">30 dias</option>
-          <option value="todos">Todos</option>
-        </select>
-
       </div>
 
-      {/* 🔹 TABELA — VISUAL ORIGINAL */}
+      {/* TABELA */}
       <div className="overflow-x-auto relative z-20">
         <table className="w-full text-sm text-gray-300 border-collapse py-3">
           <thead>

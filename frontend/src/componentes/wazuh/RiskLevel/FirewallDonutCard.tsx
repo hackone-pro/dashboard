@@ -11,41 +11,21 @@ import { GripVertical } from "lucide-react";
 interface FirewallDonutCardProps {
   dias: string;
   periodo?: { from: string; to: string } | null;
-  onChangeFiltro?: (valor: string | null) => void;
   isWidget?: boolean;
-  disabled?: boolean;
 }
 
 export default function FirewallDonutCard({
   dias,
   periodo,
-  onChangeFiltro,
   isWidget = false,
-  disabled = false,
 }: FirewallDonutCardProps) {
   const { tenantAtivo } = useTenant();
-
-  const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-
-  // 🔹 prioridade TOTAL do calendário (inalterado)
-  const diasEfetivo = periodo ? null : filtroLocal || dias;
 
   const [dados, setDados] = useState<TopFirewallItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [idxSelecionado, setIdxSelecionado] = useState<number | null>(null);
 
-  /* ============================
-     🔒 AO TRAVAR → LIMPA FILTRO LOCAL
-     (SEM MUDAR VISUAL)
-  ============================ */
-  useEffect(() => {
-    if (disabled) {
-      setFiltroLocal(null);
-    }
-  }, [disabled]);
-
-  // 🔹 busca dados
   useEffect(() => {
     if (!tenantAtivo) return;
     let ativo = true;
@@ -57,10 +37,7 @@ export default function FirewallDonutCard({
 
         const inicio = Date.now();
 
-        const res = await getTopFirewalls(
-          diasEfetivo || dias,
-          periodo || undefined
-        );
+        const res = await getTopFirewalls(dias, periodo || undefined);
 
         if (!ativo) return;
 
@@ -82,9 +59,8 @@ export default function FirewallDonutCard({
     return () => {
       ativo = false;
     };
-  }, [diasEfetivo, periodo, tenantAtivo]);
+  }, [dias, periodo, tenantAtivo]);
 
-  // 🔹 agregação (inalterada)
   const { baixo, medio, alto, critico, total } = useMemo(() => {
     const agg = { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };
     for (const it of dados) {
@@ -119,33 +95,6 @@ export default function FirewallDonutCard({
           )}
           <h3 className="text-sm text-white">Alertas de Firewall</h3>
         </div>
-
-        {/* SELECT — VISUAL ORIGINAL */}
-        <select
-          className={`bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-sm border border-[#cacaca31]
-            ${isWidget ? "mr-8" : ""}
-          `}
-          value={disabled ? "" : filtroLocal || dias}
-          disabled={disabled}
-          onChange={(e) => {
-            if (disabled) return;
-
-            const val = e.target.value;
-            const novoValor = val === dias ? null : val;
-            setFiltroLocal(novoValor);
-            onChangeFiltro?.(novoValor);
-          }}
-        >
-          {/* opção invisível obrigatória */}
-          <option value="" hidden></option>
-
-          <option value="1">24 horas</option>
-          <option value="2">48 horas</option>
-          <option value="7">7 dias</option>
-          <option value="15">15 dias</option>
-          <option value="30">30 dias</option>
-          <option value="todos">Todos</option>
-        </select>
       </div>
 
       {/* ERRO */}

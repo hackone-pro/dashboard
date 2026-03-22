@@ -23,20 +23,16 @@ interface Props {
   token: string;
   diasGlobal?: string;
   periodo?: Periodo | null;
-  onChangeFiltro?: (valor: string | null) => void;
   onUpdateTotais?: (total: number) => void;
   isWidget?: boolean;
-  disabled?: boolean;
 }
 
 export default function FluxoIncidentesIris({
   token,
   diasGlobal,
   periodo,
-  onChangeFiltro,
   onUpdateTotais,
   isWidget = false,
-  disabled = false,
 }: Props) {
   const { tenantAtivo } = useTenant();
 
@@ -46,20 +42,10 @@ export default function FluxoIncidentesIris({
   const [totalAtribuidos, setTotalAtribuidos] = useState(0);
   const [totalCasos, setTotalCasos] = useState(0);
 
-  const [filtroLocal, setFiltroLocal] = useState<string | null>(null);
-  const diasEfetivo = filtroLocal || diasGlobal || "1";
+  const diasEfetivo = diasGlobal || "1";
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!filtroLocal && diasGlobal) setFiltroLocal(null);
-  }, [diasGlobal]);
-
-  // 🔹 quando calendário muda, limpa o select (UX)
-  useEffect(() => {
-    if (periodo) setFiltroLocal(null);
-  }, [periodo]);
 
   useEffect(() => {
     if (!tenantAtivo) return;
@@ -70,7 +56,6 @@ export default function FluxoIncidentesIris({
         setCarregando(true);
         setErro(null);
 
-        // 🔹 backend filtra por calendário quando existir
         const response = await getTodosCasos(
           token,
           periodo ? { from: periodo.from, to: periodo.to } : undefined
@@ -83,7 +68,6 @@ export default function FluxoIncidentesIris({
         const hoje = new Date();
         const limite = new Date();
 
-        // 🔹 dias só contam se NÃO houver calendário
         const nDias =
           periodo || diasEfetivo === "todos"
             ? 0
@@ -100,7 +84,6 @@ export default function FluxoIncidentesIris({
           // @ts-ignore
           if (c.client_name !== tenantAtivo.cliente_name) return false;
 
-          // 🔹 calendário já vem filtrado
           if (periodo) return true;
 
           if (nDias === 0) return true;
@@ -153,10 +136,6 @@ export default function FluxoIncidentesIris({
     onUpdateTotais?.(totalCasos);
   }, [totalCasos]);
 
-  /* =====================
-     JSX — 100% IGUAL
-  ===================== */
-
   return (
     <div
       className={`rounded-xl shadow-md h-full flex flex-col relative overflow-hidden
@@ -175,31 +154,6 @@ export default function FluxoIncidentesIris({
           <h3 className="text-sm text-white font-semibold">
             Controle de Incidentes
           </h3>
-        </div>
-
-        <div className={`${isWidget ? "mr-8" : ""}`}>
-          <select
-            className="bg-[#0d0c22] text-white text-xs px-2 py-1 rounded-md border border-[#cacaca31]"
-            value={disabled ? "" : filtroLocal || diasEfetivo}
-            disabled={disabled}
-            onChange={(e) => {
-              if (disabled) return;
-
-              const val = e.target.value;
-              const novoValor = val === diasGlobal ? null : val;
-              setFiltroLocal(novoValor);
-              onChangeFiltro?.(novoValor);
-            }}
-          >
-            {/* opção invisível obrigatória */}
-            <option value="" hidden></option>
-            <option value="1">24 horas</option>
-            <option value="2">48 horas</option>
-            <option value="7">7 dias</option>
-            <option value="15">15 dias</option>
-            <option value="30">30 dias</option>
-            <option value="todos">Todos</option>
-          </select>
         </div>
       </div>
 
@@ -254,7 +208,7 @@ export default function FluxoIncidentesIris({
 }
 
 /* =====================
-   AGRUPAMENTO (igual)
+   AGRUPAMENTO
 ===================== */
 
 function agruparPorDia(
@@ -285,24 +239,24 @@ function agruparPorDia(
   const diasOrdenados =
     dias === 0
       ? (() => {
-        const todasDatas = [
-          ...Object.keys(contagemAbertos),
-          ...Object.keys(contagemAtribuidos),
-        ];
-        const minData = todasDatas.length
-          ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
-          : new Date();
-        const arr: string[] = [];
-        for (let d = new Date(minData); d <= hoje; d.setDate(d.getDate() + 1)) {
-          arr.push(d.toISOString().slice(0, 10));
-        }
-        return arr;
-      })()
+          const todasDatas = [
+            ...Object.keys(contagemAbertos),
+            ...Object.keys(contagemAtribuidos),
+          ];
+          const minData = todasDatas.length
+            ? new Date(Math.min(...todasDatas.map((d) => new Date(d).getTime())))
+            : new Date();
+          const arr: string[] = [];
+          for (let d = new Date(minData); d <= hoje; d.setDate(d.getDate() + 1)) {
+            arr.push(d.toISOString().slice(0, 10));
+          }
+          return arr;
+        })()
       : Array.from({ length: dias }).map((_, i) => {
-        const d = new Date(hoje);
-        d.setDate(hoje.getDate() - (dias - 1 - i));
-        return d.toISOString().slice(0, 10);
-      });
+          const d = new Date(hoje);
+          d.setDate(hoje.getDate() - (dias - 1 - i));
+          return d.toISOString().slice(0, 10);
+        });
 
   const categoriasX = diasOrdenados.map((d) => {
     const [ano, mes, dia] = d.split("-");
