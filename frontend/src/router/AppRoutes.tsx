@@ -21,6 +21,7 @@ import VerifyCode from '../pages/MFACode';
 import MultiTenantManager from '../pages/MultiTenantManager';
 import AdminRoute from './AdminRoute';
 import PublicRoute from "./PublicRoute";
+import SOCAnalytics from '../pages/SOCAnalytics';
 
 const enableIntegrations =
   import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
@@ -45,6 +46,7 @@ export default function AppRoutes() {
         <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
         <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
         <Route path="/monitoria-csc" element={<PrivateRoute><MonitoriaCSC /></PrivateRoute>} />
+        <Route path="/soc-analytics" element={<PrivateRoute><SOCAnalytics /></PrivateRoute>} />
         {enableIntegrations && (
           <Route
             path="/integrations"

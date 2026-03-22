@@ -4,7 +4,7 @@ import { CiSettings, CiMap, CiHome, CiGlobe } from "react-icons/ci";
 import { PiNotebook, PiWarningLight, PiSkullLight, PiShareNetworkDuotone, PiLockKeyLight } from "react-icons/pi";
 import { HiOutlineBars3, HiOutlineIdentification } from "react-icons/hi2";
 import { VscSearchFuzzy, VscFileSymlinkDirectory } from "react-icons/vsc";
-import { TbChartInfographic, TbHeartRateMonitor, TbCloudLock } from "react-icons/tb";
+import { TbChartInfographic, TbHeartRateMonitor, TbCloudLock, TbDeviceDesktopAnalytics } from "react-icons/tb";
 import { GoShieldLock } from "react-icons/go";
 import { AiOutlineAim } from "react-icons/ai";
 import { BsDatabaseLock } from "react-icons/bs";
@@ -142,6 +142,8 @@ export default function Sidebar() {
                         <ul className=" pr-2 space-y-1 text-sm text-gray-300">
                             {[
                                 // @ts-ignore
+                                { to: "/soc-analytics", icon: <TbDeviceDesktopAnalytics className="text-[16px]" />, label: "Analytics" },
+                                // @ts-ignore
                                 { to: "/risk-level", icon: <PiWarningLight className="text-[16px]" />, label: "Risk Level" },
                                 // @ts-ignore
                                 { to: "/incidentes", icon: <PiSkullLight className="text-[16px]" />, label: "Incidentes" },
@@ -196,6 +198,13 @@ export default function Sidebar() {
                                             Next Generation SOC
                                         </Link>
                                     </div>
+                                    <Link
+                                        to="/soc-analytics"
+                                        className="flex items-center gap-3 px-2 py-1 pt-2 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <TbDeviceDesktopAnalytics className="text-[16px]" /> Analytics
+                                    </Link>
                                     <Link
                                         to="/risk-level"
                                         className="flex items-center gap-3 px-2 py-1 pt-2 rounded-md hover:bg-[#4B06DD]/20 hover:text-purple-300 transition-all duration-300"
