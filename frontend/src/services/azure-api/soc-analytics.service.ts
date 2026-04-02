@@ -66,10 +66,10 @@ export interface SocAnalyticsResponse {
 // ─── Mapa de período ──────────────────────────────────────────────────────────
 
 const PERIODO_API_MAP: Record<PeriodoOption, string> = {
-    Semana: "week",
-    Mês: "month",
-    Trimestre: "quarter",
-    Ano: "year",
+    Semana: "Week",    // era "week"
+    Mês: "Month",     // era "month"
+    Trimestre: "Quarter", // era "quarter"
+    Ano: "Year",      // era "year"
 };
 
 // ─── Service ──────────────────────────────────────────────────────────────────

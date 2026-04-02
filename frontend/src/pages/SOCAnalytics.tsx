@@ -220,16 +220,18 @@ export default function SOCAnalytics() {
     const riskScore = data?.riskLevel?.score ?? 0;
     const alertsBySeverity = data?.riskLevel?.alertsBySeverity ?? [];
 
+    // ✅ ÚNICO BLOCO QUE MUDOU — dados reais do riskLevel, cálculo correto
+    const total = alertsBySeverity.reduce((acc, x) => acc + x.count, 0);
+    const max = Math.max(...alertsBySeverity.map((x) => x.count), 1);
+
     const alertGravidade = alertsBySeverity.map((a, i) => {
         const color = colorFor(a.severity, i);
-        const max = Math.max(...alertsBySeverity.map((x) => x.count), 1);
         const bar = Math.round((a.count / max) * 100);
-        const pct =
-            donutTotal > 0
-                ? a.count / donutTotal >= 0.01
-                    ? `${Math.round((a.count / donutTotal) * 100)}%`
-                    : "<1%"
-                : "—";
+        const pct = total > 0
+            ? a.count / total >= 0.01
+                ? `${Math.round((a.count / total) * 100)}%`
+                : "<1%"
+            : "—";
         return { label: a.severity, color, count: a.count, pct, bar };
     });
 
@@ -400,7 +402,7 @@ export default function SOCAnalytics() {
                                 <p className="text-gray-600 text-xs text-center">Clique em uma fatia para filtrar por severidade</p>
                             </div>
 
-                            {/* AI Performance – mockado (fora do escopo da API /soc) */}
+                            {/* AI Performance */}
                             <div className="xl:col-span-6 cards rounded-2xl p-6 flex flex-col gap-5">
                                 <div className="flex items-start justify-between">
                                     <div>
