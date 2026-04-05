@@ -32,7 +32,7 @@ export default {
         .service("jwt")
         .issue({
           id: userId,
-          tenant_id: user?.tenant?.id ?? null,
+          tenant_id: user?.tenant?.uid ?? null,
         });
     });
   },

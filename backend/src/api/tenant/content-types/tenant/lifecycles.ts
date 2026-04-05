@@ -1,3 +1,5 @@
+import { v4 as uuid } from "uuid";
+
 export default {
   async afterFindOne(event) {
     const { result } = event;
@@ -28,6 +30,10 @@ export default {
   async beforeCreate(event) {
     const { params } = event;
 
+    // ✅ Gera uid automaticamente se não informado
+    if (!params.data.uid) {
+      params.data.uid = uuid();
+    }
     const users = params.data.users_permissions_users || [];
     if (users.length > 0) {
       const userId = users[0].id || users[0];

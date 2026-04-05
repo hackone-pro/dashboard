@@ -62,9 +62,9 @@ export default {
     // =========================
     const user = await strapi.db
       .query("plugin::users-permissions.user")
-      .findOne({ 
+      .findOne({
         where: { email },
-        populate: ["user_role"], 
+        populate: ["user_role"],
       });
 
     if (!user) {
@@ -157,13 +157,18 @@ export default {
     // =========================
     // LOGIN DIRETO (sem MFA)
     // =========================
+    const { password: _, reset_token, reset_expire, ...safeUser } = user;
+
+    const userWithTenant = await strapi.entityService.findOne(
+      "plugin::users-permissions.user",
+      user.id,
+      { populate: { tenant: true } }
+    ) as any;
+
     const jwt = strapi
       .plugin("users-permissions")
       .service("jwt")
-      .issue({ id: user.id });
-
-    const { password: _, reset_token, reset_expire, ...safeUser } =
-      user;
+      .issue({ id: user.id, tenant_id: userWithTenant?.tenant?.uid ?? null });
 
     return ctx.send({
       jwt,

@@ -220,17 +220,32 @@ export default function SOCAnalytics() {
     const riskScore = data?.riskLevel?.score ?? 0;
     const alertsBySeverity = data?.riskLevel?.alertsBySeverity ?? [];
 
+    // ✅ ÚNICO BLOCO QUE MUDOU — dados reais do riskLevel, cálculo correto
+    const LABEL_PT: Record<string, string> = {
+        Critical: "Crítico",
+        High: "Alto",
+        Medium: "Médio",
+        Low: "Baixo",
+    };
+
+    const total = alertsBySeverity.reduce((acc, x) => acc + x.count, 0);
+    const max = Math.max(...alertsBySeverity.map((x) => x.count), 1);
+
     const alertGravidade = alertsBySeverity.map((a, i) => {
         const color = colorFor(a.severity, i);
-        const max = Math.max(...alertsBySeverity.map((x) => x.count), 1);
         const bar = Math.round((a.count / max) * 100);
-        const pct =
-            donutTotal > 0
-                ? a.count / donutTotal >= 0.01
-                    ? `${Math.round((a.count / donutTotal) * 100)}%`
-                    : "<1%"
-                : "—";
-        return { label: a.severity, color, count: a.count, pct, bar };
+        const pct = total > 0
+            ? a.count / total >= 0.01
+                ? `${Math.round((a.count / total) * 100)}%`
+                : "<1%"
+            : "—";
+        return {
+            label: LABEL_PT[a.severity] ?? a.severity, // ✅ traduz
+            color,
+            count: a.count,
+            pct,
+            bar,
+        };
     });
 
     const openIncidents = data?.openIncidents;
@@ -344,7 +359,8 @@ export default function SOCAnalytics() {
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <span className="w-3 h-3 rounded-xs" style={{ background: color, boxShadow: ativo ? `0 0 8px ${color}` : "none" }} />
-                                                    <span className={`text-gray-400 ${ativo ? "text-white font-semibold" : ""}`}>{a.severity}</span>
+                                                    <span className={`text-gray-400 ${ativo ? "text-white font-semibold" : ""}`}>{LABEL_PT[a.severity] ?? a.severity}
+                                                    </span>
                                                 </span>
                                                 <span className={ativo ? "text-white font-semibold" : "text-white"}>
                                                     {a.count.toLocaleString("pt-BR")} alertas
@@ -386,7 +402,7 @@ export default function SOCAnalytics() {
                                                 return (
                                                     <span key={b.severity} className="flex items-center gap-2 pb-5">
                                                         <span className="w-2.5 h-2.5 rounded-xs inline-block" style={{ background: donutColors[i] }} />
-                                                        <span className="text-gray-500 font-medium">{b.severity}</span>
+                                                        <span className="text-gray-500 font-medium">{LABEL_PT[b.severity] ?? b.severity}</span>
                                                         <span className="text-white font-medium">{pct}%</span>
                                                     </span>
                                                 );
@@ -400,7 +416,7 @@ export default function SOCAnalytics() {
                                 <p className="text-gray-600 text-xs text-center">Clique em uma fatia para filtrar por severidade</p>
                             </div>
 
-                            {/* AI Performance – mockado (fora do escopo da API /soc) */}
+                            {/* AI Performance */}
                             <div className="xl:col-span-6 cards rounded-2xl p-6 flex flex-col gap-5">
                                 <div className="flex items-start justify-between">
                                     <div>

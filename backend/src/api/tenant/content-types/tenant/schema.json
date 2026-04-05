@@ -11,6 +11,9 @@
   },
   "pluginOptions": {},
   "attributes": {
+    "uid": {
+      "type": "string"
+    },
     "cliente_name": {
       "type": "string"
     },
