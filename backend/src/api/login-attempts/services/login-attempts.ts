@@ -168,7 +168,7 @@ export default {
     const jwt = strapi
       .plugin("users-permissions")
       .service("jwt")
-      .issue({ id: user.id, tenant_id: userWithTenant?.tenant?.id ?? null });
+      .issue({ id: user.id, tenant_id: userWithTenant?.tenant?.uid ?? null });
 
     return ctx.send({
       jwt,

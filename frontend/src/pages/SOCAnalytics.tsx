@@ -221,6 +221,13 @@ export default function SOCAnalytics() {
     const alertsBySeverity = data?.riskLevel?.alertsBySeverity ?? [];
 
     // ✅ ÚNICO BLOCO QUE MUDOU — dados reais do riskLevel, cálculo correto
+    const LABEL_PT: Record<string, string> = {
+        Critical: "Crítico",
+        High: "Alto",
+        Medium: "Médio",
+        Low: "Baixo",
+    };
+
     const total = alertsBySeverity.reduce((acc, x) => acc + x.count, 0);
     const max = Math.max(...alertsBySeverity.map((x) => x.count), 1);
 
@@ -232,7 +239,13 @@ export default function SOCAnalytics() {
                 ? `${Math.round((a.count / total) * 100)}%`
                 : "<1%"
             : "—";
-        return { label: a.severity, color, count: a.count, pct, bar };
+        return {
+            label: LABEL_PT[a.severity] ?? a.severity, // ✅ traduz
+            color,
+            count: a.count,
+            pct,
+            bar,
+        };
     });
 
     const openIncidents = data?.openIncidents;
@@ -346,7 +359,8 @@ export default function SOCAnalytics() {
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <span className="w-3 h-3 rounded-xs" style={{ background: color, boxShadow: ativo ? `0 0 8px ${color}` : "none" }} />
-                                                    <span className={`text-gray-400 ${ativo ? "text-white font-semibold" : ""}`}>{a.severity}</span>
+                                                    <span className={`text-gray-400 ${ativo ? "text-white font-semibold" : ""}`}>{LABEL_PT[a.severity] ?? a.severity}
+                                                    </span>
                                                 </span>
                                                 <span className={ativo ? "text-white font-semibold" : "text-white"}>
                                                     {a.count.toLocaleString("pt-BR")} alertas
@@ -388,7 +402,7 @@ export default function SOCAnalytics() {
                                                 return (
                                                     <span key={b.severity} className="flex items-center gap-2 pb-5">
                                                         <span className="w-2.5 h-2.5 rounded-xs inline-block" style={{ background: donutColors[i] }} />
-                                                        <span className="text-gray-500 font-medium">{b.severity}</span>
+                                                        <span className="text-gray-500 font-medium">{LABEL_PT[b.severity] ?? b.severity}</span>
                                                         <span className="text-white font-medium">{pct}%</span>
                                                     </span>
                                                 );
