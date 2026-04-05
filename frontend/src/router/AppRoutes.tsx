@@ -1,3 +1,5 @@
+// src/routes/AppRoutes.tsx
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Login';
 import Dashboard from '../pages/Dashboard';
@@ -22,6 +24,7 @@ import MultiTenantManager from '../pages/MultiTenantManager';
 import AdminRoute from './AdminRoute';
 import PublicRoute from "./PublicRoute";
 import SOCAnalytics from '../pages/SOCAnalytics';
+import ChatWidget from '../componentes/chat/ChatWidget'; // ← NOVO
 
 const enableIntegrations =
   import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
@@ -29,15 +32,13 @@ const enableIntegrations =
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+
       <Routes>
-
         <Route path="/" element={<Navigate to="/login" replace />} />
-
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/verify-code" element={<PublicRoute><VerifyCode /></PublicRoute>} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
         <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
@@ -48,14 +49,7 @@ export default function AppRoutes() {
         <Route path="/monitoria-csc" element={<PrivateRoute><MonitoriaCSC /></PrivateRoute>} />
         <Route path="/soc-analytics" element={<PrivateRoute><SOCAnalytics /></PrivateRoute>} />
         {enableIntegrations && (
-          <Route
-            path="/integrations"
-            element={
-              <PrivateRoute>
-                <Integrations />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/integrations" element={<PrivateRoute><Integrations /></PrivateRoute>} />
         )}
         <Route path="/services-catalog" element={<PrivateRoute><ServicesCatalog /></PrivateRoute>} />
         <Route path="/service/:nome" element={<PrivateRoute><ServiceModel /></PrivateRoute>} />
@@ -63,10 +57,11 @@ export default function AppRoutes() {
         <Route path="/relatorios" element={<PrivateRoute><ReportDash /></PrivateRoute>} />
         <Route path="/config" element={<PrivateRoute><Config /></PrivateRoute>} />
         <Route path="/multitenant-manager" element={<PrivateRoute><AdminRoute><MultiTenantManager /></AdminRoute></PrivateRoute>} />
-
         <Route path="*" element={<Navigate to="/login" replace />} />
-
       </Routes>
+
+      <ChatWidget /> {/* ← NOVO: fora das Routes, dentro do BrowserRouter */}
+
     </BrowserRouter>
   );
 }
