@@ -118,7 +118,6 @@ export default function Integrations() {
             {painelIA.aberto && (
                 <LLMConfigPanel
                     providerInicial={painelIA.provider}
-                    tenantId={import.meta.env.VITE_CHAT_CLIENT_ID ?? ""}
                     onClose={fecharPainelIA}
                 />
             )}

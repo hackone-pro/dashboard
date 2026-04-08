@@ -81,10 +81,11 @@ export async function getAvailableModels(
 
 export async function saveLLMConfig(
   payload: LLMCustomerPayload
-): Promise<void> {
-  await axios.post(
+): Promise<string> { // ← era void, agora retorna string (clientId)
+  const { data } = await axios.post<string>(
     `${CUSTOMERS_API_URL}/api/customers/llm`,
     payload,
     { headers: { ...authHeaders() } }
   );
+  return data; // ← retorna o clientId gerado
 }

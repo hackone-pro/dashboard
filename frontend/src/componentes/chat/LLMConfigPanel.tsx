@@ -1,7 +1,7 @@
 // src/componentes/integrations/LLMConfigPanel.tsx
 
 import { useState, useEffect } from "react";
-import { FiX, FiLoader, FiCheck, FiAlertCircle } from "react-icons/fi";
+import { FiX, FiLoader, FiCheck, FiAlertCircle, FiCopy } from "react-icons/fi";
 import {
     PROVIDERS,
     ProviderType,
@@ -14,7 +14,6 @@ import {
 
 type Props = {
     providerInicial: ProviderType;
-    tenantId: string;
     onClose: () => void;
 };
 
@@ -24,17 +23,15 @@ type Status = "idle" | "validating" | "loading-models" | "saving" | "success" | 
 
 export default function LLMConfigPanel({
     providerInicial,
-    tenantId,
     onClose,
 }: Props) {
     const [provider, setProvider] = useState<ProviderType>(providerInicial);
     const [apiKey, setApiKey] = useState("");
-    const [endpoint, setEndpoint] = useState("");
     const [modelo, setModelo] = useState("");
-    const [systemPrompt, setSystemPrompt] = useState("");
     const [modelos, setModelos] = useState<string[]>([]);
     const [status, setStatus] = useState<Status>("idle");
     const [errorMsg, setErrorMsg] = useState("");
+    const [clientId, setClientId] = useState<string | null>(null); // ← retornado após salvar
 
     const providerLabel = PROVIDERS.find((p) => p.value === provider)?.label ?? "";
 
@@ -56,11 +53,9 @@ export default function LLMConfigPanel({
         setErrorMsg("");
 
         try {
-            // 1. Valida a chave
             const valida = await validateApiKey(
                 provider,
-                apiKey.trim(),
-                endpoint.trim() || undefined
+                apiKey.trim()
             );
 
             if (!valida) {
@@ -69,19 +64,15 @@ export default function LLMConfigPanel({
                 return;
             }
 
-            // 2. Busca modelos
             setStatus("loading-models");
 
             const lista = await getAvailableModels(
                 provider,
-                apiKey.trim(),
-                endpoint.trim() || undefined
+                apiKey.trim()
             );
 
             if (!lista || lista.length === 0) {
-                setErrorMsg(
-                    "Nenhum modelo encontrado. Verifique o provedor e a chave de API."
-                );
+                setErrorMsg("Nenhum modelo encontrado. Verifique o provedor e a chave de API.");
                 setStatus("error");
                 return;
             }
@@ -104,13 +95,14 @@ export default function LLMConfigPanel({
         setErrorMsg("");
 
         try {
-            await saveLLMConfig({
+            const id = await saveLLMConfig({
                 providerType: provider,
                 model: modelo,
                 apiKey: apiKey.trim(),
-                endpoint: endpoint.trim() || null,
-                systemPrompt: systemPrompt.trim() || null,
+                endpoint: null,
+                systemPrompt: null,
             });
+            setClientId(id);
             setStatus("success");
         } catch {
             setErrorMsg("Erro ao salvar configuração. Tente novamente.");
@@ -155,16 +147,6 @@ export default function LLMConfigPanel({
                 {/* Formulário */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
 
-                    {/* Código (readonly) */}
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-xs text-gray-400">Client ID</label>
-                        <input
-                            type="text"
-                            value={tenantId}
-                            className="bg-[#1a1330] border border-[#2a2040] text-gray-500 text-sm rounded-lg px-3 py-2.5"
-                        />
-                    </div>
-
                     {/* Provedor */}
                     <div className="flex flex-col gap-1.5">
                         <label className="text-xs text-gray-400">Provedor</label>
@@ -197,12 +179,10 @@ export default function LLMConfigPanel({
                         </p>
                     </div>
 
-
                     {/* Modelo */}
                     <div className="flex flex-col gap-1.5">
                         <label className="text-xs text-gray-400">Modelo</label>
 
-                        {/* Validando chave */}
                         {isValidating && (
                             <div className="flex items-center gap-2 bg-[#1a1330] border border-[#2a2040] rounded-lg px-3 py-2.5">
                                 {/* @ts-ignore */}
@@ -211,7 +191,6 @@ export default function LLMConfigPanel({
                             </div>
                         )}
 
-                        {/* Carregando modelos */}
                         {isLoadingModels && (
                             <div className="flex items-center gap-2 bg-[#1a1330] border border-[#2a2040] rounded-lg px-3 py-2.5">
                                 {/* @ts-ignore */}
@@ -220,7 +199,6 @@ export default function LLMConfigPanel({
                             </div>
                         )}
 
-                        {/* Dropdown de modelos */}
                         {!isValidating && !isLoadingModels && modelos.length > 0 && (
                             <select
                                 value={modelo}
@@ -234,7 +212,6 @@ export default function LLMConfigPanel({
                             </select>
                         )}
 
-                        {/* Aguardando chave */}
                         {!isValidating && !isLoadingModels && modelos.length === 0 && status !== "error" && (
                             <div className="bg-[#1a1330] border border-dashed border-[#2a2040] rounded-lg px-3 py-2.5">
                                 <span className="text-gray-600 text-sm">
@@ -253,14 +230,34 @@ export default function LLMConfigPanel({
                         </div>
                     )}
 
-                    {/* Sucesso */}
-                    {isSuccess && (
-                        <div className="flex items-center gap-2 bg-emerald-950/30 border border-emerald-900/50 rounded-lg px-3 py-2.5">
-                            {/* @ts-ignore */}
-                            <FiCheck size={14} className="text-emerald-400 shrink-0" />
-                            <p className="text-emerald-400 text-xs">
-                                Configuração salva com sucesso!
-                            </p>
+                    {/* Sucesso + clientId */}
+                    {isSuccess && clientId && (
+                        <div className="flex flex-col gap-3 bg-emerald-950/30 border border-emerald-900/50 rounded-lg px-3 py-3">
+                            <div className="flex items-center gap-2">
+                                {/* @ts-ignore */}
+                                <FiCheck size={14} className="text-emerald-400 shrink-0" />
+                                <p className="text-emerald-400 text-xs font-medium">
+                                    Configuração salva com sucesso!
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-gray-400 text-xs mb-1.5">
+                                    Código de integração — guarde para usar no chat:
+                                </p>
+                                <div className="flex items-center gap-2 bg-[#0f0a1e] border border-[#2a2040] rounded-lg px-3 py-2">
+                                    <span className="text-purple-300 text-xs font-mono flex-1 break-all">
+                                        {clientId}
+                                    </span>
+                                    <button
+                                        onClick={() => navigator.clipboard.writeText(clientId)}
+                                        className="text-gray-500 hover:text-gray-300 transition shrink-0"
+                                        title="Copiar"
+                                    >
+                                        {/* @ts-ignore */}
+                                        <FiCopy size={13} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 
