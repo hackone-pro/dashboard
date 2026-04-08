@@ -31,7 +31,7 @@ export default function LLMConfigPanel({
     const [modelos, setModelos] = useState<string[]>([]);
     const [status, setStatus] = useState<Status>("idle");
     const [errorMsg, setErrorMsg] = useState("");
-    const [clientId, setClientId] = useState<string | null>(null); // ← retornado após salvar
+    const [clientId, setClientId] = useState("");
 
     const providerLabel = PROVIDERS.find((p) => p.value === provider)?.label ?? "";
 
@@ -146,6 +146,18 @@ export default function LLMConfigPanel({
 
                 {/* Formulário */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs text-gray-400">Client ID</label>
+                        <input
+                            type="text"
+                            value={clientId}
+                            onChange={(e) => setClientId(e.target.value)}
+                            disabled={isBusy}
+                            placeholder="Digite o Client ID..."
+                            className="bg-[#1a1330] border border-[#2a2040] text-gray-200 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-[#4B06DD]/60 transition placeholder-gray-600 disabled:opacity-50"
+                        />
+                    </div>
 
                     {/* Provedor */}
                     <div className="flex flex-col gap-1.5">
