@@ -77,6 +77,7 @@ export default {
         where: { mfa_token: mfaToken },
         populate: {
           user_role: true,
+          tenant: true,
         },
       });
 
@@ -96,7 +97,7 @@ export default {
     const jwt = strapi
       .plugin("users-permissions")
       .service("jwt")
-      .issue({ id: user.id });
+      .issue({ id: user.id, tenant_id: user?.tenant?.uid ?? null });
 
     // limpa dados MFA
     await strapi.db.query("plugin::users-permissions.user").update({
