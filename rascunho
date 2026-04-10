@@ -1,0 +1,106 @@
+essentials
+
+
+1 - criar tela de configuração para buscar alertas no firewall FortiGATE. o usuário poderá cadastrar mais de um local para buscar alertas. os campos serão: 
+- fonte (no caso será o próprio firewall FortiGATE : product=fortigate|fortinet)
+- descrição (para facilitar a identificação do firewall configurado
+- url da api 
+
+** ao concluir a configuração, o sistema deverá dispar a criação de um background job para as instanciar de pooling serem independentes
+
+2 - criar um background job para o firewall FortiGATE fazer o pooling e buscar os alertas a partir das informações configuradas na tela especificada no item 1.
+** utilizar o que foi feito em python como base para construir esse job
+
+
+
+
+
+3 - na api alert, crie o objeto normalizador dos alertas recebidos pelo background job ou mesmo por fontes externas.
+
+event_id (interno)
+tenant_id
+source_type = firewall | edr | siem
+vendor:
+	fortinet|firewall
+	wazuh|siem
+			*por enquanto apenas esses
+product: 
+	fortigate|fortinet
+	wazuh|wazuh	
+			*por enquanto apenas esses	
+event_time (timestamp original)
+ingest_time (timestamp de ingestão)
+severity = baixo | medio | alto | critico (mapeado)
+category (network_threat, malware, auth, policy, intrusion, etc.)
+action (blocked, allowed, detected, quarantined etc.)
+asset:
+	host_name (quando existir)
+	ip (quando existir)
+	user (quando existir)
+ioc:
+	src_ip
+	dst_ip
+	domain
+	url
+	hash 
+raw_payload
+	
+4 - ajustar microserviços para receber no header o tenant_id do usuário logado
+
+5 - refatorar o front e o back strapi para os tenants do usuário estarem no token de autenticação
+
+6 - incluir na configuração do tenant qual o plano da organização (essentials|full)
+
+7 - criar estrutura feature flag nas paginas/componentes de acordo com o plano do cliente
+
+essentials:
+Incidents: habilitado
+Risk Level: habilitado
+SOC Analytics: habilitado com limitações
+Monitoria NG-SOC: habilitado como telemetria e saúde
+Threat Map: habilitado
+Relatórios
+
+		
+
+
+chat
+
+1 - melhorar a tela de configuração da LLM pois o cliente poderá cadastrar uma LLM responsável pelo CHAT e outra para o motor de analises dos alertas. 
+
+-provedor
+-chave
+-modelo
+
+** incluir um botão para validar a condiguração
+
+
+2 - criar evento para que todo cliente tenha como padrão a llm da H1 tanto para chat como para motor de analises.
+
+
+
+analytics
+
+1 - realizar pente fino com base em dados reais vindo do essentials
+
+risk level
+
+1 - fazer entendimento da documentação
+2 - validar se os algoritmos estão em linha com a documentação
+3 - corregir e ajustar
+4 - realizar testes com ao menos 3 cenários
+
+ticket
+1 - verificar se esta sendo salvo com esses campos
+
+incident_id
+org_id
+created_at
+status
+severity
+title e description
+primary_asset
+event_count
+sources_involved (firewall, edr)
+first_seen_at, last_seen_at
+ai_summary
