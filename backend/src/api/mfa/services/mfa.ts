@@ -1,6 +1,7 @@
 // src/api/mfa/services/mfa.ts
 
 import { v4 as uuid } from "uuid";
+import { buildJwtPayload } from "../../auth/utils/build-jwt-payload";
 
 export default {
 
@@ -93,11 +94,12 @@ export default {
       throw new Error("Código inválido.");
     }
 
-    // gera JWT oficial
+    // gera JWT oficial com tenants
+    const payload = await buildJwtPayload(user);
     const jwt = strapi
       .plugin("users-permissions")
       .service("jwt")
-      .issue({ id: user.id, tenant_id: user?.tenant?.uid ?? null });
+      .issue(payload);
 
     // limpa dados MFA
     await strapi.db.query("plugin::users-permissions.user").update({
