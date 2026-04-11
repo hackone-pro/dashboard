@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import axios from "axios";
+import { buildJwtPayload } from "../../auth/utils/build-jwt-payload";
 
 const ENABLE_TURNSTILE = process.env.ENABLE_TURNSTILE === "true";
 const ENABLE_LOGIN_ATTEMPT_LIMIT =
@@ -159,16 +160,11 @@ export default {
     // =========================
     const { password: _, reset_token, reset_expire, ...safeUser } = user;
 
-    const userWithTenant = await strapi.entityService.findOne(
-      "plugin::users-permissions.user",
-      user.id,
-      { populate: { tenant: true } }
-    ) as any;
-
+    const payload = await buildJwtPayload(user);
     const jwt = strapi
       .plugin("users-permissions")
       .service("jwt")
-      .issue({ id: user.id, tenant_id: userWithTenant?.tenant?.uid ?? null });
+      .issue(payload);
 
     return ctx.send({
       jwt,
