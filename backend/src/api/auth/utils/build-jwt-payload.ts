@@ -12,52 +12,36 @@ interface JwtPayload {
 }
 
 export async function buildJwtPayload(user: { id: number }): Promise<JwtPayload> {
-  // 1. Buscar o tenant direto do usuario (relacao user.tenant)
-  const fullUser = await strapi.db
-    .query("plugin::users-permissions.user")
-    .findOne({
-      where: { id: user.id },
-      populate: {
-        tenant: {
-          select: ["id", "uid", "plan"],
-        },
-      },
-    });
+  // Reutiliza o servico existente que ja resolve tenant direto + multi-tenant,
+  // deduplica, e filtra corretamente
+  const resultado = await strapi
+    .service("api::user-multi-tenant.user-multi-tenant")
+    .buscarTenantsUsuario(user);
 
-  // 2. Buscar todos os registros user-multi-tenant ativos
-  const acessos = await strapi.db
-    .query("api::user-multi-tenant.user-multi-tenant")
-    .findMany({
-      where: { users_permissions_user: user.id, ativo: true, publishedAt: { $notNull: true } },
-      populate: {
-        tenant: {
-          select: ["id", "uid", "plan"],
-        },
-      },
-    });
+  // Buscar uid e plan dos tenants retornados (o servico nao inclui esses campos)
+  const tenantIds = resultado.tenantsAcessiveis.map((t: any) => t.id);
 
-  // 3. Montar lista de tenants (direto + multi-tenant), sem duplicatas
-  const seen = new Set<number>();
   const tenants: JwtTenant[] = [];
 
-  const addTenant = (t: any) => {
-    if (!t || seen.has(t.id)) return;
-    seen.add(t.id);
-    tenants.push({
-      id: t.id,
-      uid: t.uid,
-      plan: t.plan ?? "full",
-    });
-  };
+  if (tenantIds.length > 0) {
+    const tenantRecords = await strapi.db
+      .query("api::tenant.tenant")
+      .findMany({
+        where: { id: { $in: tenantIds } },
+        select: ["id", "uid", "plan"],
+      });
 
-  // Tenant direto do usuario primeiro
-  if (fullUser?.tenant) {
-    addTenant(fullUser.tenant);
-  }
-
-  // Tenants via multi-tenant
-  for (const acesso of acessos) {
-    addTenant(acesso.tenant);
+    // Manter a ordem do servico (tenant ativo primeiro)
+    for (const id of tenantIds) {
+      const t = tenantRecords.find((r: any) => r.id === id);
+      if (t) {
+        tenants.push({
+          id: t.id,
+          uid: t.uid,
+          plan: t.plan ?? "full",
+        });
+      }
+    }
   }
 
   return { id: user.id, tenants };
