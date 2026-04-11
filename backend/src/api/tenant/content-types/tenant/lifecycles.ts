@@ -5,6 +5,11 @@ export default {
     const { result } = event;
     if (!result) return;
 
+    // Fallback: tenants existentes sem plan retornam "full"
+    if (!result.plan) {
+      result.plan = "full";
+    }
+
     if (result.users_permissions_users && result.users_permissions_users.length > 0) {
       const user = result.users_permissions_users[0];
       if (user?.owner_name_iris) {
@@ -18,6 +23,11 @@ export default {
     if (!Array.isArray(result)) return;
 
     for (const tenant of result) {
+      // Fallback: tenants existentes sem plan retornam "full"
+      if (!tenant.plan) {
+        tenant.plan = "full";
+      }
+
       if (tenant.users_permissions_users && tenant.users_permissions_users.length > 0) {
         const user = tenant.users_permissions_users[0];
         if (user?.owner_name_iris) {
