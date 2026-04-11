@@ -28,7 +28,7 @@ export async function buildJwtPayload(user: { id: number }): Promise<JwtPayload>
   const acessos = await strapi.db
     .query("api::user-multi-tenant.user-multi-tenant")
     .findMany({
-      where: { users_permissions_user: user.id, ativo: true },
+      where: { users_permissions_user: user.id, ativo: true, publishedAt: { $notNull: true } },
       populate: {
         tenant: {
           select: ["id", "uid", "plan"],
