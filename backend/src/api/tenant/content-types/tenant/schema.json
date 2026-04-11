@@ -17,6 +17,12 @@
     "cliente_name": {
       "type": "string"
     },
+    "plan": {
+      "type": "enumeration",
+      "enum": ["essentials", "full"],
+      "default": "full",
+      "required": true
+    },
     "wazuh_url": {
       "type": "string"
     },
