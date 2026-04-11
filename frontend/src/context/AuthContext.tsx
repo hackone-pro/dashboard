@@ -1,11 +1,28 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { getToken, setToken, clearToken } from "../utils/auth";
 
+export interface JwtTenant {
+  id: number;
+  uid: string;
+  plan: "essentials" | "full";
+}
+
 interface AuthContextType {
   token: string | null;
   user: any | null;
+  jwtTenants: JwtTenant[];
   login: (novoToken: string, userData: any) => void;
   logout: () => void;
+}
+
+function decodeJwtTenants(token: string | null): JwtTenant[] {
+  if (!token) return [];
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return Array.isArray(payload.tenants) ? payload.tenants : [];
+  } catch {
+    return [];
+  }
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,10 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
+  const [jwtTenants, setJwtTenants] = useState<JwtTenant[]>(() => decodeJwtTenants(getToken()));
 
   const login = (novoToken: string, userData: any) => {
     setToken(novoToken);
     setTokenState(novoToken);
+    setJwtTenants(decodeJwtTenants(novoToken));
 
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
@@ -29,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
     setTokenState(null);
     setUser(null);
+    setJwtTenants([]);
 
     localStorage.removeItem("user");
     localStorage.removeItem("remember_email");
@@ -42,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleStorage = (event: StorageEvent) => {
       if (event.key === "token") {
         setTokenState(event.newValue);
+        setJwtTenants(decodeJwtTenants(event.newValue));
       }
       if (event.key === "user") {
         const newUser = event.newValue;
@@ -53,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ token, user, jwtTenants, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
