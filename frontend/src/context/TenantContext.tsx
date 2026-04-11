@@ -17,19 +17,30 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
 
-  const { token } = useAuth();
+  const { token, jwtTenants } = useAuth();
 
   useEffect(() => {
-    const carregarTenants = async () => {
-      if (!token) {
-        // se deslogou, limpa tudo
-        setTenants([]);
-        setTenantAtivo(null);
-        setLoading(false);
-        return;
-      }
+    if (!token) {
+      setTenants([]);
+      setTenantAtivo(null);
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
+    // Seed from JWT tenants (avoids API call on page load)
+    if (jwtTenants.length > 0) {
+      const seedTenants: Tenant[] = jwtTenants.map((jt) => ({
+        id: jt.id,
+        cliente_name: "",
+        organizacao: undefined,
+        contract: null,
+      }));
+      setTenants(seedTenants);
+      setTenantAtivo(seedTenants[0]);
+    }
+
+    // Fetch full tenant data from API (has cliente_name, organizacao, contract)
+    const carregarTenants = async () => {
       try {
         const data = await getTenants();
         const lista = data.tenantsAcessiveis || [];
@@ -39,15 +50,18 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         setTenantAtivo(ativo);
       } catch (err) {
         console.error("Erro ao carregar tenants:", err);
-        setTenants([]);
-        setTenantAtivo(null);
+        // Keep JWT seed if API fails
+        if (jwtTenants.length === 0) {
+          setTenants([]);
+          setTenantAtivo(null);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     carregarTenants();
-  }, [token]); // ✅ reexecuta quando o token muda (login/logout)
+  }, [token]); // reexecuta quando o token muda (login/logout)
 
   const trocarTenant = async (id: number) => {
     setSwitching(true);
