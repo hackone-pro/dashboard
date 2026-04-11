@@ -1,4 +1,6 @@
 // src/index.ts
+import { buildJwtPayload } from "./api/auth/utils/build-jwt-payload";
+
 export default {
   register({ strapi }: { strapi: any }) {},
 
@@ -19,21 +21,11 @@ export default {
 
       // console.log("✅ Login interceptado, userId:", userId);
 
-      const user = await strapi.entityService.findOne(
-        "plugin::users-permissions.user",
-        userId,
-        { populate: { tenant: true } }
-      ) as any;
-
-      // console.log("✅ Tenant encontrado:", user?.tenant?.id);
-
+      const payload = await buildJwtPayload({ id: userId });
       ctx.body.jwt = await strapi
         .plugin("users-permissions")
         .service("jwt")
-        .issue({
-          id: userId,
-          tenant_id: user?.tenant?.uid ?? null,
-        });
+        .issue(payload);
     });
   },
 };
