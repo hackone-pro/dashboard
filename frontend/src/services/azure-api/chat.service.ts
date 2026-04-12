@@ -1,7 +1,7 @@
 // src/services/azure-api/chat.service.ts
 
 import axios from "axios";
-import { getToken } from "../../utils/auth";
+import { serviceHeaders } from "./headers";
 
 const API_URL = import.meta.env.VITE_CHAT_API_URL;
 
@@ -42,13 +42,6 @@ export type ChatHistoryResponse = {
     hasNextPage: boolean;
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function authHeaders() {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 // ─── Funções ─────────────────────────────────────────────────────────────────
 
 export async function sendChatMessage(
@@ -57,7 +50,7 @@ export async function sendChatMessage(
     const { data } = await axios.post<SendMessageResponse>(
         `${API_URL}/api/chat`,
         payload,
-        { headers: { ...authHeaders() } }
+        { headers: serviceHeaders() }
     );
     return data;
 }
@@ -71,7 +64,7 @@ export async function getChatHistory(
         `${API_URL}/api/chat/sessions/${sessionId}/history`,
         {
             params: { pageNumber, pageSize },
-            headers: { ...authHeaders() },
+            headers: serviceHeaders(),
         }
     );
     return data;

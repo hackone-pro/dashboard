@@ -23,6 +23,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     if (!token) {
       setTenants([]);
       setTenantAtivo(null);
+      localStorage.removeItem("tenant_id");
       setLoading(false);
       return;
     }
@@ -37,6 +38,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       }));
       setTenants(seedTenants);
       setTenantAtivo(seedTenants[0]);
+      localStorage.setItem("tenant_id", String(seedTenants[0].id));
     }
 
     // Fetch full tenant data from API (has cliente_name, organizacao, contract)
@@ -48,6 +50,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         setTenants(lista);
         setTenantAtivo(ativo);
+        if (ativo) localStorage.setItem("tenant_id", String(ativo.id));
       } catch (err) {
         console.error("Erro ao carregar tenants:", err);
         // Keep JWT seed if API fails
@@ -72,6 +75,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       const data = await getTenants();
       setTenants(data.tenantsAcessiveis || []);
       setTenantAtivo(data.tenantAtivo);
+      if (data.tenantAtivo) localStorage.setItem("tenant_id", String(data.tenantAtivo.id));
     } catch (err) {
       console.error("Erro ao trocar tenant:", err);
     } finally {

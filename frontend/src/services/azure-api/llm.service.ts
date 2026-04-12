@@ -1,7 +1,7 @@
 // src/services/azure-api/llm.service.ts
 
 import axios from "axios";
-import { getToken } from "../../utils/auth";
+import { serviceHeaders } from "./headers";
 
 const CHAT_API_URL      = import.meta.env.VITE_CHAT_API_URL;
 const CUSTOMERS_API_URL = import.meta.env.VITE_CUSTOMERS_API_URL;
@@ -27,13 +27,6 @@ export type LLMCustomerPayload = {
   systemPrompt: string | null;
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function authHeaders() {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 // ─── Valida chave de API ──────────────────────────────────────────────────────
 
 export async function validateApiKey(
@@ -48,7 +41,7 @@ export async function validateApiKey(
       apiKey,
       endpoint: endpoint || null,
     },
-    { headers: { ...authHeaders() } }
+    { headers: serviceHeaders() }
   );
   return data;
 }
@@ -71,7 +64,7 @@ export async function getAvailableModels(
     `${CHAT_API_URL}/api/llm/models`,
     {
       params,
-      headers: { ...authHeaders() },
+      headers: serviceHeaders(),
     }
   );
   return data;
@@ -85,7 +78,7 @@ export async function saveLLMConfig(
   const { data } = await axios.post<string>(
     `${CUSTOMERS_API_URL}/api/customers/llm`,
     payload,
-    { headers: { ...authHeaders() } }
+    { headers: serviceHeaders() }
   );
   return data; // ← retorna o clientId gerado
 }

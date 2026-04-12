@@ -1,4 +1,6 @@
-// src/services/socAnalyticsService.ts
+// src/services/azure-api/soc-analytics.service.ts
+
+import { serviceHeaders } from "./headers";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -83,9 +85,7 @@ export const socAnalyticsService = {
         const url = `${API_URL}/api/analytics/soc?periodType=${periodType}`;
 
         const res = await fetch(url, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
+            headers: serviceHeaders(),
         });
 
         if (!res.ok) {
