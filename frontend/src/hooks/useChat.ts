@@ -80,7 +80,7 @@ export function useChat() {
                 const response = await sendChatMessage({
                     message: content.trim(),
                     sessionId: sessionIdRef.current,
-                    clientId: "5ba023a6-cce2-4fb9-a4e9-e2391e1afa76",
+                    purpose: 0,
                     screenContext: page
                         ? { page, entity: null, metadata: null }
                         : null,

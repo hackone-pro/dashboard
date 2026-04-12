@@ -16,8 +16,8 @@ export type ScreenContextDto = {
 export type SendMessagePayload = {
     message: string;
     sessionId?: number | null;
-    clientId?: string | null;
     screenContext?: ScreenContextDto | null;
+    purpose?: number;
 };
 
 export type SendMessageResponse = {
