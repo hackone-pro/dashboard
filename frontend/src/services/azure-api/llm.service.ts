@@ -19,13 +19,38 @@ export const PROVIDERS: { label: string; value: ProviderType }[] = [
 ];
 
 // Payload para salvar na API de customers (conforme técnico)
+export type LLMPurpose = "chat" | "analysis";
+
+export type LLMConfigEntry = {
+  providerType: ProviderType;
+  model: string;
+  apiKey: string;
+  endpoint: string | null;
+};
+
+export type LLMConfigResponse = {
+  chat: LLMConfigEntry | null;
+  analysis: LLMConfigEntry | null;
+};
+
 export type LLMCustomerPayload = {
+  purpose: LLMPurpose;
   providerType: ProviderType;
   model: string;
   apiKey: string;
   endpoint: string | null;
   systemPrompt: string | null;
 };
+
+// ─── Busca configuracao LLM do tenant ────────────────────────────────────────
+
+export async function getLLMConfig(): Promise<LLMConfigResponse> {
+  const { data } = await axios.get<LLMConfigResponse>(
+    `${CUSTOMERS_API_URL}/api/customers/llm`,
+    { headers: serviceHeaders() }
+  );
+  return data;
+}
 
 // ─── Valida chave de API ──────────────────────────────────────────────────────
 
