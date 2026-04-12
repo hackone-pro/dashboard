@@ -8,6 +8,8 @@ import IncidenteTabela from "../componentes/iris/incidentes/IncidenteTabela";
 import { FiRotateCcw } from "react-icons/fi";
 
 import { useIncidentes } from "../hooks/useIncidentes";
+import { useEffect } from "react";
+import { useScreenContext } from "../context/ScreenContext";
 
 export default function Incidentes() {
   const {
@@ -27,6 +29,21 @@ export default function Incidentes() {
     atualizarIncidente,
     chartResetKey,
   } = useIncidentes();
+
+  const { setScreenData } = useScreenContext();
+
+  useEffect(() => {
+    setScreenData("incidentes", {
+      abertos,
+      fechados,
+      atribuidos,
+      naoAtribuidos,
+      total,
+      filtroSeveridade: filtroSeveridade || "todos",
+      filtroOrigem: filtroOrigem || "todos",
+      busca: busca || null,
+    });
+  }, [abertos, fechados, atribuidos, naoAtribuidos, total, filtroSeveridade, filtroOrigem, busca]);
 
   return (
     <LayoutModel titulo="Incidentes">

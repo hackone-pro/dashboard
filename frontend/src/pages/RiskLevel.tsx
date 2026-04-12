@@ -14,12 +14,14 @@ import {
   Severidades,
 } from "../services/wazuh/risklevel.service";
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 
 import { FiRotateCcw } from "react-icons/fi";
 
 export default function RiskLevel() {
   const token = getToken();
   const { tenantAtivo } = useTenant();
+  const { setScreenData } = useScreenContext();
   const formatador = new Intl.NumberFormat("pt-BR");
 
   /* ============================
@@ -56,6 +58,16 @@ export default function RiskLevel() {
 
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
+
+  // ─── Screen context para o chat ──────────────────────────────────────────────
+  useEffect(() => {
+    setScreenData("risk-level", {
+      periodo: periodo ? `${periodo.from} a ${periodo.to}` : `${dias}d`,
+      indiceRisco,
+      totalIncidentes,
+      severidades,
+    });
+  }, [indiceRisco, totalIncidentes, severidades, dias, periodo]);
 
   /* ============================
      HANDLER DO FILTRO

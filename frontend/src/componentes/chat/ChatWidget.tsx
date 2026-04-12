@@ -37,7 +37,6 @@ export default function ChatWidget() {
         >
           <ChatWindow
             onClose={() => setIsOpen(false)}
-            currentPage={location.pathname}
           />
         </div>
       )}

@@ -8,10 +8,9 @@ import ChatInput from "./ChatInput";
 
 type Props = {
     onClose: () => void;
-    currentPage?: string;
 };
 
-export default function ChatWindow({ onClose, currentPage }: Props) {
+export default function ChatWindow({ onClose }: Props) {
     const { messages, isLoading, error, sendMessage, clearChat } = useChat();
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -20,9 +19,8 @@ export default function ChatWindow({ onClose, currentPage }: Props) {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // ─── Envia mensagem passando a página atual como contexto ─────────────────
     function handleSend(content: string) {
-        sendMessage(content, currentPage);
+        sendMessage(content);
     }
 
     return (

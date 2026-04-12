@@ -18,6 +18,7 @@ import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
 import GraficoGauge from "../componentes/graficos/GraficoGauge";
 import { getToken } from "../utils/auth";
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 import {
     socAnalyticsService,
     type SocAnalyticsResponse,
@@ -186,6 +187,7 @@ export default function SOCAnalytics() {
 
     const token = getToken();
     const { tenantAtivo } = useTenant();
+    const { setScreenData } = useScreenContext();
 
     const [data, setData] = useState<SocAnalyticsResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -209,6 +211,22 @@ export default function SOCAnalytics() {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [periodo, tenantAtivo]);
+
+    // ─── Screen context para o chat ──────────────────────────────────────────
+    useEffect(() => {
+        if (!data) return;
+        setScreenData("soc-analytics", {
+            periodo,
+            mttd: data.mttd?.value ?? null,
+            mtta: data.mtta?.value ?? null,
+            mttr: data.mttr?.value ?? null,
+            incidentesAbertos: data.openIncidents?.count ?? null,
+            riskScore: data.riskLevel?.score ?? null,
+            severidades: Object.fromEntries(
+                (data.severityDistribution?.buckets ?? []).map((b) => [b.severity, b.count])
+            ),
+        });
+    }, [data, periodo]);
 
     // ── Derived data ──────────────────────────────────────────────────────────
     const buckets = data?.severityDistribution?.buckets ?? [];

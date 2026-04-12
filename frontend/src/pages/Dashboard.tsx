@@ -21,6 +21,7 @@ import { getToken } from "../utils/auth";
 import { normalizarLayout, limparLayoutParaSalvar} from "../utils/dashboardLayout";
 
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 
 const GridLayout = WidthProvider(GridLayoutBase);
 
@@ -38,6 +39,7 @@ export default function Dashboard() {
   const token = getToken();
   const navigate = useNavigate();
   const { tenantAtivo, loading } = useTenant();
+  const { setScreenData } = useScreenContext();
 
   const [indiceRisco, setIndiceRisco] = useState(0);
   const [totalAtaques, setTotalAtaques] = useState(0);
@@ -97,6 +99,16 @@ export default function Dashboard() {
       ativo = false;
     };
   }, [tenantAtivo]);
+
+  // ─── Screen context para o chat ──────────────────────────────────────────────
+  useEffect(() => {
+    setScreenData("dashboard", {
+      indiceRisco,
+      totalAtaques,
+      tenant: tenantAtivo?.cliente_name ?? null,
+      widgets: layout.map((w) => w.i),
+    });
+  }, [indiceRisco, totalAtaques, tenantAtivo, layout]);
 
   // 🔹 Debounce
   function debounce<T extends (...args: any[]) => void>(fn: T, delay = 1000) {

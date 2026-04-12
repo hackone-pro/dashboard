@@ -6,6 +6,7 @@ import {
     getChatHistory,
     ChatMessage,
 } from "../services/azure-api/chat.service";
+import { useScreenContext } from "../context/ScreenContext";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ export function useChat() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const sessionIdRef = useRef<number | null>(null); // evita closure stale
+    const { screenData } = useScreenContext();
 
     // ─── Normaliza mensagens vindas do histórico ────────────────────────────────
     function normalizeHistory(items: ChatMessage[]): ChatMessageLocal[] {
@@ -51,7 +53,7 @@ export function useChat() {
 
     // ─── Envia mensagem ─────────────────────────────────────────────────────────
     const sendMessage = useCallback(
-        async (content: string, page?: string) => {
+        async (content: string) => {
             if (!content.trim() || isLoading) return;
 
             setError(null);
@@ -81,9 +83,11 @@ export function useChat() {
                     message: content.trim(),
                     sessionId: sessionIdRef.current,
                     purpose: 0,
-                    screenContext: page
-                        ? { page, entity: null, metadata: null }
-                        : null,
+                    screenContext: {
+                        page: screenData.page,
+                        entity: screenData.entity,
+                        metadata: screenData.metadata,
+                    },
                 });
 
                 // 3. Salva sessionId se for a primeira mensagem

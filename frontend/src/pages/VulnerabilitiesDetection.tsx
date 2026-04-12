@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect } from "react";
 import LayoutModel from '../componentes/LayoutModel';
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 
 //CARDS COMPONENTES
 import VulnSeveridadeCard, { VulnSeveridadeCardRef } from '../componentes/wazuh/VulnerabilitiesDetection/VulnServeridadeCard';
@@ -21,6 +22,7 @@ import { FiRotateCcw } from "react-icons/fi";
 
 export default function VulnerabilitiesDetection() {
   const { tenantAtivo } = useTenant();
+  const { setScreenData } = useScreenContext();
   const vulnseveridadeRef = useRef<VulnSeveridadeCardRef>(null);
   const topvulnerabilidadeRef = useRef<TopVulnerabilidadeCardRef>(null);
   const topvosulnerabilidadeRef = useRef<TopOSVulnerabilidadeCardRef>(null);
@@ -31,6 +33,13 @@ export default function VulnerabilitiesDetection() {
   const anovulnerabilidadeRef = useRef<AnoVulnerabilidadeCardRef>(null);
   const [agentSelecionado, setAgentSelecionado] = useState<string | null>(null);
   const [agents, setAgents] = useState<string[]>([]);
+
+  useEffect(() => {
+    setScreenData("vulnerabilidades", {
+      agentSelecionado: agentSelecionado ?? "todos",
+      totalAgentes: agents.length,
+    });
+  }, [agentSelecionado, agents]);
 
   useEffect(() => {
     if (!tenantAtivo) return;

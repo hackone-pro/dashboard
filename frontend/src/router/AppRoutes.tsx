@@ -24,7 +24,8 @@ import MultiTenantManager from '../pages/MultiTenantManager';
 import AdminRoute from './AdminRoute';
 import PublicRoute from "./PublicRoute";
 import SOCAnalytics from '../pages/SOCAnalytics';
-import ChatWidget from '../componentes/chat/ChatWidget'; // ← NOVO
+import ChatWidget from '../componentes/chat/ChatWidget';
+import { ScreenProvider } from '../context/ScreenContext';
 
 const enableIntegrations =
   import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
@@ -32,6 +33,7 @@ const enableIntegrations =
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+      <ScreenProvider>
 
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -60,8 +62,9 @@ export default function AppRoutes() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
-      <ChatWidget /> {/* ← NOVO: fora das Routes, dentro do BrowserRouter */}
+      <ChatWidget />
 
+      </ScreenProvider>
     </BrowserRouter>
   );
 }
