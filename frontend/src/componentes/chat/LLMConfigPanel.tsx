@@ -1,7 +1,7 @@
 // src/componentes/integrations/LLMConfigPanel.tsx
 
-import { useState, useEffect } from "react";
-import { FiX, FiLoader, FiCheck, FiAlertCircle, FiCopy } from "react-icons/fi";
+import { useState } from "react";
+import { FiX, FiLoader, FiCheck, FiAlertCircle } from "react-icons/fi";
 import {
     PROVIDERS,
     ProviderType,
@@ -30,25 +30,15 @@ export default function LLMConfigPanel({
     onClose,
     onSaved,
 }: Props) {
-    const [provider, setProvider] = useState<ProviderType>(providerInicial);
     const [apiKey, setApiKey] = useState("");
     const [modelo, setModelo] = useState("");
     const [modelos, setModelos] = useState<string[]>([]);
     const [status, setStatus] = useState<Status>("idle");
     const [errorMsg, setErrorMsg] = useState("");
-    const [clientId, setClientId] = useState("");
     const [usarParaAmbos, setUsarParaAmbos] = useState(false);
 
-    const providerLabel = PROVIDERS.find((p) => p.value === provider)?.label ?? "";
+    const providerLabel = PROVIDERS.find((p) => p.value === providerInicial)?.label ?? "";
     const purposeLabel = purpose === "chat" ? "Chat com IA" : "Motor de Analises";
-
-    // ─── Reset ao trocar provedor ───────────────────────────────────────────────
-    useEffect(() => {
-        setModelos([]);
-        setModelo("");
-        setErrorMsg("");
-        setStatus("idle");
-    }, [provider]);
 
     // ─── Ao sair do campo apiKey: valida e busca modelos ───────────────────────
     async function handleApiKeyBlur() {
@@ -61,7 +51,7 @@ export default function LLMConfigPanel({
 
         try {
             const valida = await validateApiKey(
-                provider,
+                providerInicial,
                 apiKey.trim()
             );
 
@@ -74,7 +64,7 @@ export default function LLMConfigPanel({
             setStatus("loading-models");
 
             const lista = await getAvailableModels(
-                provider,
+                providerInicial,
                 apiKey.trim()
             );
 
@@ -102,20 +92,19 @@ export default function LLMConfigPanel({
         setErrorMsg("");
 
         try {
-            const id = await saveLLMConfig({
+            await saveLLMConfig({
                 purpose,
-                providerType: provider,
+                providerType: providerInicial,
                 model: modelo,
                 apiKey: apiKey.trim(),
                 endpoint: null,
                 systemPrompt: null,
             });
-            setClientId(id);
             setStatus("success");
-            onSaved?.(purpose, provider, modelo);
+            onSaved?.(purpose, providerInicial, modelo);
             if (usarParaAmbos) {
                 const outroPurpose: LLMPurpose = purpose === "chat" ? "analysis" : "chat";
-                onSaved?.(outroPurpose, provider, modelo);
+                onSaved?.(outroPurpose, providerInicial, modelo);
             }
         } catch {
             setErrorMsg("Erro ao salvar configuração. Tente novamente.");
@@ -159,33 +148,6 @@ export default function LLMConfigPanel({
 
                 {/* Formulário */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
-
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-xs text-gray-400">Client ID</label>
-                        <input
-                            type="text"
-                            value={clientId}
-                            onChange={(e) => setClientId(e.target.value)}
-                            disabled={isBusy}
-                            placeholder="Digite o Client ID..."
-                            className="bg-[#1a1330] border border-[#2a2040] text-gray-200 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-[#4B06DD]/60 transition placeholder-gray-600 disabled:opacity-50"
-                        />
-                    </div>
-
-                    {/* Provedor */}
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-xs text-gray-400">Provedor</label>
-                        <select
-                            value={provider}
-                            onChange={(e) => setProvider(Number(e.target.value) as ProviderType)}
-                            disabled={isBusy}
-                            className="bg-[#1a1330] border border-[#2a2040] text-gray-200 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-[#4B06DD]/60 transition disabled:opacity-50"
-                        >
-                            {PROVIDERS.map((p) => (
-                                <option key={p.value} value={p.value}>{p.label}</option>
-                            ))}
-                        </select>
-                    </div>
 
                     {/* Chave de API */}
                     <div className="flex flex-col gap-1.5">
@@ -270,34 +232,14 @@ export default function LLMConfigPanel({
                         </div>
                     )}
 
-                    {/* Sucesso + clientId */}
-                    {isSuccess && clientId && (
-                        <div className="flex flex-col gap-3 bg-emerald-950/30 border border-emerald-900/50 rounded-lg px-3 py-3">
-                            <div className="flex items-center gap-2">
-                                {/* @ts-ignore */}
-                                <FiCheck size={14} className="text-emerald-400 shrink-0" />
-                                <p className="text-emerald-400 text-xs font-medium">
-                                    Configuração salva com sucesso!
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400 text-xs mb-1.5">
-                                    Código de integração — guarde para usar no chat:
-                                </p>
-                                <div className="flex items-center gap-2 bg-[#0f0a1e] border border-[#2a2040] rounded-lg px-3 py-2">
-                                    <span className="text-purple-300 text-xs font-mono flex-1 break-all">
-                                        {clientId}
-                                    </span>
-                                    <button
-                                        onClick={() => navigator.clipboard.writeText(clientId)}
-                                        className="text-gray-500 hover:text-gray-300 transition shrink-0"
-                                        title="Copiar"
-                                    >
-                                        {/* @ts-ignore */}
-                                        <FiCopy size={13} />
-                                    </button>
-                                </div>
-                            </div>
+                    {/* Sucesso */}
+                    {isSuccess && (
+                        <div className="flex items-center gap-2 bg-emerald-950/30 border border-emerald-900/50 rounded-lg px-3 py-3">
+                            {/* @ts-ignore */}
+                            <FiCheck size={14} className="text-emerald-400 shrink-0" />
+                            <p className="text-emerald-400 text-xs font-medium">
+                                Configuracao salva com sucesso!
+                            </p>
                         </div>
                     )}
 
