@@ -8,6 +8,7 @@ export default [
     config: {
       origin: [
         'http://localhost:5173',
+        'http://localhost:5174',
         'http://10.0.77.1:3000',
         'http://10.0.99.22:5678',
         'http://app2.securityone.ai:3000',

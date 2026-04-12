@@ -7,7 +7,7 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
-    port: 5173,              // ✅ use essa porta
+    port: 5174,              // ✅ evita conflito com Vite do Strapi admin (5173)
     watch: {
       usePolling: true       // ✅ essencial no Docker
     }
