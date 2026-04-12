@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import { IoIosLock } from "react-icons/io";
 
-import LLMConfigPanel from "../componentes/chat/LLMConfigPanel"; // ← NOVO
-import { ProviderType } from "../services/azure-api/llm.service";               // ← NOVO
+import LLMConfigPanel from "../componentes/chat/LLMConfigPanel";
+import {
+    ProviderType,
+    LLMPurpose,
+    LLMConfigResponse,
+    getLLMConfig,
+    PROVIDERS,
+} from "../services/azure-api/llm.service";
 
 /* =======================
    TIPOS
@@ -42,12 +48,55 @@ export default function Integrations() {
         provider: ProviderType;
     }>({ aberto: false, provider: 0 });
 
+    // ── Estado da config LLM por finalidade ───────────────────────────────────
+    const [llmConfig, setLlmConfig] = useState<LLMConfigResponse>({
+        chat: null,
+        analysis: null,
+    });
+    const [iaTab, setIaTab] = useState<LLMPurpose>("chat");
+
+    // ── Dialog de confirmacao ─────────────────────────────────────────────────
+    const [confirmDialog, setConfirmDialog] = useState<{
+        aberto: boolean;
+        providerNovo: ProviderType;
+        providerAtualLabel: string;
+        providerNovoLabel: string;
+    } | null>(null);
+
+    // ── Carregar config LLM ao montar ─────────────────────────────────────────
+    useEffect(() => {
+        getLLMConfig()
+            .then(setLlmConfig)
+            .catch(() => setLlmConfig({ chat: null, analysis: null }));
+    }, []);
+
     function abrirPainelIA(provider: ProviderType) {
-        setPainelIA({ aberto: true, provider });
+        const configAtual = llmConfig[iaTab];
+        // Sem config ativa ou clicou no mesmo provedor → abre direto
+        if (!configAtual || configAtual.providerType === provider) {
+            setPainelIA({ aberto: true, provider });
+            return;
+        }
+        // Tem config ativa e clicou em outro → dialog de confirmacao
+        const atualLabel = PROVIDERS.find((p) => p.value === configAtual.providerType)?.label ?? "";
+        const novoLabel = PROVIDERS.find((p) => p.value === provider)?.label ?? "";
+        setConfirmDialog({
+            aberto: true,
+            providerNovo: provider,
+            providerAtualLabel: atualLabel,
+            providerNovoLabel: novoLabel,
+        });
     }
 
     function fecharPainelIA() {
         setPainelIA((prev) => ({ ...prev, aberto: false }));
+    }
+
+    function handleLLMSaved(purpose: LLMPurpose, providerType: ProviderType, model: string) {
+        setLlmConfig((prev) => ({
+            ...prev,
+            [purpose]: { providerType, model, apiKey: "", endpoint: null },
+        }));
     }
 
     return (
@@ -107,7 +156,12 @@ export default function Integrations() {
             {/* ================= CONTEÚDO ================= */}
             <section className="flex flex-col gap-12">
                 {abaAtiva === "NG-SOC" && (
-                    <NgSocContent onConfigIA={abrirPainelIA} />
+                    <NgSocContent
+                        onConfigIA={abrirPainelIA}
+                        iaTab={iaTab}
+                        setIaTab={setIaTab}
+                        llmConfig={llmConfig}
+                    />
                 )}
                 {abaAtiva === "Firewall" && <FirewallContent />}
                 {abaAtiva === "Monitoria" && <MonitoriaContent />}
@@ -118,8 +172,60 @@ export default function Integrations() {
             {painelIA.aberto && (
                 <LLMConfigPanel
                     providerInicial={painelIA.provider}
+                    purpose={iaTab}
                     onClose={fecharPainelIA}
+                    onSaved={handleLLMSaved}
                 />
+            )}
+
+            {/* ================= DIALOG CONFIRMACAO ================= */}
+            {confirmDialog?.aberto && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/60 z-40"
+                        onClick={() => setConfirmDialog(null)}
+                    />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="bg-[#1a1a2e] border border-[#2d2d44] rounded-xl p-6 max-w-sm text-center shadow-2xl">
+                            <p className="text-2xl mb-3">⚠️</p>
+                            <h3 className="text-white text-sm font-medium mb-2">
+                                Substituir provedor?
+                            </h3>
+                            <p className="text-gray-400 text-xs leading-relaxed mb-5">
+                                Voce ja tem{" "}
+                                <span className="text-white font-medium">
+                                    {confirmDialog.providerAtualLabel}
+                                </span>{" "}
+                                configurado para{" "}
+                                <span className="text-purple-400 font-medium">
+                                    {iaTab === "chat" ? "Chat" : "Analitico"}
+                                </span>
+                                . Deseja substituir por{" "}
+                                <span className="text-white font-medium">
+                                    {confirmDialog.providerNovoLabel}
+                                </span>
+                                ?
+                            </p>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={() => setConfirmDialog(null)}
+                                    className="px-5 py-2 rounded-lg border border-[#2d2d44] text-gray-400 text-xs hover:bg-white/5 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setPainelIA({ aberto: true, provider: confirmDialog.providerNovo });
+                                        setConfirmDialog(null);
+                                    }}
+                                    className="px-5 py-2 rounded-lg bg-[#7c3aed] text-white text-xs font-medium hover:bg-[#6d28d9] transition"
+                                >
+                                    Continuar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
 
         </LayoutModel>
@@ -132,8 +238,14 @@ export default function Integrations() {
 
 function NgSocContent({
     onConfigIA,
+    iaTab,
+    setIaTab,
+    llmConfig,
 }: {
     onConfigIA: (provider: ProviderType) => void;
+    iaTab: LLMPurpose;
+    setIaTab: (tab: LLMPurpose) => void;
+    llmConfig: LLMConfigResponse;
 }) {
     return (
         <section className="flex flex-col gap-5">
@@ -187,38 +299,84 @@ function NgSocContent({
                 </div>
             </div>
 
-            {/* IA — cards clicáveis ↓ */}
+            {/* IA — tabs + cards clicáveis */}
             <div>
-                <h3 className="text-white text-xl mb-3">Inteligência Artificial</h3>
+                <div className="flex items-center gap-4 mb-3">
+                    <h3 className="text-white text-xl">Inteligencia Artificial</h3>
+                    <div className="flex gap-1 bg-[#1a1a2e] rounded-lg p-1">
+                        <button
+                            onClick={() => setIaTab("chat")}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition ${
+                                iaTab === "chat"
+                                    ? "bg-[#7c3aed] text-white"
+                                    : "text-gray-500 hover:text-gray-300"
+                            }`}
+                        >
+                            Chat
+                        </button>
+                        <button
+                            onClick={() => setIaTab("analysis")}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition ${
+                                iaTab === "analysis"
+                                    ? "bg-[#7c3aed] text-white"
+                                    : "text-gray-500 hover:text-gray-300"
+                            }`}
+                        >
+                            Analitico
+                        </button>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
                     {IA_PROVIDERS.map((ia, idx) => {
                         const isFirst = idx === 0;
                         const isLast = idx === IA_PROVIDERS.length - 1;
+                        const configAtual = llmConfig[iaTab];
+                        const isAtivo = configAtual?.providerType === ia.value;
+
                         return (
                             <button
                                 key={ia.value}
                                 onClick={() => onConfigIA(ia.value)}
                                 className={`
-                                    group bg-[#0F0B1C] h-[140px] flex items-center justify-center
-                                    border border-[#2B2736] transition-all duration-200
+                                    group bg-[#0F0B1C] h-[140px] flex flex-col items-center justify-center
+                                    transition-all duration-200
                                     hover:bg-[#4B06DD]/10 hover:border-[#4B06DD]/50
                                     relative overflow-hidden
                                     ${isFirst ? "rounded-l-lg" : ""}
                                     ${isLast ? "rounded-r-lg" : ""}
+                                    ${isAtivo
+                                        ? "border-2 border-[#7c3aed]"
+                                        : "border border-[#2B2736]"
+                                    }
                                 `}
                             >
+                                {/* Badge ATIVO */}
+                                {isAtivo && (
+                                    <span className="absolute top-2 right-2 bg-[#7c3aed] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                                        ATIVO
+                                    </span>
+                                )}
+
                                 <img
                                     src={ia.img}
                                     className="transition-transform duration-200 group-hover:scale-105"
                                 />
-                                {/* Tooltip ao hover */}
-                                <span className="
-                                    absolute bottom-3 left-0 right-0 text-center
-                                    text-[11px] text-purple-400 opacity-0
-                                    group-hover:opacity-100 transition-opacity duration-200
-                                ">
-                                    Configurar {ia.label}
-                                </span>
+
+                                {/* Status */}
+                                {isAtivo && configAtual ? (
+                                    <span className="absolute bottom-3 left-0 right-0 text-center text-[10px] text-emerald-400">
+                                        ✓ {configAtual.model}
+                                    </span>
+                                ) : (
+                                    <span className="
+                                        absolute bottom-3 left-0 right-0 text-center
+                                        text-[11px] text-purple-400 opacity-0
+                                        group-hover:opacity-100 transition-opacity duration-200
+                                    ">
+                                        Configurar {ia.label}
+                                    </span>
+                                )}
                             </button>
                         );
                     })}
