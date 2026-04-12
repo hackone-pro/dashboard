@@ -5,6 +5,7 @@ import { FiX, FiLoader, FiCheck, FiAlertCircle, FiCopy } from "react-icons/fi";
 import {
     PROVIDERS,
     ProviderType,
+    LLMPurpose,
     validateApiKey,
     getAvailableModels,
     saveLLMConfig,
@@ -14,7 +15,9 @@ import {
 
 type Props = {
     providerInicial: ProviderType;
+    purpose: LLMPurpose;
     onClose: () => void;
+    onSaved?: (purpose: LLMPurpose, providerType: ProviderType, model: string) => void;
 };
 
 type Status = "idle" | "validating" | "loading-models" | "saving" | "success" | "error";
@@ -23,7 +26,9 @@ type Status = "idle" | "validating" | "loading-models" | "saving" | "success" | 
 
 export default function LLMConfigPanel({
     providerInicial,
+    purpose,
     onClose,
+    onSaved,
 }: Props) {
     const [provider, setProvider] = useState<ProviderType>(providerInicial);
     const [apiKey, setApiKey] = useState("");
@@ -32,8 +37,10 @@ export default function LLMConfigPanel({
     const [status, setStatus] = useState<Status>("idle");
     const [errorMsg, setErrorMsg] = useState("");
     const [clientId, setClientId] = useState("");
+    const [usarParaAmbos, setUsarParaAmbos] = useState(false);
 
     const providerLabel = PROVIDERS.find((p) => p.value === provider)?.label ?? "";
+    const purposeLabel = purpose === "chat" ? "Chat com IA" : "Motor de Analises";
 
     // ─── Reset ao trocar provedor ───────────────────────────────────────────────
     useEffect(() => {
@@ -96,6 +103,7 @@ export default function LLMConfigPanel({
 
         try {
             const id = await saveLLMConfig({
+                purpose,
                 providerType: provider,
                 model: modelo,
                 apiKey: apiKey.trim(),
@@ -104,6 +112,11 @@ export default function LLMConfigPanel({
             });
             setClientId(id);
             setStatus("success");
+            onSaved?.(purpose, provider, modelo);
+            if (usarParaAmbos) {
+                const outroPurpose: LLMPurpose = purpose === "chat" ? "analysis" : "chat";
+                onSaved?.(outroPurpose, provider, modelo);
+            }
         } catch {
             setErrorMsg("Erro ao salvar configuração. Tente novamente.");
             setStatus("error");
@@ -130,7 +143,7 @@ export default function LLMConfigPanel({
                 {/* Cabeçalho */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-[#2a2040]">
                     <div>
-                        <p className="text-white font-medium">Configurar IA</p>
+                        <p className="text-white font-medium">Configurar LLM — {purposeLabel}</p>
                         <p className="text-gray-500 text-xs mt-0.5">
                             Provedor: <span className="text-purple-400">{providerLabel}</span>
                         </p>
@@ -232,6 +245,21 @@ export default function LLMConfigPanel({
                             </div>
                         )}
                     </div>
+
+                    {/* Usar para ambos */}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={usarParaAmbos}
+                            onChange={(e) => setUsarParaAmbos(e.target.checked)}
+                            disabled={isBusy}
+                            className="w-4 h-4 rounded border-[#2a2040] bg-[#1a1330] text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-xs text-gray-400">
+                            Usar mesma configuracao para{" "}
+                            {purpose === "chat" ? "Motor de Analises" : "Chat com IA"}
+                        </span>
+                    </label>
 
                     {/* Erro */}
                     {status === "error" && errorMsg && (
