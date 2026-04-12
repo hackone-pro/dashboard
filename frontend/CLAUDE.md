@@ -9,7 +9,7 @@ React 19 + TypeScript SOC (Security Operations Center) dashboard frontend. Multi
 ## Commands
 
 ```bash
-npm run dev        # Start Vite dev server (port 5173)
+npm run dev        # Start Vite dev server (port 5174)
 npm run build      # Production build
 npm run preview    # Preview production build
 npm run lint       # ESLint
