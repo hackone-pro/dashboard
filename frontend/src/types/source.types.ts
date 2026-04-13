@@ -4,6 +4,22 @@ export type FetchType = "Pull" | "Push";
 
 export type SourceStatus = "connected" | "pending" | "disconnected";
 
+/** Mapeamento FetchType ↔ número da API */
+export const FETCH_TYPE_TO_NUM: Record<FetchType, number> = {
+  Pull: 0,
+  Push: 1,
+};
+
+const NUM_TO_FETCH_TYPE: Record<number, FetchType> = {
+  0: "Pull",
+  1: "Push",
+};
+
+export function fetchTypeFromNum(n: number | null | undefined): FetchType {
+  return NUM_TO_FETCH_TYPE[n ?? 0] ?? "Pull";
+}
+
+/** Modelo interno usado pelo frontend */
 export interface SourceInstance {
   id: string;
   product: string;
@@ -21,4 +37,42 @@ export interface SourceInstance {
   status: SourceStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Shape crua retornada pela API */
+export interface SourceInstanceRaw {
+  id: string;
+  tenantId?: string;
+  product: string;
+  vendor: string;
+  fetchType: number | null;
+  description: string;
+  active: boolean;
+  apiUrl: string | null;
+  apiToken: string | null;
+  pushEndpoint: string | null;
+  pushToken: string | null;
+  pushTokenExpiration: string | null;
+  status: string | null;
+  created: string;
+  lastModified: string | null;
+}
+
+/** Converte resposta da API para modelo interno */
+export function mapRawToInstance(raw: SourceInstanceRaw): SourceInstance {
+  return {
+    id: raw.id,
+    product: raw.product,
+    vendor: raw.vendor,
+    fetchType: fetchTypeFromNum(raw.fetchType),
+    description: raw.description,
+    active: raw.active,
+    apiUrl: raw.apiUrl ?? undefined,
+    apiToken: raw.apiToken ?? undefined,
+    pushEndpoint: raw.pushEndpoint ?? undefined,
+    pushToken: raw.pushToken ?? undefined,
+    status: (raw.status as SourceStatus) ?? "pending",
+    createdAt: raw.created,
+    updatedAt: raw.lastModified ?? raw.created,
+  };
 }
