@@ -6,6 +6,7 @@ import {
     PROVIDERS,
     ProviderType,
     LLMPurpose,
+    LLM_PURPOSE_MAP,
     validateApiKey,
     getAvailableModels,
     saveLLMConfig,
@@ -38,7 +39,7 @@ export default function LLMConfigPanel({
     const [usarParaAmbos, setUsarParaAmbos] = useState(false);
 
     const providerLabel = PROVIDERS.find((p) => p.value === providerInicial)?.label ?? "";
-    const purposeLabel = purpose === "chat" ? "Chat com IA" : "Motor de Analises";
+    const purposeLabel = purpose === "chat" ? "Chat com IA" : "Analítico";
 
     // ─── Ao sair do campo apiKey: valida e busca modelos ───────────────────────
     async function handleApiKeyBlur() {
@@ -93,7 +94,7 @@ export default function LLMConfigPanel({
 
         try {
             await saveLLMConfig({
-                purpose,
+                purpose: LLM_PURPOSE_MAP[purpose],
                 providerType: providerInicial,
                 model: modelo,
                 apiKey: apiKey.trim(),
@@ -219,7 +220,7 @@ export default function LLMConfigPanel({
                         />
                         <span className="text-xs text-gray-400">
                             Usar mesma configuracao para{" "}
-                            {purpose === "chat" ? "Motor de Analises" : "Chat com IA"}
+                            {purpose === "chat" ? "Analítico" : "Chat com IA"}
                         </span>
                     </label>
 

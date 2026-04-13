@@ -18,8 +18,14 @@ export const PROVIDERS: { label: string; value: ProviderType }[] = [
   { label: "Gemini",        value: 4 },
 ];
 
-// Payload para salvar na API de customers (conforme técnico)
+// ─── LLM Purpose ─────────────────────────────────────────────────────────────
+
 export type LLMPurpose = "chat" | "analysis";
+
+export const LLM_PURPOSE_MAP: Record<LLMPurpose, number> = {
+  chat: 0,
+  analysis: 1,
+};
 
 export type LLMConfigEntry = {
   providerType: ProviderType;
@@ -34,7 +40,7 @@ export type LLMConfigResponse = {
 };
 
 export type LLMCustomerPayload = {
-  purpose: LLMPurpose;
+  purpose: number;
   providerType: ProviderType;
   model: string;
   apiKey: string;
