@@ -251,6 +251,46 @@ function NgSocContent({
     setIaTab: (tab: LLMPurpose) => void;
     llmConfig: LLMConfigResponse;
 }) {
+    const { user } = useAuth();
+    const isAdmin = user?.user_role?.slug === "admin";
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
+    const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        async function loadCounts() {
+            try {
+                const wazuhInstances = await getSourceInstances("Wazuh");
+                setActiveCountMap((prev) => ({
+                    ...prev,
+                    Wazuh: wazuhInstances.filter((i) => i.active).length,
+                }));
+            } catch {
+                // silent
+            }
+        }
+        loadCounts();
+    }, []);
+
+    function openModal(product: string, vendor: string) {
+        if (!isAdmin) return;
+        setModalProduct({ product, vendor });
+        setModalOpen(true);
+    }
+
+    async function handleModalClose() {
+        setModalOpen(false);
+        try {
+            const wazuhInstances = await getSourceInstances("Wazuh");
+            setActiveCountMap((prev) => ({
+                ...prev,
+                Wazuh: wazuhInstances.filter((i) => i.active).length,
+            }));
+        } catch {
+            // silent
+        }
+    }
+
     return (
         <section className="flex flex-col gap-5">
 
@@ -259,8 +299,17 @@ function NgSocContent({
                 <h2 className="text-white text-2xl mb-5">NG-SOC</h2>
                 <h3 className="text-white text-xl mb-3">SIEM</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("Wazuh", "Wazuh") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/wazuh.png" />
+                        {(activeCountMap["Wazuh"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["Wazuh"]} ativa{activeCountMap["Wazuh"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
                         <img src="/assets/img/fortsiem.png" />
@@ -387,6 +436,13 @@ function NgSocContent({
                 </div>
             </div>
 
+            <SourceConfigModal
+                open={modalOpen}
+                onClose={handleModalClose}
+                product={modalProduct.product}
+                vendor={modalProduct.vendor}
+                allowedFetchTypes={["Push"]}
+            />
         </section>
     );
 }
