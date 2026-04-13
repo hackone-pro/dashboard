@@ -94,18 +94,18 @@ BLOCO 5 — Analytics + Copiloto       BLOCO 6 — Frontend Final
 | 11 | G03 | Deduplicacao de eventos no ALERT | Back-end | 2 | E03 | | |
 | 12 | E07 | Feature flags por plano do tenant | Front-end | 2 | E06 | | |
 | 13 | R02 | Auditar Risk Level atual vs especificacao | Back-end | 2 | R01 | | |
-| 14 | C02 | Configurar LLM padrao Hackone como fallback | Back-end | 2 | C01 | | |
+| 14 | C02 | Configurar LLM padrao Hackone como fallback | Back-end | 2 | C01 |ok | |
 | 15 | G02 | Mapeamento de severidade FortiGATE | Back-end | 3 | G01 | | |
-| 16 | E01 | Tela de configuracao de fontes FortiGATE | Front-end | 3 | E06 | | |
+| 16 | E01 | Tela de configuracao de fontes FortiGATE | Front-end | 3 | E06 |ok | |
 | 17 | E02 | Background job de polling FortiGATE | Back-end | 3 | E01, E03, G01 | | |
 | 18 | R03 | Corrigir Risk Level (degradacao graciosa) | Back-end | 3 | R02 | | |
 | 19 | G04 | Motor de correlacao (Incident Engine) | Back-end | 4 | E03, G01, G03, G06 | | |
 | 20 | G17 | Calculo de severidade final do incidente | Back-end | 4 | G04 | | |
 | 21 | G15 | Classificacao de ativos criticos (crown jewel) | Full Stack | 4 | G04 | | |
-| 22 | G16 | Fallback de IA (Hackone como padrao) | Back-end | 4 | C01, G04 | | |
+| 22 | G16 | Fallback de IA (Hackone como padrao) | Back-end | 4 | C01, G04 |ok | |
 | 23 | R04 | Testes Risk Level (3 cenarios) | Back-end | 4 | R03 | | |
 | 24 | SA02 | Backend metricas SOC Analytics (MTTD/MTTA/MTTR + deltas + agregacoes) | Back-end | 5 | SA01, G04 | | |
-| 25 | CP01 | Evoluir chat para Copiloto IA contextual (painel lateral) | Front-end | 5 | E07 | | |
+| 25 | CP01 | Evoluir chat para Copiloto IA contextual (painel lateral) | Front-end | 5 | E07 |ok | |
 | 26 | G10 | Risk Level com cards dinamicos (front) | Front-end | 5 | R03, E07 | | |
 | 27 | G11 | Monitoria de Ingestao no Essentials | Front-end | 5 | E07 | | |
 | 28 | SA03 | Frontend SOC Analytics redesign (Figma) | Front-end | 6 | SA02, E07 | | |
@@ -744,36 +744,108 @@ O FortiGATE tem severidades proprias nos seus logs. Essas severidades precisam s
 #### E01 — Criar tela de configuracao de fontes FortiGATE
 
 
+# Implementar tela para o usuário cadastrar instâncias de FortiGATE para coleta de alertas
 
-**Titulo:** Implementar tela para o usuario cadastrar instancias de FortiGATE para coleta de alertas
+**Tipo:** Front-end
+**Serviços afetados:** Seção Firewall > card FortiGATE | Endpoint de persistência — task de back
 
-**Descricao:**
-O usuario deve poder cadastrar uma ou mais instancias de FortiGATE no sistema. Cada instancia configurada representara uma fonte de dados que sera coletada pelo polling job (E02).
+---
 
-**O que fazer:**
-- Criar pagina acessivel via menu de integracoes ou config (definir rota)
-- Formulario de cadastro com campos:
-  - **Fonte**: fixo "FortiGATE" (product=fortigate, vendor=fortinet) — em futuras versoes sera dropdown
-  - **Descricao**: texto livre para identificar o firewall (ex: "Firewall Matriz SP")
-  - **URL da API**: URL base da API REST do FortiGATE
-  - **API Key ou credenciais**: campo de autenticacao (API token do FortiGATE)
-  - **Intervalo de coleta**: dropdown (5 min, 10 min, 15 min) — padrao 5 min
-  - **Ativo**: toggle on/off
-- Lista de instancias ja cadastradas com acoes: editar, desativar, excluir
-- Ao salvar nova config: chamar endpoint backend que persiste e dispara criacao do job
-- Botao "Testar Conexao" que valida URL + credenciais contra a API do FortiGATE
+## Descrição
 
-**Criterios de aceite:**
-- [ ] Formulario de cadastro funcional com todos os campos
-- [ ] Multiplas instancias podem ser cadastradas
-- [ ] Listagem de instancias com status
-- [ ] Edicao e exclusao funcionais
-- [ ] Botao "Testar Conexao" valida contra API real
-- [ ] Ao salvar, backend e notificado para criar/atualizar o polling job
-- [ ] Somente acessivel por admin
+A seção Firewall já existe em Integrations, assim como o card FortiGATE — mas sem nenhuma ação implementada. Esta task adiciona toda a interação: destaque visual no card quando há instâncias configuradas, modal ao clicar, formulário e grid de instâncias.
 
-**Tipo:** Front-end (+ endpoint backend para persistir)
-**Servicos afetados:** Frontend — nova pagina | Strapi ou Customers API — novo endpoint de config
+---
+
+## Comportamento do card na listagem
+
+- Card FortiGATE já existe na seção Firewall de Integrations
+- Ao clicar no card, abre um modal centralizado
+- **Destaque visual:** se existir ao menos uma instância configurada, o card recebe indicação visual (ex: badge com contagem de instâncias ativas, borda ou dot colorido)
+- Sem instâncias: card no estado neutro/vazio com CTA implícito
+
+---
+
+## Modal — estrutura
+
+- **Topo:** título "FortiGATE" + botão "Nova instância" / "Adicionar"
+- **Formulário** para criação/edição de uma instância (campos abaixo)
+- **Grid** com as instâncias já configuradas logo abaixo do formulário
+- Ações por linha do grid: editar (preenche o formulário), desativar, excluir
+
+---
+
+## Campos do formulário
+
+- **Tipo de coleta (fetchType):** toggle/radio — `Pull` | `Push`
+- **URL da API (apiUrl):** visível somente quando `fetchType = Pull`
+- **API Token:** visível somente quando `fetchType = Pull` — token de autenticação da API REST do FortiGATE
+- **Product:** fixo `FortiGATE`
+- **Vendor:** fixo `Fortinet`
+- **Descrição:** texto livre (ex: "Firewall Matriz SP")
+- **Ativo:** toggle on/off
+
+---
+
+## Modo Push — credenciais geradas pelo sistema
+
+Quando `fetchType = Push`, não há URL de origem para configurar. O sistema gera as credenciais e as exibe ao usuário:
+
+- **Endpoint de recebimento:** URL fixa do sistema que o FortiGATE deverá chamar
+- **Token:** gerado pelo backend ao salvar — exibido com opção de copiar e regenerar
+
+> O usuário usa essas informações para configurar o envio no lado do FortiGATE.
+
+---
+
+## Grids de instâncias
+
+O modal exibe dois grids separados: um para instâncias Pull e outro para instâncias Push.
+
+### Grid — Pull
+
+| Coluna | Observação |
+|---|---|
+| Descrição | |
+| URL da API | |
+| API Token | exibir mascarado (ex: `••••••ab12`), com ícone de copiar |
+| Ativo | toggle inline |
+| Status | farol de conexão |
+| Ações | editar, excluir |
+
+### Grid — Push
+
+| Coluna | Observação |
+|---|---|
+| Descrição | |
+| Endpoint | URL do sistema que o FortiGATE deve chamar, com ícone de copiar |
+| Token | gerado pelo sistema — exibir mascarado, com ícone de copiar e opção de regenerar |
+| Ativo | toggle inline |
+| Status | farol de conexão |
+| Ações | editar, excluir |
+
+> Cada grid só é exibido se houver ao menos uma instância do respectivo tipo. Se não houver nenhuma instância de um tipo, o grid correspondente é omitido.
+
+**Legenda do farol:**
+- 🟢 Verde — recebendo / buscando alertas
+- 🟡 Amarelo — conectado, sem logs ainda
+- 🔴 Vermelho — sem conexão
+
+---
+
+## Critérios de aceite
+
+- [ ] Card sem instâncias: estado neutro, sem destaque
+- [ ] Card com ao menos uma instância: destaque visual visível (badge/dot/borda)
+- [ ] Clique no card abre modal com formulário + grid
+- [ ] Formulário oculta/exibe campo de URL conforme `fetchType` selecionado
+- [ ] No modo Push: backend gera token ao salvar; modal exibe endpoint + token com botão de copiar
+- [ ] Múltiplas instâncias podem ser cadastradas
+- [ ] Grid exibe todas as instâncias com status (farol) atualizado
+- [ ] Edição via grid preenche o formulário no topo do modal
+- [ ] Desativar e excluir funcionais no grid
+- [ ] Ao salvar, backend é notificado (contrato de API definido na task de back)
+- [ ] Somente acessível por admin
 
 ---
 
