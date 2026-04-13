@@ -1,0 +1,103 @@
+<h2>C01 — Abordagem com tabs por finalidade</h2>
+<p class="subtitle">Tabs "Chat" e "Analitico" ao lado do titulo da secao Inteligencia Artificial</p>
+
+<div class="mockup">
+  <div class="mockup-header">Integracoes > NG-SOC > Secao Inteligencia Artificial</div>
+  <div class="mockup-body" style="background:#0f0f1a;padding:24px;border-radius:0 0 8px 8px;">
+
+    <!-- Section header with tabs -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+      <h3 style="margin:0;color:#e2e8f0;font-size:16px;">Inteligencia Artificial</h3>
+      <div style="display:flex;gap:4px;background:#1a1a2e;border-radius:8px;padding:3px;">
+        <button id="tab-chat" onclick="switchTab('chat')" style="padding:6px 16px;border-radius:6px;border:none;font-size:13px;cursor:pointer;background:#7c3aed;color:white;font-weight:500;">Chat</button>
+        <button id="tab-analysis" onclick="switchTab('analysis')" style="padding:6px 16px;border-radius:6px;border:none;font-size:13px;cursor:pointer;background:transparent;color:#94a3b8;">Analitico</button>
+      </div>
+    </div>
+
+    <!-- Tab Chat - provider cards -->
+    <div id="panel-chat">
+      <p style="color:#94a3b8;font-size:12px;margin-bottom:16px;">Configure o provedor de IA para o chat interativo com o usuario</p>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">OpenAI</div>
+          <div style="color:#22c55e;font-size:11px;margin-top:4px;">✓ Configurado</div>
+          <div style="color:#64748b;font-size:10px;">gpt-4o</div>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔷</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">DeepSeek</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px;">Nao configurado</div>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💎</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">Gemini</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px;">Nao configurado</div>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">☁️</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">Azure Foundry</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px;">Nao configurado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Analitico (hidden) -->
+    <div id="panel-analysis" style="display:none;">
+      <p style="color:#94a3b8;font-size:12px;margin-bottom:16px;">Configure o provedor de IA para o analítico automatica de alertas</p>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">OpenAI</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px;">Nao configurado</div>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔷</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">DeepSeek</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px;">Nao configurado</div>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💎</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">Gemini</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px;">Nao configurado</div>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#2d2d44'">
+          <div style="width:40px;height:40px;background:#222;border-radius:8px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;">☁️</div>
+          <div style="color:#e2e8f0;font-size:13px;font-weight:500;">Azure Foundry</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px;">Nao configurado</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  const chatBtn = document.getElementById('tab-chat');
+  const analysisBtn = document.getElementById('tab-analysis');
+  const chatPanel = document.getElementById('panel-chat');
+  const analysisPanel = document.getElementById('panel-analysis');
+
+  if (tab === 'chat') {
+    chatBtn.style.background = '#7c3aed'; chatBtn.style.color = 'white';
+    analysisBtn.style.background = 'transparent'; analysisBtn.style.color = '#94a3b8';
+    chatPanel.style.display = 'block'; analysisPanel.style.display = 'none';
+  } else {
+    analysisBtn.style.background = '#7c3aed'; analysisBtn.style.color = 'white';
+    chatBtn.style.background = 'transparent'; chatBtn.style.color = '#94a3b8';
+    analysisPanel.style.display = 'block'; chatPanel.style.display = 'none';
+  }
+}
+</script>
+
+<div style="margin-top:24px;">
+  <h3>Comportamento</h3>
+  <ul style="color:#cbd5e1;font-size:14px;line-height:1.8;">
+    <li>Tabs <strong>"Chat"</strong> e <strong>"Analitico"</strong> ao lado do titulo da secao</li>
+    <li>Cada tab mostra os mesmos 4 cards de provedores, mas com status independente</li>
+    <li>Ao clicar num card, abre o LLMConfigPanel com <code>purpose</code> da tab ativa</li>
+    <li>Card mostra status ("Configurado" + modelo) ou "Nao configurado" por finalidade</li>
+    <li>Checkbox "Usar mesma config para [outra finalidade]" no modal — preenche o outro lado visualmente</li>
+  </ul>
+</div>

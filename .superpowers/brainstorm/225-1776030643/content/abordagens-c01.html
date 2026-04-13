@@ -1,0 +1,60 @@
+<h2>C01 — Abordagens para a tela de configuracao LLM</h2>
+<p class="subtitle">Como reorganizar a secao Inteligencia Artificial na tela de Integracoes</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Substituir cards de provedores por cards de finalidade (recomendado)</h3>
+      <p>Remove os 4 cards de provedores (OpenAI, DeepSeek, Gemini, Azure Foundry) e coloca 2 cards: <strong>"Chat com IA"</strong> e <strong>"Analítico"</strong>. Cada card mostra provedor/modelo atual ou "Nao configurado". Ao clicar, abre o mesmo LLMConfigPanel existente, adaptado para receber <code>purpose</code>.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Alinhado 100% com o cronograma</li>
+          <li>UX clara — finalidade como ponto de entrada</li>
+          <li>Reaproveita o LLMConfigPanel existente com mudancas minimas</li>
+          <li>Menos codigo — remove IA_PROVIDERS, simplifica</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Perde a visibilidade imediata dos provedores disponiveis (agora ficam dentro do modal)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Manter cards de provedores + adicionar seletor de finalidade no modal</h3>
+      <p>Mantém os 4 cards visuais de provedores. Ao clicar num provedor, o modal abre com um <strong>toggle/tabs "Chat | Analises"</strong> no topo para escolher a finalidade antes de salvar.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Mudanca menor na UI — cards existentes permanecem</li>
+          <li>Provedores continuam visiveis como "vitrine"</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Contradiz o cronograma que pede finalidade como ponto de entrada</li>
+          <li>Confuso — usuario pode nao entender que precisa escolher finalidade dentro do modal</li>
+          <li>Nao fica claro qual provedor esta configurado para qual finalidade</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Cards de finalidade + sub-cards de provedores dentro de cada</h3>
+      <p>2 cards de finalidade no topo. Ao expandir/clicar, mostra os 4 provedores como opcoes dentro. Tipo um accordion ou wizard de dois passos.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Combina finalidade e provedor visualmente</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Over-engineering — mais complexidade sem ganho real</li>
+          <li>O dropdown de provedor dentro do modal ja resolve isso</li>
+          <li>Mais codigo pra manter</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>

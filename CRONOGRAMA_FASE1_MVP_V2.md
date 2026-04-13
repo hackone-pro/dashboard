@@ -81,15 +81,15 @@ BLOCO 5 — Analytics + Copiloto       BLOCO 6 — Frontend Final
 
 | Ordem | ID | Tarefa | Tipo | Bloco | Depende de | Entrega | Esforco |
 |-------|----|--------|------|-------|-----------|---------|---------|
-| 1 | E06 | Adicionar campo `plan` no tenant | Back-end | 1 | — | | |
-| 2 | E05 | Incluir tenants no token JWT | Full Stack | 1 | — | | |
+| 1 | E06 | Adicionar campo `plan` no tenant | Back-end | 1 | — |ok | |
+| 2 | E05 | Incluir tenants no token JWT | Full Stack | 1 | — |ok | |
 | 3 | E03 | NormalizedEvent + normalizacao no ALERT | Back-end | 1 | — | | |
 | 4 | G06 | Definir taxonomia de categorias v1 | Back-end | 1 | — | | |
 | 5 | T01 | Validar schema do incidente no ticket | Back-end | 1 | — | | |
 | 6 | SA01 | Campos de instrumentacao no incidente (SOC Analytics) | Back-end | 1 | T01 | | |
 | 7 | R01 | Documentar regras do Risk Level | Documentacao | 1 | — | | |
-| 8 | C01 | Separar config LLM (Chat vs Motor) | Full Stack | 1 | — | | |
-| 9 | E04 | Propagar tenant_id nos microservicos | Back-end | 2 | E05 | | |
+| 8 | C01 | Separar config LLM (Chat vs Motor) | Full Stack | 1 | — |ok | |
+| 9 | E04 | Propagar tenant_id nos microservicos | Back-end | 2 | E05 |ok | |
 | 10 | G01 | Adapter pattern FortiGATE (Collector + Normalizer) | Back-end | 2 | E03 | | |
 | 11 | G03 | Deduplicacao de eventos no ALERT | Back-end | 2 | E03 | | |
 | 12 | E07 | Feature flags por plano do tenant | Front-end | 2 | E06 | | |
@@ -389,38 +389,95 @@ Antes de auditar ou corrigir, e necessario entender exatamente como o Risk Level
 
 ---
 
-#### C01 — Separar configuracao de LLM por finalidade (Chat vs Motor de Analises)
+#### C01 — Configuração de LLM por finalidade (Chat vs Motor de Análises)
 
-**Titulo:** Permitir configuracao independente de LLM para Chat e para Motor de Analises de alertas
+**Título:** Permitir configuração independente de LLM para Chat e para Motor de Análises de alertas
 
-**Descricao:**
-Atualmente existe uma unica configuracao de LLM por tenant. A especificacao exige duas configuracoes independentes: uma para o Chat e outra para o Motor de Analises (que processa alertas no TICKET). O cliente pode usar a mesma LLM para ambos ou LLMs diferentes.
 
-**O que fazer:**
-- **Back-end (Customers API):**
-  - Evoluir o endpoint `POST /api/customers/llm-config` para suportar campo `purpose` (enum: `chat`, `analysis`)
-  - Armazenar duas configuracoes por tenant: uma para chat e outra para analysis
-  - Criar endpoint `GET /api/customers/llm-config?purpose=chat|analysis` para consultar config por finalidade
-- **Front-end:**
-  - Evoluir `LLMConfigPanel` para exibir duas secoes/abas: "Chat" e "Motor de Analises"
-  - Cada secao tem seus proprios campos: provedor, chave, modelo
-  - Botao de validacao independente por secao
-  - Permitir "usar mesma config para ambos" como atalho
-- **Microservico TICKET:**
-  - Ao processar alerta, consultar config LLM com `purpose=analysis` (nao mais a config unica)
-- **Chat API:**
-  - Ao enviar mensagem, consultar config LLM com `purpose=chat`
 
-**Criterios de aceite:**
-- [ ] Duas configuracoes LLM independentes por tenant (chat e analysis)
-- [ ] Frontend exibe as duas configuracoes separadas
-- [ ] Validacao funciona para cada configuracao
-- [ ] TICKET usa config `analysis`
-- [ ] Chat usa config `chat`
-- [ ] Tenants existentes migram config atual para ambas as finalidades
+### Contexto e problema
 
-**Tipo:** Full Stack
-**Servicos afetados:** Customers API, Frontend — `LLMConfigPanel`, Microservico TICKET, Chat API
+Na tela de Integrações > Inteligência Artificial, o usuário vê 4 cards de provedores (OpenAI, Anthropic, etc.). Ao clicar em um card, abre um modal para configurar API key e modelo — mas não fica claro para qual finalidade aquela LLM está sendo configurada.
+
+O sistema tem dois consumidores distintos de LLM:
+
+- **Chat com IA** — microserviço `chat`, responde mensagens do usuário em tempo real
+- **Motor de Análises** — microserviço `alert`, processa alertas automaticamente no TICKET
+
+Hoje existe uma única configuração por tenant. O objetivo dessa task é:
+
+1. Separar as configurações por finalidade (chat e análise)
+2. Tornar a UX da tela de configuração clara e intuitiva
+
+
+
+### O que fazer
+
+#### Front-end — tela Integrações > Inteligência Artificial
+
+Redesenhar a seção para que a **finalidade seja o ponto de entrada**, não o provedor.
+
+Em vez de 4 cards de provedores, exibir 2 cards de finalidade:
+
+```
+┌─────────────────────────┐   ┌─────────────────────────┐
+│  Chat com IA            │   │  Motor de Análises      │
+│                         │   │                         │
+│  Provedor: OpenAI       │   │  Provedor: Anthropic    │
+│  Modelo: gpt-4o         │   │  Modelo: claude-3-5-... │
+│  Status: ✓ Configurado  │   │  Status: ✗ Não config.  │
+│                         │   │                         │
+│  [Editar]               │   │  [Configurar]           │
+└─────────────────────────┘   └─────────────────────────┘
+```
+
+Ao clicar em **Editar** / **Configurar**, abre o modal já existente com os campos:
+
+- Provedor (dropdown: OpenAI, Anthropic, etc.)
+- API Key
+- Modelo
+- Botão "Validar conexão"
+
+Adicionar ao modal:
+
+- Indicação clara da finalidade no título — ex.: _"Configurar LLM — Chat com IA"_
+- Checkbox _"Usar a mesma configuração para o Motor de Análises"_ (e vice-versa) como atalho para quem quer usar um único provedor para tudo
+
+#### Back-end — Customers API
+
+- Evoluir `POST /api/customers/llm-config` para aceitar campo `purpose` (enum: `chat`, `analysis`)
+- Armazenar duas configurações por tenant: uma para `chat` e outra para `analysis`
+- Criar `GET /api/customers/llm-config?purpose=chat|analysis` para consulta por finalidade
+- Migration: copiar a configuração atual de cada tenant para ambas as finalidades
+
+#### Microserviço TICKET (Motor de Análises)
+
+- Ao processar um alerta, buscar config LLM com `purpose=analysis` em vez da config única
+
+#### Chat API
+
+- Ao receber uma mensagem, buscar config LLM com `purpose=chat`
+
+
+
+### Critérios de aceite
+
+- [ ] A tela de Integrações exibe 2 cards distintos: "Chat com IA" e "Motor de Análises"
+- [ ] Cada card mostra o provedor e modelo atualmente configurado (ou estado "não configurado")
+- [ ] O modal de edição indica claramente para qual finalidade está sendo configurado
+- [ ] Validação de conexão funciona de forma independente para cada finalidade
+- [ ] Opção "usar mesma configuração para ambos" funciona como atalho
+- [ ] Microserviço TICKET usa a config `analysis`
+- [ ] Chat API usa a config `chat`
+- [ ] Tenants existentes têm a config atual migrada para as duas finalidades sem perda de dados
+
+
+
+**Tipo:** Full Stack  
+**Serviços afetados:** Customers API, Frontend (`IntegrationsPage` / `LLMConfigPanel`), Microserviço TICKET, Chat API
+
+
+**OBS** FOI NECESSARIO REFATORAR O CHAT POIS NAO ESTAVA ENVIANDO DADOS DA TELA
 
 ---
 
@@ -685,6 +742,8 @@ O FortiGATE tem severidades proprias nos seus logs. Essas severidades precisam s
 ---
 
 #### E01 — Criar tela de configuracao de fontes FortiGATE
+
+
 
 **Titulo:** Implementar tela para o usuario cadastrar instancias de FortiGATE para coleta de alertas
 
