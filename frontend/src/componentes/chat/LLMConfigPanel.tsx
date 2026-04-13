@@ -36,8 +36,6 @@ export default function LLMConfigPanel({
     const [modelos, setModelos] = useState<string[]>([]);
     const [status, setStatus] = useState<Status>("idle");
     const [errorMsg, setErrorMsg] = useState("");
-    const [usarParaAmbos, setUsarParaAmbos] = useState(false);
-
     const providerLabel = PROVIDERS.find((p) => p.value === providerInicial)?.label ?? "";
     const purposeLabel = purpose === "chat" ? "Chat com IA" : "Analítico";
 
@@ -103,10 +101,6 @@ export default function LLMConfigPanel({
             });
             setStatus("success");
             onSaved?.(purpose, providerInicial, modelo);
-            if (usarParaAmbos) {
-                const outroPurpose: LLMPurpose = purpose === "chat" ? "analysis" : "chat";
-                onSaved?.(outroPurpose, providerInicial, modelo);
-            }
         } catch {
             setErrorMsg("Erro ao salvar configuração. Tente novamente.");
             setStatus("error");
@@ -208,21 +202,6 @@ export default function LLMConfigPanel({
                             </div>
                         )}
                     </div>
-
-                    {/* Usar para ambos */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={usarParaAmbos}
-                            onChange={(e) => setUsarParaAmbos(e.target.checked)}
-                            disabled={isBusy}
-                            className="w-4 h-4 rounded border-[#2a2040] bg-[#1a1330] text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="text-xs text-gray-400">
-                            Usar mesma configuracao para{" "}
-                            {purpose === "chat" ? "Analítico" : "Chat com IA"}
-                        </span>
-                    </label>
 
                     {/* Erro */}
                     {status === "error" && errorMsg && (
