@@ -565,6 +565,46 @@ function MonitoriaContent() {
 }
 
 function EndpointsContent() {
+    const { user } = useAuth();
+    const isAdmin = user?.user_role?.slug === "admin";
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
+    const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        async function loadCounts() {
+            try {
+                const trendInstances = await getSourceInstances("Trend Micro");
+                setActiveCountMap((prev) => ({
+                    ...prev,
+                    "Trend Micro": trendInstances.filter((i) => i.active).length,
+                }));
+            } catch {
+                // silent
+            }
+        }
+        loadCounts();
+    }, []);
+
+    function openModal(product: string, vendor: string) {
+        if (!isAdmin) return;
+        setModalProduct({ product, vendor });
+        setModalOpen(true);
+    }
+
+    async function handleModalClose() {
+        setModalOpen(false);
+        try {
+            const trendInstances = await getSourceInstances("Trend Micro");
+            setActiveCountMap((prev) => ({
+                ...prev,
+                "Trend Micro": trendInstances.filter((i) => i.active).length,
+            }));
+        } catch {
+            // silent
+        }
+    }
+
     return (
         <section className="flex flex-col gap-5">
 
@@ -582,11 +622,28 @@ function EndpointsContent() {
                     <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/defender.png" />
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("Trend Micro", "Trend Micro") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/trend.png" />
+                        {(activeCountMap["Trend Micro"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["Trend Micro"]} ativa{activeCountMap["Trend Micro"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            <SourceConfigModal
+                open={modalOpen}
+                onClose={handleModalClose}
+                product={modalProduct.product}
+                vendor={modalProduct.vendor}
+                allowedFetchTypes={["Push"]}
+            />
 
         </section>
     );
