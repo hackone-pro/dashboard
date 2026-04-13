@@ -19,6 +19,7 @@ interface SourceConfigModalProps {
   onClose: () => void;
   product: string;
   vendor: string;
+  allowedFetchTypes?: FetchType[];
 }
 
 /* ====== Helpers ====== */
@@ -69,14 +70,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-/* ====== Empty form state ====== */
-const EMPTY_FORM = {
-  fetchType: "Pull" as FetchType,
-  description: "",
-  apiUrl: "",
-  apiToken: "",
-  active: true,
-};
+/* ====== Empty form is built inside the component (depends on allowedFetchTypes) ====== */
 
 /* ====== Main Component ====== */
 export default function SourceConfigModal({
@@ -84,13 +78,23 @@ export default function SourceConfigModal({
   onClose,
   product,
   vendor,
+  allowedFetchTypes = ["Pull", "Push"],
 }: SourceConfigModalProps) {
+  const showFetchTypeToggle = allowedFetchTypes.length > 1;
+  const defaultFetchType = allowedFetchTypes[0];
+  const emptyForm = {
+    fetchType: defaultFetchType,
+    description: "",
+    apiUrl: "",
+    apiToken: "",
+    active: true,
+  };
   const [instances, setInstances] = useState<SourceInstance[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(emptyForm);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // ---- Load instances ----
@@ -113,7 +117,7 @@ export default function SourceConfigModal({
   // ---- Form handlers ----
   function openNewForm() {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm(emptyForm);
     setShowForm(true);
   }
 
@@ -132,7 +136,7 @@ export default function SourceConfigModal({
   function cancelForm() {
     setShowForm(false);
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm(emptyForm);
   }
 
   async function handleSave() {
@@ -212,8 +216,12 @@ export default function SourceConfigModal({
   }
 
   // ---- Derived data ----
-  const pullInstances = instances.filter((i) => i.fetchType === "Pull");
-  const pushInstances = instances.filter((i) => i.fetchType === "Push");
+  const pullInstances = allowedFetchTypes.includes("Pull")
+    ? instances.filter((i) => i.fetchType === "Pull")
+    : [];
+  const pushInstances = allowedFetchTypes.includes("Push")
+    ? instances.filter((i) => i.fetchType === "Push")
+    : [];
 
   // ---- Render ----
   return (
@@ -243,13 +251,13 @@ export default function SourceConfigModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* fetchType toggle — only on create */}
-              {!editingId && (
+              {!editingId && showFetchTypeToggle && (
                 <div className="col-span-full">
                   <label className="text-gray-400 text-xs mb-1 block">
                     Tipo de coleta
                   </label>
                   <div className="flex gap-2">
-                    {(["Pull", "Push"] as FetchType[]).map((ft) => (
+                    {allowedFetchTypes.map((ft) => (
                       <button
                         key={ft}
                         onClick={() => setForm((p) => ({ ...p, fetchType: ft }))}
