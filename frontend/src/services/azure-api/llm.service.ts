@@ -28,6 +28,7 @@ export const LLM_PURPOSE_MAP: Record<LLMPurpose, number> = {
 };
 
 export type LLMConfigEntry = {
+  id: string;
   providerType: ProviderType;
   model: string;
   apiKey: string | null;
@@ -62,11 +63,21 @@ export type LLMCustomerPayload = {
   systemPrompt: string | null;
 };
 
+export type LLMUpdatePayload = {
+  llmProvider: number;
+  purpose: number;
+  model: string;
+  apiKey: string;
+  endpoint: string | null;
+  systemPrompt: string | null;
+};
+
 // ─── Busca configuracao LLM do tenant ────────────────────────────────────────
 
 function rawToEntry(raw: LLMConfigRaw): LLMConfigEntry | null {
   if (raw.llmProvider === null) return null;
   return {
+    id: raw.id,
     providerType: raw.llmProvider as ProviderType,
     model: raw.model,
     apiKey: raw.apiKey,
@@ -136,11 +147,23 @@ export async function getAvailableModels(
 
 export async function saveLLMConfig(
   payload: LLMCustomerPayload
-): Promise<string> { // ← era void, agora retorna string (clientId)
-  const { data } = await axios.post<string>(
+): Promise<void> {
+  await axios.post(
     `${CUSTOMERS_API_URL}/api/customers/llm`,
     payload,
     { headers: serviceHeaders() }
   );
-  return data; // ← retorna o clientId gerado
+}
+
+// ─── Atualiza configuração existente ─────────────────────────────────────────
+
+export async function updateLLMConfig(
+  id: string,
+  payload: LLMUpdatePayload
+): Promise<void> {
+  await axios.put(
+    `${CUSTOMERS_API_URL}/api/customers/llm/${id}`,
+    payload,
+    { headers: serviceHeaders() }
+  );
 }

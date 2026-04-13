@@ -92,11 +92,11 @@ export default function Integrations() {
         setPainelIA((prev) => ({ ...prev, aberto: false }));
     }
 
-    function handleLLMSaved(purpose: LLMPurpose, providerType: ProviderType, model: string) {
-        setLlmConfig((prev) => ({
-            ...prev,
-            [purpose]: { providerType, model, apiKey: null, endpoint: null },
-        }));
+    function handleLLMSaved() {
+        // Recarrega config do backend para ter id e dados atualizados
+        getLLMConfig()
+            .then(setLlmConfig)
+            .catch(() => {});
     }
 
     return (
@@ -173,6 +173,7 @@ export default function Integrations() {
                 <LLMConfigPanel
                     providerInicial={painelIA.provider}
                     purpose={iaTab}
+                    configId={llmConfig[iaTab]?.id ?? null}
                     onClose={fecharPainelIA}
                     onSaved={handleLLMSaved}
                 />

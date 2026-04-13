@@ -10,6 +10,7 @@ import {
     validateApiKey,
     getAvailableModels,
     saveLLMConfig,
+    updateLLMConfig,
 } from "../../services/azure-api/llm.service";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -17,8 +18,9 @@ import {
 type Props = {
     providerInicial: ProviderType;
     purpose: LLMPurpose;
+    configId?: string | null;
     onClose: () => void;
-    onSaved?: (purpose: LLMPurpose, providerType: ProviderType, model: string) => void;
+    onSaved?: () => void;
 };
 
 type Status = "idle" | "validating" | "loading-models" | "saving" | "success" | "error";
@@ -28,6 +30,7 @@ type Status = "idle" | "validating" | "loading-models" | "saving" | "success" | 
 export default function LLMConfigPanel({
     providerInicial,
     purpose,
+    configId,
     onClose,
     onSaved,
 }: Props) {
@@ -91,16 +94,27 @@ export default function LLMConfigPanel({
         setErrorMsg("");
 
         try {
-            await saveLLMConfig({
-                purpose: LLM_PURPOSE_MAP[purpose],
-                providerType: providerInicial,
-                model: modelo,
-                apiKey: apiKey.trim(),
-                endpoint: null,
-                systemPrompt: null,
-            });
+            if (configId) {
+                await updateLLMConfig(configId, {
+                    llmProvider: providerInicial,
+                    purpose: LLM_PURPOSE_MAP[purpose],
+                    model: modelo,
+                    apiKey: apiKey.trim(),
+                    endpoint: null,
+                    systemPrompt: null,
+                });
+            } else {
+                await saveLLMConfig({
+                    purpose: LLM_PURPOSE_MAP[purpose],
+                    providerType: providerInicial,
+                    model: modelo,
+                    apiKey: apiKey.trim(),
+                    endpoint: null,
+                    systemPrompt: null,
+                });
+            }
             setStatus("success");
-            onSaved?.(purpose, providerInicial, modelo);
+            onSaved?.();
         } catch {
             setErrorMsg("Erro ao salvar configuração. Tente novamente.");
             setStatus("error");
