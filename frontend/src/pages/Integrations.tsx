@@ -10,6 +10,9 @@ import {
     getLLMConfig,
     PROVIDERS,
 } from "../services/azure-api/llm.service";
+import SourceConfigModal from "../componentes/integrations/SourceConfigModal";
+import { getSourceInstances } from "../services/integrations/source.service";
+import { useAuth } from "../context/AuthContext";
 
 /* =======================
    TIPOS
@@ -393,38 +396,91 @@ function NgSocContent({
 ===================================================== */
 
 function FirewallContent() {
+    const { user } = useAuth();
+    const isAdmin = user?.user_role?.slug === "admin";
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
+    const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
+
+    // Load active counts on mount
+    useEffect(() => {
+        async function loadCounts() {
+            try {
+                const fortigateInstances = await getSourceInstances("FortiGATE");
+                const activeCount = fortigateInstances.filter((i) => i.active).length;
+                setActiveCountMap((prev) => ({ ...prev, FortiGATE: activeCount }));
+            } catch {
+                // silent — badge just won't show
+            }
+        }
+        loadCounts();
+    }, []);
+
+    function openModal(product: string, vendor: string) {
+        if (!isAdmin) return;
+        setModalProduct({ product, vendor });
+        setModalOpen(true);
+    }
+
+    async function handleModalClose() {
+        setModalOpen(false);
+        // Refresh counts
+        try {
+            const fortigateInstances = await getSourceInstances("FortiGATE");
+            const activeCount = fortigateInstances.filter((i) => i.active).length;
+            setActiveCountMap((prev) => ({ ...prev, FortiGATE: activeCount }));
+        } catch {
+            // silent
+        }
+    }
+
+    function renderCard(
+        imgSrc: string,
+        product: string | null,
+        vendor: string | null,
+        extraClasses: string,
+    ) {
+        const clickable = isAdmin && product && vendor;
+        const count = product ? activeCountMap[product] ?? 0 : 0;
+        return (
+            <div
+                onClick={clickable ? () => openModal(product, vendor!) : undefined}
+                className={`bg-[#0F0B1C] h-[140px] flex items-center justify-center border border-[#2B2736] relative ${extraClasses} ${clickable ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+            >
+                <img src={imgSrc} />
+                {product && count > 0 && (
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                        <span className="text-[10px] text-gray-400">{count} ativa{count !== 1 ? "s" : ""}</span>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <section className="flex flex-col gap-5">
-
             <div>
                 <h2 className="text-white text-2xl mb-5">FIREWALL</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4">
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
-                        <img src="/assets/img/azure.jpg" />
-                    </div>
-                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
-                        <img src="/assets/img/fortgate.png" />
-                    </div>
-                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border border-[#2B2736]">
-                        <img src="/assets/img/checkpoint.png" />
-                    </div>
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
-                        <img src="/assets/img/sophos.png" />
-                    </div>
+                    {renderCard("/assets/img/azure.jpg", null, null, "rounded-l-lg")}
+                    {renderCard("/assets/img/fortgate.png", "FortiGATE", "Fortinet", "")}
+                    {renderCard("/assets/img/checkpoint.png", null, null, "")}
+                    {renderCard("/assets/img/sophos.png", null, null, "rounded-r-lg")}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 mt-3">
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
-                        <img src="/assets/img/palo-alto.png" />
-                    </div>
-                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
-                        <img src="/assets/img/cisco.png" />
-                    </div>
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
-                        <img src="/assets/img/sonic.png" />
-                    </div>
+                    {renderCard("/assets/img/palo-alto.png", null, null, "rounded-l-lg")}
+                    {renderCard("/assets/img/cisco.png", null, null, "")}
+                    {renderCard("/assets/img/sonic.png", null, null, "rounded-r-lg")}
                 </div>
             </div>
 
+            <SourceConfigModal
+                open={modalOpen}
+                onClose={handleModalClose}
+                product={modalProduct.product}
+                vendor={modalProduct.vendor}
+            />
         </section>
     );
 }
