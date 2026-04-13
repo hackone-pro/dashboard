@@ -30,13 +30,25 @@ export const LLM_PURPOSE_MAP: Record<LLMPurpose, number> = {
 export type LLMConfigEntry = {
   providerType: ProviderType;
   model: string;
-  apiKey: string;
   endpoint: string | null;
 };
 
 export type LLMConfigResponse = {
   chat: LLMConfigEntry | null;
   analysis: LLMConfigEntry | null;
+};
+
+// Formato bruto retornado pela API
+type LLMConfigRaw = {
+  id: string;
+  tenantId: string;
+  llmProvider: number | null;
+  purpose: number | null;
+  model: string;
+  endpoint: string | null;
+  systemPrompt: string | null;
+  created: string;
+  lastModified: string | null;
 };
 
 export type LLMCustomerPayload = {
@@ -50,12 +62,28 @@ export type LLMCustomerPayload = {
 
 // ─── Busca configuracao LLM do tenant ────────────────────────────────────────
 
+function rawToEntry(raw: LLMConfigRaw): LLMConfigEntry | null {
+  if (raw.llmProvider === null) return null;
+  return {
+    providerType: raw.llmProvider as ProviderType,
+    model: raw.model,
+    endpoint: raw.endpoint,
+  };
+}
+
 export async function getLLMConfig(): Promise<LLMConfigResponse> {
-  const { data } = await axios.get<LLMConfigResponse>(
+  const { data } = await axios.get<LLMConfigRaw[]>(
     `${CUSTOMERS_API_URL}/api/customers/llm`,
     { headers: serviceHeaders() }
   );
-  return data;
+
+  const chatRaw = data.find((c) => c.purpose === 0);
+  const analysisRaw = data.find((c) => c.purpose === 1);
+
+  return {
+    chat: chatRaw ? rawToEntry(chatRaw) : null,
+    analysis: analysisRaw ? rawToEntry(analysisRaw) : null,
+  };
 }
 
 // ─── Valida chave de API ──────────────────────────────────────────────────────

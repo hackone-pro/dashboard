@@ -95,7 +95,7 @@ export default function Integrations() {
     function handleLLMSaved(purpose: LLMPurpose, providerType: ProviderType, model: string) {
         setLlmConfig((prev) => ({
             ...prev,
-            [purpose]: { providerType, model, apiKey: "", endpoint: null },
+            [purpose]: { providerType, model, endpoint: null },
         }));
     }
 
