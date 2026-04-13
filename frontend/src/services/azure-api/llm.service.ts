@@ -30,6 +30,7 @@ export const LLM_PURPOSE_MAP: Record<LLMPurpose, number> = {
 export type LLMConfigEntry = {
   providerType: ProviderType;
   model: string;
+  apiKey: string | null;
   endpoint: string | null;
 };
 
@@ -44,6 +45,7 @@ type LLMConfigRaw = {
   tenantId: string;
   llmProvider: number | null;
   purpose: number | null;
+  apiKey: string | null;
   model: string;
   endpoint: string | null;
   systemPrompt: string | null;
@@ -67,6 +69,7 @@ function rawToEntry(raw: LLMConfigRaw): LLMConfigEntry | null {
   return {
     providerType: raw.llmProvider as ProviderType,
     model: raw.model,
+    apiKey: raw.apiKey,
     endpoint: raw.endpoint,
   };
 }
