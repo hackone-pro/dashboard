@@ -22,6 +22,7 @@ import Integrations from '../pages/Integrations';
 import VerifyCode from '../pages/MFACode';
 import MultiTenantManager from '../pages/MultiTenantManager';
 import AdminRoute from './AdminRoute';
+import PlanRoute from './PlanRoute';
 import PublicRoute from "./PublicRoute";
 import SOCAnalytics from '../pages/SOCAnalytics';
 import ChatWidget from '../componentes/chat/ChatWidget';
@@ -45,10 +46,10 @@ export default function AppRoutes() {
         <Route path="/risk-level" element={<PrivateRoute><RiskLevel /></PrivateRoute>} />
         <Route path="/incidentes" element={<PrivateRoute><Incidentes /></PrivateRoute>} />
         <Route path="/threat-map" element={<PrivateRoute><ThreatMap /></PrivateRoute>} />
-        <Route path="/vulnerabilities-detections" element={<PrivateRoute><VulnerabilitiesDetection /></PrivateRoute>} />
-        <Route path="/archives-integrity" element={<PrivateRoute><ArchivesIntegrity /></PrivateRoute>} />
+        <Route path="/vulnerabilities-detections" element={<PrivateRoute><PlanRoute featureKey="/vulnerabilities-detections"><VulnerabilitiesDetection /></PlanRoute></PrivateRoute>} />
+        <Route path="/archives-integrity" element={<PrivateRoute><PlanRoute featureKey="/archives-integrity"><ArchivesIntegrity /></PlanRoute></PrivateRoute>} />
         <Route path="/monitoria-ngsoc" element={<PrivateRoute><MonitoriaSoc /></PrivateRoute>} />
-        <Route path="/monitoria-csc" element={<PrivateRoute><MonitoriaCSC /></PrivateRoute>} />
+        <Route path="/monitoria-csc" element={<PrivateRoute><PlanRoute featureKey="/monitoria-csc"><MonitoriaCSC /></PlanRoute></PrivateRoute>} />
         <Route path="/soc-analytics" element={<PrivateRoute><SOCAnalytics /></PrivateRoute>} />
         {enableIntegrations && (
           <Route path="/integrations" element={<PrivateRoute><Integrations /></PrivateRoute>} />
