@@ -234,19 +234,19 @@ export default {
           ],
         });
   
-      return snapshots.map((snap: any) => {
-        const tenant = tenants.find(t => t.id === snap.tenant_numeric_id);
-  
+      return tenants.map((tenant) => {
+        const snap = snapshots.find((s: any) => s.tenant_numeric_id === tenant.id);
+
         return {
-          tenantId: snap.tenant_numeric_id,
-          organizacao: tenant?.organizacao ?? "N/A",
+          tenantId: tenant.id,
+          organizacao: tenant.organizacao ?? "N/A",
           summary: {
-            ativos: snap.ativos ?? 0,
-            risk: snap.risk ?? 0,
-            critical_inc: snap.critical_inc ?? 0,
-            high_inc: snap.high_inc ?? 0,
-            volume_gb: snap.volume_gb ?? 0,
-            firewalls_offline: snap.logs_offline ?? 0,
+            ativos: snap?.ativos ?? 0,
+            risk: snap?.risk ?? 0,
+            critical_inc: snap?.critical_inc ?? 0,
+            high_inc: snap?.high_inc ?? 0,
+            volume_gb: snap?.volume_gb ?? 0,
+            firewalls_offline: snap?.logs_offline ?? 0,
           },
         };
       });
