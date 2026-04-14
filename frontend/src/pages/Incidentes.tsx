@@ -7,7 +7,8 @@ import IncidenteTabela from "../componentes/iris/incidentes/IncidenteTabela";
 
 import { FiRotateCcw } from "react-icons/fi";
 
-import { useIncidentes } from "../hooks/useIncidentes";
+import { useIncidentes, nivelDoIncidente } from "../hooks/useIncidentes";
+import { statusPT, formatCaseName } from "../utils/incidentes/helpers";
 import { useEffect } from "react";
 import { useScreenContext } from "../context/ScreenContext";
 
@@ -34,16 +35,23 @@ export default function Incidentes() {
 
   useEffect(() => {
     setScreenData("incidentes", {
-      abertos,
-      fechados,
-      atribuidos,
-      naoAtribuidos,
+      abertos: abertos.length,
+      fechados: fechados.length,
+      atribuidos: atribuidos.length,
+      naoAtribuidos: naoAtribuidos.length,
       total,
       filtroSeveridade: filtroSeveridade || "todos",
       filtroOrigem: filtroOrigem || "todos",
       busca: busca || null,
+      incidentesPagina: linhas.map((inc) => ({
+        id: inc.case_id,
+        data: inc.case_open_date,
+        descricao: `#${inc.case_id} - ${formatCaseName(inc.case_name || "")}`,
+        severidade: nivelDoIncidente(inc),
+        status: statusPT(inc.state_name),
+      })),
     });
-  }, [abertos, fechados, atribuidos, naoAtribuidos, total, filtroSeveridade, filtroOrigem, busca]);
+  }, [abertos, fechados, atribuidos, naoAtribuidos, total, filtroSeveridade, filtroOrigem, busca, linhas]);
 
   return (
     <LayoutModel titulo="Incidentes">
