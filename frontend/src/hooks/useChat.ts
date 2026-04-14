@@ -1,6 +1,6 @@
 // src/hooks/useChat.ts
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
     sendChatMessage,
     getChatHistory,
@@ -18,17 +18,39 @@ export type ChatMessageLocal = {
     isLoading?: boolean;  // bolha de "digitando..." do assistant
 };
 
+// ─── Persistência (sessionId apenas) ─────────────────────────────────────────
+
+const LS_SESSION = "chat_session_id";
+
+function readStoredSessionId(): number | null {
+    try {
+        const raw = localStorage.getItem(LS_SESSION);
+        return raw ? Number(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useChat() {
     const [messages, setMessages] = useState<ChatMessageLocal[]>([]);
-    const [sessionId, setSessionId] = useState<number | null>(null);
+    const [sessionId, setSessionId] = useState<number | null>(readStoredSessionId);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const sessionIdRef = useRef<number | null>(null); // evita closure stale
+    const sessionIdRef = useRef<number | null>(readStoredSessionId()); // evita closure stale
     const { screenData } = useScreenContext();
 
-    // ─── Normaliza mensagens vindas do histórico ────────────────────────────────
+    // ─── Sincroniza sessionId com localStorage ────────────────────────────────
+    useEffect(() => {
+        if (sessionId !== null) {
+            localStorage.setItem(LS_SESSION, String(sessionId));
+        } else {
+            localStorage.removeItem(LS_SESSION);
+        }
+    }, [sessionId]);
+
+    // ─── Normaliza mensagens vindas do histórico ──────────────────────────────
     function normalizeHistory(items: ChatMessage[]): ChatMessageLocal[] {
         return items.map((m) => ({
             id: String(m.id),
@@ -38,7 +60,7 @@ export function useChat() {
         }));
     }
 
-    // ─── Carrega histórico de uma sessão existente ──────────────────────────────
+    // ─── Carrega histórico de uma sessão existente ────────────────────────────
     const loadHistory = useCallback(async (sid: number) => {
         try {
             const history = await getChatHistory(sid);
@@ -46,12 +68,22 @@ export function useChat() {
             setSessionId(sid);
             sessionIdRef.current = sid;
         } catch {
-            // sessão inválida — começa do zero
+            // sessão inválida ou expirada — começa do zero
             setMessages([]);
+            localStorage.removeItem(LS_SESSION);
         }
     }, []);
 
-    // ─── Envia mensagem ─────────────────────────────────────────────────────────
+    // ─── Restaura sessão ao montar (abre o chat) ──────────────────────────────
+    useEffect(() => {
+        const sid = sessionIdRef.current;
+        if (!sid) return;
+
+        setIsLoading(true);
+        loadHistory(sid).finally(() => setIsLoading(false));
+    }, [loadHistory]);
+
+    // ─── Envia mensagem ───────────────────────────────────────────────────────
     const sendMessage = useCallback(
         async (content: string) => {
             if (!content.trim() || isLoading) return;
@@ -124,12 +156,13 @@ export function useChat() {
         [isLoading]
     );
 
-    // ─── Limpa a conversa (nova sessão) ────────────────────────────────────────
+    // ─── Limpa a conversa (nova sessão) ───────────────────────────────────────
     const clearChat = useCallback(() => {
         setMessages([]);
         setSessionId(null);
         sessionIdRef.current = null;
         setError(null);
+        localStorage.removeItem(LS_SESSION);
     }, []);
 
     return {
