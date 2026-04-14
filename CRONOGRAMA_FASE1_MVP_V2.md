@@ -92,7 +92,7 @@ BLOCO 5 — Analytics + Copiloto       BLOCO 6 — Frontend Final
 | 9 | E04 | Propagar tenant_id nos microservicos | Back-end | 2 | E05 |ok | |
 | 10 | G01 | Adapter pattern FortiGATE (Collector + Normalizer) | Back-end | 2 | E03 | | |
 | 11 | G03 | Deduplicacao de eventos no ALERT | Back-end | 2 | E03 | | |
-| 12 | E07 | Feature flags por plano do tenant | Front-end | 2 | E06 | | |
+| 12 | E07 | Feature flags por plano do tenant | Front-end | 2 | E06 |ok | |
 | 13 | R02 | Auditar Risk Level atual vs especificacao | Back-end | 2 | R01 | | |
 | 14 | C02 | Configurar LLM padrao Hackone como fallback | Back-end | 2 | C01 |ok | |
 | 15 | G02 | Mapeamento de severidade FortiGATE | Back-end | 3 | G01 | | |
@@ -107,10 +107,10 @@ BLOCO 5 — Analytics + Copiloto       BLOCO 6 — Frontend Final
 | 24 | SA02 | Backend metricas SOC Analytics (MTTD/MTTA/MTTR + deltas + agregacoes) | Back-end | 5 | SA01, G04 | | |
 | 25 | CP01 | Evoluir chat para Copiloto IA contextual (painel lateral) | Front-end | 5 | E07 |ok | |
 | 26 | G10 | Risk Level com cards dinamicos (front) | Front-end | 5 | R03, E07 | | |
-| 27 | G11 | Monitoria de Ingestao no Essentials | Front-end | 5 | E07 | | |
+| 27 | G11 | Monitoria de Ingestao no Essentials | Front-end | 5 | E07 |NAO SERA FEITO | |
 | 28 | SA03 | Frontend SOC Analytics redesign (Figma) | Front-end | 6 | SA02, E07 | | |
-| 29 | CP02 | Prompts sugeridos por tela + resposta estruturada | Full Stack | 6 | CP01, C01 | | |
-| 30 | CP03 | Geracao de artefatos de comunicacao | Full Stack | 6 | CP02 | | |
+| 29 | CP02 | Prompts sugeridos por tela + resposta estruturada | Full Stack | 6 | CP01, C01 | NAO SERA FEITO | |
+| 30 | CP03 | Geracao de artefatos de comunicacao | Full Stack | 6 | CP02 |NAO SERA FEITO | |
 
 ---
 
