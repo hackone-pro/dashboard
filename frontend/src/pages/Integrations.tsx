@@ -13,6 +13,7 @@ import {
 import SourceConfigModal from "../componentes/integrations/SourceConfigModal";
 import { getSourceInstances } from "../services/integrations/source.service";
 import { useAuth } from "../context/AuthContext";
+import { useScreenContext } from "../context/ScreenContext";
 
 /* =======================
    TIPOS
@@ -256,6 +257,7 @@ function NgSocContent({
     const [modalOpen, setModalOpen] = useState(false);
     const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
     const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
+    const { setScreenData } = useScreenContext();
 
     useEffect(() => {
         async function loadCounts() {
@@ -271,6 +273,20 @@ function NgSocContent({
         }
         loadCounts();
     }, []);
+
+    useEffect(() => {
+        setScreenData("integrations-ngsoc", {
+            activeTab: "NG-SOC",
+            sections: ["SIEM", "SOAR", "DFIR", "Inteligencia Artificial"],
+            activeIntegrations: activeCountMap,
+            llmChat: llmConfig.chat
+                ? { provider: PROVIDERS.find((p) => p.value === llmConfig.chat!.providerType)?.label ?? null, model: llmConfig.chat.model }
+                : null,
+            llmAnalysis: llmConfig.analysis
+                ? { provider: PROVIDERS.find((p) => p.value === llmConfig.analysis!.providerType)?.label ?? null, model: llmConfig.analysis.model }
+                : null,
+        });
+    }, [activeCountMap, llmConfig]);
 
     function openModal(product: string, vendor: string) {
         if (!isAdmin) return;
@@ -457,6 +473,7 @@ function FirewallContent() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
     const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
+    const { setScreenData } = useScreenContext();
 
     // Load active counts on mount
     useEffect(() => {
@@ -471,6 +488,14 @@ function FirewallContent() {
         }
         loadCounts();
     }, []);
+
+    useEffect(() => {
+        setScreenData("integrations-firewall", {
+            activeTab: "Firewall",
+            visibleProducts: ["Azure Firewall", "FortiGATE", "CheckPoint", "Sophos", "PaloAlto", "Cisco", "SonicWall"],
+            activeIntegrations: activeCountMap,
+        });
+    }, [activeCountMap]);
 
     function openModal(product: string, vendor: string) {
         if (!isAdmin) return;
@@ -542,6 +567,15 @@ function FirewallContent() {
 }
 
 function MonitoriaContent() {
+    const { setScreenData } = useScreenContext();
+
+    useEffect(() => {
+        setScreenData("integrations-monitoria", {
+            activeTab: "Monitoria",
+            visibleProducts: ["Zabbix", "Nagios", "Datadog"],
+        });
+    }, []);
+
     return (
         <section className="flex flex-col gap-5">
 
@@ -570,6 +604,7 @@ function EndpointsContent() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
     const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
+    const { setScreenData } = useScreenContext();
 
     useEffect(() => {
         async function loadCounts() {
@@ -585,6 +620,14 @@ function EndpointsContent() {
         }
         loadCounts();
     }, []);
+
+    useEffect(() => {
+        setScreenData("integrations-edr", {
+            activeTab: "Defesa de Endpoints (EDR/XDR)",
+            visibleProducts: ["CrowdStrike", "Microsoft Sentinel", "Microsoft Defender", "Trend Micro"],
+            activeIntegrations: activeCountMap,
+        });
+    }, [activeCountMap]);
 
     function openModal(product: string, vendor: string) {
         if (!isAdmin) return;
