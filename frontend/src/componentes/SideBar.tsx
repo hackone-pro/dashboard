@@ -13,6 +13,7 @@ import { RxTokens } from "react-icons/rx";
 
 
 import { useZabbixAtivo } from "../hooks/useZabbixAtivo";
+import { usePlanFeatures } from "../hooks/usePlanFeatures";
 
 
 import clsx from 'clsx';
@@ -23,6 +24,7 @@ export default function Sidebar() {
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
     const { ativo, loading } = useZabbixAtivo();
+    const { canAccess } = usePlanFeatures();
 
     const enableIntegrations =
         import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
@@ -157,7 +159,7 @@ export default function Sidebar() {
                                 { to: "/monitoria-ngsoc", icon: <TbHeartRateMonitor className="text-[16px]" />, label: "Monitoria NG-SOC" },
                                 // @ts-ignore
                                 { to: "/relatorios", icon: <HiOutlineDocumentReport className="text-[16px]" />, label: "Relatórios" },
-                            ].map((item, idx) => (
+                            ].filter((item) => canAccess(item.to)).map((item, idx) => (
                                 <li key={idx} className="py-1">
                                     <Link
                                         to={item.to}
@@ -231,6 +233,7 @@ export default function Sidebar() {
                                         <CiMap className="text-[16px]" /> Threat Map
                                     </Link>
                                 </li>
+                                {canAccess("/vulnerabilities-detections") && (
                                 <li>
                                     <Link
                                         to="/vulnerabilities-detections"
@@ -240,6 +243,8 @@ export default function Sidebar() {
                                         <VscSearchFuzzy className="text-[16px]" /> Detecção de Vulnerabilidades
                                     </Link>
                                 </li>
+                                )}
+                                {canAccess("/archives-integrity") && (
                                 <li>
                                     <Link
                                         to="/archives-integrity"
@@ -249,6 +254,7 @@ export default function Sidebar() {
                                         <VscFileSymlinkDirectory className="text-[16px]" /> Integridade de Arquivos
                                     </Link>
                                 </li>
+                                )}
                                 <li>
                                     <Link
                                         to="/monitoria-ngsoc"
@@ -275,7 +281,7 @@ export default function Sidebar() {
                 {/* =========================
                     MONITORIA CSC (ZABBIX)
                 ========================= */}
-                {!loading && ativo && (
+                {!loading && ativo && canAccess("/monitoria-csc") && (
                     <li>
                         <Link
                             to="/monitoria-csc"
