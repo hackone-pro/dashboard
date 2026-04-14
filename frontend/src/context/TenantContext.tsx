@@ -72,6 +72,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     try {
       await changeTenant(id);
+      localStorage.removeItem("chat_session_id");
       const data = await getTenants();
       setTenants(data.tenantsAcessiveis || []);
       setTenantAtivo(data.tenantAtivo);
