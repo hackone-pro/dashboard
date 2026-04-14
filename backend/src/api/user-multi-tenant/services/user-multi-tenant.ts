@@ -12,7 +12,7 @@
           where: { id: user.id },
           populate: {
             tenant: {
-              select: ["id", "cliente_name", "organizacao"],
+              select: ["id", "cliente_name", "organizacao", "plan"],
               populate: {
                 contract: {
                   select: [
@@ -38,7 +38,7 @@
           where: { users_permissions_user: user.id, ativo: true },
           populate: {
             tenant: {
-              select: ["id", "cliente_name", "organizacao"],
+              select: ["id", "cliente_name", "organizacao", "plan"],
               populate: {
                 contract: {
                   select: [
@@ -63,6 +63,7 @@
           id: fullUser.tenant.id,
           cliente_name: fullUser.tenant.cliente_name,
           organizacao: fullUser.tenant.organizacao,
+          plan: fullUser.tenant.plan ?? "full",
           contract: fullUser.tenant.contract ?? null,
         });
       }
@@ -73,6 +74,7 @@
             id: a.tenant.id,
             cliente_name: a.tenant.cliente_name,
             organizacao: a.tenant.organizacao,
+            plan: a.tenant.plan ?? "full",
             contract: a.tenant.contract ?? null,
           });
         }
@@ -97,6 +99,7 @@
               id: fullUser.tenant.id,
               cliente_name: fullUser.tenant.cliente_name,
               organizacao: fullUser.tenant.organizacao,
+              plan: fullUser.tenant.plan ?? "full",
               contract: fullUser.tenant.contract ?? null,
             }
           : null,
