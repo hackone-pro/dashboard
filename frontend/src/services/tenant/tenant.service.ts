@@ -6,6 +6,7 @@ export interface Tenant {
   id: number;
   cliente_name: string;
   organizacao?: string;
+  plan?: "essentials" | "full";
   contract?: Contract | null;
 }
 
