@@ -215,15 +215,24 @@ export default function SOCAnalytics() {
     // ─── Screen context para o chat ──────────────────────────────────────────
     useEffect(() => {
         if (!data) return;
+        const totalSev = data.severityDistribution?.total ?? 0;
         setScreenData("soc-analytics", {
             periodo,
-            mttd: data.mttd?.value ?? null,
-            mtta: data.mtta?.value ?? null,
-            mttr: data.mttr?.value ?? null,
+            mttd: data.mttd?.value != null ? `${data.mttd.value} ${data.mttd.unit ?? ""}`.trim() : null,
+            mtta: data.mtta?.value != null ? `${data.mtta.value} ${data.mtta.unit ?? ""}`.trim() : null,
+            mttr: data.mttr?.value != null ? `${data.mttr.value} ${data.mttr.unit ?? ""}`.trim() : null,
             incidentesAbertos: data.openIncidents?.count ?? null,
+            temCritico: data.openIncidents?.hasCritical ?? false,
             riskScore: data.riskLevel?.score ?? null,
+            nivelRisco: data.riskLevel?.level ?? null,
             severidades: Object.fromEntries(
-                (data.severityDistribution?.buckets ?? []).map((b) => [b.severity, b.count])
+                (data.severityDistribution?.buckets ?? []).map((b) => [
+                    b.severity,
+                    {
+                        count: b.count,
+                        pct: totalSev > 0 ? `${Math.round((b.count / totalSev) * 100)}%` : "0%",
+                    },
+                ])
             ),
         });
     }, [data, periodo]);

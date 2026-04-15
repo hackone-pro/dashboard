@@ -6,16 +6,23 @@ import {
 import { useTenant } from "../../../context/TenantContext";
 import { GripVertical } from "lucide-react";
 
+export interface TopAgentSummary {
+  nome: string;
+  totalAlertas: number;
+}
+
 interface TopAgentsCardProps {
   dias: string;
   periodo?: { from: string; to: string } | null;
   isWidget?: boolean;
+  onDadosCarregados?: (agentes: TopAgentSummary[]) => void;
 }
 
 export default function TopAgentsCard({
   dias,
   periodo,
   isWidget = false,
+  onDadosCarregados,
 }: TopAgentsCardProps) {
   const { tenantAtivo } = useTenant();
 
@@ -52,6 +59,9 @@ export default function TopAgentsCard({
           if (ativo) {
             setAgentes(data);
             setAnimReady(true);
+            onDadosCarregados?.(
+              data.slice(0, 10).map((a) => ({ nome: a.agent_name, totalAlertas: a.total_alertas }))
+            );
           }
         }, delay);
       } catch (e: any) {

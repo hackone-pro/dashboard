@@ -43,6 +43,10 @@ export default function Dashboard() {
 
   const [indiceRisco, setIndiceRisco] = useState(0);
   const [totalAtaques, setTotalAtaques] = useState(0);
+  const [topPaises, setTopPaises] = useState<Array<{ pais: string; total: number }>>([]);
+  const [topFirewalls, setTopFirewalls] = useState<Array<{ nome: string; total: number; critico: number; alto: number; medio: number; baixo: number }>>([]);
+  const [topIncidentes, setTopIncidentes] = useState<Array<{ id: number; nome: string; severidade: string; data: string }>>([]);
+  const [iaHumans, setIaHumans] = useState<{ totalIa: number; totalHumanos: number } | null>(null);
   const [layout, setLayout] = useState<WidgetLayout[]>([]);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [resettingLayout, setResettingLayout] = useState(false);
@@ -101,14 +105,28 @@ export default function Dashboard() {
   }, [tenantAtivo]);
 
   // ─── Screen context para o chat ──────────────────────────────────────────────
+  const WIDGET_LABELS: Record<string, string> = {
+    grafico_risco: "Índice de Risco (gauge)",
+    geo_map: "Mapa geográfico de ataques",
+    top_paises: "Top países de origem de ataques",
+    top_incidentes: "Top incidentes",
+    ia_humans: "IA vs Humanos (ataques automatizados)",
+    top_firewalls: "Top firewalls acionados",
+  };
+
   useEffect(() => {
     setScreenData("dashboard", {
+      periodo: "24h",
       indiceRisco,
       totalAtaques,
       tenant: tenantAtivo?.cliente_name ?? null,
-      widgets: layout.map((w) => w.i),
+      widgetsVisiveis: layout.map((w) => WIDGET_LABELS[w.i] ?? w.i),
+      topPaisesOrigem: topPaises,
+      topFirewalls,
+      ultimosIncidentes: topIncidentes,
+      iaHumans,
     });
-  }, [indiceRisco, totalAtaques, tenantAtivo, layout]);
+  }, [indiceRisco, totalAtaques, tenantAtivo, layout, topPaises, topFirewalls, topIncidentes, iaHumans]);
 
   // 🔹 Debounce
   function debounce<T extends (...args: any[]) => void>(fn: T, delay = 1000) {
@@ -151,7 +169,7 @@ export default function Dashboard() {
     }
   }
 
-  const widgetMap = getWidgetMap(navigate, token || "", indiceRisco, setTotalAtaques);
+  const widgetMap = getWidgetMap(navigate, token || "", indiceRisco, setTotalAtaques, setTopPaises, setTopFirewalls, setTopIncidentes, setIaHumans);
   
 
   return (

@@ -15,6 +15,9 @@ import {
 } from "../services/wazuh/risklevel.service";
 import { useTenant } from "../context/TenantContext";
 import { useScreenContext } from "../context/ScreenContext";
+import type { FirewallDonutSummary } from "../componentes/wazuh/RiskLevel/FirewallDonutCard";
+import type { TopAgentSummary } from "../componentes/wazuh/RiskLevel/TopAgentsCard";
+import type { TopAgentCisSummary } from "../componentes/wazuh/RiskLevel/TopAgentsCisCard";
 
 import { FiRotateCcw } from "react-icons/fi";
 
@@ -58,16 +61,33 @@ export default function RiskLevel() {
 
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
+  const [firewallDados, setFirewallDados] = useState<FirewallDonutSummary | null>(null);
+  const [topAgentes, setTopAgentes] = useState<TopAgentSummary[]>([]);
+  const [topAgentesCis, setTopAgentesCis] = useState<TopAgentCisSummary[]>([]);
 
   // ─── Screen context para o chat ──────────────────────────────────────────────
   useEffect(() => {
+    const total = severidades.total || 1;
     setScreenData("risk-level", {
       periodo: periodo ? `${periodo.from} a ${periodo.to}` : `${dias}d`,
       indiceRisco,
       totalIncidentes,
-      severidades,
+      severidades: {
+        critico: severidades.critico,
+        alto: severidades.alto,
+        medio: severidades.medio,
+        baixo: severidades.baixo,
+        total: severidades.total,
+        pctCritico: `${Math.round((severidades.critico / total) * 100)}%`,
+        pctAlto: `${Math.round((severidades.alto / total) * 100)}%`,
+        pctMedio: `${Math.round((severidades.medio / total) * 100)}%`,
+        pctBaixo: `${Math.round((severidades.baixo / total) * 100)}%`,
+      },
+      firewallAlertas: firewallDados,
+      topHostsComMaisAlertas: topAgentes,
+      topHostsCis: topAgentesCis,
     });
-  }, [indiceRisco, totalIncidentes, severidades, dias, periodo]);
+  }, [indiceRisco, totalIncidentes, severidades, dias, periodo, firewallDados, topAgentes, topAgentesCis]);
 
   /* ============================
      HANDLER DO FILTRO
@@ -202,17 +222,20 @@ export default function RiskLevel() {
         <TopAgentsCard
           dias={dias}
           periodo={periodo}
+          onDadosCarregados={setTopAgentes}
         />
 
         <TopAgentsCisCard
           dias={dias}
           periodo={periodo}
+          onDadosCarregados={setTopAgentesCis}
         />
 
         <div className="flex flex-col h-full">
           <FirewallDonutCard
             dias={dias}
             periodo={periodo}
+            onDadosCarregados={setFirewallDados}
           />
 
           <div className="flex-1">

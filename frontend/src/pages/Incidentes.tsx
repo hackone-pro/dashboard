@@ -35,11 +35,14 @@ export default function Incidentes() {
 
   useEffect(() => {
     setScreenData("incidentes", {
+      periodo: periodo ? `${periodo.from} a ${periodo.to}` : "todos",
       abertos: abertos.length,
       fechados: fechados.length,
       atribuidos: atribuidos.length,
       naoAtribuidos: naoAtribuidos.length,
       total,
+      paginaAtual: page,
+      totalPaginas: totalPages,
       filtroSeveridade: filtroSeveridade || "todos",
       filtroOrigem: filtroOrigem || "todos",
       busca: busca || null,
@@ -51,7 +54,7 @@ export default function Incidentes() {
         status: statusPT(inc.state_name),
       })),
     });
-  }, [abertos, fechados, atribuidos, naoAtribuidos, total, filtroSeveridade, filtroOrigem, busca, linhas]);
+  }, [abertos, fechados, atribuidos, naoAtribuidos, total, filtroSeveridade, filtroOrigem, busca, linhas, periodo, page, totalPages]);
 
   return (
     <LayoutModel titulo="Incidentes">

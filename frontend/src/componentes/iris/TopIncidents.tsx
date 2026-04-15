@@ -22,11 +22,19 @@ interface Incidente {
   client_name: string;
 }
 
-interface Props {
-  token: string;
+interface IncidenteSummary {
+  id: number;
+  nome: string;
+  severidade: string;
+  data: string;
 }
 
-export default function TopIncidentes({ token }: Props) {
+interface Props {
+  token: string;
+  onDadosCarregados?: (incidentes: IncidenteSummary[]) => void;
+}
+
+export default function TopIncidentes({ token, onDadosCarregados }: Props) {
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
   const [filtroDias, setFiltroDias] = useState(0);
   const [irisUrl, setIrisUrl] = useState<string>("");
@@ -109,7 +117,14 @@ export default function TopIncidentes({ token }: Props) {
         const ordenado = filtrado.sort((a, b) => b.case_id - a.case_id);
 
         if (!ativo) return;
-        setIncidentes(ordenado.slice(0, 7));
+        const top7 = ordenado.slice(0, 7);
+        setIncidentes(top7);
+        onDadosCarregados?.(top7.map((inc) => ({
+          id: inc.case_id,
+          nome: formatCaseName(inc.case_name),
+          severidade: nivelDoIncidente(inc),
+          data: formatDateBR(inc.case_open_date),
+        })));
         setTimeout(() => ativo && setAnimReady(true), 50);
       } catch (e: any) {
         if (!ativo) return;
