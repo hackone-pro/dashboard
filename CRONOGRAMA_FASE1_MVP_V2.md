@@ -517,49 +517,51 @@ Todos os microservicos (ALERT, TICKET, e demais) devem receber o `tenant_id` do 
 
 ---
 
-#### G01 — Implementar Adapter FortiGATE (Collector + Normalizer)
+## G01 — Normalizer FortiGATE dentro do ALERT
 
-**Titulo:** Criar Collector de coleta e Normalizer FortiGATE no padrao adapter
+**Título:** Implementar Normalizer FortiGATE compatível com o fluxo existente de alertas
 
-**Descricao:**
-Implementar o adapter para FortiGATE em duas partes: o Collector (que roda no polling job e faz a coleta bruta) e o Normalizer (que roda dentro do ALERT e transforma o evento bruto em NormalizedEvent).
+**Descrição:**
+O ALERT já processa alertas de múltiplas fontes (EDR, SIEM, firewalls) por um fluxo consolidado: recebe o evento, salva no banco, envia para `api/ticket/` que aciona a IA e decide se abre ticket no IRIS. O Normalizer FortiGATE deve se encaixar nesse fluxo sem alterá-lo — a normalização é uma etapa interna transparente, e o evento FortiGATE deve chegar ao `api/ticket/` com o mesmo contrato que os demais alertas já entregam hoje.
 
 **O que fazer:**
-- **Collector FortiGATE (usado pelo polling job E02):**
-  - Implementar interface `IVendorCollector`:
-    - `authenticate(config)` — autentica na API do FortiGATE usando URL e credenciais configuradas
-    - `fetchIncremental(cursor)` — faz GET nos endpoints de alertas/logs do FortiGATE usando `since_timestamp` como cursor
-    - `emitRaw(rawEvents)` — envia os eventos brutos para `POST /api/events/ingest` do ALERT
-  - Usar como base o script Python existente de integracao FortiGATE
-  - Tratar paginacao da API FortiGATE
-  - Armazenar ultimo cursor com sucesso para retomar na proxima execucao
 
-- **Normalizer FortiGATE (registrado dentro do ALERT):**
-  - Implementar interface `IVendorNormalizer`:
-    - `canHandle("firewall", "fortinet")` → true
-    - `normalize(rawPayload)` → NormalizedEvent com campos mapeados:
-      - `source_type` = "firewall"
-      - `vendor` = "fortinet"
-      - `product` = "fortigate"
-      - `event_time` = timestamp do log FortiGATE
-      - `category` = mapeamento para taxonomia G06 (ex: IPS event → NETWORK_INTRUSION)
-      - `action` = mapeamento (ex: "deny" → "blocked", "pass" → "allowed")
-      - `asset` = extrair IP/hostname do log
-      - `ioc` = extrair src_ip, dst_ip, domain quando presentes
-    - `mapSeverity(vendorSeverity)` → mapeamento FortiGATE para 4 buckets (ver G02)
-  - Registrar no registry de normalizadores do ALERT
+- **Ajuste na Command de Alert:**
+  - Adicionar campo `product` à Command existente (ex: "fortigate", "crowdstrike", "qradar")
+  - `product` é o campo-chave para o registry selecionar o normalizer correto
+  - Garantir retrocompatibilidade: alertas existentes sem `product` seguem o fluxo atual sem quebrar
 
-**Criterios de aceite:**
-- [ ] Collector autentica na API FortiGATE com sucesso
-- [ ] Collector coleta logs incrementalmente (nao repete logs ja coletados)
-- [ ] Collector envia payload bruto para ALERT
-- [ ] Normalizer registrado no ALERT e descoberto automaticamente para source_type="firewall", vendor="fortinet"
-- [ ] Eventos FortiGATE corretamente mapeados para NormalizedEvent
-- [ ] Categorias mapeadas conforme taxonomia G06
-- [ ] Campos nulos tratados quando log nao contem a informacao
+- **Interface `IVendorNormalizer` (contrato genérico):**
+  - `canHandle(product)` → bool
+  - `normalize(rawPayload)` → `NormalizedEvent` — mesmo modelo já usado pelo fluxo existente
+
+- **Implementação `FortiGateNormalizer`:**
+  - `canHandle("fortigate")` → true
+  - `normalize(rawPayload)` mapeia para o `NormalizedEvent` existente:
+    - `event_time` — timestamp do log FortiGATE
+    - `category` — mapeamento para taxonomia G06 (ex: IPS event → `NETWORK_INTRUSION`)
+    - `action` — (`deny` → `blocked`, `pass` → `allowed`)
+    - `severity` — mapeamento para 4 buckets conforme G02
+    - `asset` — IP ou hostname extraído
+    - `ioc` — `src_ip`, `dst_ip`, domain quando presentes
+  - Campos ausentes tratados com null — nunca quebrar o fluxo
+
+- **Registry de Normalizers:**
+  - ALERT itera os normalizers registrados, chama `canHandle(product)` para selecionar
+  - `FortiGateNormalizer` registrado via injeção de dependência
+  - Se nenhum normalizer encontrado: loga warning e prossegue com payload bruto — **não bloqueia o fluxo**
+  - Evento normalizado entregue ao `api/ticket/` com o mesmo contrato dos outros alertas
+
+**Critérios de aceite:**
+- [ ] Campo `product` adicionado à Command sem quebrar alertas existentes
+- [ ] `FortiGateNormalizer` registrado e selecionado automaticamente para `product = "fortigate"`
+- [ ] Evento FortiGATE normalizado chega ao `api/ticket/` com o mesmo contrato dos demais alertas
+- [ ] Alertas sem `product` continuam funcionando normalmente (retrocompatibilidade)
+- [ ] Campos ausentes no log tratados com null sem exceção
+- [ ] Evento sem normalizer conhecido não bloqueia o fluxo
 
 **Tipo:** Back-end
-**Servicos afetados:** Microservico ALERT (normalizer), Polling Job (collector)
+**Serviço afetado:** Microserviço ALERT
 
 ---
 
@@ -849,77 +851,60 @@ O modal exibe dois grids separados: um para instâncias Pull e outro para instâ
 
 ---
 
-#### E02 — Implementar background job de polling FortiGATE
+## E02 — Job de Polling Incremental (Hangfire)
 
-**Titulo:** Criar job de coleta incremental que busca alertas no FortiGATE e envia para o ALERT
+**Título:** Criar Hangfire Job de coleta incremental FortiGATE, extensível para futuros vendors
 
-**Descricao:**
-Para cada instancia de FortiGATE configurada (E01), um job independente deve rodar periodicamente, coletar os alertas mais recentes via API e enviar como eventos brutos para o microservico ALERT.
-
-**O que fazer:**
-- Usar como base o script Python existente de integracao FortiGATE
-- Para cada instancia configurada e ativa:
-  - Instanciar o Collector FortiGATE (G01)
-  - Executar `authenticate()` com URL e credenciais da config
-  - Executar `fetchIncremental(lastCursor)` — buscar alertas desde o ultimo timestamp processado
-  - Executar `emitRaw(rawEvents)` — enviar para `POST /api/events/ingest` do ALERT com:
-    - `tenant_id` da configuracao
-    - `source_type` = "firewall"
-    - `vendor` = "fortinet"
-    - Array de `raw_payload`
-  - Atualizar `lastCursor` com o timestamp do ultimo evento coletado
-- Gerenciamento do job:
-  - Intervalo conforme configuracao (5-15 min)
-  - Cada instancia = 1 job independente
-  - Jobs devem sobreviver a restart do servico (persistir estado)
-  - Se a API FortiGATE estiver indisponivel: logar erro, tentar novamente no proximo ciclo
-  - Se exceder timeout: abortar e tentar no proximo ciclo
-
-**Criterios de aceite:**
-- [ ] Job roda no intervalo configurado
-- [ ] Coleta e incremental (nao repete eventos)
-- [ ] Eventos brutos enviados para ALERT via endpoint de ingestao
-- [ ] Estado do cursor persistido (sobrevive a restart)
-- [ ] Multiplas instancias rodam em paralelo sem interferencia
-- [ ] Falha na API FortiGATE nao derruba o job (retry no proximo ciclo)
-- [ ] Log de execucao com: timestamp, eventos coletados, erros
-
-**Tipo:** Back-end
-**Servico afetado:** Novo servico/worker de polling (ou cron no Strapi — definir)
-
----
-
-#### R03 — Corrigir Risk Level para funcionar sem CIS
-
-**Titulo:** Implementar degradacao graciosa do Risk Level e corrigir divergencias identificadas em R02
-
-**Descricao:**
-O Risk Level atualmente assume 4 cards fixos (alertas por host, firewalls, incidentes, CIS). No contexto Essentials, CIS nao existe. O algoritmo deve funcionar com qualquer subconjunto de cards, recalculando pesos proporcionalmente.
+**Descrição:**
+Sempre que um customer configurar uma Source com suporte a polling, um Hangfire Job recorrente e dedicado deve ser criado para aquela instância. A implementação começa com FortiGATE mas deve ser estruturada para que novos vendors (Palo Alto, Check Point, etc.) possam ser adicionados seguindo o mesmo padrão, sem alterar a infraestrutura do job.
 
 **O que fazer:**
-- Corrigir todos os bugs/divergencias listados em R02
-- Refatorar o algoritmo de calculo:
-  - Nao depender de 4 cards fixos
-  - Aceitar N cards disponiveis (de 1 a 4)
-  - Se um card nao tem dados: excluir do calculo (nao penalizar com zero)
-  - Redistribuir os pesos proporcionalmente entre os cards que existem
-  - Exemplo: se so tem 2 cards (alertas firewall + incidentes), cada um pesa 50%
-- Garantir que o score 0-100 continua coerente independente da quantidade de cards
-- Atualizar o cron job `snapshotRiskDebug` com a nova logica
-- No contexto Essentials:
-  - Cards disponiveis: alertas de firewall, incidentes abertos
-  - Cards indisponiveis: CIS compliance, top hosts EDR (se nao tiver EDR)
 
-**Criterios de aceite:**
-- [ ] Risk Level calcula corretamente com 1, 2, 3 ou 4 cards
-- [ ] Ausencia de CIS nao penaliza o score
-- [ ] Pesos redistribuidos proporcionalmente
-- [ ] Score 0-100 coerente em todos os cenarios
-- [ ] Cron job atualizado
-- [ ] Clientes `full` (com CIS) nao impactados
+- **Contrato genérico `IIncrementalCollector`:**
+  - `fetchIncremental(config, cursor)` → `(events[], newCursor)` — busca eventos desde o último cursor
+  - `supportsPolling(product, vendor)` → bool — indica se este collector suporta o par product/vendor
+  - FortiGATE será a primeira implementação: `FortiGateCollector`
+  - Novos vendors implementam a interface sem tocar na infraestrutura do job
+
+- **API de gerenciamento (disparada internamente por handlers de Source):**
+  - Criação/atualização do job ao salvar uma Source com polling ativo
+  - Cancelamento do job ao desativar/excluir a Source
+  - Idempotente: criar duas vezes para o mesmo `sourceId` atualiza, não duplica
+
+- **Naming do job:**
+  - Padrão: `{product}_{vendor}_{tenantId}_{sourceId}`
+  - Exemplo: `firewall_fortinet_tenant123_source456`
+  - Garante rastreabilidade e unicidade no Hangfire dashboard
+
+- **Hangfire Job — execução:**
+  - Busca config atualizada da Source a cada ciclo (não cacheia em memória)
+  - Seleciona o `IIncrementalCollector` correto via registry pelo `product`/`vendor` da Source
+  - Executa `fetchIncremental(config, lastCursor)` com tratamento de paginação
+  - Despacha via Command interna (mesmo projeto — sem HTTP) com:
+    - `tenant_id` — da config da Source
+    - `product` — da config da Source
+    - `raw_payload` — array de eventos brutos
+  - Atualiza e persiste o cursor após entrega bem-sucedida
+  - Dispara `ISourceActivitySignal(sourceId)` após ciclo bem-sucedido
+
+- **Gerenciamento e resiliência:**
+  - Intervalo configurável por Source (default: 10 min, range: 5–15 min)
+  - Um job por Source, jobs paralelos sem interferência
+  - Falha na API externa: Hangfire retenta no próximo ciclo, loga `sourceId` + motivo
+  - Log por ciclo: timestamp, `sourceId`, job name, quantidade de eventos, erros
+
+**Critérios de aceite:**
+- [ ] Job nomeado no padrão `{product}_{vendor}_{tenantId}_{sourceId}`
+- [ ] Job criado/cancelado automaticamente via handler de Source
+- [ ] `IIncrementalCollector` implementado — `FortiGateCollector` como primeira implementação
+- [ ] Novo vendor pode ser adicionado implementando `IIncrementalCollector` sem alterar infraestrutura
+- [ ] Coleta incremental com cursor persistido (sem repetição de eventos)
+- [ ] Command interna despachada com `tenant_id`, `product` e `raw_payload`
+- [ ] Signal de atividade disparado via `ISourceActivitySignal` após ciclo bem-sucedido
+- [ ] Falha na API externa não derruba o job
 
 **Tipo:** Back-end
-**Servicos afetados:** Strapi — `config/cron-tasks.ts`, endpoint `/acesso/wazuh/risklevel`
+**Serviços afetados:** Serviço de Sources + Hangfire Worker
 
 ---
 
