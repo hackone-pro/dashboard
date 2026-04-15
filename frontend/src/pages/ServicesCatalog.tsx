@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom";
 import LayoutModel from '../componentes/LayoutModel';
+import { useScreenContext } from "../context/ScreenContext";
 import Contador from "../componentes/Contador";
 import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
 
@@ -15,6 +16,24 @@ import { BsDatabaseLock } from "react-icons/bs";
 import { TbHeartRateMonitor, TbCloudLock } from "react-icons/tb";
 
 export default function ServicesCatalog() {
+    const { setScreenData } = useScreenContext();
+
+    useEffect(() => {
+        setScreenData("services-catalog", {
+            observacao: "Catálogo de serviços de cibersegurança oferecidos pela Security One. Dados exibidos são ilustrativos.",
+            servicos: [
+                "Tráfego Seguro e Controle de Acesso",
+                "Defesa de Endpoints (EDR/XDR)",
+                "Identidade e Acesso",
+                "Vulnerabilidades",
+                "Proteção de Aplicações Web (WAF/WAAP)",
+                "Proteção de Dados",
+                "Teste de Intrusão (Pentest)",
+                "Monitoria",
+                "Cloud Security",
+            ],
+        });
+    }, []);
 
     function BarraPreenchimentoSimples() {
         const [animReady, setAnimReady] = useState(false)

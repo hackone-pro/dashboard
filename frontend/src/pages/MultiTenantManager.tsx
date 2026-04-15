@@ -8,6 +8,7 @@ import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
 
 import { getAdminSummary } from "../services/multi-tenant/summary.service";
 import Slider from "../componentes/Swiper";
+import { useScreenContext } from "../context/ScreenContext";
 
 export default function MultiTenantManager() {
 
@@ -15,6 +16,22 @@ export default function MultiTenantManager() {
     const [dadosTenants, setDadosTenants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalAberto, setModalAberto] = useState(false);
+    const { setScreenData } = useScreenContext();
+
+    useEffect(() => {
+        if (loading) return;
+        setScreenData("multi-tenant-manager", {
+            totalTenants: dadosTenants.length,
+            tenantsSelecionados,
+            resumo: dadosTenants.map(t => ({
+                nome: t.nome,
+                risco: t.risco,
+                incidentesCritico: t.incidentes_critico,
+                incidentesAlto: t.incidentes_alto,
+                ativos: t.ativos,
+            })),
+        });
+    }, [loading, dadosTenants, tenantsSelecionados]);
 
     const METRICAS_DEFAULT = {
         risco: true,

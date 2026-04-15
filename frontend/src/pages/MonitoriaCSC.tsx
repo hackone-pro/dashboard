@@ -1,7 +1,8 @@
 // src/pages/MonitoriaSOC.tsx
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import { useZabbixAtivo } from "../hooks/useZabbixAtivo";
+import { useScreenContext } from "../context/ScreenContext";
 
 import FirewallCard, { FirewallCardRef } from "../componentes/zabbix/Monitoria/mock/FirewallCard";
 import TopHostsCPU from "../componentes/zabbix/Monitoria/mock/TopHostsCPU";
@@ -20,6 +21,17 @@ export default function MonitoriaSOC() {
   // ref obrigatório para usar <FirewallCard ref={firewallRef}>
   const firewallRef = useRef<FirewallCardRef>(null);
   const { loading, ativo } = useZabbixAtivo();
+  const { setScreenData } = useScreenContext();
+
+  useEffect(() => {
+    if (loading) return;
+    setScreenData("monitoria-csc", {
+      zabbixAtivo: ativo,
+      observacao: ativo
+        ? "Monitoria CSC ativa via Zabbix"
+        : "Integração Zabbix inativa para este tenant",
+    });
+  }, [ativo, loading]);
 
   /* =========================
      LOADING

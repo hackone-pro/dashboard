@@ -1,6 +1,6 @@
 // src/pages/ArchivesIntegrity.tsx
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import DateRangePicker from "../componentes/DataRangePicker";
 
@@ -13,6 +13,7 @@ import DistribuicaoAcoesCard, { DistribuicaoAcoesCardRef } from "../componentes/
 import TopUsersCard, { TopUsersCardRef } from "../componentes/wazuh/TopUsersCard";
 
 import { FiRotateCcw } from "react-icons/fi";
+import { useScreenContext } from "../context/ScreenContext";
 
 export default function ArchivesIntegrity() {
     // refs para cada card
@@ -23,6 +24,8 @@ export default function ArchivesIntegrity() {
     const ruleDistributionRef = useRef<RuleDistributionCardRef>(null);
     const distribuicoesAcoesRef = useRef<DistribuicaoAcoesCardRef>(null);
 
+    const { setScreenData } = useScreenContext();
+
     // estado do período
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
@@ -30,9 +33,18 @@ export default function ArchivesIntegrity() {
     type PeriodoRapido = "24h" | "48h" | "7d" | "15d" | "30d" | null;
 
     const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
+    const [totalEventos, setTotalEventos] = useState<number | null>(null);
+
+    useEffect(() => {
+        setScreenData("integridade-arquivos", {
+            periodo: periodoRapido ?? (startDate && endDate ? `${startDate.toLocaleDateString("pt-BR")} – ${endDate.toLocaleDateString("pt-BR")}` : null),
+            totalEventos,
+        });
+    }, [periodoRapido, startDate, endDate, totalEventos]);
 
     // aplicar período SOMENTE no OvertimeCard
     const aplicarPeriodo = () => {
+        setTotalEventos(null);
         let from: Date;
         let to: Date;
 
@@ -69,6 +81,7 @@ export default function ArchivesIntegrity() {
         setPeriodoRapido("24h");
         setStartDate(null);
         setEndDate(null);
+        setTotalEventos(null);
 
         const payload = {
             from: from.toISOString(),
@@ -154,7 +167,7 @@ export default function ArchivesIntegrity() {
                         <h4 className="text-white text-sm font-semibold mb-4">
                             Resumo de Eventos
                         </h4>
-                        <EventosSummaryCard ref={eventosSummaryRef} />
+                        <EventosSummaryCard ref={eventosSummaryRef} onDadosCarregados={setTotalEventos} />
                     </div>
                 </div>
             </section>
