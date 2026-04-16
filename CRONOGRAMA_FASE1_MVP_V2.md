@@ -83,21 +83,21 @@ BLOCO 5 — Analytics + Copiloto       BLOCO 6 — Frontend Final
 |-------|----|--------|------|-------|-----------|---------|---------|
 | 1 | E06 | Adicionar campo `plan` no tenant | Back-end | 1 | — |ok | |
 | 2 | E05 | Incluir tenants no token JWT | Full Stack | 1 | — |ok | |
-| 3 | E03 | NormalizedEvent + normalizacao no ALERT | Back-end | 1 | — | | |
-| 4 | G06 | Definir taxonomia de categorias v1 | Back-end | 1 | — | | |
+| 3 | E03 | NormalizedEvent + normalizacao no ALERT | Back-end | 1 | — |ok | |
+| 4 | G06 | Definir taxonomia de categorias v1 | Back-end | 1 | — |ok | |
 | 5 | T01 | Validar schema do incidente no ticket | Back-end | 1 | — | | |
 | 6 | SA01 | Campos de instrumentacao no incidente (SOC Analytics) | Back-end | 1 | T01 | | |
 | 7 | R01 | Documentar regras do Risk Level | Documentacao | 1 | — | | |
 | 8 | C01 | Separar config LLM (Chat vs Motor) | Full Stack | 1 | — |ok | |
 | 9 | E04 | Propagar tenant_id nos microservicos | Back-end | 2 | E05 |ok | |
-| 10 | G01 | Adapter pattern FortiGATE (Collector + Normalizer) | Back-end | 2 | E03 | | |
-| 11 | G03 | Deduplicacao de eventos no ALERT | Back-end | 2 | E03 | | |
+| 10 | G01 | Adapter pattern FortiGATE (Collector + Normalizer) | Back-end | 2 | E03 |ok | |
+| 11 | G03 | Deduplicacao de eventos no ALERT | Back-end | 2 | E03 |ok | |
 | 12 | E07 | Feature flags por plano do tenant | Front-end | 2 | E06 |ok | |
 | 13 | R02 | Auditar Risk Level atual vs especificacao | Back-end | 2 | R01 | | |
 | 14 | C02 | Configurar LLM padrao Hackone como fallback | Back-end | 2 | C01 |ok | |
-| 15 | G02 | Mapeamento de severidade FortiGATE | Back-end | 3 | G01 | | |
+| 15 | G02 | Mapeamento de severidade FortiGATE | Back-end | 3 | G01 |ok | |
 | 16 | E01 | Tela de configuracao de fontes FortiGATE | Front-end | 3 | E06 |ok | |
-| 17 | E02 | Background job de polling FortiGATE | Back-end | 3 | E01, E03, G01 | | |
+| 17 | E02 | Background job de polling FortiGATE | Back-end | 3 | E01, E03, G01 |ok | |
 | 18 | R03 | Corrigir Risk Level (degradacao graciosa) | Back-end | 3 | R02 | | |
 | 19 | G04 | Motor de correlacao (Incident Engine) | Back-end | 4 | E03, G01, G03, G06 | | |
 | 20 | G17 | Calculo de severidade final do incidente | Back-end | 4 | G04 | | |
