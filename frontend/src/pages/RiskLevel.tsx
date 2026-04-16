@@ -87,7 +87,7 @@ export default function RiskLevel() {
       topHostsComMaisAlertas: topAgentes,
       topHostsCis: topAgentesCis,
     });
-  }, [indiceRisco, totalIncidentes, severidades, dias, periodo, firewallDados, topAgentes, topAgentesCis]);
+  }, [indiceRisco, totalIncidentes, severidades, dias, periodo, firewallDados, topAgentes, topAgentesCis, setScreenData]);
 
   /* ============================
      HANDLER DO FILTRO

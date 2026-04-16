@@ -126,7 +126,7 @@ export default function Dashboard() {
       ultimosIncidentes: topIncidentes,
       iaHumans,
     });
-  }, [indiceRisco, totalAtaques, tenantAtivo, layout, topPaises, topFirewalls, topIncidentes, iaHumans]);
+  }, [indiceRisco, totalAtaques, tenantAtivo, layout, topPaises, topFirewalls, topIncidentes, iaHumans, setScreenData]);
 
   // 🔹 Debounce
   function debounce<T extends (...args: any[]) => void>(fn: T, delay = 1000) {
