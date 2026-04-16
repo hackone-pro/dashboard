@@ -12,6 +12,19 @@ import {
   sentenceCase
 } from "../../utils/incidentes/helpers";
 
+// ─── Tipo padronizado de severidade ────────────────────────────────────────
+type NivelSeveridade = "Baixa" | "Média" | "Alta" | "Crítica";
+
+// ─── Normalizador — aceita qualquer gênero/capitalização ───────────────────
+function normalizarNivel(valor: string | null | undefined): NivelSeveridade {
+  const v = valor?.trim().toLowerCase() ?? "";
+  if (v === "baixo" || v === "baixa") return "Baixa";
+  if (v === "medio" || v === "médio" || v === "media" || v === "média") return "Média";
+  if (v === "alto" || v === "alta") return "Alta";
+  if (v === "critico" || v === "crítico" || v === "critica" || v === "crítica") return "Crítica";
+  return "Baixa"; // fallback seguro
+}
+
 interface Incidente {
   case_id: number;
   case_name: string;
@@ -22,11 +35,19 @@ interface Incidente {
   client_name: string;
 }
 
-interface Props {
-  token: string;
+interface IncidenteSummary {
+  id: number;
+  nome: string;
+  severidade: string;
+  data: string;
 }
 
-export default function TopIncidentes({ token }: Props) {
+interface Props {
+  token: string;
+  onDadosCarregados?: (incidentes: IncidenteSummary[]) => void;
+}
+
+export default function TopIncidentes({ token, onDadosCarregados }: Props) {
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
   const [filtroDias, setFiltroDias] = useState(0);
   const [irisUrl, setIrisUrl] = useState<string>("");
@@ -48,21 +69,21 @@ export default function TopIncidentes({ token }: Props) {
      MESMA LÓGICA DA PÁGINA INCIDENTES
   ===================================== */
 
-  const mapNivelPorClassificationId = (id?: number | null) => {
-    if (!id) return "Baixo";
-    if ([1,2,11,12,13,25,32,33,34,35,36].includes(id)) return "Baixa";
-    if ([3,4,5,14,15,22,30,31].includes(id)) return "Média";
-    if ([6,7,8,9,10,16,23,26,27,28,29].includes(id)) return "Alta";
-    if ([17,18,19,20,21,24].includes(id)) return "Crítica";
-    return "Baixo";
+  const mapNivelPorClassificationId = (id?: number | null): NivelSeveridade => {
+    if (!id) return "Baixa";
+    if ([1, 2, 11, 12, 13, 25, 32, 33, 34, 35, 36].includes(id)) return "Baixa";
+    if ([3, 4, 5, 14, 15, 22, 30, 31].includes(id)) return "Média";
+    if ([6, 7, 8, 9, 10, 16, 23, 26, 27, 28, 29].includes(id)) return "Alta";
+    if ([17, 18, 19, 20, 21, 24].includes(id)) return "Crítica";
+    return "Baixa";
   };
 
-  const nivelDoIncidente = (i: Incidente) => {
+  const nivelDoIncidente = (i: Incidente): NivelSeveridade => {
     const severidadeTexto = extrairSeveridadeDoTexto(i.case_description);
-    if (severidadeTexto) return severidadeTexto;
+    if (severidadeTexto) return normalizarNivel(severidadeTexto);
 
     const manual = detectarNivelPorNome(i.case_name || "");
-    if (manual) return manual;
+    if (manual) return normalizarNivel(manual);
 
     return mapNivelPorClassificationId(i.classification_id);
   };
@@ -84,9 +105,9 @@ export default function TopIncidentes({ token }: Props) {
         if (!ativo) return;
         setIrisUrl(tenant.iris_url);
 
-        const response = await getTodosCasos(token);
-        const data: Incidente[] =
-          Array.isArray(response) ? response : response.data;
+        // depois
+        const response = await getTodosCasos(token) as Incidente[] | { data: Incidente[] };
+        const data: Incidente[] = Array.isArray(response) ? response : response.data;
 
         const hoje = new Date();
         const limite = new Date();
@@ -109,7 +130,14 @@ export default function TopIncidentes({ token }: Props) {
         const ordenado = filtrado.sort((a, b) => b.case_id - a.case_id);
 
         if (!ativo) return;
-        setIncidentes(ordenado.slice(0, 7));
+        const top7 = ordenado.slice(0, 7);
+        setIncidentes(top7);
+        onDadosCarregados?.(top7.map((inc) => ({
+          id: inc.case_id,
+          nome: formatCaseName(inc.case_name),
+          severidade: nivelDoIncidente(inc),
+          data: formatDateBR(inc.case_open_date),
+        })));
         setTimeout(() => ativo && setAnimReady(true), 50);
       } catch (e: any) {
         if (!ativo) return;
@@ -126,36 +154,33 @@ export default function TopIncidentes({ token }: Props) {
   }, [token, filtroDias, tenantAtivo]);
 
   /* =====================================
-     VISUAL — MESMAS CORES ORIGINAIS
+     VISUAL — sem default, todos os casos cobertos pelo tipo
   ===================================== */
 
-  const getCorBadge = (nivel: string) => {
+  const getCorBadge = (nivel: NivelSeveridade) => {
     switch (nivel) {
       case "Crítica": return "badge-pink";
       case "Alta": return "badge-high";
       case "Média": return "badge-darkpink";
-      case "Baixo": return "badge-green";
-      default: return "badge-darkpink";
+      case "Baixa": return "badge-green";
     }
   };
 
-  const getCorBarra = (nivel: string) => {
+  const getCorBarra = (nivel: NivelSeveridade) => {
     switch (nivel) {
       case "Crítica": return "bg-pink-500";
       case "Alta": return "bg-purple-400";
       case "Média": return "bg-indigo-400";
-      case "Baixo": return "bg-emerald-400";
-      default: return "bg-indigo-400";
+      case "Baixa": return "bg-emerald-400";
     }
   };
 
-  const getQtdPreenchida = (nivel: string) => {
+  const getQtdPreenchida = (nivel: NivelSeveridade) => {
     switch (nivel) {
-      case "Baixo": return 1;
+      case "Baixa": return 1;
       case "Média": return 2;
       case "Alta": return 3;
       case "Crítica": return 4;
-      default: return 2;
     }
   };
 
@@ -214,9 +239,8 @@ export default function TopIncidentes({ token }: Props) {
                       {Array.from({ length: 4 }).map((_, j) => (
                         <span
                           key={j}
-                          className={`w-1.5 h-3 rounded-sm ${
-                            j < qtd ? getCorBarra(nivel) : "bg-[#2b2b3a]"
-                          }`}
+                          className={`w-1.5 h-3 rounded-sm ${j < qtd ? getCorBarra(nivel) : "bg-[#2b2b3a]"
+                            }`}
                         />
                       ))}
                     </div>

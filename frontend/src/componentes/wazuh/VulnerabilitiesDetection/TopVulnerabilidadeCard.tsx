@@ -14,10 +14,11 @@ const formatPt = (n: number) =>
 interface Props {
   isWidget?: boolean;
   agent?: string | null;
+  onDadosCarregados?: (cves: Array<{ cve: string; total: number }>) => void;
 }
 
 const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef, Props>(
-  ({ isWidget = false, agent }, ref) => {
+  ({ isWidget = false, agent, onDadosCarregados }, ref) => {
 
     const { tenantAtivo } = useTenant();
     const [topVulns, setTopVulns] = useState<TopVulnerabilidade[]>([]);
@@ -37,6 +38,7 @@ const TopVulnerabilidadeCard = forwardRef<TopVulnerabilidadeCardRef, Props>(
         );
         setTopVulns(lista);
         setErro(null);
+        onDadosCarregados?.(lista.map((v) => ({ cve: v.key, total: v.total })));
       } catch (e: any) {
         setErro(e?.message || "Falha ao carregar Top vulnerabilidades");
       } finally {

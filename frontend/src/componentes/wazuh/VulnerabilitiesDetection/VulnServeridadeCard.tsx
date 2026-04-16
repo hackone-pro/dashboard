@@ -12,6 +12,7 @@ export type VulnSeveridadeCardRef = {
 
 interface Props {
   onAtualizar?: () => void;
+  onDadosCarregados?: (dados: VulnSeveridades) => void;
   agent?: string | null;
   isWidget?: boolean;
 }
@@ -20,7 +21,7 @@ const formatPt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
 
 const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(
-  ({ onAtualizar, isWidget = false, agent }, ref) => {
+  ({ onAtualizar, onDadosCarregados, isWidget = false, agent }, ref) => {
     const { tenantAtivo } = useTenant();
     const [data, setData] = useState<VulnSeveridades | null>(null);
     const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ const VulnSeveridadeCard = forwardRef<VulnSeveridadeCardRef, Props>(
         const res = await getVulnSeveridades(agent ?? undefined);
         setData(res);
         setErr(null);
+        onDadosCarregados?.(res);
       } catch (e: any) {
         setErr(e?.message || "Falha ao carregar severidades");
       } finally {

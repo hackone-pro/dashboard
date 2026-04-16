@@ -7,16 +7,23 @@ import {
 import { useTenant } from "../../../context/TenantContext";
 import { GripVertical } from "lucide-react";
 
+export interface TopAgentCisSummary {
+  nome: string;
+  scoreCis: number;
+}
+
 interface TopAgentsCisCardProps {
   dias: string;
   periodo?: { from: string; to: string } | null;
   isWidget?: boolean;
+  onDadosCarregados?: (agentes: TopAgentCisSummary[]) => void;
 }
 
 export default function TopAgentsCisCard({
   dias,
   periodo,
   isWidget = false,
+  onDadosCarregados,
 }: TopAgentsCisCardProps) {
   const { tenantAtivo } = useTenant();
 
@@ -51,6 +58,9 @@ export default function TopAgentsCisCard({
           if (ativo) {
             setItens(data);
             setAnimReady(true);
+            onDadosCarregados?.(
+              data.slice(0, 10).map((a) => ({ nome: a.agent_name, scoreCis: a.score_cis_percent }))
+            );
           }
         }, delay);
       } catch (e: any) {

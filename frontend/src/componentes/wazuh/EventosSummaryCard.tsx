@@ -15,7 +15,11 @@ export type EventosSummaryCardRef = {
   }) => void;
 };
 
-const EventosSummaryCard = forwardRef<EventosSummaryCardRef>((props, ref) => {
+interface EventosSummaryCardProps {
+  onDadosCarregados?: (totalEventos: number) => void;
+}
+
+const EventosSummaryCard = forwardRef<EventosSummaryCardRef, EventosSummaryCardProps>((props, ref) => {
   const { tenantAtivo } = useTenant();
   const [data, setData] = useState<EventosSummary | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -39,6 +43,8 @@ const EventosSummaryCard = forwardRef<EventosSummaryCardRef>((props, ref) => {
       );
 
       setData(res);
+      const total = res.values.reduce((acc, v) => acc + v, 0);
+      props.onDadosCarregados?.(total);
     } catch (err: any) {
       setErro(err.message ?? "Erro ao carregar dados");
     } finally {

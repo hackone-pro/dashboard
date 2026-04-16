@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 import LayoutModel from "../componentes/LayoutModel";
 import GraficoVolume from "../componentes/graficos/GraficoVolume";
 
@@ -15,6 +16,7 @@ import { getToken } from "../utils/auth";
 
 export default function MonitoriaSOC() {
   const { tenantAtivo } = useTenant();
+  const { setScreenData } = useScreenContext();
 
   const firewallRef = useRef<FirewallCardRef>(null);
   const servidoresRef = useRef<ServidoresCardRef>(null);
@@ -70,6 +72,19 @@ export default function MonitoriaSOC() {
       setLoadingTimeline(false);
     }
   };
+
+  useEffect(() => {
+    if (loadingStorage || loadingInternal || loadingTimeline) return;
+    const totalGB = (tenantAtivo as any)?.contract?.storage_gb ?? timeline?.totalCapacity ?? 0;
+    const usadoGB = storage?.used ?? timeline?.totalUsed ?? 0;
+    setScreenData("monitoria-soc", {
+      tenant: tenantAtivo?.cliente_name ?? null,
+      storageTotalGB: totalGB || null,
+      storageUsadoGB: usadoGB || null,
+      storageDisponivelGB: Math.max(totalGB - usadoGB, 0) || null,
+      totalDescartes: Array.isArray(internal?.deleted) ? internal.deleted.length : 0,
+    });
+  }, [loadingStorage, loadingInternal, loadingTimeline, tenantAtivo, storage, internal, timeline]);
 
   useEffect(() => {
     carregarStorage();

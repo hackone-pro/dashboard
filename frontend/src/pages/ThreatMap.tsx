@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import LayoutModel from '../componentes/LayoutModel';
 import GeoHitsMap from '../componentes/graficos/GeoHitsMap';
 import TopCountriesCard from '../componentes/wazuh/threatmap/TopCountriesCard';
@@ -7,8 +8,17 @@ import TopThreatCard from '../componentes/wazuh/threatmap/TopThreatCard';
 import LiveAttackCard from '../componentes/wazuh/threatmap/LiveAttackCard';
 
 import { AttackStreamProvider } from '../context/AttackStreamProvider';
+import { useScreenContext } from '../context/ScreenContext';
 
 export default function ThreatMap() {
+  const { setScreenData } = useScreenContext();
+
+  useEffect(() => {
+    setScreenData("threat-map", {
+      observacao: "Mapa de ameaças em tempo real com ataques geo-referenciados, top países, severidades e ataques ativos.",
+    });
+  }, []);
+
   return (
     <LayoutModel titulo="Threat Map">
       <AttackStreamProvider>

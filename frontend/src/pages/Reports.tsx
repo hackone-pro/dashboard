@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import LayoutModel from "../componentes/LayoutModel";
+import { useScreenContext } from "../context/ScreenContext";
 import { Download, Loader2 } from "lucide-react";
 import { MdDeleteForever } from "react-icons/md";
 import jsPDF from "jspdf";
@@ -30,6 +31,15 @@ export default function Reports() {
     const [gerando, setGerando] = useState(false);
     const [relatoriosGerados, setRelatoriosGerados] = useState<RelatorioGerado[]>([]);
     const [baixandoId, setBaixandoId] = useState<string | null>(null);
+    const { setScreenData } = useScreenContext();
+
+    useEffect(() => {
+        setScreenData("reports-legacy", {
+            periodoSelecionado: `${periodo} dias`,
+            totalRelatoriosLocais: relatoriosGerados.length,
+            observacao: "Relatórios gerados localmente via PDF (localStorage)",
+        });
+    }, [periodo, relatoriosGerados.length]);
 
     // 🔹 Carrega relatórios salvos
     useEffect(() => {

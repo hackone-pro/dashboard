@@ -33,10 +33,10 @@ export function ScreenProvider({ children }: { children: ReactNode }) {
 
   const setScreenData = useCallback(
     (entity: string | null, metadata: Record<string, unknown>) => {
-      setScreenDataState({
-        page: location.pathname,
-        entity,
-        metadata: JSON.stringify(metadata),
+      const currentPath = location.pathname;
+      setScreenDataState((prev) => {
+        if (prev.page !== currentPath) return prev; // rota já mudou, ignora
+        return { page: currentPath, entity, metadata: JSON.stringify(metadata) };
       });
     },
     [location.pathname]

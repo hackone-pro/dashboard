@@ -19,6 +19,7 @@ import { getTopAgentesVulnerabilidades } from "../services/wazuh/agentesvulnerab
 import AgentSelectFilter from "../componentes/AgentSelectFilter";
 import { FaSyncAlt } from "react-icons/fa";
 import { FiRotateCcw } from "react-icons/fi";
+import type { VulnSeveridades } from "../services/wazuh/vulnseveridades.service";
 
 export default function VulnerabilitiesDetection() {
   const { tenantAtivo } = useTenant();
@@ -33,13 +34,28 @@ export default function VulnerabilitiesDetection() {
   const anovulnerabilidadeRef = useRef<AnoVulnerabilidadeCardRef>(null);
   const [agentSelecionado, setAgentSelecionado] = useState<string | null>(null);
   const [agents, setAgents] = useState<string[]>([]);
+  const [vulnSeveridades, setVulnSeveridades] = useState<VulnSeveridades | null>(null);
+  const [topCVEs, setTopCVEs] = useState<Array<{ cve: string; total: number }>>([]);
 
   useEffect(() => {
+    const total = vulnSeveridades?.total || 1;
     setScreenData("vulnerabilidades", {
-      agentSelecionado: agentSelecionado ?? "todos",
+      agentFiltrado: agentSelecionado ?? "todos",
       totalAgentes: agents.length,
+      severidades: vulnSeveridades ? {
+        critico: vulnSeveridades.critical,
+        alto: vulnSeveridades.high,
+        medio: vulnSeveridades.medium,
+        baixo: vulnSeveridades.low,
+        total: vulnSeveridades.total ?? 0,
+        pctCritico: `${Math.round(((vulnSeveridades.critical) / total) * 100)}%`,
+        pctAlto: `${Math.round(((vulnSeveridades.high) / total) * 100)}%`,
+        pctMedio: `${Math.round(((vulnSeveridades.medium) / total) * 100)}%`,
+        pctBaixo: `${Math.round(((vulnSeveridades.low) / total) * 100)}%`,
+      } : null,
+      topCVEs,
     });
-  }, [agentSelecionado, agents]);
+  }, [agentSelecionado, agents, vulnSeveridades, topCVEs]);
 
   useEffect(() => {
     if (!tenantAtivo) return;
@@ -110,6 +126,7 @@ export default function VulnerabilitiesDetection() {
         ref={vulnseveridadeRef}
         agent={agentSelecionado}
         onAtualizar={atualizarTudo}
+        onDadosCarregados={setVulnSeveridades}
       />
 
       <section className="rounded-2xl shadow-lg my-4">
@@ -117,6 +134,7 @@ export default function VulnerabilitiesDetection() {
           <TopVulnerabilidadeCard
             ref={topvulnerabilidadeRef}
             agent={agentSelecionado}
+            onDadosCarregados={setTopCVEs}
           />
           <TopOSVulnerabilidadeCard
             ref={topvosulnerabilidadeRef}

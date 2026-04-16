@@ -8,16 +8,26 @@ import GraficoDonut from "../../graficos/GraficoDonut";
 import { useTenant } from "../../../context/TenantContext";
 import { GripVertical } from "lucide-react";
 
+export interface FirewallDonutSummary {
+  critico: number;
+  alto: number;
+  medio: number;
+  baixo: number;
+  total: number;
+}
+
 interface FirewallDonutCardProps {
   dias: string;
   periodo?: { from: string; to: string } | null;
   isWidget?: boolean;
+  onDadosCarregados?: (dados: FirewallDonutSummary) => void;
 }
 
 export default function FirewallDonutCard({
   dias,
   periodo,
   isWidget = false,
+  onDadosCarregados,
 }: FirewallDonutCardProps) {
   const { tenantAtivo } = useTenant();
 
@@ -72,6 +82,10 @@ export default function FirewallDonutCard({
     }
     return agg;
   }, [dados]);
+
+  useEffect(() => {
+    if (!carregando) onDadosCarregados?.({ critico, alto, medio, baixo, total });
+  }, [critico, alto, medio, baixo, total, carregando]);
 
   const labels = ["Crítico", "Alto", "Médio", "Baixo"];
   const series = [critico, alto, medio, baixo];

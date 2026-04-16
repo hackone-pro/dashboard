@@ -24,7 +24,11 @@ export function getWidgetMap(
   navigate: (path: string) => void,
   token: string,
   indiceRisco: number,
-  setTotalAtaques: (total: number) => void
+  setTotalAtaques: (total: number) => void,
+  setTopPaises?: (items: Array<{ pais: string; total: number }>) => void,
+  setTopFirewalls?: (items: Array<{ nome: string; total: number; critico: number; alto: number; medio: number; baixo: number }>) => void,
+  setTopIncidentes?: (items: Array<{ id: number; nome: string; severidade: string; data: string }>) => void,
+  setIaHumans?: (dados: { totalIa: number; totalHumanos: number }) => void,
 ): Record<string, JSX.Element> {
   const vulnseveridadeRef = useRef<VulnSeveridadeCardRef>(null);
   const topvulnerabilidadeRef = useRef<TopVulnerabilidadeCardRef>(null);
@@ -108,10 +112,10 @@ export function getWidgetMap(
     ),
 
     // 🔝 Top Incidentes
-    top_incidentes: <TopIncidentesCard token={token || ""} />,
+    top_incidentes: <TopIncidentesCard token={token || ""} onDadosCarregados={setTopIncidentes} />,
 
     // 🔥 Top Firewalls
-    top_firewalls: <TopFirewallCard />,
+    top_firewalls: <TopFirewallCard onDadosCarregados={setTopFirewalls} />,
 
     // 🌎 Top Países de Origem
     top_paises: (
@@ -120,14 +124,14 @@ export function getWidgetMap(
           <GripVertical size={18} className="text-white/50 hover:text-white transition" />
           <h3 className="text-sm text-white">Top 10 países de origem</h3>
         </div>
-        <TopCountriesTable dias="todos" limit={10} onTotalChange={setTotalAtaques} />
+        <TopCountriesTable dias="todos" limit={10} onTotalChange={setTotalAtaques} onDadosCarregados={setTopPaises} />
       </div>
     ),
 
     // 🤖 IA Humans
     ia_humans: (
       <div className="cards p-4 rounded-2xl shadow-lg h-full flex flex-col">
-        <IaHumans token={token || ""} />
+        <IaHumans token={token || ""} onDadosCarregados={setIaHumans} />
       </div>
     ),
 

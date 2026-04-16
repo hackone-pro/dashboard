@@ -19,9 +19,10 @@ interface Incidente {
 
 interface Props {
   token: string;
+  onDadosCarregados?: (dados: { totalIa: number; totalHumanos: number }) => void;
 }
 
-export default function IaHumans({ token }: Props) {
+export default function IaHumans({ token, onDadosCarregados }: Props) {
   const { tenantAtivo } = useTenant();
   const [series, setSeries] = useState<{ name: string; data: number[] }[]>([]);
   const [categoriasX, setCategoriasX] = useState<string[]>([]);
@@ -69,6 +70,7 @@ export default function IaHumans({ token }: Props) {
         const somaHumanos = agrupado.series?.[1]?.data?.reduce((a, b) => a + b, 0) ?? 0;
         setTotalIa(somaIa);
         setTotalHumanos(somaHumanos);
+        onDadosCarregados?.({ totalIa: somaIa, totalHumanos: somaHumanos });
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar tendência de casos");

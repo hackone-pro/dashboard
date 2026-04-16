@@ -1,5 +1,7 @@
 // src/componentes/chat/MessageBubble.tsx
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ChatMessageLocal } from "../../hooks/useChat";
 
 type Props = {
@@ -69,8 +71,27 @@ export default function MessageBubble({ message }: Props) {
             </div>
 
             <div className="max-w-[75%]">
-                <div className="bg-[#1a1330] border border-[#2a2040] text-gray-200 text-sm rounded-2xl rounded-bl-sm px-4 py-2.5 leading-relaxed whitespace-pre-wrap">
-                    {message.content}
+                <div className="bg-[#1a1330] border border-[#2a2040] text-gray-100 text-sm rounded-2xl rounded-bl-sm px-4 py-2.5 leading-relaxed">
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                            p: ({ children }) => <p className="mb-1 last:mb-0 text-gray-100">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-gray-200">{children}</em>,
+                            code: ({ children }) => <code className="bg-[#0f0a1e] text-purple-300 rounded px-1 py-0.5 text-xs font-mono">{children}</code>,
+                            pre: ({ children }) => <pre className="bg-[#0f0a1e] rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-gray-200">{children}</pre>,
+                            ul: ({ children }) => <ul className="list-disc pl-4 my-1 space-y-0.5">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal pl-4 my-1 space-y-0.5">{children}</ol>,
+                            li: ({ children }) => <li className="text-gray-100" style={{ display: "list-item" }}>{children}</li>,
+                            h1: ({ children }) => <h1 className="text-base font-bold text-white mt-2 mb-1">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-sm font-bold text-white mt-2 mb-1">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-sm font-semibold text-gray-100 mt-1 mb-0.5">{children}</h3>,
+                            blockquote: ({ children }) => <blockquote className="border-l-2 border-purple-500 pl-3 my-1 text-gray-300 italic">{children}</blockquote>,
+                            a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" className="text-purple-400 underline hover:text-purple-300">{children}</a>,
+                        }}
+                    >
+                        {message.content}
+                    </ReactMarkdown>
                 </div>
                 <p className="text-[10px] text-gray-600 mt-1 pl-1">
                     {formatTime(message.timestamp)}

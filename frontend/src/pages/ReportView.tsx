@@ -16,6 +16,7 @@ import GraficoDonutIncidentes from "../componentes/graficos/GraficoDonutIncident
 import { buscarRelatorioPorNome } from "../services/report-entry/report.service";
 import { getStatusMeta } from "../utils/incidentes/status";
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 
 import {
     formatDateBR,
@@ -62,9 +63,22 @@ export default function ReportView() {
     const [loading, setLoading] = useState(true);
     const [secoesVisiveis, setSecoesVisiveis] = useState<string[]>([]);
     const { tenantAtivo } = useTenant();
+    const { setScreenData } = useScreenContext();
     const [semPermissao, setSemPermissao] = useState(false);
 
     const nome = params.get("nome");
+
+    useEffect(() => {
+        if (loading) return;
+        setScreenData("report-view", {
+            nomeRelatorio: nome,
+            periodo: report?.period ?? null,
+            secoes: report?.sections ?? [],
+            secoesVisiveis,
+            semPermissao,
+            tenant: tenantAtivo?.cliente_name ?? null,
+        });
+    }, [loading, report, secoesVisiveis, semPermissao, tenantAtivo]);
 
     function temSecao(sec: string) {
         return (

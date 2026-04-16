@@ -5,7 +5,20 @@ import { useTenant } from "../../context/TenantContext";
 
 import { GripVertical, Trash2 } from "lucide-react";
 
-export default function TopFirewallCard() {
+interface TopFirewallSummary {
+  nome: string;
+  total: number;
+  critico: number;
+  alto: number;
+  medio: number;
+  baixo: number;
+}
+
+interface Props {
+  onDadosCarregados?: (firewalls: TopFirewallSummary[]) => void;
+}
+
+export default function TopFirewallCard({ onDadosCarregados }: Props) {
   const [firewalls, setFirewalls] = useState<TopFirewallItem[]>([]);
   const [dias, setDias] = useState("todos");
   const [carregando, setCarregando] = useState(true);
@@ -22,7 +35,16 @@ export default function TopFirewallCard() {
         setErro(null);
         const dados = await getTopFirewalls(dias);
         if (!ativo) return;
-        setFirewalls(dados.slice(0, 5)); // Top 5
+        const top5 = dados.slice(0, 5);
+        setFirewalls(top5);
+        onDadosCarregados?.(top5.map((fw) => ({
+          nome: fw.gerador,
+          total: fw.total,
+          critico: fw.severidade.critico,
+          alto: fw.severidade.alto,
+          medio: fw.severidade.medio,
+          baixo: fw.severidade.baixo,
+        })));
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao buscar top firewalls");

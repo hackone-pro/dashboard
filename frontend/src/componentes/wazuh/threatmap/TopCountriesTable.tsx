@@ -7,12 +7,14 @@ type Props = {
   dias?: string;
   limit?: number;
   onTotalChange?: (n: number) => void;
+  onDadosCarregados?: (items: Array<{ pais: string; total: number }>) => void;
 };
 
 export default function TopCountriesTable({
   dias = "7",
   limit = 10,
   onTotalChange,
+  onDadosCarregados,
 }: Props) {
   const { tenantAtivo } = useTenant();
   const [items, setItems] = useState<PaisItem[]>([]);
@@ -37,6 +39,7 @@ export default function TopCountriesTable({
         const total = top.reduce((acc, cur) => acc + (cur.total || 0), 0);
         setItems(top);
         onTotalChange?.(total);
+        onDadosCarregados?.(top.map((it) => ({ pais: it.pais, total: it.total })));
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar países");

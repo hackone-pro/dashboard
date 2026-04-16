@@ -9,6 +9,7 @@ import LayoutModel from "../componentes/LayoutModel";
 import { FiSearch, FiTrash } from "react-icons/fi";
 import { IoCalendarOutline } from "react-icons/io5";
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 
 import { toastSuccess, toastError } from "../utils/toast";
 import Swal from "sweetalert2";
@@ -34,7 +35,19 @@ export default function ReportDash() {
     const botaoSecoesRef = useRef<HTMLButtonElement | null>(null);
 
     const { tenantAtivo } = useTenant();
+    const { setScreenData } = useScreenContext();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        setScreenData("relatorios", {
+            periodo: horas || null,
+            secoesSelecionadas,
+            totalRelatorios: relatorios.length,
+            paginaAtual,
+            totalPaginas,
+            tenant: tenantAtivo?.cliente_name ?? null,
+        });
+    }, [horas, secoesSelecionadas, relatorios.length, paginaAtual, totalPaginas, tenantAtivo]);
 
     const portalRoot = typeof window !== "undefined" ? document.body : null;
 

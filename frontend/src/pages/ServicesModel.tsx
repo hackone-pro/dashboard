@@ -1,6 +1,8 @@
 // src/pages/ServicesModel.tsx
 
 import { useParams, Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useScreenContext } from "../context/ScreenContext";
 import LayoutModel from '../componentes/LayoutModel';
 
 import { GoShieldLock } from "react-icons/go";
@@ -13,6 +15,7 @@ import { BsDatabaseLock } from "react-icons/bs";
 export default function ServiceModel() {
 
     const { nome } = useParams<{ nome: string }>();
+    const { setScreenData } = useScreenContext();
 
     // 🔹 Títulos customizados com acentos, maiúsculas e espaços definidos manualmente
     const titulos: Record<string, string> = {
@@ -30,6 +33,13 @@ export default function ServiceModel() {
     // 🔹 Puxa o título certo ou gera um fallback
     const serviceTitle = titulos[nome || ""] || "Serviço de Cibersegurança";
     const pageTitle = `CSC - ${serviceTitle}`;
+
+    useEffect(() => {
+        setScreenData("services-model", {
+            servico: serviceTitle,
+            observacao: "Tela de apresentação do serviço. Conteúdo bloqueado — requer aquisição pelo tenant.",
+        });
+    }, [serviceTitle]);
 
     // 🔹 Link do botão (pode ser dinâmico depois)
     const buttonLink = `https://calendly.com/securityone/catalogo-de-servicos-de-ciberseguranca`;

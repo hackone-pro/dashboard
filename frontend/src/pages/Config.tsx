@@ -16,6 +16,7 @@ import { updateUser } from "../services/auth/updateUser.service";
 import { resendInvite } from "../services/auth/resendInvite.service";
 
 import { useTenant } from "../context/TenantContext";
+import { useScreenContext } from "../context/ScreenContext";
 
 type Aba = "senha" | "perfil";
 type Secao = "geral" | "usuarios";
@@ -27,6 +28,17 @@ export default function Configuracoes() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [abaUsuarios, setAbaUsuarios] = useState<AbaUsuarios>("lista");
   const { tenantAtivo } = useTenant();
+  const { setScreenData } = useScreenContext();
+
+  useEffect(() => {
+    setScreenData("configuracoes", {
+      secao,
+      aba: secao === "geral" ? aba : abaUsuarios,
+      isAdmin: isAdmin ?? false,
+      totalUsuarios: usuarios.length,
+      tenant: tenantAtivo?.cliente_name ?? null,
+    });
+  }, [secao, aba, abaUsuarios, isAdmin, usuarios.length, tenantAtivo]);
 
   // Estados para alteração de senha
   const [senhaAtual, setSenhaAtual] = useState("");

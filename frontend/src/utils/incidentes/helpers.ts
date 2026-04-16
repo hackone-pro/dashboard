@@ -251,3 +251,17 @@ export function formatCaseName(name: string) {
   s = s.replace(/^\s*\[\d{2}:\d{2}\]\s*[-–]\s*/i, "");
   return s.trim();
 }
+
+// Normaliza qualquer variação de gênero/capitalização para um padrão único
+export type NivelSeveridade = "Baixa" | "Média" | "Alta" | "Crítica";
+
+export function normalizarNivel(valor: string | null | undefined): NivelSeveridade {
+  const v = valor?.trim().toLowerCase() ?? "";
+
+  if (v === "baixo" || v === "baixa")       return "Baixa";
+  if (v === "medio" || v === "média" || v === "media" || v === "médio") return "Média";
+  if (v === "alto"  || v === "alta")        return "Alta";
+  if (v === "critico" || v === "crítico" || v === "critica" || v === "crítica") return "Crítica";
+
+  return "Baixa"; // fallback seguro
+}
