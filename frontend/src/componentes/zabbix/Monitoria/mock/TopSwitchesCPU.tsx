@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import GraficoDonutLimpo from "../../../graficos/GraficoDonutLimpo";
 
 const SEVERITY_STYLE: Record<string, string> = {
@@ -7,7 +8,11 @@ const SEVERITY_STYLE: Record<string, string> = {
     baixo: "border-[#1DD69A]",
 };
 
-export default function TopSwitchesCPU() {
+interface Props {
+    onDadosCarregados?: (switches: { name: string; cpu: number; severity: string }[]) => void;
+}
+
+export default function TopSwitchesCPU({ onDadosCarregados }: Props) {
 
     // ================================
     // DADOS FAKE
@@ -19,6 +24,8 @@ export default function TopSwitchesCPU() {
         { hostid: "4", name: "SW-Acesso-01", cpu: 31, severity: "baixo" },
         { hostid: "5", name: "SW-Acesso-02", cpu: 12, severity: "baixo" }
     ];
+
+    useEffect(() => { onDadosCarregados?.(switches.map(({ name, cpu, severity }) => ({ name, cpu, severity }))); }, []);
 
     function LegendaItem({ cor, label }: { cor: string; label: string }) {
         return (

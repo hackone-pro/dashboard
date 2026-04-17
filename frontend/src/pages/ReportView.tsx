@@ -78,7 +78,7 @@ export default function ReportView() {
             semPermissao,
             tenant: tenantAtivo?.cliente_name ?? null,
         });
-    }, [loading, report, secoesVisiveis, semPermissao, tenantAtivo]);
+    }, [loading, report, secoesVisiveis, semPermissao, tenantAtivo, setScreenData]);
 
     function temSecao(sec: string) {
         return (

@@ -12,7 +12,11 @@ export type RuleDistributionCardRef = {
   }) => void;
 };
 
-const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) => {
+interface RuleDistributionCardProps {
+  onDadosCarregados?: (items: { label: string; value: number }[]) => void;
+}
+
+const RuleDistributionCard = forwardRef<RuleDistributionCardRef, RuleDistributionCardProps>(({ onDadosCarregados }, ref) => {
   const { tenantAtivo } = useTenant();
   const [dados, setDados] = useState<RuleDistribution>({ labels: [], values: [] });
   const [carregando, setCarregando] = useState(true);
@@ -36,6 +40,11 @@ const RuleDistributionCard = forwardRef<RuleDistributionCardRef>((props, ref) =>
       );
   
       setDados(res);
+      const top5computed = res.labels
+        .map((label, i) => ({ label, value: res.values[i] ?? 0 }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+      onDadosCarregados?.(top5computed);
     } catch (e: any) {
       setErro(e?.message ?? "Erro ao carregar distribuição de regras");
     } finally {

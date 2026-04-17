@@ -12,11 +12,13 @@ type MitreItem = {
 type Props = {
   titulo?: string;
   dias?: string;
+  onDadosCarregados?: (items: MitreItem[]) => void;
 };
 
 export default function TopAttackCard({
   titulo = "Top Ataques",
   dias = "1",
+  onDadosCarregados,
 }: Props) {
   const { tenantAtivo } = useTenant();
   const LIMIT = 5;
@@ -40,6 +42,7 @@ export default function TopAttackCard({
 
         if (!ativo) return;
         setItems(data.techniques);
+        onDadosCarregados?.(data.techniques);
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar técnicas MITRE");

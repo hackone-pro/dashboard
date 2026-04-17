@@ -4,10 +4,11 @@ import { getTopPaises, PaisItem } from "../../../services/wazuh/toppaises.servic
 import { guessCountryCode } from "../../../utils/countryUtils";
 import { useTenant } from "../../../context/TenantContext"; // 👈 tenant global
 
-type Props = { titulo?: string };
+type Props = { titulo?: string; onDadosCarregados?: (items: PaisItem[]) => void };
 
 export default function TopCountriesCard({
   titulo = "Top países que mais originam ataques",
+  onDadosCarregados,
 }: Props) {
   const LIMIT = 5; // mostrar só 5
   const MIN_BAR_PCT = 6; // piso visual p/ barras pequenas
@@ -32,6 +33,7 @@ export default function TopCountriesCard({
 
         if (!ativo) return;
         setItems(data);
+        onDadosCarregados?.(data);
       } catch (e: any) {
         if (!ativo) return;
         setErro(e?.message ?? "Erro ao carregar países");
