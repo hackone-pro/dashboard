@@ -1,6 +1,9 @@
-// src/routes/AppRoutes.tsx
+// src/router/AppRoutes.tsx
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
+import Swal from "sweetalert2";
+
 import Login from '../pages/Login';
 import Dashboard from '../pages/Dashboard';
 import RiskLevel from '../pages/RiskLevel';
@@ -22,16 +25,51 @@ import Integrations from '../pages/Integrations';
 import VerifyCode from '../pages/MFACode';
 import MultiTenantManager from '../pages/MultiTenantManager';
 import AdminRoute from './AdminRoute';
-import PublicRoute from "./PublicRoute";
+import PublicRoute from './PublicRoute';
 import SOCAnalytics from '../pages/SOCAnalytics';
-import ChatWidget from '../componentes/chat/ChatWidget'; // ← NOVO
+import ChatWidget from '../componentes/chat/ChatWidget';
+import { useAuth } from '../context/AuthContext';
+import { useInactivityLogout } from '../hooks/useInactivityLogout';
 
 const enableIntegrations =
-  import.meta.env.VITE_ENABLE_INTEGRATIONS === "true";
+  import.meta.env.VITE_ENABLE_INTEGRATIONS === 'true';
+
+// ─── Guard de inatividade (roda apenas quando autenticado) ────────────────────
+
+function InactivityGuard() {
+  const { token, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = useCallback(() => {
+    if (!token) return;
+
+    Swal.fire({
+      title: "Sessão expirada",
+      text: "Você foi desconectado por inatividade.",
+      icon: "warning",
+      confirmButtonText: "Ir para o login",
+      confirmButtonColor: "#7c3aed",
+      background: "#0f0b1e",
+      color: "#ffffff",
+      allowOutsideClick: false,
+    }).then(() => {
+      logout();
+      navigate("/login", { replace: true });
+    });
+  }, [token, logout, navigate]);
+
+  useInactivityLogout(handleLogout);
+
+  return null;
+}
+
+// ─── Rotas ────────────────────────────────────────────────────────────────────
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+
+      <InactivityGuard />
 
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -60,7 +98,7 @@ export default function AppRoutes() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
-      <ChatWidget /> {/* ← NOVO: fora das Routes, dentro do BrowserRouter */}
+      <ChatWidget />
 
     </BrowserRouter>
   );
