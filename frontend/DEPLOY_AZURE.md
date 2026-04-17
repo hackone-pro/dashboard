@@ -151,6 +151,8 @@ Todas as variaveis ja possuem `ARG` e `ENV` correspondentes no Dockerfile.
 ### Apenas redeploy
 
 ```bash
+az acr login -n hackoneregistry --expose-token
+
 az acr build --registry hackoneregistry --image hackone-frontend:latest --build-arg VITE_API_URL="https://api-hackone-strapi.azurewebsites.net" --build-arg VITE_API_BASE_URL="https://api-hackone-tickets.azurewebsites.net" --build-arg VITE_CHAT_API_URL="https://api-hackone-chat.azurewebsites.net" --build-arg VITE_CUSTOMERS_API_URL="https://api-hackone-customers.azurewebsites.net" --build-arg VITE_TURNSTILE_SITE_KEY="0x4AAAAAACHOP94FOudbm5cN" --build-arg VITE_ENABLE_TURNSTILE="false" --build-arg VITE_ENABLE_INTEGRATIONS="true" --build-arg VITE_ENABLE_CONFIG="true" --build-arg VITE_WHATSAPP_SUPPORT="https://hackone.com.br/h1ca" .
 
 az webapp restart --name securityone --resource-group hackone
