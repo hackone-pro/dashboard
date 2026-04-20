@@ -15,7 +15,7 @@ import { LuWorkflow, LuClock } from "react-icons/lu";
 import { FaArrowUpLong } from "react-icons/fa6";
 
 import LayoutModel from "../componentes/LayoutModel";
-import GraficoDonutSimples from "../componentes/graficos/GraficoDonutSimples";
+import GraficoDonutSimples, { type SocTooltipData } from "../componentes/graficos/GraficoDonutSimples";
 import GraficoGauge from "../componentes/graficos/GraficoGauge";
 import { getToken } from "../utils/auth";
 import { useTenant } from "../context/TenantContext";
@@ -254,6 +254,12 @@ export default function SOCAnalytics() {
     const donutSeries = buckets.map((b) => b.count);
     const donutColors = buckets.map((b, i) => colorFor(b.severity, i));
     const donutTotal = data?.severityDistribution?.total ?? 0;
+    const donutTooltipSoc: Record<string, SocTooltipData> = Object.fromEntries(
+        buckets.map((b) => [
+            b.severity,
+            { count: b.count, percent: b.percent, deltaPercent: b.deltaPercent ?? null },
+        ])
+    );
 
     const riskScore = data?.riskLevel?.score ?? 0;
     const alertsBySeverity = data?.riskLevel?.alertsBySeverity ?? [];
@@ -468,6 +474,7 @@ export default function SOCAnalytics() {
                                                 series={donutSeries}
                                                 cores={donutColors}
                                                 height={220}
+                                                tooltipSoc={donutTooltipSoc}
                                                 onSliceClick={(label) => navigate(`/incidentes?severity=${label}`)}
                                             />
                                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

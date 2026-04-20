@@ -1,6 +1,12 @@
 // src/components/graficos/GraficoDonutSimples.tsx
 import Chart from "react-apexcharts";
 
+export interface SocTooltipData {
+  count: number;
+  percent: number;
+  deltaPercent: number | null;
+}
+
 export interface Props {
   labels: string[];
   series: number[];
@@ -9,6 +15,8 @@ export interface Props {
   tituloDiagonal?: string;
   // 👇 Dados extras opcionais por label (usado em ArchivesIntegrity)
   tooltipExtra?: Record<string, { modified: number; added: number; deleted: number }>;
+  // 👇 Dados ricos para tooltip do SOC Analytics (count + % + delta)
+  tooltipSoc?: Record<string, SocTooltipData>;
   // 👇 Callback quando usuário clica numa fatia
   onSliceClick?: (label: string, value: number) => void;
 }
@@ -20,6 +28,7 @@ export default function GraficoDonutSimples({
   height = 200,
   tituloDiagonal,
   tooltipExtra,
+  tooltipSoc,
   onSliceClick,
 }: Props) {
   const options: ApexCharts.ApexOptions = {
@@ -43,7 +52,21 @@ export default function GraficoDonutSimples({
       custom: ({ series, seriesIndex, w }) => {
         const label = w.globals.labels[seriesIndex];
         const value = series[seriesIndex];
+        const soc = tooltipSoc?.[label];
         const extra = tooltipExtra?.[label];
+
+        if (soc) {
+          const deltaStr = soc.deltaPercent != null
+            ? `<span style="color:${soc.deltaPercent >= 0 ? "#EC4899" : "#1DD69A"};margin-left:4px">${soc.deltaPercent >= 0 ? "+" : ""}${soc.deltaPercent.toFixed(0)}%</span>`
+            : "";
+          return `
+            <div style="padding:8px 10px;font-size:12px;line-height:1.6;min-width:130px">
+              <div style="font-weight:600;margin-bottom:4px">${label}</div>
+              <div>${soc.count.toLocaleString("pt-BR")} incidentes</div>
+              <div style="color:#9ca3af">${soc.percent.toFixed(0)}% do total${deltaStr}</div>
+            </div>
+          `;
+        }
 
         return `
           <div style="padding:6px; font-size:12px">
