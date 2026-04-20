@@ -164,6 +164,7 @@ export function useIncidentes(): UseIncidentesReturn {
   const [searchParams] = useSearchParams();
   const openFromQS = searchParams.get("open");
   const severityFromQS = searchParams.get("severity");
+  const origemFromQS = searchParams.get("origem");
 
   // --- Dados ---
   const [dados, setDados] = useState<PageIncidente[]>([]);
@@ -302,6 +303,10 @@ export function useIncidentes(): UseIncidentesReturn {
   useEffect(() => {
     if (severityFromQS) setFiltroSeveridade(severityFromQS);
   }, [severityFromQS]);
+
+  useEffect(() => {
+    if (origemFromQS === "abertos") setFiltroOrigem("abertos");
+  }, [origemFromQS]);
 
   /* -----------------------------------------
    * DERIVADOS: Subconjuntos para gráficos
