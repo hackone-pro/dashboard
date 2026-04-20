@@ -163,6 +163,7 @@ export function useIncidentes(): UseIncidentesReturn {
   const token = getToken();
   const [searchParams] = useSearchParams();
   const openFromQS = searchParams.get("open");
+  const severityFromQS = searchParams.get("severity");
 
   // --- Dados ---
   const [dados, setDados] = useState<PageIncidente[]>([]);
@@ -294,6 +295,13 @@ export function useIncidentes(): UseIncidentesReturn {
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 300);
   }, [openFromQS, dados]);
+
+  /* -----------------------------------------
+   * EFEITO: Filtrar por severidade via query string
+   * --------------------------------------- */
+  useEffect(() => {
+    if (severityFromQS) setFiltroSeveridade(severityFromQS);
+  }, [severityFromQS]);
 
   /* -----------------------------------------
    * DERIVADOS: Subconjuntos para gráficos

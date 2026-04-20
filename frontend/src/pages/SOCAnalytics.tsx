@@ -1,6 +1,7 @@
 // src/pages/SOCAnalytics.tsx
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     FiCalendar,
     FiChevronDown,
@@ -83,15 +84,19 @@ interface MetricCardProps {
     trendValue: string;
     trendLabel: string;
     alert?: string;
+    onClick?: () => void;
 }
 
-function MetricCard({ label, sublabel, value, unit, trend, trendValue, trendLabel, alert }: MetricCardProps) {
+function MetricCard({ label, sublabel, value, unit, trend, trendValue, trendLabel, alert, onClick }: MetricCardProps) {
     const isUp = trend === "up";
     const TrendIcon = isUp ? FiArrowUpRight : FiArrowDownRight;
     const trendColor = trend === null ? "#6b7280" : isUp ? "#EC4899" : "#1DD69A";
 
     return (
-        <div className="cards rounded-2xl p-5 flex flex-col gap-1">
+        <div
+            className={`cards rounded-2xl p-5 flex flex-col gap-1${onClick ? " cursor-pointer hover:border-purple-600/40 transition" : ""}`}
+            onClick={onClick}
+        >
             <div className="flex items-start justify-between">
                 <div>
                     <p className="text-white text-sm font-medium">{label}</p>
@@ -181,6 +186,7 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SOCAnalytics() {
+    const navigate = useNavigate();
     const [periodo, setPeriodo] = useState<PeriodoOption>("Semana");
     const [periodoOpen, setPeriodoOpen] = useState(false);
     const [customFrom, setCustomFrom] = useState("");
@@ -369,6 +375,7 @@ export default function SOCAnalytics() {
                                 trend={data.mttd?.trend ?? null}
                                 trendValue={formatDelta(data.mttd?.deltaPercent)}
                                 trendLabel="vs período anterior"
+                                onClick={() => navigate("/incidentes")}
                             />
                             <MetricCard
                                 label="MTTA"
@@ -378,6 +385,7 @@ export default function SOCAnalytics() {
                                 trend={data.mtta?.trend ?? null}
                                 trendValue={formatDelta(data.mtta?.deltaPercent)}
                                 trendLabel="vs período anterior"
+                                onClick={() => navigate("/incidentes")}
                             />
                             <MetricCard
                                 label="MTTR"
@@ -387,6 +395,7 @@ export default function SOCAnalytics() {
                                 trend={data.mttr?.trend ?? null}
                                 trendValue={formatDelta(data.mttr?.deltaPercent)}
                                 trendLabel="vs período anterior"
+                                onClick={() => navigate("/incidentes")}
                             />
                             <MetricCard
                                 label="Incidentes Abertos"
@@ -400,6 +409,7 @@ export default function SOCAnalytics() {
                                 trendValue={formatDelta(openIncidents?.deltaPercent ?? null)}
                                 trendLabel="vs período anterior"
                                 alert={openIncidents?.badge && openIncidents.badge !== "Normal" ? openIncidents.badge : undefined}
+                                onClick={() => navigate("/incidentes")}
                             />
                         </div>
 
@@ -458,6 +468,7 @@ export default function SOCAnalytics() {
                                                 series={donutSeries}
                                                 cores={donutColors}
                                                 height={220}
+                                                onSliceClick={(label) => navigate(`/incidentes?severity=${label}`)}
                                             />
                                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                                 <span className="text-white text-4xl font-medium">{donutTotal.toLocaleString("pt-BR")}</span>

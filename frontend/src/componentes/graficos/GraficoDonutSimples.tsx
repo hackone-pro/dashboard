@@ -7,8 +7,10 @@ export interface Props {
   cores?: string[];
   height?: number;
   tituloDiagonal?: string;
-  // 👇 Novo: dados extras opcionais por label
+  // 👇 Dados extras opcionais por label (usado em ArchivesIntegrity)
   tooltipExtra?: Record<string, { modified: number; added: number; deleted: number }>;
+  // 👇 Callback quando usuário clica numa fatia
+  onSliceClick?: (label: string, value: number) => void;
 }
 
 export default function GraficoDonutSimples({
@@ -18,11 +20,20 @@ export default function GraficoDonutSimples({
   height = 200,
   tituloDiagonal,
   tooltipExtra,
+  onSliceClick,
 }: Props) {
   const options: ApexCharts.ApexOptions = {
     chart: {
       type: "donut",
       toolbar: { show: false },
+      events: onSliceClick
+        ? {
+            dataPointSelection: (_event, _chartContext, config) => {
+              const idx: number = config.dataPointIndex;
+              onSliceClick(labels[idx], series[idx]);
+            },
+          }
+        : undefined,
     },
     labels,
     colors: cores,
