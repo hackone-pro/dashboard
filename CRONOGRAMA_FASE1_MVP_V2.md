@@ -99,14 +99,14 @@ BLOCO 5 — Analytics + Copiloto       BLOCO 6 — Frontend Final
 | 16 | E01 | Tela de configuracao de fontes FortiGATE | Front-end | 3 | E06 |ok | |
 | 17 | E02 | Background job de polling FortiGATE | Back-end | 3 | E01, E03, G01 |ok | |
 | 18 | R03 | Corrigir Risk Level (degradacao graciosa) | Back-end | 3 | R02 | | |
-| 19 | G04 | Motor de correlacao (Incident Engine) | Back-end | 4 | E03, G01, G03, G06 | | |
-| 20 | G17 | Calculo de severidade final do incidente | Back-end | 4 | G04 | | |
-| 21 | G15 | Classificacao de ativos criticos (crown jewel) | Full Stack | 4 | G04 | | |
+| 19 | G04 | Motor de correlacao (Incident Engine) | Back-end | 4 | E03, G01, G03, G06 |NAO SERA FEITO | |
+| 20 | G17 | Calculo de severidade final do incidente | Back-end | 4 | G04 |NAO SERA FEITO | |
+| 21 | G15 | Classificacao de ativos criticos (crown jewel) | Full Stack | 4 | G04 |NAO SERA FEITO | |
 | 22 | G16 | Fallback de IA (Hackone como padrao) | Back-end | 4 | C01, G04 |ok | |
 | 23 | R04 | Testes Risk Level (3 cenarios) | Back-end | 4 | R03 | | |
 | 24 | SA02 | Backend metricas SOC Analytics (MTTD/MTTA/MTTR + deltas + agregacoes) | Back-end | 5 | SA01, G04 | | |
 | 25 | CP01 | Evoluir chat para Copiloto IA contextual (painel lateral) | Front-end | 5 | E07 |ok | |
-| 26 | G10 | Risk Level com cards dinamicos (front) | Front-end | 5 | R03, E07 | | |
+| 26 | G10 | Risk Level com cards dinamicos (front) | Front-end | 5 | R03, E07 |NAO SERA FEITO | |
 | 27 | G11 | Monitoria de Ingestao no Essentials | Front-end | 5 | E07 |NAO SERA FEITO | |
 | 28 | SA03 | Frontend SOC Analytics redesign (Figma) | Front-end | 6 | SA02, E07 | | |
 | 29 | CP02 | Prompts sugeridos por tela + resposta estruturada | Full Stack | 6 | CP01, C01 | NAO SERA FEITO | |
