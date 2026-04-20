@@ -62,8 +62,9 @@ export default {
       // 🔹 RESPONSE FINAL
       // =====================================================
       return ctx.send({
-        severidades: resultado.severidades,
-        indiceRisco: resultado.indiceRisco,
+        severidades:      resultado.severidades,
+        indiceRisco:      resultado.indiceRisco,
+        dataAvailability: resultado.dataAvailability,
         filtrosUsados: {
           diasGlobal,
           periodo,

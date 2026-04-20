@@ -6,6 +6,16 @@ import {
 import { buscarIncidentesIris } from "../../acesso-iris/services/acesso-iris";
 import { buscarTopAgentesCis } from "../services/acesso-wazuh";
 
+import {
+  calcularRawPoints,
+  calcularRawCIS,
+  atualizarBaseline,
+  calcularRiscoCard,
+  calcularRiscoTotal,
+  PARAMS,
+  type SeveridadeCounts,
+} from "./risklevel.calculations";
+
 // =====================================================
 // 🔹 TIPAGEM
 // =====================================================
@@ -21,13 +31,6 @@ interface RiskFilters {
   diasIris?: string;
   periodo?: Periodo | null;
   user?: any;
-}
-
-interface SeveridadeCounts {
-  baixo: number;
-  medio: number;
-  alto: number;
-  critico: number;
 }
 
 // Baseline de uma janela específica (ex: "1", "7", "15", "30")
@@ -72,33 +75,6 @@ const BASELINE_STATE_VAZIO: BaselineState = {
   "30": { ...BASELINE_VAZIO },
 };
 
-// =====================================================
-// 🔹 PARÂMETROS DO ALGORITMO (espelham a planilha)
-// =====================================================
-
-const PARAMS = {
-  base: 3,               // Base exponencial dos pesos por severidade
-  gamma: 1.5,            // Agressividade da curva de normalização
-  decayAlertas: 0.98,    // Decaimento diário para Top Hosts, CIS e Firewall
-  decayIncidentes: 0.99, // Decaimento diário para Incidentes
-  minFloorAlertas: 50,   // Piso mínimo do baseline para alertas
-  minFloorIncidentes: 10,// Piso mínimo do baseline para incidentes
-  warmupFactor: 2,       // Fator de warmup no dia 1 de cada janela
-
-  // Pesos dos cards no Risk Total (soma = 1)
-  pesoTopHosts:   0.25,
-  pesoCIS:        0.25,
-  pesoFirewall:   0.25,
-  pesoIncidentes: 0.25,
-};
-
-// Pesos por severidade: base^0, base^1, base^2, base^3
-const SEVERITY_WEIGHTS = {
-  baixo:   Math.pow(PARAMS.base, 0), // 1
-  medio:   Math.pow(PARAMS.base, 1), // 3
-  alto:    Math.pow(PARAMS.base, 2), // 9
-  critico: Math.pow(PARAMS.base, 3), // 27
-};
 
 // =====================================================
 // 🔹 CHAVE DE PERSISTÊNCIA DO BASELINE (por tenant)
@@ -187,97 +163,6 @@ function resolverJanelaFallback(periodo: Periodo): JanelaCanonica {
   if (diffDias <= 10) return "7";
   if (diffDias <= 20) return "15";
   return "30";
-}
-
-// =====================================================
-// 🔹 CÁLCULO DE RAW POINTS
-//    raw = Σ(count × weight) para cada severidade
-// =====================================================
-
-function calcularRawPoints(counts: SeveridadeCounts): number {
-  return (
-    counts.baixo   * SEVERITY_WEIGHTS.baixo   +
-    counts.medio   * SEVERITY_WEIGHTS.medio   +
-    counts.alto    * SEVERITY_WEIGHTS.alto    +
-    counts.critico * SEVERITY_WEIGHTS.critico
-  );
-}
-
-// =====================================================
-// 🔹 RAW DO CIS — não-conformidade média dos agentes
-//
-//    O CIS usa score de conformidade (0–100%) em vez de
-//    contagem de eventos. Para entrar no mesmo sistema de
-//    baseline/warmup/decaimento dos outros cards, convertemos
-//    o score em "não-conformidade":
-//
-//    raw_cis = (100 - scoreMedio)   ex: score 43% → raw = 57
-//
-//    Múltiplas políticas por agente: média ponderada do score.
-//    Range: 0 (100% conforme) a 100 (0% conforme).
-// =====================================================
-
-function calcularRawCIS(agentes: any[]): number {
-  if (!agentes?.length) return 0;
-
-  const porAgente = new Map<string, { scoreSum: number; policies: number }>();
-
-  agentes.forEach((a: any) => {
-    const nome  = a.agente ?? "unknown";
-    const score = Number(a.score ?? 0);
-
-    if (!porAgente.has(nome)) {
-      porAgente.set(nome, { scoreSum: 0, policies: 0 });
-    }
-    const entry = porAgente.get(nome)!;
-    entry.scoreSum += score;
-    entry.policies += 1;
-  });
-
-  let totalScore   = 0;
-  let totalAgentes = 0;
-
-  porAgente.forEach(({ scoreSum, policies }) => {
-    totalScore   += scoreSum / policies;
-    totalAgentes += 1;
-  });
-
-  if (totalAgentes === 0) return 0;
-
-  const scoreGlobal = totalScore / totalAgentes;
-  return Math.max(0, 100 - scoreGlobal);
-}
-
-// =====================================================
-// 🔹 ATUALIZAÇÃO DO BASELINE COM DECAIMENTO
-//    baseline(t) = max(minFloor, raw(t), baseline(t-1) × decay)
-//    Warmup (primeiro acesso da janela):
-//      baseline(0) = max(minFloor, raw(0) × warmupFactor)
-// =====================================================
-
-function atualizarBaseline(
-  rawAtual: number,
-  baselineAnterior: number,
-  inicializado: boolean,
-  decay: number,
-  minFloor: number
-): number {
-  if (!inicializado || baselineAnterior <= 0) {
-    // Warmup: primeiro acesso desta janela
-    return Math.max(minFloor, rawAtual * PARAMS.warmupFactor);
-  }
-
-  return Math.max(minFloor, rawAtual, baselineAnterior * decay);
-}
-
-// =====================================================
-// 🔹 RISCO NORMALIZADO DO CARD (0 a 1)
-//    r_k = min(1, (raw / baseline) ^ gamma)
-// =====================================================
-
-function calcularRiscoCard(raw: number, baseline: number): number {
-  if (baseline <= 0) return 0;
-  return Math.min(1, Math.pow(raw / baseline, PARAMS.gamma));
 }
 
 // =====================================================
@@ -507,20 +392,17 @@ export async function calcularRiskOperacionalTenant(
     const r4 = calcularRiscoCard(rawIncidents,  novoIncidents);
 
     // =====================================================
-    // 🔹 RISK TOTAL (0 a 100)
-    //    RiskTotal = 100 × (w1×r1 + w2×r2 + w3×r3 + w4×r4)
+    // 🔹 RISK TOTAL (0 a 100) com degradação graciosa
+    //    Pesos redistribuídos entre cards com dados.
+    //    Se todos sem dados: indiceRisco = null.
     // =====================================================
 
-    const indiceRisco = parseFloat(
-      (
-        100 * (
-          PARAMS.pesoTopHosts    * r1 +
-          PARAMS.pesoCIS         * r2 +
-          PARAMS.pesoFirewall    * r3 +
-          PARAMS.pesoIncidentes  * r4
-        )
-      ).toFixed(2)
-    );
+    const { indiceRisco, dataAvailability } = calcularRiscoTotal({
+      r1, raw1: rawTopHosts,  peso1: PARAMS.pesoTopHosts,
+      r2, raw2: rawCIS,        peso2: PARAMS.pesoCIS,
+      r3, raw3: rawFirewall,   peso3: PARAMS.pesoFirewall,
+      r4, raw4: rawIncidents,  peso4: PARAMS.pesoIncidentes,
+    });
 
     // =====================================================
     // 🔹 LOG TÉCNICO
@@ -548,6 +430,7 @@ export async function calcularRiskOperacionalTenant(
         total,
       },
       indiceRisco,
+      dataAvailability,
 
       _debug: {
         janela: janelaCanonica ?? `customizado (fallback: ${janelaFallback})`,
@@ -574,7 +457,13 @@ export async function calcularRiskOperacionalTenant(
         critico: 0,
         total: 0,
       },
-      indiceRisco: 0,
+      indiceRisco: null,
+      dataAvailability: {
+        topHosts: "missing" as const,
+        cis:      "missing" as const,
+        firewall: "missing" as const,
+        iris:     "missing" as const,
+      },
     };
   }
 }
