@@ -28,7 +28,7 @@ import {
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const PERIODO_OPTIONS: PeriodoOption[] = ["Semana", "Mês", "Trimestre", "Ano"];
+const PERIODO_OPTIONS: PeriodoOption[] = ["Semana", "Mês", "Trimestre", "Ano", "Customizado"];
 
 const SEVERITY_COLOR_MAP: Record<string, string> = {
     Crítico: "#EC4899",
@@ -183,6 +183,8 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 export default function SOCAnalytics() {
     const [periodo, setPeriodo] = useState<PeriodoOption>("Semana");
     const [periodoOpen, setPeriodoOpen] = useState(false);
+    const [customFrom, setCustomFrom] = useState("");
+    const [customTo, setCustomTo] = useState("");
     const [severidadeIdx, setSeveridadeIdx] = useState<number | null>(null);
 
     const token = getToken();
@@ -194,10 +196,13 @@ export default function SOCAnalytics() {
     const [error, setError] = useState<string | null>(null);
 
     const fetchData = async () => {
+        if (periodo === "Customizado" && (!customFrom || !customTo)) return;
         setLoading(true);
         setError(null);
         try {
-            const result = await socAnalyticsService.getSocAnalytics(periodo, token ?? "");
+            const result = await socAnalyticsService.getSocAnalytics(
+                periodo, token ?? "", customFrom || undefined, customTo || undefined
+            );
             setData(result);
         } catch (err: any) {
             setError(err?.message ?? "Erro desconhecido ao buscar dados da API.");
@@ -210,7 +215,7 @@ export default function SOCAnalytics() {
         if (!tenantAtivo) return;
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [periodo, tenantAtivo]);
+    }, [periodo, tenantAtivo, customFrom, customTo]);
 
     // ─── Screen context para o chat ──────────────────────────────────────────
     useEffect(() => {
@@ -276,13 +281,31 @@ export default function SOCAnalytics() {
     });
 
     const openIncidents = data?.openIncidents;
+    const ia = data?.iaPerformance;
+
+    // IA Performance helpers ──────────────────────────────────────────────────
+    // triageAutoRate and escalationRate are already 0-100 percentages.
+    // avgAiTimeMinutes is capped at 60 min for the bar (100% = 60 min).
+    const iaTriageBar    = ia?.triageAutoRate    ?? 0;
+    const iaTriageLabel  = ia?.triageAutoRate    != null ? `${ia.triageAutoRate}%` : "—";
+
+    const iaAvgRaw       = ia?.avgAiTimeMinutes  ?? null;
+    const iaAvgBar       = iaAvgRaw != null ? Math.min(Math.round((iaAvgRaw / 60) * 100), 100) : 0;
+    const iaAvgLabel     = iaAvgRaw != null
+        ? iaAvgRaw >= 60
+            ? `${Math.floor(iaAvgRaw / 60)}h ${Math.round(iaAvgRaw % 60)}m`
+            : `${iaAvgRaw} min`
+        : "—";
+
+    const iaEscBar       = ia?.escalationRate    ?? 0;
+    const iaEscLabel     = ia?.escalationRate    != null ? `${ia.escalationRate}%` : "—";
 
     return (
         <LayoutModel titulo="SOC Analytics">
             <section className="flex flex-col gap-6">
 
                 {/* ── Filtro ────────────────────────────────────────────── */}
-                <div className="flex items-center gap-3 no-print">
+                <div className="flex flex-wrap items-center gap-3 no-print">
                     <span className="text-gray-400 text-sm flex items-center gap-2">
                         {/* @ts-ignore */}
                         <FiCalendar size={14} />
@@ -311,6 +334,24 @@ export default function SOCAnalytics() {
                             </div>
                         )}
                     </div>
+                    {periodo === "Customizado" && (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="date"
+                                value={customFrom}
+                                onChange={(e) => setCustomFrom(e.target.value)}
+                                className="text-gray-300 text-sm border border-[#2a2040] bg-[#160f2a] px-3 py-1.5 rounded-lg focus:border-[#4B06DD]/70 focus:outline-none transition [color-scheme:dark]"
+                            />
+                            <span className="text-gray-500 text-sm">até</span>
+                            <input
+                                type="date"
+                                value={customTo}
+                                min={customFrom || undefined}
+                                onChange={(e) => setCustomTo(e.target.value)}
+                                className="text-gray-300 text-sm border border-[#2a2040] bg-[#160f2a] px-3 py-1.5 rounded-lg focus:border-[#4B06DD]/70 focus:outline-none transition [color-scheme:dark]"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {error && <ErrorBanner message={error} onRetry={fetchData} />}
@@ -358,7 +399,7 @@ export default function SOCAnalytics() {
                                 }
                                 trendValue={formatDelta(openIncidents?.deltaPercent ?? null)}
                                 trendLabel="vs período anterior"
-                                alert={openIncidents?.hasCritical ? (openIncidents.badge ?? "High Alert") : undefined}
+                                alert={openIncidents?.badge && openIncidents.badge !== "Normal" ? openIncidents.badge : undefined}
                             />
                         </div>
 
@@ -459,7 +500,7 @@ export default function SOCAnalytics() {
                                     <AIPerformanceBar
                                         label="Triagem Automatizada"
                                         sublabel="de incidentes resolvidos por IA"
-                                        value={82} valueLabel="82%" color="#1DD69A"
+                                        value={iaTriageBar} valueLabel={iaTriageLabel} color="#1DD69A"
                                         /* @ts-ignore */
                                         icon={<LuWorkflow size={16} />}
                                     />
@@ -467,7 +508,7 @@ export default function SOCAnalytics() {
                                     <AIPerformanceBar
                                         label="Tempo Médio da IA"
                                         sublabel="entre criação e 1ª sugestão de IA"
-                                        value={60} valueLabel="5 min" color="#6366F1"
+                                        value={iaAvgBar} valueLabel={iaAvgLabel} color="#6366F1"
                                         /* @ts-ignore */
                                         icon={<LuClock size={16} />}
                                     />
@@ -475,7 +516,7 @@ export default function SOCAnalytics() {
                                     <AIPerformanceBar
                                         label="Casos escalados"
                                         sublabel="N1 → N2, acima do normal"
-                                        value={15} valueLabel="15%" color="#A855F7"
+                                        value={iaEscBar} valueLabel={iaEscLabel} color="#A855F7"
                                         /* @ts-ignore */
                                         icon={<FaArrowUpLong size={16} />}
                                     />
