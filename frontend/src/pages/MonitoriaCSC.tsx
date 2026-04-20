@@ -1,5 +1,5 @@
 // src/pages/MonitoriaSOC.tsx
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import LayoutModel from "../componentes/LayoutModel";
 import { useZabbixAtivo } from "../hooks/useZabbixAtivo";
 import { useScreenContext } from "../context/ScreenContext";
@@ -18,20 +18,26 @@ import TopUseCPU from "../componentes/zabbix/Monitoria/mock/TopUseCPU";
 import FirewallsRamCard from "../componentes/zabbix/Monitoria/mock/TopFirewallTrafego";
 
 export default function MonitoriaSOC() {
-  // ref obrigatório para usar <FirewallCard ref={firewallRef}>
   const firewallRef = useRef<FirewallCardRef>(null);
   const { loading, ativo } = useZabbixAtivo();
   const { setScreenData } = useScreenContext();
+
+  const [ativos, setAtivos] = useState<{ name: string; total: number }[]>([]);
+  const [severidade, setSeveridade] = useState<{ total: number; high: number; warning: number; disaster: number } | null>(null);
+  const [alertas, setAlertas] = useState<{ host: string; problema: string; severidade: string; duracao: string }[]>([]);
+  const [switches, setSwitches] = useState<{ name: string; cpu: number; severity: string }[]>([]);
 
   useEffect(() => {
     if (loading) return;
     setScreenData("monitoria-csc", {
       zabbixAtivo: ativo,
-      observacao: ativo
-        ? "Monitoria CSC ativa via Zabbix"
-        : "Integração Zabbix inativa para este tenant",
+      observacao: ativo ? "Monitoria CSC ativa via Zabbix" : "Integração Zabbix inativa para este tenant",
+      ativos,
+      severidade,
+      alertasAtivos: alertas.map(({ host, problema, severidade: sev, duracao }) => ({ host, problema, severidade: sev, duracao })),
+      topSwitchesCPU: switches,
     });
-  }, [ativo, loading]);
+  }, [ativo, loading, ativos, severidade, alertas, switches, setScreenData]);
 
   /* =========================
      LOADING
@@ -81,7 +87,7 @@ export default function MonitoriaSOC() {
 
           <div className="cards rounded-2xl p-6">
             <h3 className="text-white mb-4">Ativos monitorados</h3>
-            <Ativos />
+            <Ativos onDadosCarregados={setAtivos} />
           </div>
 
           {/* CARD – Firewall */}
@@ -94,7 +100,7 @@ export default function MonitoriaSOC() {
             </h3>
 
             <div className="flex-1 flex items-center justify-center">
-              <SeveridadeDonutCard />
+              <SeveridadeDonutCard onDadosCarregados={setSeveridade} />
             </div>
           </div>
 
@@ -104,7 +110,7 @@ export default function MonitoriaSOC() {
             LINHA 2 – TOP SWITCHES CPU
         ================================= */}
         <div className="cards rounded-2xl p-6">
-          <TopSwitchesCPU />
+          <TopSwitchesCPU onDadosCarregados={setSwitches} />
         </div>
 
         {/* ================================
@@ -156,7 +162,7 @@ export default function MonitoriaSOC() {
             LINHA 6 – ALERTAS
         ================================= */}
         <div className="cards rounded-2xl p-6 alertas-card">
-          <AlertasZabbix />
+          <AlertasZabbix onDadosCarregados={setAlertas} />
         </div>
 
       </section>

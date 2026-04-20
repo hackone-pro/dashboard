@@ -1,11 +1,15 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useImperativeHandle, useEffect } from "react";
 import GraficoDonutSimples from "../../../graficos/GraficoDonutSimples";
 
 export type SeveridadeDonutCardRef = {
     carregar: () => void;
 };
 
-const SeveridadeDonutCard = forwardRef<SeveridadeDonutCardRef>((props, ref) => {
+interface SeveridadeDonutCardProps {
+    onDadosCarregados?: (dados: { total: number; high: number; warning: number; disaster: number }) => void;
+}
+
+const SeveridadeDonutCard = forwardRef<SeveridadeDonutCardRef, SeveridadeDonutCardProps>(({ onDadosCarregados }, ref) => {
 
     useImperativeHandle(ref, () => ({
         carregar() {}
@@ -22,6 +26,10 @@ const SeveridadeDonutCard = forwardRef<SeveridadeDonutCardRef>((props, ref) => {
             disaster: 6
         }
     };
+
+    useEffect(() => {
+        onDadosCarregados?.({ total: dados.total, ...dados.severity });
+    }, []);
 
     const labels = ["Crítico", "Alto", "Baixo",];
 

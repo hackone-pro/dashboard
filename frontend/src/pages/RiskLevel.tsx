@@ -83,7 +83,13 @@ export default function RiskLevel() {
         pctMedio: `${Math.round((severidades.medio / total) * 100)}%`,
         pctBaixo: `${Math.round((severidades.baixo / total) * 100)}%`,
       },
-      firewallAlertas: firewallDados,
+      firewallAlertas: firewallDados ? {
+        ...firewallDados,
+        pctCritico: `${Math.round((firewallDados.critico / (firewallDados.total || 1)) * 100)}%`,
+        pctAlto: `${Math.round((firewallDados.alto / (firewallDados.total || 1)) * 100)}%`,
+        pctMedio: `${Math.round((firewallDados.medio / (firewallDados.total || 1)) * 100)}%`,
+        pctBaixo: `${Math.round((firewallDados.baixo / (firewallDados.total || 1)) * 100)}%`,
+      } : null,
       topHostsComMaisAlertas: topAgentes,
       topHostsCis: topAgentesCis,
     });

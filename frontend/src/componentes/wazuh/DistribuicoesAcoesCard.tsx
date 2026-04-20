@@ -12,7 +12,11 @@ export type DistribuicaoAcoesCardRef = {
   }) => void;
 };
 
-const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) => {
+interface DistribuicaoAcoesCardProps {
+  onDadosCarregados?: (items: { label: string; value: number }[]) => void;
+}
+
+const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef, DistribuicaoAcoesCardProps>(({ onDadosCarregados }, ref) => {
   const { tenantAtivo } = useTenant();
   const [data, setData] = useState<OvertimeEventos | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -42,6 +46,11 @@ const DistribuicaoAcoesCard = forwardRef<DistribuicaoAcoesCardRef>((props, ref) 
       );
 
       setData(res);
+      const top5computed = res.datasets
+        .map((ds) => ({ label: ds.name, value: ds.data.reduce((acc, n) => acc + (n || 0), 0) }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+      onDadosCarregados?.(top5computed);
     } catch (err: any) {
       setErro(err.message ?? "Erro ao carregar dados");
     } finally {

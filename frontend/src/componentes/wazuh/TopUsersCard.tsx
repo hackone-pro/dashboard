@@ -11,7 +11,11 @@ export type TopUsersCardRef = {
   }) => void;
 };
 
-const TopUsersCard = forwardRef<TopUsersCardRef>((props, ref) => {
+interface TopUsersCardProps {
+  onDadosCarregados?: (users: TopUserItem[]) => void;
+}
+
+const TopUsersCard = forwardRef<TopUsersCardRef, TopUsersCardProps>(({ onDadosCarregados }, ref) => {
   const { tenantAtivo } = useTenant();
 
   const [dados, setDados] = useState<TopUserItem[]>([]);
@@ -36,6 +40,7 @@ const TopUsersCard = forwardRef<TopUsersCardRef>((props, ref) => {
       );
 
       setDados(res.slice(0, 5));
+      onDadosCarregados?.(res.slice(0, 5));
     } catch (e: any) {
       setErro(e?.message ?? "Erro ao buscar dados");
     } finally {

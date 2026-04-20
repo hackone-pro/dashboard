@@ -11,6 +11,8 @@ import EventosSummaryCard, { EventosSummaryCardRef } from "../componentes/wazuh/
 import RuleDistributionCard, { RuleDistributionCardRef } from "../componentes/wazuh/RuleDistributionCard";
 import DistribuicaoAcoesCard, { DistribuicaoAcoesCardRef } from "../componentes/wazuh/DistribuicoesAcoesCard";
 import TopUsersCard, { TopUsersCardRef } from "../componentes/wazuh/TopUsersCard";
+import { TopAgentSyscheckItem } from "../services/wazuh/topagentesyscheck.service";
+import { TopUserItem } from "../services/wazuh/topusers.service";
 
 import { FiRotateCcw } from "react-icons/fi";
 import { useScreenContext } from "../context/ScreenContext";
@@ -34,13 +36,27 @@ export default function ArchivesIntegrity() {
 
     const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
     const [totalEventos, setTotalEventos] = useState<number | null>(null);
+    const [topAgentes, setTopAgentes] = useState<TopAgentSyscheckItem[]>([]);
+    const [topRegras, setTopRegras] = useState<{ label: string; value: number }[]>([]);
+    const [distribuicaoAcoes, setDistribuicaoAcoes] = useState<{ label: string; value: number }[]>([]);
+    const [topUsuarios, setTopUsuarios] = useState<TopUserItem[]>([]);
 
     useEffect(() => {
         setScreenData("integridade-arquivos", {
             periodo: periodoRapido ?? (startDate && endDate ? `${startDate.toLocaleDateString("pt-BR")} – ${endDate.toLocaleDateString("pt-BR")}` : null),
             totalEventos,
+            topAgentes: topAgentes.slice(0, 5).map((a) => ({
+                agente: a.agente,
+                total: a.total_alertas,
+                adicionado: a.added ?? 0,
+                modificado: a.modified ?? 0,
+                deletado: a.deleted ?? 0,
+            })),
+            topRegras,
+            distribuicaoAcoes,
+            topUsuarios: topUsuarios.map((u) => ({ usuario: u.user, host: u.agent_name, total: u.count })),
         });
-    }, [periodoRapido, startDate, endDate, totalEventos]);
+    }, [periodoRapido, startDate, endDate, totalEventos, topAgentes, topRegras, distribuicaoAcoes, topUsuarios, setScreenData]);
 
     // aplicar período SOMENTE no OvertimeCard
     const aplicarPeriodo = () => {
@@ -159,7 +175,7 @@ export default function ArchivesIntegrity() {
                             Top 5 Hosts
                         </h4>
                         <div className="h-64 flex items-center justify-center rounded-xl">
-                            <TopAgentsDonutCard ref={topAgentsRef} />
+                            <TopAgentsDonutCard ref={topAgentsRef} onDadosCarregados={setTopAgentes} />
                         </div>
                     </div>
 
@@ -179,21 +195,21 @@ export default function ArchivesIntegrity() {
                         <h4 className="text-white text-sm font-semibold mb-4">
                             Distribuição de Regras
                         </h4>
-                        <RuleDistributionCard ref={ruleDistributionRef} />
+                        <RuleDistributionCard ref={ruleDistributionRef} onDadosCarregados={setTopRegras} />
                     </div>
 
                     <div className="cards rounded-xl p-6">
                         <h4 className="text-white text-sm font-semibold mb-4">
                             Distribuição de Ações
                         </h4>
-                        <DistribuicaoAcoesCard ref={distribuicoesAcoesRef} />
+                        <DistribuicaoAcoesCard ref={distribuicoesAcoesRef} onDadosCarregados={setDistribuicaoAcoes} />
                     </div>
 
                     <div className="cards rounded-xl p-6">
                         <h4 className="text-white text-sm font-semibold mb-4">
                             Top 5 Usuários
                         </h4>
-                        <TopUsersCard ref={topusersRef} />
+                        <TopUsersCard ref={topusersRef} onDadosCarregados={setTopUsuarios} />
                     </div>
                 </div>
             </section>

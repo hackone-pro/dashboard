@@ -55,7 +55,7 @@ export default function VulnerabilitiesDetection() {
       } : null,
       topCVEs,
     });
-  }, [agentSelecionado, agents, vulnSeveridades, topCVEs]);
+  }, [agentSelecionado, agents, vulnSeveridades, topCVEs, setScreenData]);
 
   useEffect(() => {
     if (!tenantAtivo) return;

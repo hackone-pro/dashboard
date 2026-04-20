@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import SeveridadeBadge from "../SeveridadeBadge";
 
 type AlertaZabbixItem = {
@@ -8,7 +9,11 @@ type AlertaZabbixItem = {
   duracao: string;
 };
 
-export default function AlertasZabbix() {
+interface Props {
+  onDadosCarregados?: (alertas: AlertaZabbixItem[]) => void;
+}
+
+export default function AlertasZabbix({ onDadosCarregados }: Props) {
 
   // ==============================
   // ALERTAS FAKE
@@ -57,6 +62,8 @@ export default function AlertasZabbix() {
       duracao: "18m",
     },
   ];
+
+  useEffect(() => { onDadosCarregados?.(alertas); }, []);
 
   return (
     <div>

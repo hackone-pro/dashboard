@@ -40,6 +40,8 @@ export function useChat() {
     const [error, setError] = useState<string | null>(null);
     const sessionIdRef = useRef<number | null>(readStoredSessionId()); // evita closure stale
     const { screenData } = useScreenContext();
+    const screenDataRef = useRef(screenData);
+    useEffect(() => { screenDataRef.current = screenData; }, [screenData]);
 
     // ─── Sincroniza sessionId com localStorage ────────────────────────────────
     useEffect(() => {
@@ -116,9 +118,9 @@ export function useChat() {
                     sessionId: sessionIdRef.current,
                     purpose: 0,
                     screenContext: {
-                        page: screenData.page,
-                        entity: screenData.entity,
-                        metadata: screenData.metadata,
+                        page: screenDataRef.current.page,
+                        entity: screenDataRef.current.entity,
+                        metadata: screenDataRef.current.metadata,
                     },
                 });
 

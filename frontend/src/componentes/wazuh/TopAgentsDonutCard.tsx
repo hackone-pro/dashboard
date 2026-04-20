@@ -23,7 +23,11 @@ export type TopAgentsDonutCardRef = {
   }) => void;
 };
 
-const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((_, ref) => {
+interface TopAgentsDonutCardProps {
+  onDadosCarregados?: (items: TopAgentSyscheckItem[]) => void;
+}
+
+const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef, TopAgentsDonutCardProps>(({ onDadosCarregados }, ref) => {
   const { tenantAtivo } = useTenant();
 
   const [dados, setDados] = useState<TopAgentSyscheckItem[]>([]);
@@ -51,6 +55,7 @@ const TopAgentsDonutCard = forwardRef<TopAgentsDonutCardRef>((_, ref) => {
       );
 
       setDados(res);
+      onDadosCarregados?.(res);
     } catch (e: any) {
       setErro(e?.message ?? "Erro ao carregar dados de agentes");
     } finally {

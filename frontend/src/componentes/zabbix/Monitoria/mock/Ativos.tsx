@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useImperativeHandle, useEffect } from "react";
 import GraficoStackedBarChart from "../../../graficos/GraficoStackedBarChart";
 
 export type AtivosCardRef = {
@@ -7,10 +7,11 @@ export type AtivosCardRef = {
 
 interface Props {
   isWidget?: boolean;
+  onDadosCarregados?: (items: { name: string; total: number }[]) => void;
 }
 
 const Ativos = forwardRef<AtivosCardRef, Props>(
-  ({ isWidget = false }, ref) => {
+  ({ isWidget = false, onDadosCarregados }, ref) => {
 
     // ================================
     // DADOS FAKE
@@ -25,6 +26,9 @@ const Ativos = forwardRef<AtivosCardRef, Props>(
     useImperativeHandle(ref, () => ({
       carregar: () => {},
     }));
+
+    // Expõe dados ao pai na montagem
+    useEffect(() => { onDadosCarregados?.(dadosFake); }, []);
 
     const categorias = dadosFake.map((g) => g.name);
     const valores = dadosFake.map((g) => g.total);
