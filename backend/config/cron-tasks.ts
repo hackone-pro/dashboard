@@ -110,8 +110,9 @@ export default {
 
             if (
               !result ||
-              typeof result.indiceRisco !== "number" ||
-              isNaN(result.indiceRisco)
+              (result.indiceRisco !== null &&
+                (typeof result.indiceRisco !== "number" ||
+                  isNaN(result.indiceRisco)))
             ) {
               strapi.log.warn(
                 `⚠️ Risk inválido para ${tenant.organizacao}.`
