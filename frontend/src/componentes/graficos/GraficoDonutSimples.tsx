@@ -42,7 +42,7 @@ export default function GraficoDonutSimples({
               onSliceClick(labels[idx], series[idx]);
             },
           }
-        : undefined,
+        : {},
     },
     labels,
     colors: cores,
