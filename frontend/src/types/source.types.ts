@@ -53,9 +53,16 @@ export interface SourceInstanceRaw {
   pushEndpoint: string | null;
   pushToken: string | null;
   pushTokenExpiration: string | null;
-  status: string | null;
+  status: string | number | null;
   created: string;
   lastModified: string | null;
+}
+
+/** Converte status numérico ou string da API para SourceStatus */
+function mapStatus(raw: string | number | null | undefined): SourceStatus {
+  if (raw === "connected" || raw === 1 || raw === "1") return "connected";
+  if (raw === "disconnected" || raw === 2 || raw === "2") return "disconnected";
+  return "pending";
 }
 
 /** Converte resposta da API para modelo interno */
@@ -71,7 +78,7 @@ export function mapRawToInstance(raw: SourceInstanceRaw): SourceInstance {
     apiToken: raw.apiToken ?? undefined,
     pushEndpoint: raw.pushEndpoint ?? undefined,
     pushToken: raw.pushToken ?? undefined,
-    status: (raw.status as SourceStatus) ?? "pending",
+    status: mapStatus(raw.status),
     createdAt: raw.created,
     updatedAt: raw.lastModified ?? raw.created,
   };
