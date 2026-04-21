@@ -467,7 +467,7 @@ export default function SOCAnalytics() {
                                     <p className="text-gray-500 text-xs">Incidentes criados no período</p>
                                 </div>
 
-                                {donutSeries.length > 0 ? (
+                                {donutSeries.some(v => v > 0) ? (
                                     <>
                                         <div className="flex-1 flex items-center justify-center relative">
                                             <GraficoDonutSimples

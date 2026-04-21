@@ -116,7 +116,7 @@ export const socAnalyticsService = {
         endDate?: string,
     ): Promise<SocAnalyticsResponse> {
         const periodType = PERIODO_API_MAP[periodo];
-        const params = new URLSearchParams({ periodType });
+        const params = new URLSearchParams({ period: periodType });
         if (periodType === "Custom" && startDate && endDate) {
             params.set("startDate", new Date(startDate).toISOString());
             params.set("endDate", new Date(endDate + "T23:59:59").toISOString());
