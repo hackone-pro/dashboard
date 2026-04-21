@@ -228,6 +228,7 @@ export default function SOCAnalytics() {
         if (!data) return;
         const totalSev = data.severityDistribution?.total ?? 0;
         setScreenData("soc-analytics", {
+            nomePagina: "SOC Analytics",
             periodo,
             mttd: data.mttd?.value != null ? `${data.mttd.value} ${data.mttd.unit ?? ""}`.trim() : null,
             mtta: data.mtta?.value != null ? `${data.mtta.value} ${data.mtta.unit ?? ""}`.trim() : null,

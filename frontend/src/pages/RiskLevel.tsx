@@ -69,6 +69,7 @@ export default function RiskLevel() {
   useEffect(() => {
     const total = severidades.total || 1;
     setScreenData("risk-level", {
+      nomePagina: "Nível de Risco",
       periodo: periodo ? `${periodo.from} a ${periodo.to}` : `${dias}d`,
       indiceRisco,
       totalIncidentes,

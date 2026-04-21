@@ -35,6 +35,7 @@ function ThreatMapContent() {
       .slice(0, 5);
 
     setScreenData("threat-map", {
+      nomePagina: "Mapa de Ameaças",
       totalEventosAtivos: events.length,
       topPaisesStream: paisesOrdenados,
       topPaises: topPaises.slice(0, 5),

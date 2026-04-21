@@ -116,6 +116,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     setScreenData("dashboard", {
+      nomePagina: "Dashboard Principal",
       periodo: "24h",
       indiceRisco,
       totalAtaques,
