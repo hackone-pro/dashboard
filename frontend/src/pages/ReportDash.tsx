@@ -26,6 +26,7 @@ export default function ReportDash() {
     const [progresso, setProgresso] = useState(0);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
+    const [totalRelatoriosGeral, setTotalRelatoriosGeral] = useState<number | null>(null);
 
     const [openPeriodo, setOpenPeriodo] = useState(false);
     const botaoPeriodoRef = useRef<HTMLButtonElement | null>(null);
@@ -41,14 +42,23 @@ export default function ReportDash() {
     useEffect(() => {
         setScreenData("relatorios", {
             nomePagina: "Relatórios",
-            periodo: horas || null,
+            periodo: horas ? `Últimas ${horas} horas` : null,
             secoesSelecionadas,
-            totalRelatorios: relatorios.length,
+            relatoriosPaginaAtual: relatorios.length,
+            totalRelatoriosGeral,
             paginaAtual,
             totalPaginas,
             tenant: tenantAtivo?.cliente_name ?? null,
+            relatorios: relatorios.map((rel) => {
+                const r = rel.attributes || rel;
+                return {
+                    nome: r.nome ?? null,
+                    geradoEm: r.createdAt ?? null,
+                    periodo: r.period ?? null,
+                };
+            }),
         });
-    }, [horas, secoesSelecionadas, relatorios.length, paginaAtual, totalPaginas, tenantAtivo]);
+    }, [horas, secoesSelecionadas, relatorios, paginaAtual, totalPaginas, totalRelatoriosGeral, tenantAtivo]);
 
     const portalRoot = typeof window !== "undefined" ? document.body : null;
 
@@ -60,6 +70,7 @@ export default function ReportDash() {
                 const resultado = await listarRelatorios(paginaAtual);
                 setRelatorios(resultado.data);
                 setTotalPaginas(resultado.meta.pageCount || 1);
+                setTotalRelatoriosGeral(resultado.meta.total ?? null);
             } catch (err) {
                 console.error(err);
             } finally {

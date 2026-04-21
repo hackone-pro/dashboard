@@ -53,8 +53,8 @@ export default function ArchivesIntegrity() {
                 modificado: a.modified ?? 0,
                 deletado: a.deleted ?? 0,
             })),
-            topRegras,
-            distribuicaoAcoes,
+            topRegras: topRegras.map(({ label, value }) => ({ nome: label, quantidade: value })),
+            distribuicaoAcoes: distribuicaoAcoes.map(({ label, value }) => ({ acao: label, quantidade: value })),
             topUsuarios: topUsuarios.map((u) => ({ usuario: u.user, host: u.agent_name, total: u.count })),
         });
     }, [periodoRapido, startDate, endDate, totalEventos, topAgentes, topRegras, distribuicaoAcoes, topUsuarios, setScreenData]);

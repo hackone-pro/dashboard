@@ -26,10 +26,10 @@ export default function MultiTenantManager() {
             tenantsSelecionados,
             resumo: dadosTenants.map(t => ({
                 nome: t.nome,
-                risco: t.risco,
-                incidentesCritico: t.incidentes_critico,
-                incidentesAlto: t.incidentes_alto,
-                ativos: t.ativos,
+                indiceRisco: t.risco,
+                incidentesCriticos: t.incidentes_critico,
+                incidentesAltos: t.incidentes_alto,
+                totalAtivos: t.ativos,
             })),
         });
     }, [loading, dadosTenants, tenantsSelecionados]);

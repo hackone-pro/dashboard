@@ -233,19 +233,28 @@ export default function SOCAnalytics() {
             mttd: data.mttd?.value != null ? `${data.mttd.value} ${data.mttd.unit ?? ""}`.trim() : null,
             mtta: data.mtta?.value != null ? `${data.mtta.value} ${data.mtta.unit ?? ""}`.trim() : null,
             mttr: data.mttr?.value != null ? `${data.mttr.value} ${data.mttr.unit ?? ""}`.trim() : null,
+            totalIncidentesPeriodo: data.severityDistribution?.total ?? null,
             incidentesAbertos: data.openIncidents?.count ?? null,
             temCritico: data.openIncidents?.hasCritical ?? false,
             riskScore: data.riskLevel?.score ?? null,
-            nivelRisco: data.riskLevel?.level ?? null,
+            nivelRisco: ({ Critical: "Crítico", High: "Alto", Medium: "Médio", Low: "Baixo" } as Record<string,string>)[data.riskLevel?.level ?? ""] ?? data.riskLevel?.level ?? null,
             severidades: Object.fromEntries(
-                (data.severityDistribution?.buckets ?? []).map((b) => [
-                    b.severity,
-                    {
-                        count: b.count,
-                        pct: totalSev > 0 ? `${Math.round((b.count / totalSev) * 100)}%` : "0%",
-                    },
-                ])
+                (data.severityDistribution?.buckets ?? []).map((b) => {
+                    const nomePT: Record<string, string> = { LOW: "Baixo", MEDIUM: "Médio", HIGH: "Alto", CRITICAL: "Crítico" };
+                    return [
+                        nomePT[b.severity] ?? b.severity,
+                        {
+                            count: b.count,
+                            pct: totalSev > 0 ? `${Math.round((b.count / totalSev) * 100)}%` : "0%",
+                        },
+                    ];
+                })
             ),
+            performanceIA: data.iaPerformance ? {
+                triagemAutomatizada: data.iaPerformance.triageAutoRate != null ? `${data.iaPerformance.triageAutoRate}%` : null,
+                tempoMedioIaMinutos: data.iaPerformance.avgAiTimeMinutes ?? null,
+                taxaEscalacao: data.iaPerformance.escalationRate != null ? `${data.iaPerformance.escalationRate}%` : null,
+            } : null,
         });
     }, [data, periodo]);
 

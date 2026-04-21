@@ -70,7 +70,7 @@ export default function RiskLevel() {
     const total = severidades.total || 1;
     setScreenData("risk-level", {
       nomePagina: "Nível de Risco",
-      periodo: periodo ? `${periodo.from} a ${periodo.to}` : `${dias}d`,
+      periodo: periodo ? `${periodo.from} a ${periodo.to}` : `últimos ${dias} dia${dias === "1" ? "" : "s"}`,
       indiceRisco,
       totalIncidentes,
       severidades: {

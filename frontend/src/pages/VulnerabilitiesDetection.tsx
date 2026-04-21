@@ -48,6 +48,7 @@ export default function VulnerabilitiesDetection() {
         alto: vulnSeveridades.high,
         medio: vulnSeveridades.medium,
         baixo: vulnSeveridades.low,
+        pendentes: vulnSeveridades.pending,
         total: vulnSeveridades.total ?? 0,
         pctCritico: `${Math.round(((vulnSeveridades.critical) / total) * 100)}%`,
         pctAlto: `${Math.round(((vulnSeveridades.high) / total) * 100)}%`,

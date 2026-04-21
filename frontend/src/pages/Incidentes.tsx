@@ -44,7 +44,7 @@ export default function Incidentes() {
       total,
       paginaAtual: page,
       totalPaginas: totalPages,
-      filtroSeveridade: filtroSeveridade || "todos",
+      filtroSeveridade: (() => { const m: Record<string,string> = { LOW:"Baixo", MEDIUM:"Médio", HIGH:"Alto", CRITICAL:"Crítico" }; return filtroSeveridade ? (m[filtroSeveridade.toUpperCase()] ?? filtroSeveridade) : "todos"; })(),
       filtroOrigem: filtroOrigem || "todos",
       busca: busca || null,
       incidentesPagina: linhas.map((inc) => ({

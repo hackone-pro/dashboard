@@ -80,9 +80,9 @@ export default function MonitoriaSOC() {
     setScreenData("monitoria-soc", {
       nomePagina: "Monitoria SOC",
       tenant: tenantAtivo?.cliente_name ?? null,
-      storageTotalGB: totalGB || null,
-      storageUsadoGB: usadoGB || null,
-      storageDisponivelGB: Math.max(totalGB - usadoGB, 0) || null,
+      storageTotalGB: totalGB > 0 ? totalGB : null,
+      storageUsadoGB: usadoGB ?? null,
+      storageDisponivelGB: totalGB > 0 ? Math.max(totalGB - usadoGB, 0) : null,
       totalDescartes: Array.isArray(internal?.deleted) ? internal.deleted.length : 0,
     });
   }, [loadingStorage, loadingInternal, loadingTimeline, tenantAtivo, storage, internal, timeline]);

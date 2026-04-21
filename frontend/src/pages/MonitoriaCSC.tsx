@@ -33,10 +33,19 @@ export default function MonitoriaSOC() {
       nomePagina: "Monitoria CSC",
       zabbixAtivo: ativo,
       observacao: ativo ? "Monitoria CSC ativa via Zabbix" : "Integração Zabbix inativa para este tenant",
-      ativos,
-      severidade,
+      ativos: ativos.map(({ name, total }) => ({ nome: name, total })),
+      severidadeAlertas: severidade ? {
+        total: severidade.total,
+        alto: severidade.high,
+        alerta: severidade.warning,
+        desastre: severidade.disaster,
+      } : null,
       alertasAtivos: alertas.map(({ host, problema, severidade: sev, duracao }) => ({ host, problema, severidade: sev, duracao })),
-      topSwitchesCPU: switches,
+      topSwitchesCPU: switches.map(({ name, cpu, severity }) => ({
+        nome: name,
+        usoProcessador: `${cpu}%`,
+        severidade: severity,
+      })),
     });
   }, [ativo, loading, ativos, severidade, alertas, switches, setScreenData]);
 

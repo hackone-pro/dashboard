@@ -117,15 +117,18 @@ export default function Dashboard() {
   useEffect(() => {
     setScreenData("dashboard", {
       nomePagina: "Dashboard Principal",
-      periodo: "24h",
+      periodo: "últimas 24 horas",
       indiceRisco,
-      totalAtaques,
+      totalEventosDetectados: totalAtaques,
       tenant: tenantAtivo?.cliente_name ?? null,
-      widgetsVisiveis: layout.map((w) => WIDGET_LABELS[w.i] ?? w.i),
+      widgetsVisiveis: layout.filter((w) => !w.i.startsWith("_")).map((w) => WIDGET_LABELS[w.i] ?? w.i),
       topPaisesOrigem: topPaises,
       topFirewalls,
       ultimosIncidentes: topIncidentes,
-      iaHumans,
+      ataquesAutomatizados: iaHumans ? {
+        porIA: iaHumans.totalIa,
+        porHumanos: iaHumans.totalHumanos,
+      } : null,
     });
   }, [indiceRisco, totalAtaques, tenantAtivo, layout, topPaises, topFirewalls, topIncidentes, iaHumans, setScreenData]);
 
