@@ -35,7 +35,7 @@ export default function Incidentes() {
 
   useEffect(() => {
     setScreenData("incidentes", {
-      nomePagina: "Tela de Incidentes",
+      nomePagina: "Incidentes",
       periodo: periodo ? `${periodo.from} a ${periodo.to}` : "todos",
       abertos: abertos.length,
       fechados: fechados.length,
