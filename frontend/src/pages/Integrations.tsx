@@ -277,6 +277,7 @@ function NgSocContent({
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
         setScreenData("integrations-ngsoc", {
+            nomePagina: "Integrações NGSOC",
             activeTab: "NG-SOC",
             sections: ["SIEM", "SOAR", "DFIR", "Inteligencia Artificial"],
             activeIntegrations: activeCountMap,
@@ -494,6 +495,7 @@ function FirewallContent() {
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
         setScreenData("integrations-firewall", {
+            nomePagina: "Integrações Firewall",
             activeTab: "Firewall",
             visibleProducts: ["Azure Firewall", "FortiGATE", "CheckPoint", "Sophos", "PaloAlto", "Cisco", "SonicWall"],
             activeIntegrations: activeCountMap,
@@ -575,6 +577,7 @@ function MonitoriaContent() {
 
     useEffect(() => {
         setScreenData("integrations-monitoria", {
+            nomePagina: "Integrações Monitoria",
             activeTab: "Monitoria",
             visibleProducts: ["Zabbix", "Nagios", "Datadog"],
             observacao: "Produtos exibidos como catálogo; configuração não disponível nesta versão.",
@@ -629,6 +632,7 @@ function EndpointsContent() {
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
         setScreenData("integrations-edr", {
+            nomePagina: "Integrações EDR",
             activeTab: "Defesa de Endpoints (EDR/XDR)",
             visibleProducts: ["CrowdStrike", "Microsoft Sentinel", "Microsoft Defender", "Trend Micro"],
             activeIntegrations: activeCountMap,

@@ -21,6 +21,7 @@ export default function MultiTenantManager() {
     useEffect(() => {
         if (loading) return;
         setScreenData("multi-tenant-manager", {
+            nomePagina: "Gerenciador Multi-Tenant",
             totalTenants: dadosTenants.length,
             tenantsSelecionados,
             resumo: dadosTenants.map(t => ({

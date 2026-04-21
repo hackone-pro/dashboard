@@ -32,6 +32,7 @@ export default function Configuracoes() {
 
   useEffect(() => {
     setScreenData("configuracoes", {
+      nomePagina: "Configurações",
       secao,
       aba: secao === "geral" ? aba : abaUsuarios,
       isAdmin: isAdmin ?? false,

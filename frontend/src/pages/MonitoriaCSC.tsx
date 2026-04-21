@@ -30,6 +30,7 @@ export default function MonitoriaSOC() {
   useEffect(() => {
     if (loading) return;
     setScreenData("monitoria-csc", {
+      nomePagina: "Monitoria CSC",
       zabbixAtivo: ativo,
       observacao: ativo ? "Monitoria CSC ativa via Zabbix" : "Integração Zabbix inativa para este tenant",
       ativos,

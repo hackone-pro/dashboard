@@ -40,6 +40,7 @@ export default function VulnerabilitiesDetection() {
   useEffect(() => {
     const total = vulnSeveridades?.total || 1;
     setScreenData("vulnerabilidades", {
+      nomePagina: "Detecção de Vulnerabilidades",
       agentFiltrado: agentSelecionado ?? "todos",
       totalAgentes: agents.length,
       severidades: vulnSeveridades ? {

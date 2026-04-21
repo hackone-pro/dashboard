@@ -43,6 +43,7 @@ export default function ArchivesIntegrity() {
 
     useEffect(() => {
         setScreenData("integridade-arquivos", {
+            nomePagina: "Integridade de Arquivos",
             periodo: periodoRapido ?? (startDate && endDate ? `${startDate.toLocaleDateString("pt-BR")} – ${endDate.toLocaleDateString("pt-BR")}` : null),
             totalEventos,
             topAgentes: topAgentes.slice(0, 5).map((a) => ({

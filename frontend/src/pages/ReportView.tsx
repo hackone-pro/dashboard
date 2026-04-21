@@ -71,6 +71,7 @@ export default function ReportView() {
     useEffect(() => {
         if (loading) return;
         setScreenData("report-view", {
+            nomePagina: "Visualização de Relatório",
             nomeRelatorio: nome,
             periodo: report?.period ?? null,
             secoes: report?.sections ?? [],

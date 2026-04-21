@@ -36,6 +36,7 @@ export default function ServiceModel() {
 
     useEffect(() => {
         setScreenData("services-model", {
+            nomePagina: "Modelo de Serviços",
             servico: serviceTitle,
             observacao: "Tela de apresentação do serviço. Conteúdo bloqueado — requer aquisição pelo tenant.",
         });

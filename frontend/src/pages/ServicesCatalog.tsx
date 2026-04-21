@@ -20,6 +20,7 @@ export default function ServicesCatalog() {
 
     useEffect(() => {
         setScreenData("services-catalog", {
+            nomePagina: "Catálogo de Serviços",
             observacao: "Catálogo de serviços de cibersegurança oferecidos pela Security One. Dados exibidos são ilustrativos.",
             servicos: [
                 "Tráfego Seguro e Controle de Acesso",

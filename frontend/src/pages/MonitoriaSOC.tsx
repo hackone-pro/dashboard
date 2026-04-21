@@ -78,6 +78,7 @@ export default function MonitoriaSOC() {
     const totalGB = (tenantAtivo as any)?.contract?.storage_gb ?? timeline?.totalCapacity ?? 0;
     const usadoGB = storage?.used ?? timeline?.totalUsed ?? 0;
     setScreenData("monitoria-soc", {
+      nomePagina: "Monitoria SOC",
       tenant: tenantAtivo?.cliente_name ?? null,
       storageTotalGB: totalGB || null,
       storageUsadoGB: usadoGB || null,

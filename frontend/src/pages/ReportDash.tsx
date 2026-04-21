@@ -40,6 +40,7 @@ export default function ReportDash() {
 
     useEffect(() => {
         setScreenData("relatorios", {
+            nomePagina: "Relatórios",
             periodo: horas || null,
             secoesSelecionadas,
             totalRelatorios: relatorios.length,

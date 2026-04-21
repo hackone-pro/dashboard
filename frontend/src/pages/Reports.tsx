@@ -35,6 +35,7 @@ export default function Reports() {
 
     useEffect(() => {
         setScreenData("reports-legacy", {
+            nomePagina: "Relatórios",
             periodoSelecionado: `${periodo} dias`,
             totalRelatoriosLocais: relatoriosGerados.length,
             observacao: "Relatórios gerados localmente via PDF (localStorage)",
