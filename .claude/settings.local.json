@@ -9,7 +9,12 @@
       "Bash(xargs cat:*)",
       "Bash(xargs grep:*)",
       "Bash(npx tsc:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(ls \"C:/Users/Guilherme/source/repos/Security one/docs/risk-level\"*)",
+      "Bash(ls \"C:/Users/Guilherme/source/repos/Security one/backend/tests\"*)",
+      "Bash(git -C \"C:/Users/Guilherme/source/repos/Security one\" rev-parse HEAD)",
+      "Bash(git -C \"C:/Users/Guilherme/source/repos/Hackone\" rev-parse HEAD)",
+      "Bash(dotnet test *)"
     ]
   }
 }
