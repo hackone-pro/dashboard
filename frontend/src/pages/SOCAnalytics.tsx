@@ -415,7 +415,7 @@ export default function SOCAnalytics() {
                                 }
                                 trendValue={formatDelta(openIncidents?.deltaPercent ?? null)}
                                 trendLabel="vs período anterior"
-                                alert={openIncidents?.badge && openIncidents.badge !== "Normal" ? openIncidents.badge : undefined}
+                                alert={openIncidents?.badge && openIncidents.badge !== "Normal" ? openIncidents.badge.replace("HighAlert", "High Alert") : undefined}
                                 onClick={() => navigate("/incidentes?origem=abertos")}
                             />
                         </div>
