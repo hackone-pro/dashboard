@@ -57,4 +57,5 @@ coverage/
 .memory/
 **/CLAUDE.md
 !CLAUDE.md
+.playwright-mcp/
 # end HAM
