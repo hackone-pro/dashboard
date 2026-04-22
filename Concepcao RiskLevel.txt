@@ -1,0 +1,163 @@
+1) Objetivo do Risk Level
+
+O Risk Level deve gerar um número de 0 a 100 que representa o nível de risco atual da organização, baseado em 4 dimensões (cards), com peso máximo de 25 pontos cada:
+
+Top Hosts (alertas)
+
+Auditoria CIS
+
+Alertas de Firewall
+
+Controle de Incidentes
+
+Regra: nenhum cenário pode resultar em Risk Level acima de 100.
+
+2) Conceito central do algoritmo
+
+Cada card gera um “score bruto” (Raw Points) a partir da quantidade de eventos por severidade (Baixo, Médio, Alto, Crítico). Esse score bruto é comparado com um “baseline” histórico que funciona como um máximo inteligente com decaimento (para não ficar travado no pico de meses atrás).
+
+O risco do card é normalizado para um valor entre 0 e 1, e depois convertido para 0–25 pontos. O total é a soma dos 4 cards.
+
+3) Pesos por severidade (curva exponencial)
+
+Para transformar contagens em “pontos de severidade”, usamos pesos exponenciais:
+
+Baixo = base^0
+
+Médio = base^1
+
+Alto = base^2
+
+Crítico = base^3
+
+Na planilha, a base inicial está como 3 (ajustável), então:
+
+Baixo = 1
+
+Médio = 3
+
+Alto = 9
+
+Crítico = 27
+
+Isso cria a “curva em ^” (Crítico pesa muito mais que Baixo).
+
+4) Cálculo do Raw Points por card
+
+Para cada card k e janela t (ex.: últimas 24h), calculamos:
+
+raw_k(t) = Σ [ count_k(severidade, t) * weight(severidade) ]
+
+Onde:
+
+count_k é a quantidade de eventos naquela severidade, na janela
+
+weight é o peso exponencial
+
+Observação importante:
+
+Para Top Hosts / CIS / Firewall, count é baseado em eventos/alertas gerados na janela (24h).
+
+Para Controle de Incidentes, count deve refletir incidentes abertos no momento (snapshot atual), por severidade. Isso é essencial para o risco cair imediatamente ao fechar incidentes.
+
+5) Baseline por card (máximo com decaimento)
+
+Para cada organização e cada card, mantemos um estado persistido: baseline_k.
+
+A atualização do baseline é feita assim:
+
+baseline_k(t) = max( min_floor_k, raw_k(t), baseline_k(t-1) * decay_k )
+
+Parâmetros:
+
+decay_k: fator de decaimento diário (ex.: 0.98 para alertas, 0.99 para incidentes).
+Isso “esquece” picos antigos gradualmente, garantindo que, se o ambiente melhora de forma sustentada, o baseline desce ao longo das semanas.
+
+min_floor_k: piso mínimo para evitar baseline muito baixo (e para impedir divisão por zero).
+
+Por que isso existe:
+
+Se usarmos “máximo histórico fixo”, o baseline pode ficar congelado para sempre e o risco nunca mais sobe depois de uma grande crise.
+
+Com decaimento, o baseline se ajusta ao comportamento recente sem perder a referência histórica.
+
+6) Dia 1 / início do cliente (warmup)
+
+No dia 1 não existe baseline anterior. Para evitar que o risco comece automaticamente em 100% (porque raw = baseline), usamos um “warmup”:
+
+baseline_k(0) = max( min_floor_k, raw_k(0) * warmup_factor )
+
+Exemplo: warmup_factor = 2.0
+Se raw = 1000 no dia 1, baseline começa em 2000, então o risco inicial não fica artificialmente no topo.
+
+7) Normalização do risco do card (0 a 1) + clamp
+
+Depois calculamos o risco normalizado do card:
+
+r_k(t) = min( 1, ( raw_k(t) / baseline_k(t) ) ^ gamma )
+
+Parâmetros:
+
+gamma: controla a agressividade da curva (ex.: 1.5).
+Quanto maior, mais o risco “puxa para cima” quando se aproxima do baseline.
+
+Ponto crítico: sempre aplicar min(1, ...)
+Isso garante que, mesmo se raw estiver 10x acima do baseline, o risco do card fique no máximo em 1 (100%).
+
+Sem esse clamp é que aparecem números absurdos (ex.: 1446%), que é o erro que queremos evitar.
+
+8) Risk Level Total (0 a 100)
+
+Cada card vale até 25 pontos. Com pesos iguais:
+
+RiskTotal(t) = 100 * (0.25r1 + 0.25r2 + 0.25r3 + 0.25r4)
+
+Se futuramente quisermos dar mais peso a incidentes, basta alterar os multiplicadores (mantendo soma = 1).
+
+9) Persistência necessária no SecurityONE (por organização)
+
+Para implementar, o software precisa persistir por organização:
+
+baseline_top_hosts
+
+baseline_cis
+
+baseline_firewall
+
+baseline_incidents
+
+opcional: initialized/first_seen_date para saber se aplica warmup
+
+E também precisa receber por janela:
+
+contagens por severidade de cada card:
+
+top_hosts_counts[low, med, high, critical] (janela 24h)
+
+cis_counts[...] (janela 24h, ou checks falhos por severidade, depende do modelo CIS)
+
+firewall_counts[...] (janela 24h)
+
+incidents_open_counts[...] (snapshot atual, não janela)
+
+10) Como a planilha está estruturada (para validação)
+
+Aba PARÂMETROS/PESOS: define base, gamma, decay, pisos, warmup e pesos.
+
+Aba INPUT: você simula um “dia atual” preenchendo contagens por severidade.
+
+Aba HISTÓRICO:
+
+colunas Raw1..Raw4 são preenchidas como snapshot do dia (na planilha é manual, no produto virá do pipeline)
+
+baseline e RiskTotal são calculados por linha com base no dia anterior
+
+A planilha foi desenhada para o time conseguir bater 1:1 com a implementação. Se o código produzir valores diferentes, algo ficou divergente em: pesos, warmup, decaimento, clamp ou definição do que entra como “incidentes”.
+
+11) Observação sobre Auditoria CIS
+
+Precisamos alinhar o que “CIS” representa no SecurityONE:
+
+Se CIS gera “eventos/alertas por severidade” (ex.: falha em check vira alerta), então entra igual aos outros.
+
+Se CIS é “percentual de conformidade” (ex.: 82% compliant), então precisamos converter não conformidades em severidade (por criticidade do controle). A planilha assume o modelo por severidade. Se o nosso CIS for percentual, vamos mapear controles -> severidades para gerar counts ou gerar raw diretamente.

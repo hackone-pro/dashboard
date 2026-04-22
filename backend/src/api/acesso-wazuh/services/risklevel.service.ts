@@ -310,10 +310,10 @@ export async function calcularRiskOperacionalTenant(
     // 🔹 RAW POINTS POR CARD
     // =====================================================
 
-    const rawTopHosts  = calcularRawPoints(countsTopHosts);
+    const rawTopHosts  = calcularRawPoints(countsTopHosts,  "TopHosts");
     const rawCIS       = calcularRawCIS(cisAgentes);
-    const rawFirewall  = calcularRawPoints(countsFirewall);
-    const rawIncidents = calcularRawPoints(countsIncidents);
+    const rawFirewall  = calcularRawPoints(countsFirewall,  "Firewall");
+    const rawIncidents = calcularRawPoints(countsIncidents, "Incidentes");
 
     // =====================================================
     // 🔹 BASELINE: ler estado anterior e atualizar
@@ -328,7 +328,8 @@ export async function calcularRiskOperacionalTenant(
       slotAnterior.top_hosts,
       slotAnterior.initialized,
       PARAMS.decayAlertas,
-      PARAMS.minFloorAlertas
+      PARAMS.minFloorAlertas,
+      "TopHosts"
     );
 
     const novoCIS = atualizarBaseline(
@@ -336,7 +337,8 @@ export async function calcularRiskOperacionalTenant(
       slotAnterior.cis,
       slotAnterior.initialized,
       PARAMS.decayAlertas,
-      PARAMS.minFloorAlertas
+      PARAMS.minFloorAlertas,
+      "CIS"
     );
 
     const novoFirewall = atualizarBaseline(
@@ -344,7 +346,8 @@ export async function calcularRiskOperacionalTenant(
       slotAnterior.firewall,
       slotAnterior.initialized,
       PARAMS.decayAlertas,
-      PARAMS.minFloorAlertas
+      PARAMS.minFloorAlertas,
+      "Firewall"
     );
 
     const novoIncidents = atualizarBaseline(
@@ -352,7 +355,8 @@ export async function calcularRiskOperacionalTenant(
       slotAnterior.incidents,
       slotAnterior.initialized,
       PARAMS.decayIncidentes,
-      PARAMS.minFloorIncidentes
+      PARAMS.minFloorIncidentes,
+      "Incidentes"
     );
 
     // =====================================================
@@ -386,10 +390,10 @@ export async function calcularRiskOperacionalTenant(
     //    r_k = min(1, (raw / baseline) ^ gamma)
     // =====================================================
 
-    const r1 = calcularRiscoCard(rawTopHosts,  novoTopHosts);
-    const r2 = calcularRiscoCard(rawCIS,        novoCIS);
-    const r3 = calcularRiscoCard(rawFirewall,   novoFirewall);
-    const r4 = calcularRiscoCard(rawIncidents,  novoIncidents);
+    const r1 = calcularRiscoCard(rawTopHosts,  novoTopHosts,  "TopHosts");
+    const r2 = calcularRiscoCard(rawCIS,        novoCIS,        "CIS");
+    const r3 = calcularRiscoCard(rawFirewall,   novoFirewall,   "Firewall");
+    const r4 = calcularRiscoCard(rawIncidents,  novoIncidents,  "Incidentes");
 
     // =====================================================
     // 🔹 RISK TOTAL (0 a 100) com degradação graciosa
