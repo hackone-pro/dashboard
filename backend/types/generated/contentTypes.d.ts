@@ -538,6 +538,9 @@ export interface ApiTenantTenant extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     organizacao: Schema.Attribute.String;
     owner_name: Schema.Attribute.String;
+    plan: Schema.Attribute.Enumeration<['essentials', 'full']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'full'>;
     publishedAt: Schema.Attribute.DateTime;
     tenant_summaries: Schema.Attribute.Relation<
       'oneToMany',
