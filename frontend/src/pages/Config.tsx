@@ -4,6 +4,7 @@ import LayoutModel from "../componentes/LayoutModel";
 import { AiOutlineDelete } from "react-icons/ai";
 import { FaRegEdit, FaRegPaperPlane } from "react-icons/fa";
 
+import { getInactivityTimeout, setInactivityTimeout } from "../hooks/useInactivityLogout";
 import { toastSuccess, toastError } from "../utils/toast";
 import Swal from "sweetalert2";
 
@@ -18,7 +19,7 @@ import { resendInvite } from "../services/auth/resendInvite.service";
 import { useTenant } from "../context/TenantContext";
 import { useScreenContext } from "../context/ScreenContext";
 
-type Aba = "senha" | "perfil";
+type Aba = "senha" | "perfil" | "sessao";
 type Secao = "geral" | "usuarios";
 type AbaUsuarios = "lista" | "cadastro";
 
@@ -49,6 +50,21 @@ export default function Configuracoes() {
   const [showNovaSenha, setShowNovaSenha] = useState(false);
   const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // 🔹 Estado do timeout de inatividade
+  const [timeoutMinutos, setTimeoutMinutos] = useState<number>(() =>
+    getInactivityTimeout()
+  );
+  const [savingTimeout, setSavingTimeout] = useState(false);
+
+  const handleSaveTimeout = () => {
+    setSavingTimeout(true);
+    setInactivityTimeout(timeoutMinutos);
+    setTimeout(() => {
+      setSavingTimeout(false);
+      toastSuccess("Tempo de inatividade salvo com sucesso!");
+    }, 300);
+  };
 
   // 🔹 Estados do formulário de criação de usuário
   const [nome, setNome] = useState("");
@@ -84,15 +100,15 @@ export default function Configuracoes() {
   // 🔹 Busca usuários do tenant
   useEffect(() => {
     if (!isAdmin || !tenantAtivo) return;
-  
+
     async function carregarUsuarios() {
       try {
         setCarregandoUsuarios(true);
         setErroUsuarios(null);
-  
+
         setUsuarios([]);
         setPaginaAtual(1);
-  
+
         const data = await getUserList();
         setUsuarios(data);
       } catch (err: any) {
@@ -101,7 +117,7 @@ export default function Configuracoes() {
         setCarregandoUsuarios(false);
       }
     }
-  
+
     carregarUsuarios();
   }, [isAdmin, tenantAtivo]);
 
@@ -239,6 +255,17 @@ export default function Configuracoes() {
                   Alterar Senha
                 </button>
               </li>
+              <li>
+                <button
+                  onClick={() => setAba("sessao")}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition ${aba === "sessao"
+                    ? "bg-violet-600 text-white"
+                    : "hover:bg-[#1d1830] hover:text-white"
+                    }`}
+                >
+                  Tempo de Sessão
+                </button>
+              </li>
             </ul>
           </aside>
 
@@ -318,6 +345,47 @@ export default function Configuracoes() {
                     {loading ? "Salvando..." : "Alterar Senha"}
                   </button>
                 </form>
+              </div>
+            )}
+
+            {aba === "sessao" && (
+              <div className="max-w-lg">
+                <h2 className="text-white text-xl font-semibold mb-2">
+                  Tempo de Sessão
+                </h2>
+                <p className="text-gray-400 text-sm mb-6">
+                  Defina por quanto tempo sem atividade o sistema deve deslogar automaticamente.
+                </p>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">
+                      Tempo de inatividade
+                    </label>
+                    <select
+                      value={timeoutMinutos}
+                      onChange={(e) => setTimeoutMinutos(Number(e.target.value))}
+                      className="w-full bg-[#0f0b1e] border border-[#2c2450] text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 transition"
+                    >
+                      <option value={1}>1 minuto</option>
+                      <option value={5}>5 minutos</option>
+                      <option value={10}>10 minutos</option>
+                      <option value={15}>15 minutos</option>
+                      <option value={30}>30 minutos</option>
+                      <option value={60}>1 hora</option>
+                      <option value={120}>2 horas</option>
+                      <option value={480}>8 horas</option>
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={handleSaveTimeout}
+                    disabled={savingTimeout}
+                    className="px-5 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm rounded-lg transition"
+                  >
+                    {savingTimeout ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
               </div>
             )}
           </div>

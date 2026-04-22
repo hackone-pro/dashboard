@@ -1,979 +1,579 @@
 {
     "last_seen": {
-        "wazuh-alerts-unknown-2025.12.10": 0.008210180327296257,
-        "wazuh-alerts-unknown-2025.12.11": 0.021994090639054775,
-        "wazuh-alerts-dora_retail-2026.01.27": 0.0003159046173095703,
-        "wazuh-alerts-dora_retail-2026.01.26": 0.00018621888011693954,
-        "wazuh-alerts-dora_retail-2026.01.25": 0.00022427458316087723,
-        "wazuh-alerts-dora_retail-2026.01.24": 0.0004172343760728836,
-        "wazuh-alerts-dora_retail-2026.01.23": 0.00040123891085386276,
-        "wazuh-alerts-dora_retail-2026.01.22": 0.00016792584210634232,
-        "wazuh-alerts-dora_retail-2026.01.21": 0.00024332944303750992,
-        "wazuh-alerts-dora_retail-2026.01.20": 0.00015221908688545227,
-        "wazuh-alerts-unknown-2025.12.12": 0.025734546594321728,
-        "wazuh-alerts-unknown-2025.12.13": 0.03246568329632282,
-        "wazuh-alerts-unknown-2025.12.14": 0.02678059320896864,
-        "wazuh-alerts-unknown-2025.12.15": 0.024918384850025177,
-        "wazuh-alerts-unknown-2025.12.16": 0.026921408250927925,
-        "wazuh-alerts-unknown-2025.12.17": 0.03245794586837292,
-        "wazuh-alerts-unknown-2025.12.18": 0.024598797783255577,
-        "wazuh-alerts-unknown-2025.12.19": 0.02615298703312874,
-        "wazuh-alerts-dora_retail-2026.01.28": 0.0005388883873820305,
-        "wazuh-alerts-unknown-2025.12.20": 0.027961034327745438,
-        "wazuh-alerts-unknown-2025.12.21": 0.034745484590530396,
-        "wazuh-alerts-unknown-2025.12.22": 0.036372910253703594,
-        "wazuh-archives-dora_retail-2025.10.07": 0.015154758468270302,
-        "wazuh-archives-dora_retail-2025.10.08": 0.027473882772028446,
-        "wazuh-archives-dora_retail-2025.10.09": 0.03220853582024574,
-        "wazuh-archives-dora_retail-2025.10.14": 0.03785285912454128,
-        "wazuh-alerts-dora_retail-2026.01.16": 0.0003445129841566086,
-        "wazuh-archives-dora_retail-2025.09.26": 0.0003390973433852196,
-        "wazuh-alerts-dora_retail-2026.01.15": 0.0004307124763727188,
-        "wazuh-archives-dora_retail-2025.10.16": 0.04115825053304434,
-        "wazuh-alerts-dora_retail-2026.01.14": 0.00039094872772693634,
-        "wazuh-alerts-dora_retail-2026.01.13": 0.0005423305556178093,
-        "wazuh-archives-dora_retail-2025.10.17": 0.03512034472078085,
-        "wazuh-archives-dora_retail-2025.10.10": 0.03418764844536781,
-        "wazuh-archives-dora_retail-2025.09.29": 0.03195121604949236,
-        "wazuh-alerts-dora_retail-2026.01.12": 0.000402684323489666,
-        "wazuh-archives-dora_retail-2025.10.11": 0.035606734454631805,
-        "wazuh-alerts-dora_retail-2026.01.11": 0.00018626172095537186,
-        "wazuh-alerts-dora_retail-2026.01.10": 0.00025255605578422546,
-        "wazuh-archives-dora_retail-2025.09.27": 0.010917145758867264,
-        "wazuh-archives-dora_retail-2025.10.12": 0.035042330622673035,
-        "wazuh-archives-dora_retail-2025.09.28": 0.009659791365265846,
-        "wazuh-archives-dora_retail-2025.10.13": 0.03358733467757702,
-        "wazuh-alerts-unknown-2025.12.23": 0.02758045867085457,
-        "wazuh-alerts-unknown-2025.12.24": 0.015619415789842606,
-        "wazuh-alerts-unknown-2025.12.25": 0.013914533890783787,
-        "wazuh-alerts-unknown-2025.12.26": 0.01593963149935007,
-        "wazuh-alerts-unknown-2025.12.27": 0.008564265444874763,
-        "wazuh-alerts-unknown-2025.12.28": 0.009915892966091633,
-        "wazuh-alerts-dora_retail-2026.01.19": 0.00027162395417690277,
-        "wazuh-alerts-dora_retail-2026.01.18": 0.0002429615706205368,
-        "wazuh-alerts-unknown-2025.12.29": 0.014247835613787174,
-        "wazuh-alerts-dora_retail-2026.01.17": 0.0002241041511297226,
-        "wazuh-alerts-unknown-2025.12.30": 0.04310683533549309,
-        "wazuh-alerts-unknown-2025.12.31": 0.08285225741565228,
-        "wazuh-alerts-dora_retail-2026.01.05": 0.000450783409178257,
-        "wazuh-archives-dora_retail-2025.10.03": 0.003715917468070984,
-        "wazuh-alerts-dora_retail-2026.01.04": 0.00041538290679454803,
-        "wazuh-archives-dora_retail-2025.10.05": 0.013542477041482925,
-        "wazuh-alerts-dora_retail-2026.01.03": 0.0003473488613963127,
-        "wazuh-archives-dora_retail-2025.10.06": 0.01318044401705265,
-        "wazuh-alerts-dora_retail-2026.01.02": 0.00037671253085136414,
-        "wazuh-alerts-dora_retail-2026.01.01": 0.00038807280361652374,
-        "wazuh-archives-dora_retail-2025.10.01": 0.004236127249896526,
-        "wazuh-alerts-dora_retail-2026.01.09": 0.0007589235901832581,
-        "wazuh-alerts-dora_retail-2026.01.08": 0.0001589599996805191,
-        "wazuh-alerts-dora_retail-2026.01.07": 0.00022446829825639725,
-        "wazuh-alerts-dora_retail-2026.01.06": 0.0004987707361578941,
-        "wazuh-alerts-qolinty-2026.01.26": 0.007278461009263992,
-        "wazuh-alerts-qolinty-2026.01.27": 0.007075772620737553,
-        "wazuh-alerts-qolinty-2026.01.24": 0.006452746689319611,
-        "wazuh-alerts-qolinty-2026.01.25": 0.006530259735882282,
-        "wazuh-alerts-qolinty-2026.01.22": 0.17992912884801626,
-        "wazuh-alerts-qolinty-2026.01.23": 0.12074774969369173,
-        "wazuh-alerts-qolinty-2026.01.20": 0.2945859506726265,
-        "wazuh-alerts-qolinty-2026.01.21": 0.5295174727216363,
-        "wazuh-archives-dora_retail-2025.10.29": 0.016700665466487408,
-        "wazuh-alerts-qolinty-2026.01.28": 0.006750831380486488,
-        "wazuh-archives-4.x-2025.09.24": 0.1580662103369832,
-        "wazuh-archives-4.x-2025.09.23": 0.5557036781683564,
-        "wazuh-archives-dora_retail-2025.10.30": 0.02323488611727953,
-        "wazuh-archives-dora_retail-2025.10.31": 0.028978594578802586,
-        "wazuh-archives-unknown-2025.10.07-fixed": 1.9371509552001953e-07,
-        "wazuh-archives-dora_retail-2025.10.18": 0.037947142496705055,
-        "wazuh-archives-dora_retail-2025.10.19": 0.019458774477243423,
-        "wazuh-archives-dora_retail-2025.09.30": 0.7015636777505279,
-        "wazuh-archives-dora_retail-2025.10.25": 0.014637982472777367,
-        "wazuh-archives-dora_retail-2025.10.26": 0.014557438902556896,
-        "wazuh-archives-dora_retail-2025.10.27": 0.01807212084531784,
-        "wazuh-archives-dora_retail-2025.10.28": 0.017098954878747463,
-        "wazuh-archives-dora_retail-2025.10.21": 0.020620915107429028,
-        "wazuh-archives-dora_retail-2025.10.22": 0.02309195976704359,
-        "wazuh-archives-dora_retail-2025.10.23": 0.026990183629095554,
-        "wazuh-archives-dora_retail-2025.10.24": 0.017680542543530464,
-        "wazuh-archives-dora_retail-2025.10.20": 0.016906507313251495,
-        "wazuh-alerts-4.x-2025.06.21": 0.0009810365736484528,
-        "wazuh-alerts-4.x-2025.06.22": 0.0002312641590833664,
-        "wazuh-alerts-dora_retail-2025.12.19": 0.0002046572044491768,
-        "wazuh-alerts-dora_retail-2025.12.18": 0.0002612899988889694,
-        "wazuh-alerts-dora_retail-2025.12.17": 0.004881357774138451,
-        "wazuh-alerts-dora_retail-2025.12.16": 0.00511167012155056,
-        "wazuh-alerts-dora_retail-2025.12.15": 0.00033568404614925385,
-        "wazuh-alerts-dora_retail-2025.12.14": 0.00024245399981737137,
-        "wazuh-alerts-dora_retail-2025.12.13": 0.0006242124363780022,
-        "wazuh-alerts-dora_retail-2025.12.12": 0.00018868781626224518,
-        "wazuh-alerts-dora_retail-2025.12.10": 7.387902587652206e-05,
-        "wazuh-alerts-dora_retail-2025.12.20": 0.00020566396415233612,
-        "wazuh-alerts-dora_retail-2025.12.29": 0.0005545085296034813,
-        "wazuh-alerts-dora_retail-2025.12.28": 0.00024260394275188446,
-        "wazuh-alerts-dora_retail-2025.12.27": 0.0002427082508802414,
-        "wazuh-alerts-dora_retail-2025.12.26": 0.0002986239269375801,
-        "wazuh-alerts-dora_retail-2025.12.25": 0.00020531471818685532,
-        "wazuh-alerts-dora_retail-2025.12.24": 0.00020457617938518524,
-        "wazuh-alerts-dora_retail-2025.12.23": 0.0003546876832842827,
-        "wazuh-alerts-dora_retail-2025.12.22": 0.00046558678150177,
-        "wazuh-alerts-dora_retail-2025.12.21": 0.00028052739799022675,
-        "wazuh-alerts-dora_retail-2025.12.31": 0.00033973436802625656,
-        "wazuh-alerts-dora_retail-2025.12.30": 0.0003621242940425873,
-        "wazuh-archives-dora_retail-2025.12.30": 0.011640716344118118,
-        "wazuh-archives-dora_retail-2025.12.31": 0.012060956098139286,
-        "wazuh-alerts-4.x-2025.08.08": 0.004404156468808651,
-        "wazuh-alerts-4.x-2025.08.09": 0.005957086570560932,
-        "wazuh-alerts-4.x-2025.08.13": 0.006028574891388416,
-        "wazuh-alerts-4.x-2025.08.14": 0.005929714068770409,
-        "wazuh-alerts-4.x-2025.08.11": 0.0019537219777703285,
-        "wazuh-alerts-4.x-2025.08.12": 0.005878845229744911,
-        "wazuh-alerts-4.x-2025.08.10": 0.005850185640156269,
-        "wazuh-archives-dora_retail-2026.01.04": 0.011813495308160782,
-        "wazuh-archives-dora_retail-2025.12.20": 0.007736128754913807,
-        "wazuh-archives-dora_retail-2026.01.05": 0.01158808171749115,
-        "wazuh-archives-dora_retail-2026.01.06": 0.011253638193011284,
-        "wazuh-alerts-4.x-2025.08.19": 0.0009186519309878349,
-        "wazuh-archives-dora_retail-2026.01.07": 0.007221907377243042,
-        "wazuh-archives-dora_retail-2026.01.01": 0.01115418504923582,
-        "wazuh-alerts-4.x-2025.08.18": 0.00028893910348415375,
-        "wazuh-alerts-4.x-2025.08.15": 0.00218853447586298,
-        "wazuh-archives-dora_retail-2026.01.02": 0.01105641108006239,
-        "wazuh-archives-dora_retail-2026.01.03": 0.012147189117968082,
-        "wazuh-archives-dora_retail-2026.01.08": 0.003800326958298683,
-        "wazuh-archives-dora_retail-2026.01.09": 0.007882747799158096,
-        "wazuh-alerts-4.x-2025.08.24": 0.000661955215036869,
-        "wazuh-alerts-4.x-2025.08.25": 0.0006562955677509308,
-        "wazuh-alerts-4.x-2025.08.22": 0.0007777707651257515,
-        "wazuh-alerts-4.x-2025.08.23": 0.0003886427730321884,
-        "wazuh-archives-dora_retail-2026.01.10": 0.007823208346962929,
-        "wazuh-alerts-4.x-2025.08.20": 0.0009264936670660973,
-        "wazuh-alerts-4.x-2025.08.21": 0.001323409378528595,
-        "wazuh-archives-dora_retail-2026.01.15": 0.007859188131988049,
-        "wazuh-archives-dora_retail-2026.01.16": 0.007793656550347805,
-        "wazuh-archives-dora_retail-2026.01.17": 0.007991991937160492,
-        "wazuh-archives-dora_retail-2026.01.18": 0.007341486401855946,
-        "wazuh-alerts-4.x-2025.08.28": 0.0005506714805960655,
-        "wazuh-archives-dora_retail-2026.01.11": 0.008006144315004349,
-        "wazuh-archives-dora_retail-2026.01.12": 0.007882069796323776,
-        "wazuh-alerts-4.x-2025.08.26": 0.00034397002309560776,
-        "wazuh-archives-dora_retail-2026.01.13": 0.007564809173345566,
-        "wazuh-alerts-4.x-2025.08.27": 0.00035043805837631226,
-        "wazuh-archives-dora_retail-2026.01.14": 0.007855403237044811,
-        "wazuh-archives-dora_retail-2026.01.19": 0.0071026720106601715,
-        "wazuh-alerts-4.x-2025.09.03": 0.0034377695992588997,
-        "wazuh-alerts-4.x-2025.09.04": 0.0005989121273159981,
-        "wazuh-alerts-4.x-2025.09.01": 0.0008020559325814247,
-        "wazuh-archives-dora_retail-2026.01.20": 0.003561706282198429,
-        "wazuh-alerts-4.x-2025.09.02": 0.0010944288223981857,
-        "wazuh-archives-dora_retail-2026.01.21": 0.00798862986266613,
-        "wazuh-archives-dora_retail-2026.01.26": 0.008820495568215847,
-        "wazuh-archives-dora_retail-2026.01.27": 0.00829986110329628,
-        "wazuh-alerts-4.x-2025.09.09": 0.0007391674444079399,
-        "wazuh-archives-dora_retail-2026.01.28": 0.006256815977394581,
-        "wazuh-alerts-4.x-2025.09.07": 0.0017420323565602303,
-        "wazuh-archives-dora_retail-2026.01.22": 0.008473249152302742,
-        "wazuh-archives-dora_retail-2026.01.23": 0.008177584037184715,
-        "wazuh-alerts-4.x-2025.09.08": 0.0006978269666433334,
-        "wazuh-alerts-4.x-2025.09.05": 0.006937084719538689,
-        "wazuh-archives-dora_retail-2026.01.24": 0.008706667460501194,
-        "wazuh-archives-dora_retail-2026.01.25": 0.007855613715946674,
-        "wazuh-alerts-4.x-2025.09.06": 0.0009792111814022064,
-        "wazuh-archives-qolinty-2026.01.10": 1.4262731838971376,
-        "wazuh-archives-qolinty-2026.01.14": 2.9771977681666613,
-        "wazuh-archives-unknown-2026.01.21": 0.00025271717458963394,
-        "wazuh-archives-qolinty-2026.01.13": 2.279690323397517,
-        "wazuh-archives-unknown-2026.01.20": 0.0008963728323578835,
-        "wazuh-archives-qolinty-2026.01.12": 2.7623602049425244,
-        "wazuh-archives-qolinty-2026.01.11": 0.22512510605156422,
-        "wazuh-archives-qolinty-2026.01.18": 1.0092236446216702,
-        "wazuh-archives-qolinty-2026.01.17": 1.3083272445946932,
-        "wazuh-archives-qolinty-2026.01.16": 0.7253222595900297,
-        "wazuh-archives-qolinty-2026.01.15": 0.8646949818357825,
-        "wazuh-alerts-4.x-2025.09.14": 0.0009318925440311432,
-        "wazuh-alerts-4.x-2025.09.15": 0.000585874542593956,
-        "wazuh-alerts-4.x-2025.09.12": 0.0013979393988847733,
-        "wazuh-alerts-4.x-2025.09.13": 0.000642530620098114,
-        "wazuh-archives-qolinty-2026.01.19": 1.266364311799407,
-        "wazuh-alerts-4.x-2025.09.10": 0.000597088597714901,
-        "wazuh-alerts-4.x-2025.09.11": 0.0006761103868484497,
-        "wazuh-alerts-4.x-2025.09.18": 0.0010883314535021782,
-        "wazuh-alerts-4.x-2025.09.19": 0.0007101250812411308,
-        "wazuh-alerts-4.x-2025.09.16": 0.0006014164537191391,
-        "wazuh-alerts-4.x-2025.09.17": 0.0005900012329220772,
-        "wazuh-archives-qolinty-2026.01.21": 2.3275490943342447,
-        "wazuh-archives-qolinty-2026.01.20": 0.5012373123317957,
-        "wazuh-archives-qolinty-2026.01.25": 0.011706321500241756,
-        "wazuh-archives-qolinty-2026.01.24": 0.012277158908545971,
-        "wazuh-archives-qolinty-2026.01.23": 0.8468054085969925,
-        "wazuh-archives-qolinty-2026.01.22": 0.9823467368260026,
-        "wazuh-archives-qolinty-2026.01.28": 0.012312740087509155,
-        "wazuh-archives-qolinty-2026.01.27": 0.01711637433618307,
-        "wazuh-archives-qolinty-2026.01.26": 0.017820511944592,
-        "wazuh-alerts-4.x-2025.09.23": 0.00196851696819067,
-        "wazuh-alerts-4.x-2025.09.24": 6.069336086511612e-05,
-        "wazuh-alerts-4.x-2025.09.21": 0.0004659220576286316,
-        "wazuh-alerts-4.x-2025.09.22": 0.00297347828745842,
-        "wazuh-alerts-4.x-2025.09.20": 0.0009539425373077393,
-        "wazuh-archives-rede_hospitalar-2026.01.07": 0.03841475024819374,
-        "wazuh-archives-rede_hospitalar-2026.01.08": 0.011384631507098675,
-        "wazuh-archives-rede_hospitalar-2026.01.09": 0.014417772181332111,
-        "wazuh-archives-unknown-2026.01.18": 0.00021025631576776505,
-        "wazuh-archives-rede_hospitalar-2026.01.10": 0.004745198413729668,
-        "wazuh-archives-rede_hospitalar-2026.01.12": 0.005473347380757332,
-        "wazuh-archives-unknown-2026.01.19": 0.001151285134255886,
-        "wazuh-archives-rede_hospitalar-2026.01.13": 0.00595612358301878,
-        "wazuh-archives-rede_hospitalar-2026.01.14": 0.001266365870833397,
-        "wazuh-archives-rede_hospitalar-2026.01.16": 0.0014625005424022675,
-        "wazuh-archives-qolinty-2026.01.03": 0.7892300318926573,
-        "wazuh-archives-qolinty-2026.01.02": 0.7667221883311868,
-        "wazuh-archives-qolinty-2026.01.01": 1.0894229970872402,
-        "wazuh-archives-qolinty-2026.01.07": 1.0434778109192848,
-        "wazuh-archives-qolinty-2026.01.06": 1.4439162630587816,
-        "wazuh-archives-qolinty-2026.01.05": 0.1880755638703704,
-        "wazuh-archives-qolinty-2026.01.04": 0.46738103590905666,
-        "wazuh-archives-default-2026.01.25": 3.505935277789831,
-        "wazuh-archives-default-2026.01.26": 3.8768840301781893,
-        "wazuh-archives-qolinty-2026.01.09": 1.0105063105002046,
-        "wazuh-archives-default-2026.01.23": 3.459190536290407,
-        "wazuh-archives-default-2026.01.24": 3.570502403192222,
-        "wazuh-archives-qolinty-2026.01.08": 0.17841537669301033,
-        "wazuh-archives-default-2026.01.27": 3.565270752646029,
-        "wazuh-archives-default-2026.01.28": 3.327157977037132,
-        "wazuh-archives-rede_hospitalar-2026.01.17": 0.002523980103433132,
-        "wazuh-archives-rede_hospitalar-2026.01.18": 0.003435613587498665,
-        "wazuh-archives-unknown-2025.10.07": 0.002315937541425228,
-        "wazuh-archives-rede_hospitalar-2026.01.19": 0.00562067236751318,
-        "wazuh-archives-rede_hospitalar-2026.01.20": 0.0016463641077280045,
-        "wazuh-archives-rede_hospitalar-2026.01.21": 0.0073410384356975555,
-        "wazuh-archives-rede_hospitalar-2026.01.22": 0.006352468393743038,
-        "wazuh-archives-rede_hospitalar-2026.01.23": 0.8355124238878489,
-        "wazuh-archives-rede_hospitalar-2026.01.24": 1.4897460984066129,
-        "wazuh-archives-rede_hospitalar-2026.01.25": 1.8470020405948162,
-        "wazuh-archives-rede_hospitalar-2026.01.26": 2.983358354307711,
-        "wazuh-archives-rede_hospitalar-2026.01.27": 2.1111422795802355,
-        "wazuh-archives-default-2026.01.21": 3.813093234784901,
-        "wazuh-archives-default-2026.01.22": 3.1816670587286353,
-        "wazuh-archives-default-2026.01.20": 1.2666902430355549,
-        "wazuh-archives-default-2026.01.14": 4.089378024451435,
-        "wazuh-archives-default-2026.01.15": 2.985308709554374,
-        "wazuh-archives-default-2026.01.12": 3.588792247697711,
-        "wazuh-archives-default-2026.01.13": 3.4397730994969606,
-        "wazuh-archives-default-2026.01.18": 2.771804766729474,
-        "wazuh-archives-default-2026.01.19": 2.1327125653624535,
-        "wazuh-archives-default-2026.01.16": 3.061556611210108,
-        "wazuh-archives-default-2026.01.17": 2.9914824990555644,
-        "wazuh-archives-rede_hospitalar-2026.01.28": 2.4649367770180106,
-        "wazuh-archives-unknown-2025.10.13": 0.0006674444302916527,
-        "wazuh-archives-unknown-2025.10.14": 0.00027021486312150955,
-        "wazuh-archives-default-2026.01.10": 3.398819152265787,
-        "wazuh-archives-default-2026.01.11": 3.2325467746704817,
-        "wazuh-archives-unknown-2025.10.20": 0.00012462865561246872,
-        "wazuh-archives-unknown-2025.10.21": 4.400871694087982e-05,
-        "wazuh-alerts-qolinty-2026.01.04": 0.1127494815737009,
-        "wazuh-alerts-qolinty-2026.01.05": 0.0298604192212224,
-        "wazuh-alerts-qolinty-2026.01.02": 0.01049984060227871,
-        "wazuh-alerts-qolinty-2026.01.03": 0.03817303758114576,
-        "wazuh-alerts-qolinty-2026.01.01": 0.2514795996248722,
-        "wazuh-alerts-qolinty-2026.01.08": 0.03071016538888216,
-        "wazuh-alerts-qolinty-2026.01.09": 0.27333660144358873,
-        "wazuh-alerts-unknown-2026.01.20": 0.012044167146086693,
-        "wazuh-alerts-qolinty-2026.01.06": 0.501357146538794,
-        "wazuh-alerts-qolinty-2026.01.07": 0.37820928264409304,
-        "wazuh-alerts-unknown-2026.01.21": 0.01302116084843874,
-        "wazuh-alerts-unknown-2026.01.22": 0.011987872421741486,
-        "wazuh-alerts-unknown-2026.01.23": 0.023123683407902718,
-        "wazuh-alerts-unknown-2026.01.24": 0.016801586374640465,
-        "wazuh-alerts-unknown-2026.01.25": 0.00969388522207737,
-        "wazuh-alerts-unknown-2026.01.26": 0.01315376628190279,
-        "wazuh-alerts-unknown-2026.01.27": 0.017018817365169525,
-        "wazuh-alerts-unknown-2026.01.28": 0.014675479382276535,
-        "wazuh-alerts-qolinty-2026.01.15": 0.056003027595579624,
-        "wazuh-alerts-qolinty-2026.01.16": 0.04503882955759764,
-        "wazuh-alerts-qolinty-2026.01.13": 0.19447120744735003,
-        "wazuh-alerts-qolinty-2026.01.14": 0.3332987492904067,
-        "wazuh-alerts-qolinty-2026.01.11": 0.03328759782016277,
-        "wazuh-alerts-qolinty-2026.01.12": 0.6018144227564335,
-        "wazuh-alerts-qolinty-2026.01.10": 0.0739991869777441,
-        "wazuh-alerts-qolinty-2026.01.19": 0.4321273909881711,
-        "wazuh-alerts-qolinty-2026.01.17": 0.4619483295828104,
-        "wazuh-alerts-qolinty-2026.01.18": 0.3501298762857914,
-        "wazuh-alerts-unknown-2026.01.10": 0.012093503959476948,
-        "wazuh-alerts-unknown-2026.01.11": 0.020753422752022743,
-        "wazuh-alerts-unknown-2026.01.12": 0.01110891904681921,
-        "wazuh-alerts-unknown-2026.01.13": 0.01488703116774559,
-        "wazuh-alerts-unknown-2026.01.14": 0.009717538952827454,
-        "wazuh-alerts-unknown-2026.01.15": 0.011842944659292698,
-        "wazuh-alerts-unknown-2026.01.16": 0.0124799320474267,
-        "wazuh-alerts-unknown-2026.01.17": 0.011149742640554905,
-        "wazuh-alerts-unknown-2026.01.18": 0.012332864105701447,
-        "wazuh-alerts-unknown-2026.01.19": 0.008030236698687077,
-        "wazuh-alerts-qolinty-2025.12.29": 0.011092436499893665,
-        "wazuh-alerts-qolinty-2025.12.27": 0.009441223926842213,
-        "wazuh-alerts-qolinty-2025.12.28": 0.011610682122409344,
-        "wazuh-alerts-qolinty-2025.12.25": 0.2564635891467333,
-        "wazuh-alerts-rede_hospitalar-2026.01.07": 0.023056508973240852,
-        "wazuh-alerts-qolinty-2025.12.26": 0.027228171937167645,
-        "wazuh-alerts-qolinty-2025.12.23": 0.03835584130138159,
-        "wazuh-alerts-rede_hospitalar-2026.01.08": 0.003974231891334057,
-        "wazuh-alerts-qolinty-2025.12.24": 0.2645144509151578,
-        "wazuh-alerts-rede_hospitalar-2026.01.09": 0.0056328969076275826,
-        "wazuh-alerts-qolinty-2025.12.21": 0.01531074196100235,
-        "wazuh-alerts-qolinty-2025.12.22": 0.015611947514116764,
-        "wazuh-alerts-qolinty-2025.12.30": 0.010002358816564083,
-        "wazuh-alerts-unknown-2026.01.01": 0.08033565431833267,
-        "wazuh-alerts-qolinty-2025.12.31": 0.4033968998119235,
-        "wazuh-alerts-unknown-2026.01.02": 0.07080276310443878,
-        "wazuh-alerts-unknown-2026.01.03": 0.051050699315965176,
-        "wazuh-alerts-unknown-2026.01.04": 0.04105072841048241,
-        "wazuh-alerts-unknown-2026.01.05": 0.028742105700075626,
-        "wazuh-alerts-unknown-2026.01.06": 0.013876033946871758,
-        "wazuh-alerts-unknown-2026.01.07": 0.010272779501974583,
-        "wazuh-alerts-unknown-2026.01.08": 0.009468072094023228,
-        "wazuh-alerts-unknown-2026.01.09": 0.009999703615903854,
-        "wazuh-alerts-qolinty-2025.12.18": 0.016626665368676186,
-        "wazuh-alerts-qolinty-2025.12.19": 0.012193647213280201,
-        "wazuh-alerts-qolinty-2025.12.16": 0.011699804104864597,
-        "wazuh-alerts-qolinty-2025.12.17": 0.03438067529350519,
-        "wazuh-alerts-qolinty-2025.12.14": 0.009075475856661797,
-        "wazuh-alerts-qolinty-2025.12.15": 0.010659958235919476,
-        "wazuh-alerts-qolinty-2025.12.12": 0.02640057262033224,
-        "wazuh-alerts-qolinty-2025.12.13": 0.008861394599080086,
-        "wazuh-alerts-qolinty-2025.12.10": 0.010850407183170319,
-        "wazuh-alerts-qolinty-2025.12.11": 0.05462643224745989,
-        "wazuh-alerts-qolinty-2025.12.20": 0.011904256418347359,
-        "wazuh-alerts-rede_hospitalar-2026.01.20": 0.0035979021340608597,
-        "wazuh-alerts-rede_hospitalar-2026.01.21": 0.0027388110756874084,
-        "wazuh-alerts-rede_hospitalar-2026.01.22": 0.0022277040407061577,
-        "wazuh-alerts-rede_hospitalar-2026.01.23": 0.22245740797370672,
-        "wazuh-alerts-rede_hospitalar-2026.01.24": 0.5112853022292256,
-        "wazuh-alerts-rede_hospitalar-2026.01.25": 0.5881038382649422,
-        "wazuh-alerts-rede_hospitalar-2026.01.26": 0.5819759666919708,
-        "wazuh-alerts-rede_hospitalar-2026.01.27": 0.3198818862438202,
-        "wazuh-alerts-rede_hospitalar-2026.01.28": 0.49033623561263084,
-        "wazuh-alerts-rede_hospitalar-2026.01.10": 0.0012772846966981888,
-        "wazuh-alerts-rede_hospitalar-2026.01.12": 0.0029264315962791443,
-        "wazuh-alerts-rede_hospitalar-2026.01.13": 0.0029890118166804314,
-        "wazuh-alerts-rede_hospitalar-2026.01.14": 0.0009211273863911629,
-        "wazuh-alerts-rede_hospitalar-2026.01.16": 0.0009228084236383438,
-        "wazuh-alerts-rede_hospitalar-2026.01.17": 0.0015563815832138062,
-        "wazuh-alerts-rede_hospitalar-2026.01.18": 0.0020888186991214752,
-        "wazuh-alerts-rede_hospitalar-2026.01.19": 0.003326975740492344
+        "wazuh-alerts-qolinty-2026.03.29": 0.0037497254088521004,
+        "wazuh-alerts-qolinty-2026.03.28": 0.05195172596722841,
+        "wazuh-alerts-qolinty-2026.03.27": 0.2631879700347781,
+        "wazuh-alerts-qolinty-2026.03.26": 0.2623266587033868,
+        "wazuh-alerts-qolinty-2026.03.25": 0.0029152631759643555,
+        "wazuh-alerts-qolinty-2026.03.24": 0.07041383534669876,
+        "wazuh-alerts-qolinty-2026.03.23": 0.015464828349649906,
+        "wazuh-alerts-qolinty-2026.03.22": 0.1728626387193799,
+        "wazuh-alerts-qolinty-2026.03.31": 0.03568692971020937,
+        "wazuh-alerts-qolinty-2026.04.08": 0.05936330929398537,
+        "wazuh-alerts-qolinty-2026.04.07": 0.10332777816802263,
+        "wazuh-alerts-qolinty-2026.04.06": 0.025485310703516006,
+        "wazuh-alerts-qolinty-2026.04.05": 0.2895093020051718,
+        "wazuh-alerts-qolinty-2026.04.04": 0.3897967552766204,
+        "wazuh-alerts-qolinty-2026.04.03": 0.12286127638071775,
+        "wazuh-alerts-qolinty-2026.04.02": 0.050758492201566696,
+        "wazuh-alerts-qolinty-2026.04.01": 0.10495952144265175,
+        "wazuh-alerts-qolinty-2026.04.09": 0.026685542427003384,
+        "wazuh-alerts-qolinty-2026.04.11": 0.03142040129750967,
+        "wazuh-alerts-qolinty-2026.04.10": 0.03400046098977327,
+        "wazuh-alerts-qolinty-2026.03.21": 0.13876596186310053,
+        "wazuh-alerts-qolinty-2026.03.20": 0.3570366222411394,
+        "wazuh-archives-qolinty-2026.03.31": 0.3372612725943327,
+        "wazuh-archives-qolinty-2026.04.02": 1.838963769376278,
+        "wazuh-archives-qolinty-2026.04.01": 1.2286021439358592,
+        "wazuh-archives-qolinty-2026.03.30": 0.00034087710082530975,
+        "wazuh-archives-qolinty-2026.04.08": 0.8010176895186305,
+        "wazuh-archives-qolinty-2026.04.07": 0.5492590377107263,
+        "wazuh-archives-qolinty-2026.04.09": 0.11790832132101059,
+        "wazuh-archives-qolinty-2026.04.04": 1.8588138623163104,
+        "wazuh-archives-qolinty-2026.04.03": 1.2153009846806526,
+        "wazuh-archives-qolinty-2026.04.06": 0.5277918968349695,
+        "wazuh-archives-qolinty-2026.04.05": 1.5630166726186872,
+        "wazuh-archives-qolinty-2026.04.11": 0.12474133633077145,
+        "wazuh-archives-qolinty-2026.04.10": 0.14438060019165277,
+        "wazuh-archives-qolinty-2026.04.13": 0.14782412350177765,
+        "wazuh-archives-qolinty-2026.04.12": 0.12418208736926317,
+        "wazuh-archives-qolinty-2026.04.19": 0.1589208710938692,
+        "wazuh-archives-qolinty-2026.04.18": 0.14678626507520676,
+        "wazuh-archives-qolinty-2026.04.15": 0.16371514182537794,
+        "wazuh-archives-qolinty-2026.04.14": 0.15249442029744387,
+        "wazuh-archives-qolinty-2026.04.17": 0.15277419704943895,
+        "wazuh-archives-qolinty-2026.04.16": 0.16649772226810455,
+        "wazuh-archives-qolinty-2026.03.20": 1.6904448634013534,
+        "wazuh-archives-qolinty-2026.03.21": 0.8077395251020789,
+        "wazuh-archives-qolinty-2026.03.22": 1.4466529106721282,
+        "wazuh-archives-qolinty-2026.03.23": 0.21647893264889717,
+        "wazuh-archives-qolinty-2026.03.28": 1.1099309651181102,
+        "wazuh-archives-qolinty-2026.03.29": 0.060473800636827946,
+        "wazuh-archives-qolinty-2026.03.24": 0.9940859349444509,
+        "wazuh-archives-qolinty-2026.03.25": 0.28168355487287045,
+        "wazuh-archives-qolinty-2026.03.26": 1.7773495186120272,
+        "wazuh-archives-qolinty-2026.03.27": 2.332596078515053,
+        "wazuh-alerts-qolinty-2026.04.19": 0.05002039112150669,
+        "wazuh-alerts-qolinty-2026.04.18": 0.03777316119521856,
+        "wazuh-alerts-qolinty-2026.04.17": 0.0529441824182868,
+        "wazuh-alerts-qolinty-2026.04.16": 0.0523725226521492,
+        "wazuh-alerts-qolinty-2026.04.15": 0.05124451220035553,
+        "wazuh-alerts-qolinty-2026.04.14": 0.050035763531923294,
+        "wazuh-alerts-qolinty-2026.04.13": 0.03950788453221321,
+        "wazuh-alerts-qolinty-2026.04.12": 0.03068980760872364
     },
-    "deleted": {
-        "qolinty": [
-            {
-                "volume": 3.345342424698174,
-                "data": "28/10/2025"
-            },
-            {
-                "volume": 3.4137765523046255,
-                "data": "20/10/2025"
-            },
-            {
-                "volume": 3.2,
-                "data": "18/10/2025"
-            },
-            {
-                "volume": 0.04217158257961273,
-                "data": "16/12/2025"
-            },
-            {
-                "volume": 0.06219437811523676,
-                "data": "17/12/2025"
-            },
-            {
-                "volume": 0.04312215559184551,
-                "data": "18/12/2025"
-            },
-            {
-                "volume": 0.04232852626591921,
-                "data": "19/12/2025"
-            },
-            {
-                "volume": 0.06559336092323065,
-                "data": "12/12/2025"
-            },
-            {
-                "volume": 0.0394952492788434,
-                "data": "13/12/2025"
-            },
-            {
-                "volume": 0.03897081967443228,
-                "data": "14/12/2025"
-            },
-            {
-                "volume": 0.042474523186683655,
-                "data": "15/12/2025"
-            },
-            {
-                "volume": 0.02195520605891943,
-                "data": "10/12/2025"
-            },
-            {
-                "volume": 0.11146596819162369,
-                "data": "11/12/2025"
-            },
-            {
-                "volume": 0.022391729056835175,
-                "data": "28/11/2025"
-            },
-            {
-                "volume": 0.08912327885627747,
-                "data": "27/11/2025"
-            },
-            {
-                "volume": 0.015200523659586906,
-                "data": "26/11/2025"
-            },
-            {
-                "volume": 0.7791516100987792,
-                "data": "27/12/2025"
-            },
-            {
-                "volume": 0.6930804140865803,
-                "data": "28/12/2025"
-            },
-            {
-                "volume": 0.4428810989484191,
-                "data": "29/12/2025"
-            },
-            {
-                "volume": 0.05991458706557751,
-                "data": "23/12/2025"
-            },
-            {
-                "volume": 0.7378205107524991,
-                "data": "24/12/2025"
-            },
-            {
-                "volume": 0.8351492406800389,
-                "data": "25/12/2025"
-            },
-            {
-                "volume": 0.469270383939147,
-                "data": "26/12/2025"
-            },
-            {
-                "volume": 0.05408371891826391,
-                "data": "21/12/2025"
-            },
-            {
-                "volume": 0.044590470381081104,
-                "data": "22/12/2025"
-            },
-            {
-                "volume": 0.3385176109150052,
-                "data": "30/12/2025"
-            },
-            {
-                "volume": 1.309196749702096,
-                "data": "31/12/2025"
-            },
-            {
-                "volume": 0.04511498287320137,
-                "data": "20/12/2025"
-            }
-        ],
-        "dora_retail": [
-            {
-                "volume": 0.027182122692465782,
-                "data": "19/11/2025"
-            },
-            {
-                "volume": 0.03105980157852173,
-                "data": "15/11/2025"
-            },
-            {
-                "volume": 0.04673053417354822,
-                "data": "16/11/2025"
-            },
-            {
-                "volume": 0.040037487633526325,
-                "data": "17/11/2025"
-            },
-            {
-                "volume": 0.03202671557664871,
-                "data": "18/11/2025"
-            },
-            {
-                "volume": 0.020704026333987713,
-                "data": "11/11/2025"
-            },
-            {
-                "volume": 0.022040420211851597,
-                "data": "12/11/2025"
-            },
-            {
-                "volume": 0.03700178023427725,
-                "data": "13/11/2025"
-            },
-            {
-                "volume": 0.02387810405343771,
-                "data": "14/11/2025"
-            },
-            {
-                "volume": 0.01826124731451273,
-                "data": "10/11/2025"
-            },
-            {
-                "volume": 0.03789027780294418,
-                "data": "15/10/2025"
-            },
-            {
-                "volume": 0.020432425662875175,
-                "data": "26/11/2025"
-            },
-            {
-                "volume": 0.11498831398785114,
-                "data": "27/11/2025"
-            },
-            {
-                "volume": 0.028696712106466293,
-                "data": "28/11/2025"
-            },
-            {
-                "volume": 0.0259341299533844,
-                "data": "29/11/2025"
-            },
-            {
-                "volume": 0.015581140294671059,
-                "data": "22/11/2025"
-            },
-            {
-                "volume": 0.017153510823845863,
-                "data": "20/11/2025"
-            },
-            {
-                "volume": 0.02534263487905264,
-                "data": "21/11/2025"
-            },
-            {
-                "volume": 0.01822320930659771,
-                "data": "08/11/2025"
-            },
-            {
-                "volume": 0.01782157365232706,
-                "data": "09/11/2025"
-            },
-            {
-                "volume": 0.012987514957785606,
-                "data": "16/12/2025"
-            },
-            {
-                "volume": 0.012520543299615383,
-                "data": "17/12/2025"
-            },
-            {
-                "volume": 0.00772781390696764,
-                "data": "18/12/2025"
-            },
-            {
-                "volume": 0.00811865832656622,
-                "data": "19/12/2025"
-            },
-            {
-                "volume": 0.003832154907286167,
-                "data": "12/12/2025"
-            },
-            {
-                "volume": 0.007777041755616665,
-                "data": "13/12/2025"
-            },
-            {
-                "volume": 0.007777141407132149,
-                "data": "14/12/2025"
-            },
-            {
-                "volume": 0.007732844911515713,
-                "data": "15/12/2025"
-            },
-            {
-                "volume": 0.0201230151578784,
-                "data": "05/12/2025"
-            },
-            {
-                "volume": 0.02290468756109476,
-                "data": "06/12/2025"
-            },
-            {
-                "volume": 0.022610504180192947,
-                "data": "07/12/2025"
-            },
-            {
-                "volume": 0.023952899500727654,
-                "data": "08/12/2025"
-            },
-            {
-                "volume": 0.022486607544124126,
-                "data": "01/12/2025"
-            },
-            {
-                "volume": 0.02812835108488798,
-                "data": "02/12/2025"
-            },
-            {
-                "volume": 0.02143707498908043,
-                "data": "03/12/2025"
-            },
-            {
-                "volume": 0.021724186837673187,
-                "data": "04/12/2025"
-            },
-            {
-                "volume": 0.02136015798896551,
-                "data": "30/11/2025"
-            },
-            {
-                "volume": 0.04270540364086628,
-                "data": "04/11/2025"
-            },
-            {
-                "volume": 0.02730085514485836,
-                "data": "05/11/2025"
-            },
-            {
-                "volume": 0.015536243095993996,
-                "data": "06/11/2025"
-            },
-            {
-                "volume": 0.01672775112092495,
-                "data": "07/11/2025"
-            },
-            {
-                "volume": 0.024338980205357075,
-                "data": "01/11/2025"
-            },
-            {
-                "volume": 0.020961741916835308,
-                "data": "02/11/2025"
-            },
-            {
-                "volume": 0.019375412724912167,
-                "data": "03/11/2025"
-            },
-            {
-                "volume": 0.008284403942525387,
-                "data": "27/12/2025"
-            },
-            {
-                "volume": 0.00878792256116867,
-                "data": "28/12/2025"
-            },
-            {
-                "volume": 0.008753500878810883,
-                "data": "29/12/2025"
-            },
-            {
-                "volume": 0.00807607639580965,
-                "data": "23/12/2025"
-            },
-            {
-                "volume": 0.0084282411262393,
-                "data": "24/12/2025"
-            },
-            {
-                "volume": 0.008456651121377945,
-                "data": "25/12/2025"
-            },
-            {
-                "volume": 0.00846334733068943,
-                "data": "26/12/2025"
-            },
-            {
-                "volume": 0.007522436790168285,
-                "data": "21/12/2025"
-            },
-            {
-                "volume": 0.00812738947570324,
-                "data": "22/12/2025"
-            }
-        ],
-        "default": [
-            {
-                "volume": 1.0353025244548917,
-                "data": "10/10/2025"
-            },
-            {
-                "volume": 3.0105487378314137,
-                "data": "28/09/2025"
-            },
-            {
-                "volume": 0.15288914553821087,
-                "data": "26/09/2025"
-            },
-            {
-                "volume": 0.41169171035289764,
-                "data": "03/10/2025"
-            },
-            {
-                "volume": 2.2935504261404276,
-                "data": "07/10/2025"
-            },
-            {
-                "volume": 3.401319227181375,
-                "data": "21/10/2025"
-            },
-            {
-                "volume": 2.2924555270001292,
-                "data": "12/10/2025"
-            },
-            {
-                "volume": 1.2876479821279645,
-                "data": "11/10/2025"
-            },
-            {
-                "volume": 2.252514945343137,
-                "data": "14/10/2025"
-            },
-            {
-                "volume": 2.2292709071189165,
-                "data": "13/10/2025"
-            },
-            {
-                "volume": 2.763056910596788,
-                "data": "15/10/2025"
-            },
-            {
-                "volume": 3.292986551299691,
-                "data": "22/10/2025"
-            },
-            {
-                "volume": 3.2968404134735465,
-                "data": "25/10/2025"
-            },
-            {
-                "volume": 3.316641714423895,
-                "data": "24/10/2025"
-            },
-            {
-                "volume": 2.6415371391922235,
-                "data": "27/10/2025"
-            },
-            {
-                "volume": 3.10425843577832,
-                "data": "26/10/2025"
-            },
-            {
-                "volume": 3.4097513239830732,
-                "data": "29/10/2025"
-            },
-            {
-                "volume": 2.9175364496186376,
-                "data": "11/11/2025"
-            },
-            {
-                "volume": 4.982953069731593,
-                "data": "21/11/2025"
-            },
-            {
-                "volume": 2.662197571247816,
-                "data": "22/11/2025"
-            },
-            {
-                "volume": 3.4925700314342976,
-                "data": "20/11/2025"
-            },
-            {
-                "volume": 3.592943816445768,
-                "data": "14/11/2025"
-            },
-            {
-                "volume": 4.055210284888744,
-                "data": "15/11/2025"
-            },
-            {
-                "volume": 0.03620218485593796,
-                "data": "12/11/2025"
-            },
-            {
-                "volume": 0.9816862745210528,
-                "data": "13/11/2025"
-            },
-            {
-                "volume": 3.8500853683799505,
-                "data": "18/11/2025"
-            },
-            {
-                "volume": 3.834110484458506,
-                "data": "19/11/2025"
-            },
-            {
-                "volume": 4.404378991574049,
-                "data": "16/11/2025"
-            },
-            {
-                "volume": 4.178631661459804,
-                "data": "17/11/2025"
-            },
-            {
-                "volume": 0.5468600774183869,
-                "data": "26/11/2025"
-            },
-            {
-                "volume": 1.9572144728153944,
-                "data": "27/11/2025"
-            },
-            {
-                "volume": 3.5211660088971257,
-                "data": "11/12/2025"
-            },
-            {
-                "volume": 3.3861007504165173,
-                "data": "12/12/2025"
-            },
-            {
-                "volume": 0.8944964809343219,
-                "data": "10/12/2025"
-            },
-            {
-                "volume": 3.2399055622518063,
-                "data": "15/12/2025"
-            },
-            {
-                "volume": 3.2650523567572236,
-                "data": "16/12/2025"
-            },
-            {
-                "volume": 3.2516973791643977,
-                "data": "13/12/2025"
-            },
-            {
-                "volume": 3.213742637075484,
-                "data": "14/12/2025"
-            },
-            {
-                "volume": 3.2640614742413163,
-                "data": "19/12/2025"
-            },
-            {
-                "volume": 3.3878242326900363,
-                "data": "17/12/2025"
-            },
-            {
-                "volume": 3.2559892777353525,
-                "data": "18/12/2025"
-            },
-            {
-                "volume": 3.308529688976705,
-                "data": "22/12/2025"
-            },
-            {
-                "volume": 3.2796795703470707,
-                "data": "23/12/2025"
-            },
-            {
-                "volume": 3.453154630959034,
-                "data": "21/12/2025"
-            },
-            {
-                "volume": 2.5759188402444124,
-                "data": "26/12/2025"
-            },
-            {
-                "volume": 3.1010551685467362,
-                "data": "27/12/2025"
-            },
-            {
-                "volume": 3.0808564303442836,
-                "data": "24/12/2025"
-            },
-            {
-                "volume": 3.0009365659207106,
-                "data": "25/12/2025"
-            },
-            {
-                "volume": 2.9557657269760966,
-                "data": "28/12/2025"
-            },
-            {
-                "volume": 2.5707051791250706,
-                "data": "29/12/2025"
-            },
-            {
-                "volume": 3.3269644314423203,
-                "data": "03/01/2026"
-            },
-            {
-                "volume": 2.8861224576830864,
-                "data": "04/01/2026"
-            },
-            {
-                "volume": 3.797492709942162,
-                "data": "01/01/2026"
-            },
-            {
-                "volume": 3.2426948621869087,
-                "data": "02/01/2026"
-            },
-            {
-                "volume": 2.6774276718497276,
-                "data": "07/01/2026"
-            },
-            {
-                "volume": 1.2713330779224634,
-                "data": "08/01/2026"
-            },
-            {
-                "volume": 2.3705357629805803,
-                "data": "05/01/2026"
-            },
-            {
-                "volume": 3.1155393943190575,
-                "data": "06/01/2026"
-            },
-            {
-                "volume": 2.950895535759628,
-                "data": "09/01/2026"
-            },
-            {
-                "volume": 3.3001969093456864,
-                "data": "20/12/2025"
-            },
-            {
-                "volume": 2.7798925563693047,
-                "data": "30/12/2025"
-            },
-            {
-                "volume": 4.051799834705889,
-                "data": "31/12/2025"
-            }
-        ],
-        "unknown": [
-            {
-                "volume": 0.0008592233061790466,
-                "data": "18/11/2025"
-            },
-            {
-                "volume": 0.0007708966732025146,
-                "data": "17/11/2025"
-            },
-            {
-                "volume": 0.0004952196031808853,
-                "data": "19/11/2025"
-            },
-            {
-                "volume": 0.0004396764561533928,
-                "data": "14/11/2025"
-            },
-            {
-                "volume": 0.0008041057735681534,
-                "data": "16/11/2025"
-            },
-            {
-                "volume": 0.0006831586360931396,
-                "data": "15/11/2025"
-            },
-            {
-                "volume": 0.00022144336253404617,
-                "data": "29/11/2025"
-            },
-            {
-                "volume": 0.00024231895804405212,
-                "data": "10/12/2025"
-            },
-            {
-                "volume": 2.4981796741485596e-05,
-                "data": "22/12/2025"
-            }
-        ]
-    }
+    "deleted": [
+        {
+            "volume": 0.007278461009263992,
+            "data": "26/01/2026"
+        },
+        {
+            "volume": 0.007075772620737553,
+            "data": "27/01/2026"
+        },
+        {
+            "volume": 0.006452746689319611,
+            "data": "24/01/2026"
+        },
+        {
+            "volume": 0.006530259735882282,
+            "data": "25/01/2026"
+        },
+        {
+            "volume": 0.17992912884801626,
+            "data": "22/01/2026"
+        },
+        {
+            "volume": 0.12074774969369173,
+            "data": "23/01/2026"
+        },
+        {
+            "volume": 0.2945859506726265,
+            "data": "20/01/2026"
+        },
+        {
+            "volume": 0.5295174727216363,
+            "data": "21/01/2026"
+        },
+        {
+            "volume": 0.006597244180738926,
+            "data": "28/01/2026"
+        },
+        {
+            "volume": 0.00663116667419672,
+            "data": "29/01/2026"
+        },
+        {
+            "volume": 0.029551248997449875,
+            "data": "05/02/2026"
+        },
+        {
+            "volume": 0.03661038167774677,
+            "data": "06/02/2026"
+        },
+        {
+            "volume": 0.18219826743006706,
+            "data": "03/02/2026"
+        },
+        {
+            "volume": 0.2977731470018625,
+            "data": "04/02/2026"
+        },
+        {
+            "volume": 0.16979040019214153,
+            "data": "01/02/2026"
+        },
+        {
+            "volume": 0.09325802139937878,
+            "data": "02/02/2026"
+        },
+        {
+            "volume": 0.36602455005049706,
+            "data": "09/02/2026"
+        },
+        {
+            "volume": 0.6530137145891786,
+            "data": "07/02/2026"
+        },
+        {
+            "volume": 0.3274879129603505,
+            "data": "08/02/2026"
+        },
+        {
+            "volume": 0.1127494815737009,
+            "data": "04/01/2026"
+        },
+        {
+            "volume": 0.0298604192212224,
+            "data": "05/01/2026"
+        },
+        {
+            "volume": 0.01049984060227871,
+            "data": "02/01/2026"
+        },
+        {
+            "volume": 0.03817303758114576,
+            "data": "03/01/2026"
+        },
+        {
+            "volume": 0.2514795996248722,
+            "data": "01/01/2026"
+        },
+        {
+            "volume": 0.03071016538888216,
+            "data": "08/01/2026"
+        },
+        {
+            "volume": 0.27333660144358873,
+            "data": "09/01/2026"
+        },
+        {
+            "volume": 0.501357146538794,
+            "data": "06/01/2026"
+        },
+        {
+            "volume": 0.37820928264409304,
+            "data": "07/01/2026"
+        },
+        {
+            "volume": 0.2564635891467333,
+            "data": "25/12/2025"
+        },
+        {
+            "volume": 0.027228171937167645,
+            "data": "26/12/2025"
+        },
+        {
+            "volume": 0.03835584130138159,
+            "data": "23/12/2025"
+        },
+        {
+            "volume": 0.2645144509151578,
+            "data": "24/12/2025"
+        },
+        {
+            "volume": 0.015611947514116764,
+            "data": "22/12/2025"
+        },
+        {
+            "volume": 0.4033968998119235,
+            "data": "31/12/2025"
+        },
+        {
+            "volume": 0.016626665368676186,
+            "data": "18/12/2025"
+        },
+        {
+            "volume": 0.03438067529350519,
+            "data": "17/12/2025"
+        },
+        {
+            "volume": 0.02640057262033224,
+            "data": "12/12/2025"
+        },
+        {
+            "volume": 0.05462643224745989,
+            "data": "11/12/2025"
+        },
+        {
+            "volume": 0.1544822882860899,
+            "data": "05/02/2026"
+        },
+        {
+            "volume": 0.15164400450885296,
+            "data": "06/02/2026"
+        },
+        {
+            "volume": 1.8694041753187776,
+            "data": "07/02/2026"
+        },
+        {
+            "volume": 0.9851167900487781,
+            "data": "08/02/2026"
+        },
+        {
+            "volume": 0.5001506833359599,
+            "data": "01/02/2026"
+        },
+        {
+            "volume": 0.38080487586557865,
+            "data": "02/02/2026"
+        },
+        {
+            "volume": 0.5577847100794315,
+            "data": "03/02/2026"
+        },
+        {
+            "volume": 0.8511003479361534,
+            "data": "04/02/2026"
+        },
+        {
+            "volume": 1.2429755479097366,
+            "data": "09/02/2026"
+        },
+        {
+            "volume": 2.2367652263492346,
+            "data": "20/02/2026"
+        },
+        {
+            "volume": 0.629452059045434,
+            "data": "30/01/2026"
+        },
+        {
+            "volume": 1.648430710658431,
+            "data": "10/02/2026"
+        },
+        {
+            "volume": 1.7984663406386971,
+            "data": "11/02/2026"
+        },
+        {
+            "volume": 0.6874899743124843,
+            "data": "18/02/2026"
+        },
+        {
+            "volume": 2.4915523808449507,
+            "data": "19/02/2026"
+        },
+        {
+            "volume": 0.7901376662775874,
+            "data": "12/02/2026"
+        },
+        {
+            "volume": 1.7744600232690573,
+            "data": "13/02/2026"
+        },
+        {
+            "volume": 3.8344305511564016,
+            "data": "14/02/2026"
+        },
+        {
+            "volume": 1.1297973897308111,
+            "data": "15/02/2026"
+        },
+        {
+            "volume": 0.1673614550381899,
+            "data": "07/03/2026"
+        },
+        {
+            "volume": 0.414422289468348,
+            "data": "06/03/2026"
+        },
+        {
+            "volume": 0.04157443158328533,
+            "data": "05/03/2026"
+        },
+        {
+            "volume": 0.05315161682665348,
+            "data": "04/03/2026"
+        },
+        {
+            "volume": 0.08068471308797598,
+            "data": "03/03/2026"
+        },
+        {
+            "volume": 0.017737340182065964,
+            "data": "02/03/2026"
+        },
+        {
+            "volume": 0.030455607920885086,
+            "data": "09/03/2026"
+        },
+        {
+            "volume": 0.7409448884427547,
+            "data": "08/03/2026"
+        },
+        {
+            "volume": 0.9121999060735106,
+            "data": "14/02/2026"
+        },
+        {
+            "volume": 0.265232820995152,
+            "data": "15/02/2026"
+        },
+        {
+            "volume": 0.09063883684575558,
+            "data": "12/02/2026"
+        },
+        {
+            "volume": 0.40625784173607826,
+            "data": "13/02/2026"
+        },
+        {
+            "volume": 0.4098078180104494,
+            "data": "10/02/2026"
+        },
+        {
+            "volume": 0.48746664077043533,
+            "data": "11/02/2026"
+        },
+        {
+            "volume": 0.08935110457241535,
+            "data": "18/02/2026"
+        },
+        {
+            "volume": 0.40516732074320316,
+            "data": "19/02/2026"
+        },
+        {
+            "volume": 0.3772979788482189,
+            "data": "20/02/2026"
+        },
+        {
+            "volume": 0.3197363466024399,
+            "data": "27/02/2026"
+        },
+        {
+            "volume": 0.46041840873658657,
+            "data": "28/02/2026"
+        },
+        {
+            "volume": 0.1200836943462491,
+            "data": "25/02/2026"
+        },
+        {
+            "volume": 0.4134723385795951,
+            "data": "26/02/2026"
+        },
+        {
+            "volume": 0.3367554685100913,
+            "data": "23/02/2026"
+        },
+        {
+            "volume": 0.4036473482847214,
+            "data": "24/02/2026"
+        },
+        {
+            "volume": 0.08857500180602074,
+            "data": "21/02/2026"
+        },
+        {
+            "volume": 0.1850122669711709,
+            "data": "22/02/2026"
+        },
+        {
+            "volume": 0.011092436499893665,
+            "data": "29/12/2025"
+        },
+        {
+            "volume": 0.009441223926842213,
+            "data": "27/12/2025"
+        },
+        {
+            "volume": 0.011610682122409344,
+            "data": "28/12/2025"
+        },
+        {
+            "volume": 0.01531074196100235,
+            "data": "21/12/2025"
+        },
+        {
+            "volume": 0.010002358816564083,
+            "data": "30/12/2025"
+        },
+        {
+            "volume": 0.012193647213280201,
+            "data": "19/12/2025"
+        },
+        {
+            "volume": 0.011699804104864597,
+            "data": "16/12/2025"
+        },
+        {
+            "volume": 0.009075475856661797,
+            "data": "14/12/2025"
+        },
+        {
+            "volume": 0.010659958235919476,
+            "data": "15/12/2025"
+        },
+        {
+            "volume": 0.008861394599080086,
+            "data": "13/12/2025"
+        },
+        {
+            "volume": 0.010850407183170319,
+            "data": "10/12/2025"
+        },
+        {
+            "volume": 0.011904256418347359,
+            "data": "20/12/2025"
+        },
+        {
+            "volume": 0.9870922500267625,
+            "data": "21/02/2026"
+        },
+        {
+            "volume": 1.233359033241868,
+            "data": "22/02/2026"
+        },
+        {
+            "volume": 1.0693946359679103,
+            "data": "27/02/2026"
+        },
+        {
+            "volume": 1.6462356457486749,
+            "data": "28/02/2026"
+        },
+        {
+            "volume": 1.1438758643344045,
+            "data": "23/02/2026"
+        },
+        {
+            "volume": 1.2425514310598373,
+            "data": "24/02/2026"
+        },
+        {
+            "volume": 0.5592412790283561,
+            "data": "25/02/2026"
+        },
+        {
+            "volume": 1.3713651467114687,
+            "data": "26/02/2026"
+        },
+        {
+            "volume": 2.482649235986173,
+            "data": "06/03/2026"
+        },
+        {
+            "volume": 2.3923320239409804,
+            "data": "07/03/2026"
+        },
+        {
+            "volume": 3.211379342712462,
+            "data": "08/03/2026"
+        },
+        {
+            "volume": 1.150569031946361,
+            "data": "09/03/2026"
+        },
+        {
+            "volume": 0.6756669245660305,
+            "data": "02/03/2026"
+        },
+        {
+            "volume": 1.590080683119595,
+            "data": "03/03/2026"
+        },
+        {
+            "volume": 1.4037035340443254,
+            "data": "04/03/2026"
+        },
+        {
+            "volume": 1.6488679936155677,
+            "data": "05/03/2026"
+        },
+        {
+            "volume": 0.0031622834503650665,
+            "data": "10/03/2026"
+        },
+        {
+            "volume": 0.3047531833872199,
+            "data": "12/03/2026"
+        },
+        {
+            "volume": 3.194531874731183,
+            "data": "17/03/2026"
+        },
+        {
+            "volume": 2.689114927314222,
+            "data": "18/03/2026"
+        },
+        {
+            "volume": 1.5742096276953816,
+            "data": "19/03/2026"
+        },
+        {
+            "volume": 2.015874675475061,
+            "data": "13/03/2026"
+        },
+        {
+            "volume": 2.1298432173207402,
+            "data": "14/03/2026"
+        },
+        {
+            "volume": 0.9091948280110955,
+            "data": "15/03/2026"
+        },
+        {
+            "volume": 2.040007202886045,
+            "data": "16/03/2026"
+        },
+        {
+            "volume": 0.00045720115303993225,
+            "data": "10/03/2026"
+        },
+        {
+            "volume": 0.7514866590499878,
+            "data": "18/03/2026"
+        },
+        {
+            "volume": 0.7837904719635844,
+            "data": "17/03/2026"
+        },
+        {
+            "volume": 0.04613572359085083,
+            "data": "16/03/2026"
+        },
+        {
+            "volume": 0.038535479456186295,
+            "data": "15/03/2026"
+        },
+        {
+            "volume": 0.13356392551213503,
+            "data": "14/03/2026"
+        },
+        {
+            "volume": 0.29969868902117014,
+            "data": "13/03/2026"
+        },
+        {
+            "volume": 0.009927758015692234,
+            "data": "12/03/2026"
+        },
+        {
+            "volume": 0.2840884979814291,
+            "data": "19/03/2026"
+        }
+    ]
 }
