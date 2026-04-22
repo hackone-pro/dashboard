@@ -5,8 +5,6 @@ import { FiX, FiLoader, FiCheck, FiAlertCircle } from "react-icons/fi";
 import {
     PROVIDERS,
     ProviderType,
-    LLMPurpose,
-    LLM_PURPOSE_MAP,
     validateApiKey,
     getAvailableModels,
     saveLLMConfig,
@@ -17,7 +15,6 @@ import {
 
 type Props = {
     providerInicial: ProviderType;
-    purpose: LLMPurpose;
     configId?: string | null;
     onClose: () => void;
     onSaved?: () => void;
@@ -29,7 +26,6 @@ type Status = "idle" | "validating" | "loading-models" | "saving" | "success" | 
 
 export default function LLMConfigPanel({
     providerInicial,
-    purpose,
     configId,
     onClose,
     onSaved,
@@ -40,7 +36,6 @@ export default function LLMConfigPanel({
     const [status, setStatus] = useState<Status>("idle");
     const [errorMsg, setErrorMsg] = useState("");
     const providerLabel = PROVIDERS.find((p) => p.value === providerInicial)?.label ?? "";
-    const purposeLabel = purpose === "chat" ? "Chat com IA" : "Analítico";
 
     // ─── Ao sair do campo apiKey: valida e busca modelos ───────────────────────
     async function handleApiKeyBlur() {
@@ -97,7 +92,7 @@ export default function LLMConfigPanel({
             if (configId) {
                 await updateLLMConfig(configId, {
                     llmProvider: providerInicial,
-                    purpose: LLM_PURPOSE_MAP[purpose],
+                    purpose: 1,
                     model: modelo,
                     apiKey: apiKey.trim(),
                     endpoint: null,
@@ -105,7 +100,7 @@ export default function LLMConfigPanel({
                 });
             } else {
                 await saveLLMConfig({
-                    purpose: LLM_PURPOSE_MAP[purpose],
+                    purpose: 1,
                     providerType: providerInicial,
                     model: modelo,
                     apiKey: apiKey.trim(),
@@ -141,7 +136,7 @@ export default function LLMConfigPanel({
                 {/* Cabeçalho */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-[#2a2040]">
                     <div>
-                        <p className="text-white font-medium">Configurar LLM — {purposeLabel}</p>
+                        <p className="text-white font-medium">Configurar LLM — Analítico</p>
                         <p className="text-gray-500 text-xs mt-0.5">
                             Provedor: <span className="text-purple-400">{providerLabel}</span>
                         </p>

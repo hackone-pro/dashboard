@@ -5,7 +5,6 @@ import { IoIosLock } from "react-icons/io";
 import LLMConfigPanel from "../componentes/chat/LLMConfigPanel";
 import {
     ProviderType,
-    LLMPurpose,
     LLMConfigResponse,
     getLLMConfig,
     PROVIDERS,
@@ -57,8 +56,6 @@ export default function Integrations() {
         chat: null,
         analysis: null,
     });
-    const [iaTab, setIaTab] = useState<LLMPurpose>("chat");
-
     // ── Dialog de confirmacao ─────────────────────────────────────────────────
     const [confirmDialog, setConfirmDialog] = useState<{
         aberto: boolean;
@@ -75,7 +72,7 @@ export default function Integrations() {
     }, []);
 
     function abrirPainelIA(provider: ProviderType) {
-        const configAtual = llmConfig[iaTab];
+        const configAtual = llmConfig.analysis;
         // Sem config ativa ou clicou no mesmo provedor → abre direto
         if (!configAtual || configAtual.providerType === provider) {
             setPainelIA({ aberto: true, provider });
@@ -162,8 +159,6 @@ export default function Integrations() {
                 {abaAtiva === "NG-SOC" && (
                     <NgSocContent
                         onConfigIA={abrirPainelIA}
-                        iaTab={iaTab}
-                        setIaTab={setIaTab}
                         llmConfig={llmConfig}
                     />
                 )}
@@ -176,8 +171,7 @@ export default function Integrations() {
             {painelIA.aberto && (
                 <LLMConfigPanel
                     providerInicial={painelIA.provider}
-                    purpose={iaTab}
-                    configId={llmConfig[iaTab]?.id ?? null}
+                    configId={llmConfig.analysis?.id ?? null}
                     onClose={fecharPainelIA}
                     onSaved={handleLLMSaved}
                 />
@@ -203,7 +197,7 @@ export default function Integrations() {
                                 </span>{" "}
                                 configurado para{" "}
                                 <span className="text-purple-400 font-medium">
-                                    {iaTab === "chat" ? "Chat" : "Analitico"}
+                                    Analítico
                                 </span>
                                 . Deseja substituir por{" "}
                                 <span className="text-white font-medium">
@@ -243,13 +237,9 @@ export default function Integrations() {
 
 function NgSocContent({
     onConfigIA,
-    iaTab,
-    setIaTab,
     llmConfig,
 }: {
     onConfigIA: (provider: ProviderType) => void;
-    iaTab: LLMPurpose;
-    setIaTab: (tab: LLMPurpose) => void;
     llmConfig: LLMConfigResponse;
 }) {
     const { user } = useAuth();
@@ -371,39 +361,17 @@ function NgSocContent({
                 </div>
             </div>
 
-            {/* IA — tabs + cards clicáveis */}
+            {/* IA — cards clicáveis */}
             <div>
                 <div className="flex items-center gap-4 mb-3">
                     <h3 className="text-white text-xl">Inteligencia Artificial</h3>
-                    <div className="flex gap-1 bg-[#1a1a2e] rounded-lg p-1">
-                        <button
-                            onClick={() => setIaTab("chat")}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition ${
-                                iaTab === "chat"
-                                    ? "bg-[#7c3aed] text-white"
-                                    : "text-gray-500 hover:text-gray-300"
-                            }`}
-                        >
-                            Chat
-                        </button>
-                        <button
-                            onClick={() => setIaTab("analysis")}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition ${
-                                iaTab === "analysis"
-                                    ? "bg-[#7c3aed] text-white"
-                                    : "text-gray-500 hover:text-gray-300"
-                            }`}
-                        >
-                            Analitico
-                        </button>
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
                     {IA_PROVIDERS.map((ia, idx) => {
                         const isFirst = idx === 0;
                         const isLast = idx === IA_PROVIDERS.length - 1;
-                        const configAtual = llmConfig[iaTab];
+                        const configAtual = llmConfig.analysis;
                         const isAtivo = configAtual?.providerType === ia.value;
 
                         return (
