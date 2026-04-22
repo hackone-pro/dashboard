@@ -13,6 +13,7 @@ import SourceConfigModal from "../componentes/integrations/SourceConfigModal";
 import { getSourceInstances } from "../services/integrations/source.service";
 import { useAuth } from "../context/AuthContext";
 import { useScreenContext } from "../context/ScreenContext";
+import { useTenant } from "../context/TenantContext";
 
 /* =======================
    TIPOS
@@ -43,6 +44,7 @@ const IA_PROVIDERS: { img: string; label: string; value: ProviderType }[] = [
 ];
 
 export default function Integrations() {
+    const { tenantAtivo } = useTenant();
     const [abaAtiva, setAbaAtiva] = useState<AbaIntegracao>("NG-SOC");
 
     // ── Estado do painel de IA ─────────────────────────────────────────────────
@@ -64,12 +66,12 @@ export default function Integrations() {
         providerNovoLabel: string;
     } | null>(null);
 
-    // ── Carregar config LLM ao montar ─────────────────────────────────────────
+    // ── Carregar config LLM (e recarregar ao trocar tenant) ──────────────────
     useEffect(() => {
         getLLMConfig()
             .then(setLlmConfig)
             .catch(() => setLlmConfig({ chat: null, analysis: null }));
-    }, []);
+    }, [tenantAtivo?.id]);
 
     function abrirPainelIA(provider: ProviderType) {
         const configAtual = llmConfig.analysis;
@@ -243,6 +245,7 @@ function NgSocContent({
     llmConfig: LLMConfigResponse;
 }) {
     const { user } = useAuth();
+    const { tenantAtivo } = useTenant();
     const isAdmin = user?.user_role?.slug === "admin";
     const [modalOpen, setModalOpen] = useState(false);
     const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
@@ -262,7 +265,7 @@ function NgSocContent({
             }
         }
         loadCounts();
-    }, []);
+    }, [tenantAtivo?.id]);
 
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
@@ -440,13 +443,14 @@ function NgSocContent({
 
 function FirewallContent() {
     const { user } = useAuth();
+    const { tenantAtivo } = useTenant();
     const isAdmin = user?.user_role?.slug === "admin";
     const [modalOpen, setModalOpen] = useState(false);
     const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
     const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
     const { setScreenData } = useScreenContext();
 
-    // Load active counts on mount
+    // Load active counts (e recarregar ao trocar tenant)
     useEffect(() => {
         async function loadCounts() {
             try {
@@ -458,7 +462,7 @@ function FirewallContent() {
             }
         }
         loadCounts();
-    }, []);
+    }, [tenantAtivo?.id]);
 
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
@@ -576,6 +580,7 @@ function MonitoriaContent() {
 
 function EndpointsContent() {
     const { user } = useAuth();
+    const { tenantAtivo } = useTenant();
     const isAdmin = user?.user_role?.slug === "admin";
     const [modalOpen, setModalOpen] = useState(false);
     const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
@@ -595,7 +600,7 @@ function EndpointsContent() {
             }
         }
         loadCounts();
-    }, []);
+    }, [tenantAtivo?.id]);
 
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
