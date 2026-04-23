@@ -85,9 +85,9 @@ export async function buscarIncidentesIris(
 
       inicio = diasNum === 0
         ? new Date(0)
-        : startOfDay(subDays(new Date(), diasNum));
+        : subDays(new Date(), diasNum);
 
-      fim = endOfDay(new Date());
+      fim = new Date();
     }
 
     const ownerUser = user?.owner_name_iris || "";
@@ -95,6 +95,8 @@ export async function buscarIncidentesIris(
     const ownersValidos = [ownerUser, "Inteligencia_Artificial"];
 
     const recentes = casos.filter((caso) => {
+      if (caso.case_state_id === 9) return false; // ignora casos fechados
+
       if (!caso.case_open_date) return false;
 
       let data = new Date(caso.case_open_date);
