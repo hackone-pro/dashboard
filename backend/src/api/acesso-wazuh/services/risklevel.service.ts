@@ -16,6 +16,11 @@ import {
   type SeveridadeCounts,
 } from "./risklevel.calculations";
 
+import {
+  getBaselineFromAlerts,
+  saveBaselineToAlerts,
+} from "./risklevel-alerts-client";
+
 // =====================================================
 // 🔹 TIPAGEM
 // =====================================================
@@ -321,7 +326,28 @@ export async function calcularRiskOperacionalTenant(
     // =====================================================
 
     const todosBaselines = await lerBaseline(tenant.id);
-    const slotAnterior   = todosBaselines[janelaBaseline];
+    let slotAnterior = todosBaselines[janelaBaseline];
+
+    // Tenta sobrescrever com baseline remoto (mais autoritativo que o store local).
+    // Só para janelas canônicas — ranges customizados continuam usando o local.
+    if (janelaCanonica) {
+      const windowHours = parseInt(janelaCanonica) * 24;
+      const remoto = await getBaselineFromAlerts(tenant.id, windowHours);
+
+      if (remoto) {
+        slotAnterior = {
+          top_hosts:   remoto.topHosts,
+          cis:         remoto.cis,
+          firewall:    remoto.firewall,
+          incidents:   remoto.incidents,
+          initialized: true,
+        };
+        strapi.log.debug(
+          `[RiskLevel] tenant=${tenant.id} — usando baseline remoto ` +
+          `(janela=${remoto.windowHours}h, calculado em ${remoto.calculatedAt})`
+        );
+      }
+    }
 
     const novoTopHosts = atualizarBaseline(
       rawTopHosts,
@@ -378,6 +404,18 @@ export async function calcularRiskOperacionalTenant(
         },
         todosBaselines
       );
+
+      // Persiste na API de Alerts para histórico distribuído
+      const windowHours  = parseInt(janelaCanonica) * 24;
+      const windowTo     = new Date();
+      const windowFrom   = new Date(windowTo.getTime() - windowHours * 60 * 60 * 1000);
+
+      await saveBaselineToAlerts(tenant.id, windowFrom, windowTo, {
+        topHosts:  novoTopHosts,
+        cis:       novoCIS,
+        firewall:  novoFirewall,
+        incidents: novoIncidents,
+      });
     } else {
       strapi.log.debug(
         `[RiskLevel] tenant=${tenant.id} — baseline NÃO persistido ` +
