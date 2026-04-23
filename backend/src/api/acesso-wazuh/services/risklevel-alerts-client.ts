@@ -1,9 +1,6 @@
 import axios from "axios";
 import jwt from "jsonwebtoken";
 
-const ALERTS_API_URL = process.env.ALERTS_API_URL;
-const ALERTS_JWT_KEY = process.env.ALERTS_JWT_KEY;
-
 // Cache do token gerado para não assinar a cada chamada
 let _cachedToken: string | null = null;
 let _tokenExpiresAt = 0;
@@ -12,18 +9,15 @@ let _tokenExpiresAt = 0;
  * Gera (ou retorna do cache) um JWT para autenticar o Strapi na API de Alerts.
  * Replica o padding do .NET: UTF-8 bytes da chave, zero-padded até 32 bytes.
  */
-function getToken(): string | null {
-  if (!ALERTS_JWT_KEY) return null;
-
+function getToken(jwtKey: string): string {
   const now = Date.now();
-  // Reutiliza token existente se ainda válido por mais de 5 min
   if (_cachedToken && _tokenExpiresAt - now > 5 * 60 * 1000) {
     return _cachedToken;
   }
 
   // Mesmo padding que o .NET usa: Encoding.UTF8.GetBytes(key) + PadKey(bytes, 32)
   const keyBuf = Buffer.alloc(32);
-  Buffer.from(ALERTS_JWT_KEY, "utf8").copy(keyBuf);
+  Buffer.from(jwtKey, "utf8").copy(keyBuf);
 
   _cachedToken = jwt.sign(
     { sub: "strapi-cron", role: "app-strapi" },
@@ -51,13 +45,17 @@ export async function getBaselineFromAlerts(
   tenantId: string | number,
   windowHours = 24
 ): Promise<RemoteBaseline | null> {
-  if (!ALERTS_API_URL || !ALERTS_JWT_KEY) return null;
+  const url = process.env.ALERTS_API_URL;
+  const key = process.env.ALERTS_JWT_KEY;
 
-  const token = getToken();
-  if (!token) return null;
+  if (!url || !key) {
+    strapi.log.debug("[RiskLevel] ALERTS_API_URL ou ALERTS_JWT_KEY ausentes — skip baseline remoto");
+    return null;
+  }
 
   try {
-    const response = await axios.get(`${ALERTS_API_URL}/api/risk-level-baselines`, {
+    const token = getToken(key);
+    const response = await axios.get(`${url}/api/risk-level-baselines`, {
       params:  { tenantId: String(tenantId), windowHours },
       headers: { Authorization: `Bearer ${token}` },
       timeout: 3000,
@@ -88,16 +86,17 @@ export async function saveBaselineToAlerts(
     incidents: number;
   }
 ): Promise<void> {
-  if (!ALERTS_API_URL || !ALERTS_JWT_KEY) return;
+  const url = process.env.ALERTS_API_URL;
+  const key = process.env.ALERTS_JWT_KEY;
 
-  const token = getToken();
-  if (!token) return;
+  if (!url || !key) return;
 
   try {
+    const token = getToken(key);
     await axios.post(
-      `${ALERTS_API_URL}/api/risk-level-baselines`,
+      `${url}/api/risk-level-baselines`,
       {
-        tenantId:  String(tenantId),
+        tenantId:   String(tenantId),
         windowFrom: windowFrom.toISOString(),
         windowTo:   windowTo.toISOString(),
         ...values,
