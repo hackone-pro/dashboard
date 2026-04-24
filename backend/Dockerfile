@@ -11,11 +11,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 COPY --from=builder /app ./
-RUN npm install --production
 
 RUN mkdir -p /app/public/uploads
 
 ENV NODE_ENV=production
+ENV NODE_OPTIONS=--use-system-ca
 EXPOSE 1337
 
-CMD ["npm", "start"]
+CMD ["node_modules/.bin/strapi", "start"]
