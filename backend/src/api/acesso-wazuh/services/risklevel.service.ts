@@ -36,6 +36,7 @@ interface RiskFilters {
   diasIris?: string;
   periodo?: Periodo | null;
   user?: any;
+  salvarBaselineRemoto?: boolean;
 }
 
 // Baseline de uma janela específica (ex: "1", "7", "15", "30")
@@ -128,8 +129,7 @@ async function lerBaseline(tenantId: number | string): Promise<BaselineState> {
 async function salvarBaselineJanela(
   tenantId: number | string,
   janela: JanelaCanonica,
-  novoSlot: BaselineJanela,
-  estadoAtual: BaselineState
+  novoSlot: BaselineJanela
 ): Promise<void> {
   try {
     const store = strapi.store({
@@ -138,6 +138,7 @@ async function salvarBaselineJanela(
       name: "risklevel",
     });
 
+    const estadoAtual = await lerBaseline(tenantId);
     const novoEstado: BaselineState = {
       ...estadoAtual,
       [janela]: novoSlot,
@@ -179,11 +180,12 @@ export async function calcularRiskOperacionalTenant(
   filtros: RiskFilters = {}
 ) {
   try {
-    const diasFirewall = filtros?.diasFirewall || "1";
-    const diasAgentes  = filtros?.diasAgentes  || "1";
-    const diasIris     = filtros?.diasIris     || "1";
-    const periodo      = filtros?.periodo      || null;
-    const user         = filtros?.user         || null;
+    const diasFirewall          = filtros?.diasFirewall          || "1";
+    const diasAgentes           = filtros?.diasAgentes           || "1";
+    const diasIris              = filtros?.diasIris              || "1";
+    const periodo               = filtros?.periodo               || null;
+    const user                  = filtros?.user                  || null;
+    const salvarBaselineRemoto  = filtros?.salvarBaselineRemoto  ?? false;
 
     // =====================================================
     // 🔹 DETERMINAR JANELA ATIVA
@@ -325,14 +327,25 @@ export async function calcularRiskOperacionalTenant(
     //    Usa o slot da janela ativa (ou fallback "1")
     // =====================================================
 
-    const todosBaselines = await lerBaseline(tenant.id);
-    let slotAnterior = todosBaselines[janelaBaseline];
+    // Resolve o draft id (o que o admin e o controller enxergam).
+    // O cron recebe o published entry (id alto); o documentId é comum aos dois.
+    let tenantKey: number | string = tenant.id;
+    if (tenant.documentId) {
+      const draft = await strapi.db.query("api::tenant.tenant").findOne({
+        where: { documentId: tenant.documentId, publishedAt: null },
+        select: ["id"],
+      });
+      if (draft?.id) tenantKey = draft.id;
+    }
 
-    // Tenta sobrescrever com baseline remoto (mais autoritativo que o store local).
-    // Só para janelas canônicas — ranges customizados continuam usando o local.
+    // Baseline lido exclusivamente da API de Alertas.
+    // Janelas canônicas: tenta buscar na API; se não encontrar (204) → WARMUP (initialized: false).
+    // Janelas customizadas (não canônicas): sem histórico remoto → sempre WARMUP.
+    let slotAnterior: BaselineJanela = { ...BASELINE_VAZIO };
+
     if (janelaCanonica) {
       const windowHours = parseInt(janelaCanonica) * 24;
-      const remoto = await getBaselineFromAlerts(tenant.id, windowHours);
+      const remoto = await getBaselineFromAlerts(tenantKey, windowHours);
 
       if (remoto) {
         slotAnterior = {
@@ -342,9 +355,13 @@ export async function calcularRiskOperacionalTenant(
           incidents:   remoto.incidents,
           initialized: true,
         };
-        strapi.log.debug(
-          `[RiskLevel] tenant=${tenant.id} — usando baseline remoto ` +
+        strapi.log.info(
+          `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — baseline remoto ` +
           `(janela=${remoto.windowHours}h, calculado em ${remoto.calculatedAt})`
+        );
+      } else {
+        strapi.log.info(
+          `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline remoto, aplicando WARMUP`
         );
       }
     }
@@ -393,7 +410,7 @@ export async function calcularRiskOperacionalTenant(
 
     if (janelaCanonica) {
       await salvarBaselineJanela(
-        tenant.id,
+        tenantKey,
         janelaCanonica,
         {
           top_hosts:   novoTopHosts,
@@ -401,24 +418,31 @@ export async function calcularRiskOperacionalTenant(
           firewall:    novoFirewall,
           incidents:   novoIncidents,
           initialized: true,
-        },
-        todosBaselines
+        }
       );
 
-      // Persiste na API de Alerts para histórico distribuído
-      const windowHours  = parseInt(janelaCanonica) * 24;
-      const windowTo     = new Date();
-      const windowFrom   = new Date(windowTo.getTime() - windowHours * 60 * 60 * 1000);
+      // Persiste na API de Alerts para histórico distribuído (apenas via cron)
+      if (salvarBaselineRemoto) {
+        const windowHours  = parseInt(janelaCanonica) * 24;
+        const windowTo     = new Date();
+        const windowFrom   = new Date(windowTo.getTime() - windowHours * 60 * 60 * 1000);
 
-      await saveBaselineToAlerts(tenant.id, windowFrom, windowTo, {
-        topHosts:  novoTopHosts,
-        cis:       novoCIS,
-        firewall:  novoFirewall,
-        incidents: novoIncidents,
-      });
+        await saveBaselineToAlerts(tenantKey, windowFrom, windowTo, {
+          topHosts:  novoTopHosts,
+          cis:       novoCIS,
+          firewall:  novoFirewall,
+          incidents: novoIncidents,
+        });
+
+        strapi.log.info(
+          `[RiskLevel][CRON] tenant=${tenantKey} (${tenant.organizacao}) — baseline salvo na API de Alerts ` +
+          `(janela=${windowHours}h, topHosts=${novoTopHosts.toFixed(0)}, cis=${novoCIS.toFixed(0)}, ` +
+          `firewall=${novoFirewall.toFixed(0)}, incidents=${novoIncidents.toFixed(0)})`
+        );
+      }
     } else {
       strapi.log.debug(
-        `[RiskLevel] tenant=${tenant.id} — baseline NÃO persistido ` +
+        `[RiskLevel] tenant=${tenantKey} — baseline NÃO persistido ` +
         `(range customizado — usando fallback "${janelaFallback}")`
       );
     }
@@ -451,7 +475,7 @@ export async function calcularRiskOperacionalTenant(
     // =====================================================
 
     strapi.log.info(
-      `[RiskLevel] tenant=${tenant.id} janela=${janelaCanonica ?? "customizado→" + janelaFallback} ` +
+      `[RiskLevel] tenant=${tenantKey} janela=${janelaCanonica ?? "customizado→" + janelaFallback} ` +
       `raw=[${rawTopHosts}, ${rawCIS.toFixed(1)}, ${rawFirewall}, ${rawIncidents}] ` +
       `baseline=[${novoTopHosts.toFixed(0)}, ${novoCIS.toFixed(0)}, ` +
       `${novoFirewall.toFixed(0)}, ${novoIncidents.toFixed(0)}] ` +

@@ -1,5 +1,12 @@
 import axios from "axios";
+import https from "https";
 import jwt from "jsonwebtoken";
+
+// Em dev com localhost, ignora cert self-signed do .NET
+function buildAxiosConfig(baseUrl: string): object {
+  const isLocalhost = /https?:\/\/(localhost|127\.0\.0\.1)/.test(baseUrl);
+  return isLocalhost ? { httpsAgent: new https.Agent({ rejectUnauthorized: false }) } : {};
+}
 
 // Cache do token gerado para não assinar a cada chamada
 let _cachedToken: string | null = null;
@@ -60,6 +67,7 @@ export async function getBaselineFromAlerts(
       headers: { Authorization: `Bearer ${token}` },
       timeout: 3000,
       validateStatus: (s) => s === 200 || s === 204,
+      ...buildAxiosConfig(url),
     });
 
     return response.status === 204 ? null : (response.data as RemoteBaseline);
@@ -104,6 +112,7 @@ export async function saveBaselineToAlerts(
       {
         headers: { Authorization: `Bearer ${token}` },
         timeout: 3000,
+        ...buildAxiosConfig(url),
       }
     );
   } catch (err: any) {

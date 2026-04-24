@@ -80,7 +80,7 @@ export default {
             const ativos = ativosMap[tenant.id] || 0;
 
             strapi.log.info(
-              `➡️ ${tenant.organizacao} | Ativos: ${ativos}`
+              `➡️ [id=${tenant.id}] ${tenant.organizacao} | Ativos: ${ativos}`
             );
 
             // ============================
@@ -94,6 +94,7 @@ export default {
                 diasFirewall: "1",
                 diasAgentes: "1",
                 diasIris: "1",
+                salvarBaselineRemoto: true,
               });
             } catch (err) {
               strapi.log.error(
