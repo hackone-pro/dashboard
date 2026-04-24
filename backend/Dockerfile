@@ -15,7 +15,6 @@ COPY --from=builder /app ./
 RUN mkdir -p /app/public/uploads
 
 ENV NODE_ENV=production
-ENV NODE_OPTIONS=--use-system-ca
 EXPOSE 1337
 
 CMD ["node_modules/.bin/strapi", "start"]
