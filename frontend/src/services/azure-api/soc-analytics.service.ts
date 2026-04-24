@@ -6,7 +6,7 @@ const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
-export type PeriodoOption = "Semana" | "Mês" | "Trimestre" | "Ano" | "Customizado";
+export type PeriodoOption = "Dia" | "Semana" | "Mês" | "Trimestre" | "Ano" | "Customizado";
 
 export interface KpiMetric {
     value: number | null;
@@ -82,6 +82,7 @@ export interface SocAnalyticsResponse {
 // ─── Mapa de período ──────────────────────────────────────────────────────────
 
 const PERIODO_API_MAP: Record<PeriodoOption, string> = {
+    Dia: "Day",
     Semana: "Week",
     Mês: "Month",
     Trimestre: "Quarter",

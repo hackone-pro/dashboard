@@ -26,10 +26,11 @@ import {
     type KpiMetric,
     type PeriodoOption,
 } from "../services/azure-api/soc-analytics.service";
+import { getRiskLevel, type RiskLevelResposta } from "../services/wazuh/risklevel.service";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const PERIODO_OPTIONS: PeriodoOption[] = ["Semana", "Mês", "Trimestre", "Ano", "Customizado"];
+const PERIODO_OPTIONS: PeriodoOption[] = ["Dia", "Semana", "Mês", "Trimestre", "Ano", "Customizado"];
 
 const SEVERITY_COLOR_MAP: Record<string, string> = {
     Crítico: "#EC4899",
@@ -187,7 +188,7 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 
 export default function SOCAnalytics() {
     const navigate = useNavigate();
-    const [periodo, setPeriodo] = useState<PeriodoOption>("Semana");
+    const [periodo, setPeriodo] = useState<PeriodoOption>("Dia");
     const [periodoOpen, setPeriodoOpen] = useState(false);
     const [customFrom, setCustomFrom] = useState("");
     const [customTo, setCustomTo] = useState("");
@@ -200,6 +201,9 @@ export default function SOCAnalytics() {
     const [data, setData] = useState<SocAnalyticsResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const [wazuhRisk, setWazuhRisk] = useState<RiskLevelResposta | null>(null);
+    const [loadingWazuh, setLoadingWazuh] = useState(true);
 
     const fetchData = async () => {
         if (periodo === "Customizado" && (!customFrom || !customTo)) return;
@@ -222,6 +226,40 @@ export default function SOCAnalytics() {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [periodo, tenantAtivo, customFrom, customTo]);
+
+    useEffect(() => {
+        if (!tenantAtivo) return;
+        if (periodo === "Customizado" && (!customFrom || !customTo)) return;
+
+        setLoadingWazuh(true);
+
+        let diasParam: string | undefined;
+        let periodoParam: { from: string; to: string } | undefined;
+
+        if (periodo === "Dia") {
+            diasParam = "1";
+        } else if (periodo === "Semana") {
+            diasParam = "7";
+        } else if (periodo === "Mês") {
+            diasParam = "30";
+        } else if (periodo === "Customizado") {
+            periodoParam = { from: customFrom, to: customTo };
+        } else {
+            const today = new Date();
+            const days = periodo === "Trimestre" ? 90 : 365;
+            const from = new Date(today);
+            from.setDate(from.getDate() - days);
+            periodoParam = {
+                from: from.toISOString().split("T")[0],
+                to: today.toISOString().split("T")[0],
+            };
+        }
+
+        getRiskLevel(diasParam, periodoParam)
+            .then(setWazuhRisk)
+            .catch((err) => console.error("Erro ao carregar Wazuh RiskLevel:", err))
+            .finally(() => setLoadingWazuh(false));
+    }, [tenantAtivo, periodo, customFrom, customTo]);
 
     // ─── Screen context para o chat ──────────────────────────────────────────
     useEffect(() => {
@@ -271,7 +309,6 @@ export default function SOCAnalytics() {
         ])
     );
 
-    const riskScore = data?.riskLevel?.score ?? 0;
     const alertsBySeverity = data?.riskLevel?.alertsBySeverity ?? [];
 
     // ✅ ÚNICO BLOCO QUE MUDOU — dados reais do riskLevel, cálculo correto
@@ -438,30 +475,40 @@ export default function SOCAnalytics() {
                                 <p className="text-gray-500 text-xs">Risco operacional atual</p>
 
                                 <div className="-mt-2">
-                                    <GraficoGauge valor={riskScore} titulo="Nível de Risco" />
+                                    <GraficoGauge valor={Math.round(wazuhRisk?.indiceRisco ?? 0)} titulo="Nível de Risco" />
                                 </div>
 
                                 <div className="flex flex-col gap-2 mt-1">
-                                    {alertsBySeverity.map((a, i) => {
-                                        const color = colorFor(a.severity, i);
-                                        const ativo = severidadeIdx === i;
-                                        return (
-                                            <button
-                                                key={a.severity}
-                                                onClick={() => setSeveridadeIdx(ativo ? null : i)}
-                                                className={`flex items-center justify-between text-sm transition-all ${ativo ? "scale-[1.02]" : "opacity-75 hover:opacity-100"}`}
-                                            >
-                                                <span className="flex items-center gap-2">
-                                                    <span className="w-3 h-3 rounded-xs" style={{ background: color, boxShadow: ativo ? `0 0 8px ${color}` : "none" }} />
-                                                    <span className={`text-gray-400 ${ativo ? "text-white font-semibold" : ""}`}>{LABEL_PT[a.severity] ?? a.severity}
+                                    {(() => {
+                                        const sev = wazuhRisk?.severidades;
+                                        const total = sev?.total || 1;
+                                        const items = [
+                                            { severity: "Crítico", count: sev?.critico ?? 0, color: "#EC4899" },
+                                            { severity: "Alto",    count: sev?.alto    ?? 0, color: "#A855F7" },
+                                            { severity: "Médio",   count: sev?.medio   ?? 0, color: "#6A55DC" },
+                                            { severity: "Baixo",   count: sev?.baixo   ?? 0, color: "#1DD69A" },
+                                        ];
+                                        return items.map((item, i) => {
+                                            const ativo = severidadeIdx === i;
+                                            const pct = sev ? Math.round((item.count / total) * 100) : 0;
+                                            return (
+                                                <button
+                                                    key={item.severity}
+                                                    onClick={() => setSeveridadeIdx(ativo ? null : i)}
+                                                    className={`flex items-center justify-between text-sm transition-all ${ativo ? "scale-[1.02]" : "opacity-75 hover:opacity-100"}`}
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="w-3 h-3 rounded-xs" style={{ background: item.color, boxShadow: ativo ? `0 0 8px ${item.color}` : "none" }} />
+                                                        <span className={`text-gray-400 ${ativo ? "text-white font-semibold" : ""}`}>{item.severity}</span>
                                                     </span>
-                                                </span>
-                                                <span className={ativo ? "text-white font-semibold" : "text-white"}>
-                                                    {a.count.toLocaleString("pt-BR")} alertas
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
+                                                    <span className={ativo ? "text-white font-semibold" : "text-white"}>
+                                                        {item.count.toLocaleString("pt-BR")} alertas
+                                                        <span className="text-gray-400 text-xs ml-1">({pct}%)</span>
+                                                    </span>
+                                                </button>
+                                            );
+                                        });
+                                    })()}
                                 </div>
 
                                 <button className="flex items-center mt-2 gap-2 px-3 py-2 bg-purple-700 hover:bg-purple-800 border border-purple-700 text-white rounded-md text-sm shadow-sm w-[150px]">
