@@ -30,17 +30,17 @@ export async function buscarTopAgentes(
   const timeFilter =
     from && to
       ? {
-          bool: {
-            should: [
-              { range: { "data.timestamp": { gte: from, lte: to } } },
-              { range: { "@timestamp": { gte: from, lte: to } } }
-            ],
-            minimum_should_match: 1
-          }
+        bool: {
+          should: [
+            { range: { "data.timestamp": { gte: from, lte: to } } },
+            { range: { "@timestamp": { gte: from, lte: to } } }
+          ],
+          minimum_should_match: 1
         }
+      }
       : dias === "todos"
-      ? { match_all: {} }
-      : {
+        ? { match_all: {} }
+        : {
           bool: {
             should: [
               { range: { "data.timestamp": { gte: `now-${dias}d`, lte: "now" } } },
@@ -131,9 +131,9 @@ export async function buscarTopAgentes(
         const level = Number(item.key);
         const peso =
           level <= 6 ? 0.2 :
-          level <= 11 ? 0.6 :
-          level <= 14 ? 0.87 :
-          1.0;
+            level <= 11 ? 0.6 :
+              level <= 14 ? 0.87 :
+                1.0;
 
         return acc + item.doc_count * peso;
       }, 0) || 0;
@@ -304,6 +304,11 @@ export async function buscarTopAgentesCis(
         ],
 
         minimum_should_match: 1,
+
+        must_not: [
+          { term: { "agent.name": "wazuhhackone" } },
+        ],
+
       },
     },
 
@@ -380,16 +385,16 @@ export async function buscarTopAgentesSyscheck(
   const timeFilter =
     from && to
       ? {
-          range: {
-            "@timestamp": {
-              gte: from,
-              lte: to,
-            },
+        range: {
+          "@timestamp": {
+            gte: from,
+            lte: to,
           },
-        }
+        },
+      }
       : dias === "todos"
-      ? { match_all: {} }
-      : {
+        ? { match_all: {} }
+        : {
           range: {
             "@timestamp": {
               gte: `now-${dias}d`,
@@ -492,10 +497,10 @@ export async function buscarTopAgentesSyscheck(
           item.key <= 6
             ? 0.2
             : item.key <= 11
-            ? 0.6
-            : item.key <= 14
-            ? 0.87
-            : 1.0;
+              ? 0.6
+              : item.key <= 14
+                ? 0.87
+                : 1.0;
 
         return acc + item.doc_count * peso;
       }, 0) || 0) / (total || 1);
