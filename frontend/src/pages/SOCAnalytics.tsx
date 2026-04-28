@@ -301,6 +301,17 @@ export default function SOCAnalytics() {
     }, [data, periodo]);
 
     // ── Derived data ──────────────────────────────────────────────────────────
+    const LABEL_PT: Record<string, string> = {
+        Critical: "Crítico",
+        CRITICAL: "Crítico",
+        High: "Alto",
+        HIGH: "Alto",
+        Medium: "Médio",
+        MEDIUM: "Médio",
+        Low: "Baixo",
+        LOW: "Baixo",
+    };
+
     const buckets = data?.severityDistribution?.buckets ?? [];
     const donutLabels = buckets.map((b) => LABEL_PT[b.severity] ?? b.severity);
     const donutSeries = buckets.map((b) => b.count);
@@ -312,18 +323,6 @@ export default function SOCAnalytics() {
             { count: b.count, percent: b.percent, deltaPercent: b.deltaPercent ?? null },
         ])
     );
-
-    // Mesma fonte do card Risk Level — wazuhRisk.severidades
-    const LABEL_PT: Record<string, string> = {
-        Critical: "Crítico",
-        CRITICAL: "Crítico",
-        High: "Alto",
-        HIGH: "Alto",
-        Medium: "Médio",
-        MEDIUM: "Médio",
-        Low: "Baixo",
-        LOW: "Baixo",
-    };
 
     const alertGravidade = (() => {
         const sev = wazuhRisk?.severidades;
