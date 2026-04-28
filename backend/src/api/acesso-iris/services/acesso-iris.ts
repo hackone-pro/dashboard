@@ -4,7 +4,7 @@ import { parse, isAfter, isBefore, startOfDay, endOfDay, subDays } from "date-fn
 
 export async function buscarCasos(tenant, user) {
   try {
-    const irisUrl = `${tenant.iris_url}/manage/cases/list`;
+    const irisUrl = `${tenant.iris_url}/manage/cases/list?case_customer_id=36`;
 
     const response = await axios.get(irisUrl, {
       headers: {
