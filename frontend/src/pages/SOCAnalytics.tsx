@@ -35,12 +35,16 @@ const PERIODO_OPTIONS: PeriodoOption[] = ["Dia", "Semana", "Mês", "Trimestre", 
 const SEVERITY_COLOR_MAP: Record<string, string> = {
     Crítico: "#EC4899",
     Critical: "#EC4899",
+    CRITICAL: "#EC4899",
     Alto: "#A855F7",
     High: "#A855F7",
+    HIGH: "#A855F7",
     Médio: "#6A55DC",
     Medium: "#6A55DC",
+    MEDIUM: "#6A55DC",
     Baixo: "#1DD69A",
     Low: "#1DD69A",
+    LOW: "#1DD69A",
 };
 
 const FALLBACK_COLORS = ["#EC4899", "#A855F7", "#6A55DC", "#1DD69A"];
@@ -298,13 +302,13 @@ export default function SOCAnalytics() {
 
     // ── Derived data ──────────────────────────────────────────────────────────
     const buckets = data?.severityDistribution?.buckets ?? [];
-    const donutLabels = buckets.map((b) => b.severity);
+    const donutLabels = buckets.map((b) => LABEL_PT[b.severity] ?? b.severity);
     const donutSeries = buckets.map((b) => b.count);
     const donutColors = buckets.map((b, i) => colorFor(b.severity, i));
     const donutTotal = data?.severityDistribution?.total ?? 0;
     const donutTooltipSoc: Record<string, SocTooltipData> = Object.fromEntries(
         buckets.map((b) => [
-            b.severity,
+            LABEL_PT[b.severity] ?? b.severity,
             { count: b.count, percent: b.percent, deltaPercent: b.deltaPercent ?? null },
         ])
     );
@@ -312,9 +316,13 @@ export default function SOCAnalytics() {
     // Mesma fonte do card Risk Level — wazuhRisk.severidades
     const LABEL_PT: Record<string, string> = {
         Critical: "Crítico",
+        CRITICAL: "Crítico",
         High: "Alto",
+        HIGH: "Alto",
         Medium: "Médio",
+        MEDIUM: "Médio",
         Low: "Baixo",
+        LOW: "Baixo",
     };
 
     const alertGravidade = (() => {
