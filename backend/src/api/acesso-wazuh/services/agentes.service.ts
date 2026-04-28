@@ -304,6 +304,10 @@ export async function buscarTopAgentesCis(
         ],
 
         minimum_should_match: 1,
+
+        must_not: [
+          { term: { "agent.name": "wazuhhackone" } },
+        ],
       },
     },
 

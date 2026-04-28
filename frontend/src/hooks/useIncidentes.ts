@@ -12,6 +12,8 @@ import {
   extractOwner,
   extractIncidentClient,
   parseDateBR,
+  formatDateBR,
+  statusPT,
   isIAOwner,
   extrairSeveridadeDoTexto,
 } from "../utils/incidentes/helpers";
@@ -370,45 +372,58 @@ export function useIncidentes(): UseIncidentesReturn {
   }, [dados, sortBy, sortDir]);
 
   /* -----------------------------------------
-   * DERIVADOS: Paginação
+   * DERIVADOS: Lista filtrada (busca + filtros) — base da paginação
    * --------------------------------------- */
-  const total = dados.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const clampPage = (p: number) => Math.min(Math.max(1, p), totalPages);
-  const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, total);
-
-  // Garante que a página não fique além do total após mudança de dados
-  useEffect(() => { setPage((p) => clampPage(p)); }, [totalPages]);
-
-  // Volta para pág 1 ao mudar ordenação
-  useEffect(() => { setPage(1); }, [sortBy, sortDir]);
-
-  /* -----------------------------------------
-   * DERIVADOS: Linhas visíveis (filtro + paginação)
-   * --------------------------------------- */
-  const linhas = useMemo(() => {
+  const filtrados = useMemo(() => {
     let base = [...ordenados];
 
     if (busca.trim() !== "") {
       const termo = busca.toLowerCase();
+      // Remove formatação markdown (** e crases) e colapsa quebras de linha
+      // para que a busca casa o texto como o usuário vê renderizado.
+      const limparMd = (s: string) =>
+        s
+          .replace(/\*\*/g, "")
+          .replace(/`/g, "")
+          .replace(/ /g, " ")
+          .replace(/\s+/g, " ")
+          .toLowerCase();
+
       base = base.filter((i) => {
         const id = String(i.case_id);
         const nome = (i.case_name || "").toLowerCase();
-        const desc = (i.case_description || "").toLowerCase();
-        const status = (i.state_name || "").toLowerCase();
-        const owner = (extractOwner(i) || "").toLowerCase();
-        const cliente = (extractIncidentClient(i) || "").toLowerCase();
-        const nivel = nivelDoIncidente(i).toLowerCase();
+        const desc = limparMd(i.case_description || "");
+
+        // Índice virtual com os mesmos labels exibidos no accordion da tabela.
+        // Permite buscar por "Fechamento: 23/04/2026", "Owner: ...", etc.
+        const owner = extractOwner(i) || "—";
+        const cliente = extractIncidentClient(i) || "—";
+        const nivel = nivelDoIncidente(i);
+        const status = statusPT(i.state_name);
+        const aberturaCru = i.case_open_date || "";
+        const fechamentoCru = i.case_close_date || "";
+
+        const indiceLabels = [
+          `Título: #${i.case_id} - ${i.case_name || ""}`,
+          `Cliente: ${cliente}`,
+          `Owner: ${owner}`,
+          `Aberto por: ${(i as any).opened_by || "—"}`,
+          aberturaCru ? `Abertura: ${aberturaCru}` : "",
+          aberturaCru ? `Abertura: ${formatDateBR(aberturaCru)}` : "",
+          `Fechamento: ${fechamentoCru || "—"}`,
+          fechamentoCru ? `Fechamento: ${formatDateBR(fechamentoCru)}` : "",
+          `Severidade: ${nivel}`,
+          `Status: ${status}`,
+          `Classification: ${(i as any).classification ?? "—"}`,
+        ]
+          .join(" | ")
+          .toLowerCase();
 
         return (
           id.includes(termo) ||
           nome.includes(termo) ||
           desc.includes(termo) ||
-          status.includes(termo) ||
-          owner.includes(termo) ||
-          cliente.includes(termo) ||
-          nivel.includes(termo)
+          indiceLabels.includes(termo)
         );
       });
     }
@@ -433,8 +448,31 @@ export function useIncidentes(): UseIncidentesReturn {
       });
     }
 
-    return base.slice(start, end);
-  }, [ordenados, start, end, busca, filtroSeveridade, filtroOrigem]);
+    return base;
+  }, [ordenados, busca, filtroSeveridade, filtroOrigem]);
+
+  /* -----------------------------------------
+   * DERIVADOS: Paginação (sobre filtrados)
+   * --------------------------------------- */
+  const total = filtrados.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const clampPage = (p: number) => Math.min(Math.max(1, p), totalPages);
+  const start = (page - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, total);
+
+  // Garante que a página não fique além do total após mudança de filtros/dados
+  useEffect(() => { setPage((p) => clampPage(p)); }, [totalPages]);
+
+  // Volta para pág 1 ao mudar ordenação
+  useEffect(() => { setPage(1); }, [sortBy, sortDir]);
+
+  /* -----------------------------------------
+   * DERIVADOS: Linhas visíveis (paginação)
+   * --------------------------------------- */
+  const linhas = useMemo(
+    () => filtrados.slice(start, end),
+    [filtrados, start, end]
+  );
 
   /* -----------------------------------------
    * AÇÕES

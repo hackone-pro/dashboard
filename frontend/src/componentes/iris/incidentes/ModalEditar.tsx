@@ -16,6 +16,9 @@ import {
   normaliza,
   isIAOwner,
   extractOwner,
+  lerMetadataDoCaso,
+  escreverMetadataNoCaso,
+  atualizarSeveridadeNoTexto,
 } from "../../../utils/incidentes/helpers";
 import { nivelDoIncidente } from "../../../hooks/useIncidentes";
 
@@ -69,13 +72,14 @@ export default function ModalEditarIncidente({
   useEffect(() => {
     if (!inc) return;
 
+    const meta = lerMetadataDoCaso(inc.case_description);
     const ownerAtual = normaliza(extractOwner(inc) || "");
     const ownerIdAtual = (inc as any).owner_id ?? null;
     const estadoAtual = (inc.state_name || "open").toLowerCase().trim();
     // status
     setStatus(estadoAtual === "closed" ? "closed" : "open");
 
-    // severidade — prioriza campo salvo localmente, senão extrai do texto
+    // severidade — prioriza override local, depois texto/metadata via nivelDoIncidente
     const localSev = (inc as any).severity?.toLowerCase();
     if (localSev) {
       setSeveridade(localSev);
@@ -87,11 +91,21 @@ export default function ModalEditarIncidente({
       else setSeveridade("low");
     }
 
-    // classificação
-    setClassificacao((inc as any).classification ?? "");
+    // classificação — prioriza metadata
+    setClassificacao(meta?.classificacao ?? (inc as any).classification ?? "");
 
-    // analista
-    if (isIAOwner(ownerAtual)) {
+    // analista — prioriza metadata
+    const analistaMeta = meta?.analista ? normaliza(meta.analista) : null;
+    if (analistaMeta) {
+      if (isIAOwner(analistaMeta)) {
+        setVerdict("inteligencia_artificial");
+      } else {
+        const idx = usuariosTenant.findIndex(
+          (u) => normaliza(u.owner_name_iris) === analistaMeta
+        );
+        setVerdict(idx >= 0 ? `idx_${idx}` : "inteligencia_artificial");
+      }
+    } else if (isIAOwner(ownerAtual)) {
       setVerdict("inteligencia_artificial");
     } else if (ownerIdAtual) {
       setVerdict(ownerIdAtual);
@@ -108,7 +122,7 @@ export default function ModalEditarIncidente({
       ?.split("Mensagem:")[1]
       ?.trim() ?? "";
     setNotas(notaAtual);
-  }, [inc]);
+  }, [inc, usuariosTenant]);
 
   if (!inc) return null;
 
@@ -143,6 +157,19 @@ export default function ModalEditarIncidente({
         .split(NOTAS_MARKER)[0]
         .trimEnd();
 
+      // 1) atualiza "Severidade: X" no corpo do texto (lido por extrairSeveridadeDoTexto)
+      const descricaoComSev = atualizarSeveridadeNoTexto(
+        descricaoBase,
+        MAP_SEVERIDADE_PT[severidade] ?? severidade
+      );
+
+      // 2) grava bloco oculto com analista/classificacao/severidade para releitura confiável
+      const descricaoComMeta = escreverMetadataNoCaso(descricaoComSev, {
+        analista: usuario?.owner_name_iris,
+        classificacao: classificacao || undefined,
+        severidade: MAP_SEVERIDADE_PT[severidade] ?? severidade,
+      });
+
       const blocoNotas = notas.trim()
         ? `\n\n${NOTAS_MARKER}\n\n---\n\n<h3 style="display:flex">📝 Nota de Análise</h3>\n\nAutor: ${user?.nome || user?.username || "—"}\n\nData: ${agora}\n\nMensagem: ${notas.trim()}`
         : null;
@@ -153,7 +180,7 @@ export default function ModalEditarIncidente({
         owner: usuario?.owner_name_iris,
         outcome: classificacao || undefined,
         notas: blocoNotas || undefined,
-        descricaoAtual: descricaoBase,
+        descricaoAtual: descricaoComMeta,
       });
 
       toastSuccess("Incidente atualizado!");
@@ -169,8 +196,8 @@ export default function ModalEditarIncidente({
         severidade_label: MAP_SEVERIDADE_PT[severidade],
         severidade_override: MAP_SEVERIDADE_PT[severidade],
         case_description: blocoNotas
-          ? descricaoBase + blocoNotas
-          : descricaoBase,
+          ? descricaoComMeta + blocoNotas
+          : descricaoComMeta,
       } as any);
 
       onClose();

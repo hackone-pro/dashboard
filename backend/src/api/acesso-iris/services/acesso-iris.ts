@@ -14,16 +14,6 @@ export async function buscarCasos(tenant, user) {
     });
 
     const casos = response.data || [];
-
-    // apenas injeta o owner_name_iris, sem alterar dados
-    const ownerName = user?.owner_name_iris || null;
-    if (Array.isArray(casos) && ownerName) {
-      return casos.map((c) => ({
-        ...c,
-        owner_name_iris: ownerName,
-      }));
-    }
-
     return casos;
   } catch (err) {
     strapi.log.error("❌ Erro ao buscar casos IRIS:", err);

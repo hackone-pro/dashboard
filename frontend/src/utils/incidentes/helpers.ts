@@ -19,8 +19,13 @@ export const normaliza = (s?: string) =>
  * Extract Helpers
  * ====================== */
 
-// Extrai owner de possíveis campos
+// Extrai owner de possíveis campos.
+// Prioriza metadata persistida no case_description (analista editado pelo usuário),
+// pois o IRIS não persiste owner_id alterado por este fluxo.
 export function extractOwner(i: any): string | undefined {
+  const meta = lerMetadataDoCaso(i?.case_description);
+  if (meta?.analista) return meta.analista;
+
   return (
     i.owner_name_iris ??
     i.owner ??
@@ -264,4 +269,95 @@ export function normalizarNivel(valor: string | null | undefined): NivelSeverida
   if (v === "critico" || v === "crítico" || v === "critica" || v === "crítica") return "Crítica";
 
   return "Baixa"; // fallback seguro
+}
+
+/* ======================
+ * Metadata persistida em case_description
+ * ======================
+ *
+ * O IRIS não persiste severidade/analista/classificação alterados pelo modal
+ * de edição (mismatch de IDs e lookup frágil de owner). Para evitar perda
+ * dessas mudanças no reload, a UI grava um bloco oculto no case_description.
+ *
+ * Formato:
+ *   <!-- METADATA_ANALISE
+ *   analista: João Silva
+ *   classificacao: positivo
+ *   severidade: Alta
+ *   -->
+ *
+ * Comentário HTML não é renderizado pelo ReactMarkdown.
+ */
+
+export const METADATA_MARKER_INICIO = "<!-- METADATA_ANALISE";
+export const METADATA_MARKER_FIM = "-->";
+
+export type MetadataCaso = {
+  analista?: string;
+  classificacao?: string;
+  severidade?: string;
+};
+
+const METADATA_REGEX = /<!--\s*METADATA_ANALISE\s*([\s\S]*?)-->/i;
+
+export function lerMetadataDoCaso(descricao?: string | null): MetadataCaso | null {
+  if (!descricao) return null;
+  const match = descricao.match(METADATA_REGEX);
+  if (!match) return null;
+
+  const corpo = match[1];
+  const meta: MetadataCaso = {};
+
+  for (const linha of corpo.split(/\r?\n/)) {
+    const m = linha.match(/^\s*(analista|classificacao|severidade)\s*:\s*(.+?)\s*$/i);
+    if (!m) continue;
+    const chave = m[1].toLowerCase() as keyof MetadataCaso;
+    const valor = m[2].trim();
+    if (valor) meta[chave] = valor;
+  }
+
+  return Object.keys(meta).length ? meta : null;
+}
+
+export function escreverMetadataNoCaso(
+  textoBase: string,
+  meta: MetadataCaso
+): string {
+  const semBloco = (textoBase || "").replace(METADATA_REGEX, "").trimEnd();
+
+  const linhas: string[] = [];
+  if (meta.analista) linhas.push(`analista: ${meta.analista}`);
+  if (meta.classificacao) linhas.push(`classificacao: ${meta.classificacao}`);
+  if (meta.severidade) linhas.push(`severidade: ${meta.severidade}`);
+
+  if (!linhas.length) return semBloco;
+
+  const bloco = `${METADATA_MARKER_INICIO}\n${linhas.join("\n")}\n${METADATA_MARKER_FIM}`;
+  return `${semBloco}\n\n${bloco}`;
+}
+
+// Substitui o valor logo após qualquer variação de "Severidade:" preservando
+// formatação markdown (ex.: **Severidade:** `Alta`). Se não encontrar, anexa
+// "Severidade: <novo>" ao final do texto.
+export function atualizarSeveridadeNoTexto(
+  textoBase: string,
+  novaSeveridade: string
+): string {
+  if (!textoBase) return `Severidade: ${novaSeveridade}`;
+
+  // 1) Remove anexações órfãs "Severidade: X" em linha isolada (sem markdown),
+  //    legado de versões anteriores que apenas concatenavam no fim.
+  const orfaoRegex =
+    /\n+\s*Severidade\s*:\s*(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica)\s*(?=\n|$)/gi;
+  const limpo = textoBase.replace(orfaoRegex, "");
+
+  // 2) Captura prefixo (asteriscos/crases/aspas opcionais) e o valor atual.
+  //    Substitui só o valor, mantendo asteriscos/crases de fechamento intactos.
+  const regex =
+    /(\*{0,2}Severidade\*{0,2}\s*:\s*\*{0,2}\s*[`'"]?\s*)(Baixo|Baixa|M[eé]dio|M[eé]dia|Alto|Alta|Cr[ií]tico|Cr[ií]tica)/gi;
+
+  if (regex.test(limpo)) {
+    return limpo.replace(regex, `$1${novaSeveridade}`);
+  }
+  return `${limpo.trimEnd()}\n\nSeveridade: ${novaSeveridade}`;
 }

@@ -37,6 +37,9 @@ export default function DateRangePicker({
   const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  // incrementado ao trocar atalho rápido para forçar o react-datepicker
+  // a remontar o range — sem isso ele mantém startDate antigo no DOM.
+  const [datePickerNonce, setDatePickerNonce] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const hoje = new Date();
@@ -67,10 +70,15 @@ export default function DateRangePicker({
   }, [resetKey]);
 
   function calcularDatas(periodo: PeriodoRapido) {
-    const agora = new Date();
-    const dias  = Number(MAPA_DIAS[periodo]);
-    const from  = new Date(agora.getTime() - dias * 24 * 60 * 60 * 1000);
-    return { from, to: agora };
+    // Trabalha em dias-calendário (inclusive hoje) para que o highlight do
+    // react-datepicker bata com o número exibido (ex.: 7d = 7 dias destacados).
+    const dias = Number(MAPA_DIAS[periodo]);
+    const from = new Date();
+    from.setDate(from.getDate() - (dias - 1));
+    from.setHours(0, 0, 0, 0);
+    const to = new Date();
+    to.setHours(23, 59, 59, 999);
+    return { from, to };
   }
 
   function aplicar() {
@@ -136,6 +144,7 @@ export default function DateRangePicker({
                   setPeriodoRapido(p);
                   setStartDate(from);
                   setEndDate(to);
+                  setDatePickerNonce((n) => n + 1);
                 }}
                 className={`px-3 py-1 rounded-md text-sm border transition
                   ${
@@ -151,6 +160,7 @@ export default function DateRangePicker({
 
           {/* CALENDÁRIO */}
           <DatePicker
+            key={datePickerNonce}
             inline
             locale="pt-BR"
             selectsRange
