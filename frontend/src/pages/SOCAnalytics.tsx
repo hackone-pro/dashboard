@@ -309,9 +309,7 @@ export default function SOCAnalytics() {
         ])
     );
 
-    const alertsBySeverity = data?.riskLevel?.alertsBySeverity ?? [];
-
-    // ✅ ÚNICO BLOCO QUE MUDOU — dados reais do riskLevel, cálculo correto
+    // Mesma fonte do card Risk Level — wazuhRisk.severidades
     const LABEL_PT: Record<string, string> = {
         Critical: "Crítico",
         High: "Alto",
@@ -319,25 +317,27 @@ export default function SOCAnalytics() {
         Low: "Baixo",
     };
 
-    const total = alertsBySeverity.reduce((acc, x) => acc + x.count, 0);
-    const max = Math.max(...alertsBySeverity.map((x) => x.count), 1);
-
-    const alertGravidade = alertsBySeverity.map((a, i) => {
-        const color = colorFor(a.severity, i);
-        const bar = Math.round((a.count / max) * 100);
-        const pct = total > 0
-            ? a.count / total >= 0.01
-                ? `${Math.round((a.count / total) * 100)}%`
-                : "<1%"
-            : "—";
-        return {
-            label: LABEL_PT[a.severity] ?? a.severity, // ✅ traduz
-            color,
-            count: a.count,
-            pct,
-            bar,
-        };
-    });
+    const alertGravidade = (() => {
+        const sev = wazuhRisk?.severidades;
+        if (!sev) return [];
+        const items = [
+            { label: "Crítico", color: "#EC4899", count: sev.critico },
+            { label: "Alto",    color: "#A855F7", count: sev.alto },
+            { label: "Médio",   color: "#6A55DC", count: sev.medio },
+            { label: "Baixo",   color: "#1DD69A", count: sev.baixo },
+        ];
+        const total = sev.total || 1;
+        const max = Math.max(sev.critico, sev.alto, sev.medio, sev.baixo, 1);
+        return items.map((item) => ({
+            ...item,
+            bar: Math.round((item.count / max) * 100),
+            pct: total > 0
+                ? item.count / total >= 0.01
+                    ? `${Math.round((item.count / total) * 100)}%`
+                    : "<1%"
+                : "—",
+        }));
+    })();
 
     const openIncidents = data?.openIncidents;
     const ia = data?.iaPerformance;
