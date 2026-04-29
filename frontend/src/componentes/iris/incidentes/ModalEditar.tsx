@@ -104,7 +104,10 @@ export default function ModalEditarIncidente({
       }
     } else if (isIAOwner(ownerAtual)) {
       setVerdict("inteligencia_artificial");
-    } else if (ownerIdAtual) {
+    } else if (
+      ownerIdAtual &&
+      (ownerIdAtual === "inteligencia_artificial" || String(ownerIdAtual).startsWith("idx_"))
+    ) {
       setVerdict(ownerIdAtual);
     } else {
       const idx = usuariosTenant.findIndex(
@@ -133,11 +136,16 @@ export default function ModalEditarIncidente({
     })),
   ];
 
-  const formularioValido = !!verdict && !!classificacao;
+  const erros = {
+    analista: !opcoesAnalista.some(o => o.value === verdict) ? "Selecione um analista." : "",
+    classificacao: !classificacao ? "Selecione uma classificação." : "",
+  };
+  const formularioValido = !erros.analista && !erros.classificacao;
 
   const handleSalvar = async () => {
     if (!formularioValido) {
-      toastError("Preencha analista e classificação para salvar.");
+      const msgs = [erros.analista, erros.classificacao].filter(Boolean).join(" ");
+      toastError(msgs);
       return;
     }
     setSalvando(true);
@@ -274,9 +282,10 @@ export default function ModalEditarIncidente({
       </div>
 
       {!formularioValido && (
-        <p className="text-xs text-amber-400 mt-2">
-          Preencha analista e classificação para salvar.
-        </p>
+        <div className="flex flex-col gap-0.5 mt-2">
+          {erros.analista && <p className="text-xs text-amber-400">• {erros.analista}</p>}
+          {erros.classificacao && <p className="text-xs text-amber-400">• {erros.classificacao}</p>}
+        </div>
       )}
 
       <ModalFooter>
