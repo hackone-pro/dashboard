@@ -2,9 +2,16 @@ import axios from "axios";
 import https from "https";
 import { parse, isAfter, isBefore, startOfDay, endOfDay, subDays } from "date-fns";
 
+function formatIrisDate(value?: string | null): string {
+  if (!value) return "";
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[2]}/${m[3]}/${m[1]}`;
+  return String(value);
+}
+
 export async function buscarCasos(tenant, user) {
   try {
-    const irisUrl = `${tenant.iris_url}/manage/cases/list?case_customer_id=36`;
+    const irisUrl = `${tenant.iris_url}/manage/cases/filter?case_customer_id=${tenant.iris_customer_id}&per_page=1000`;
 
     const response = await axios.get(irisUrl, {
       headers: {
@@ -13,8 +20,40 @@ export async function buscarCasos(tenant, user) {
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     });
 
-    const casos = response.data || [];
-    return casos;
+    const payload = response.data?.data;
+    const lista = Array.isArray(payload) ? payload : payload?.cases || [];
+
+    // Normaliza o novo retorno do IRIS para o formato antigo,
+    // mantendo compatibilidade com os consumidores existentes.
+    return lista.map((c: any) => {
+      const stateName = c.state?.state_name ?? c.state_name ?? null;
+      const ownerName = c.owner?.user_name ?? c.owner ?? "";
+
+      return {
+        case_id: c.case_id,
+        case_uuid: c.case_uuid,
+        case_name: c.name ?? c.case_name,
+        case_description: c.description ?? c.case_description,
+        case_open_date: formatIrisDate(c.open_date ?? c.case_open_date),
+        case_close_date: formatIrisDate(c.close_date ?? c.case_close_date),
+        case_soc_id: c.soc_id ?? c.case_soc_id,
+        case_state_id: c.state_id ?? c.case_state_id ?? null,
+        state_id: c.state_id ?? null,
+        state_name: stateName,
+        case_status: stateName ? String(stateName).toLowerCase() : "",
+        client_name: c.client?.customer_name ?? c.client_name,
+        owner_id: c.owner?.id ?? c.owner_id,
+        owner: ownerName,
+        owner_name: ownerName,
+        opened_by_user_id: c.user?.id ?? c.opened_by_user_id,
+        opened_by: c.user?.user_name ?? c.opened_by,
+        classification_id: c.classification_id ?? null,
+        classification: c.classification?.name ?? c.classification ?? null,
+        severity: c.severity?.severity_name ?? c.severity ?? "",
+        severity_id: c.severity?.severity_id ?? c.severity_id ?? null,
+        access_level: c.access_level,
+      };
+    });
   } catch (err) {
     strapi.log.error("❌ Erro ao buscar casos IRIS:", err);
     throw err;

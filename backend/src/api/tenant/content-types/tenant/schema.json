@@ -39,6 +39,9 @@
     "iris_apikey": {
       "type": "string"
     },
+    "iris_customer_id": {
+      "type": "integer"
+    },
     "ativa": {
       "type": "boolean"
     },
