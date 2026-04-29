@@ -79,17 +79,14 @@ export default function ModalEditarIncidente({
     // status
     setStatus(estadoAtual === "closed" ? "closed" : "open");
 
-    // severidade — prioriza override local, depois texto/metadata via nivelDoIncidente
-    const localSev = (inc as any).severity?.toLowerCase();
-    if (localSev) {
-      setSeveridade(localSev);
-    } else {
-      const nivel = nivelDoIncidente(inc).toLowerCase();
-      if (nivel.startsWith("crít") || nivel.startsWith("crit")) setSeveridade("critical");
-      else if (nivel.startsWith("alt")) setSeveridade("high");
-      else if (nivel.startsWith("méd") || nivel.startsWith("med")) setSeveridade("medium");
-      else setSeveridade("low");
-    }
+    // severidade — sempre via nivelDoIncidente (override in-memory + texto persistido).
+    // inc.severity vem direto do IRIS, mas o modal não atualiza severity_id no IRIS,
+    // então pós-refresh esse valor fica desatualizado.
+    const nivel = nivelDoIncidente(inc).toLowerCase();
+    if (nivel.startsWith("crít") || nivel.startsWith("crit")) setSeveridade("critical");
+    else if (nivel.startsWith("alt")) setSeveridade("high");
+    else if (nivel.startsWith("méd") || nivel.startsWith("med")) setSeveridade("medium");
+    else setSeveridade("low");
 
     // classificação — prioriza metadata
     setClassificacao(meta?.classificacao ?? (inc as any).classification ?? "");
@@ -136,7 +133,13 @@ export default function ModalEditarIncidente({
     })),
   ];
 
+  const formularioValido = !!verdict && !!classificacao;
+
   const handleSalvar = async () => {
+    if (!formularioValido) {
+      toastError("Preencha analista e classificação para salvar.");
+      return;
+    }
     setSalvando(true);
     try {
       const isIA = verdict === "inteligencia_artificial";
@@ -270,9 +273,15 @@ export default function ModalEditarIncidente({
         />
       </div>
 
+      {!formularioValido && (
+        <p className="text-xs text-amber-400 mt-2">
+          Preencha analista e classificação para salvar.
+        </p>
+      )}
+
       <ModalFooter>
         <ModalBotaoCancelar onClick={onClose} />
-        <ModalBotaoConfirmar onClick={handleSalvar} disabled={salvando}>
+        <ModalBotaoConfirmar onClick={handleSalvar} disabled={salvando || !formularioValido}>
           {salvando ? "Salvando..." : "Salvar"}
         </ModalBotaoConfirmar>
       </ModalFooter>
