@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import LayoutModel from "../componentes/LayoutModel";
-import { IoIosLock } from "react-icons/io";
+import { IoIosLock, IoIosUnlock } from "react-icons/io";
 
 import LLMConfigPanel from "../componentes/chat/LLMConfigPanel";
 import {
@@ -11,6 +11,7 @@ import {
 } from "../services/azure-api/llm.service";
 import SourceConfigModal from "../componentes/integrations/SourceConfigModal";
 import { getSourceInstances } from "../services/integrations/source.service";
+import type { FetchType } from "../types/source.types";
 import { useAuth } from "../context/AuthContext";
 import { useScreenContext } from "../context/ScreenContext";
 import { useTenant } from "../context/TenantContext";
@@ -32,6 +33,12 @@ const abasLiberadas: AbaIntegracao[] = [
     "NG-SOC",
     "Firewall",
     "Monitoria",
+    "Defesa de Endpoints (EDR/XDR)",
+];
+
+const abasCadeadoAberto: AbaIntegracao[] = [
+    "NG-SOC",
+    "Firewall",
     "Defesa de Endpoints (EDR/XDR)",
 ];
 
@@ -136,6 +143,7 @@ export default function Integrations() {
                 ] as AbaIntegracao[]).map((aba) => {
                     const isAtiva = aba === abaAtiva;
                     const isLiberada = abasLiberadas.includes(aba);
+                    const temCadeadoAberto = abasCadeadoAberto.includes(aba);
                     return (
                         <button
                             key={aba}
@@ -148,8 +156,12 @@ export default function Integrations() {
                                         : "bg-[#1b1b2b] text-gray-300 cursor-default"
                                 }`}
                         >
-                            {/* @ts-ignore */}
-                            <IoIosLock className="w-4 h-4 text-white" />
+                            {temCadeadoAberto
+                                /* @ts-ignore */
+                                ? <IoIosUnlock className="w-4 h-4 text-emerald-400" />
+                                /* @ts-ignore */
+                                : <IoIosLock className="w-4 h-4 text-gray-500" />
+                            }
                             <span>{aba}</span>
                         </button>
                     );
@@ -248,24 +260,23 @@ function NgSocContent({
     const { tenantAtivo } = useTenant();
     const isAdmin = user?.user_role?.slug === "admin";
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
+    const [modalProduct, setModalProduct] = useState<{ product: string; vendor: string; fetchTypes: FetchType[] }>({ product: "", vendor: "", fetchTypes: ["Pull", "Push"] });
     const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
     const { setScreenData } = useScreenContext();
 
-    useEffect(() => {
-        async function loadCounts() {
+    const loadCounts = useCallback(async () => {
+        const products = ["Wazuh", "FortiSIEM", "Splunk", "FortiSOAR", "n8n", "Shuffle", "IRIS", "ServiceNow", "FreshDesk"];
+        for (const p of products) {
             try {
-                const wazuhInstances = await getSourceInstances("Wazuh");
-                setActiveCountMap((prev) => ({
-                    ...prev,
-                    Wazuh: wazuhInstances.filter((i) => i.active).length,
-                }));
-            } catch {
-                // silent
-            }
+                const instances = await getSourceInstances(p);
+                const count = instances.filter((i) => i.active).length;
+                setActiveCountMap((prev) => ({ ...prev, [p]: count }));
+            } catch { /* silent */ }
+            await new Promise(r => setTimeout(r, 50));
         }
-        loadCounts();
-    }, [tenantAtivo?.id]);
+    }, []);
+
+    useEffect(() => { loadCounts(); }, [tenantAtivo?.id]);
 
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
@@ -284,23 +295,15 @@ function NgSocContent({
         });
     }, [activeCountMap, llmConfig]);
 
-    function openModal(product: string, vendor: string) {
+    function openModal(product: string, vendor: string, fetchTypes: FetchType[] = ["Pull", "Push"]) {
         if (!isAdmin) return;
-        setModalProduct({ product, vendor });
+        setModalProduct({ product, vendor, fetchTypes });
         setModalOpen(true);
     }
 
     async function handleModalClose() {
         setModalOpen(false);
-        try {
-            const wazuhInstances = await getSourceInstances("Wazuh");
-            setActiveCountMap((prev) => ({
-                ...prev,
-                Wazuh: wazuhInstances.filter((i) => i.active).length,
-            }));
-        } catch {
-            // silent
-        }
+        await loadCounts();
     }
 
     return (
@@ -312,7 +315,7 @@ function NgSocContent({
                 <h3 className="text-white text-xl mb-3">SIEM</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3">
                     <div
-                        onClick={isAdmin ? () => openModal("Wazuh", "Wazuh") : undefined}
+                        onClick={isAdmin ? () => openModal("Wazuh", "Wazuh", ["Push"]) : undefined}
                         className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
                     >
                         <img src="/assets/img/wazuh.png" />
@@ -323,43 +326,115 @@ function NgSocContent({
                             </div>
                         )}
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("FortiSIEM", "Fortinet") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/fortsiem.png" />
+                        {(activeCountMap["FortiSIEM"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["FortiSIEM"]} ativa{activeCountMap["FortiSIEM"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("Splunk", "Splunk") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/splunk.png" />
+                        {(activeCountMap["Splunk"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["Splunk"]} ativa{activeCountMap["Splunk"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* SOAR — inalterado */}
+            {/* SOAR */}
             <div>
                 <h3 className="text-white text-xl mb-3">SOAR</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("FortiSOAR", "Fortinet") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/fortsoar.png" />
+                        {(activeCountMap["FortiSOAR"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["FortiSOAR"]} ativa{activeCountMap["FortiSOAR"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("n8n", "n8n") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/n8n.png" />
+                        {(activeCountMap["n8n"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["n8n"]} ativa{activeCountMap["n8n"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("Shuffle", "Shuffle") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/shuffle.png" />
+                        {(activeCountMap["Shuffle"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["Shuffle"]} ativa{activeCountMap["Shuffle"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* DFIR — inalterado */}
+            {/* DFIR */}
             <div>
                 <h3 className="text-white text-xl mb-3">DFIR</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("IRIS", "DFIR-IRIS") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/iris.png" />
+                        {(activeCountMap["IRIS"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["IRIS"]} ativa{activeCountMap["IRIS"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("ServiceNow", "ServiceNow") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/service_now.png" />
+                        {(activeCountMap["ServiceNow"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["ServiceNow"]} ativa{activeCountMap["ServiceNow"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("FreshDesk", "FreshDesk") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/fresh-desk.png" />
+                        {(activeCountMap["FreshDesk"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["FreshDesk"]} ativa{activeCountMap["FreshDesk"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -431,7 +506,7 @@ function NgSocContent({
                 onClose={handleModalClose}
                 product={modalProduct.product}
                 vendor={modalProduct.vendor}
-                allowedFetchTypes={["Push"]}
+                allowedFetchTypes={modalProduct.fetchTypes}
             />
         </section>
     );
@@ -450,19 +525,19 @@ function FirewallContent() {
     const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
     const { setScreenData } = useScreenContext();
 
-    // Load active counts (e recarregar ao trocar tenant)
-    useEffect(() => {
-        async function loadCounts() {
+    const loadCounts = useCallback(async () => {
+        const products = ["FortiGATE", "Azure Firewall", "CheckPoint", "Sophos", "PaloAlto", "Cisco", "SonicWall"];
+        for (const p of products) {
             try {
-                const fortigateInstances = await getSourceInstances("FortiGATE");
-                const activeCount = fortigateInstances.filter((i) => i.active).length;
-                setActiveCountMap((prev) => ({ ...prev, FortiGATE: activeCount }));
-            } catch {
-                // silent — badge just won't show
-            }
+                const instances = await getSourceInstances(p);
+                const count = instances.filter((i) => i.active).length;
+                setActiveCountMap((prev) => ({ ...prev, [p]: count }));
+            } catch { /* silent */ }
+            await new Promise(r => setTimeout(r, 50));
         }
-        loadCounts();
-    }, [tenantAtivo?.id]);
+    }, []);
+
+    useEffect(() => { loadCounts(); }, [tenantAtivo?.id]);
 
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
@@ -483,14 +558,7 @@ function FirewallContent() {
 
     async function handleModalClose() {
         setModalOpen(false);
-        // Refresh counts
-        try {
-            const fortigateInstances = await getSourceInstances("FortiGATE");
-            const activeCount = fortigateInstances.filter((i) => i.active).length;
-            setActiveCountMap((prev) => ({ ...prev, FortiGATE: activeCount }));
-        } catch {
-            // silent
-        }
+        await loadCounts();
     }
 
     function renderCard(
@@ -522,15 +590,15 @@ function FirewallContent() {
             <div>
                 <h2 className="text-white text-2xl mb-5">FIREWALL</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4">
-                    {renderCard("/assets/img/azure.jpg", null, null, "rounded-l-lg")}
+                    {renderCard("/assets/img/azure.jpg", "Azure Firewall", "Microsoft", "rounded-l-lg")}
                     {renderCard("/assets/img/fortgate.png", "FortiGATE", "Fortinet", "")}
-                    {renderCard("/assets/img/checkpoint.png", null, null, "")}
-                    {renderCard("/assets/img/sophos.png", null, null, "rounded-r-lg")}
+                    {renderCard("/assets/img/checkpoint.png", "CheckPoint", "CheckPoint", "")}
+                    {renderCard("/assets/img/sophos.png", "Sophos", "Sophos", "rounded-r-lg")}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 mt-3">
-                    {renderCard("/assets/img/palo-alto.png", null, null, "rounded-l-lg")}
-                    {renderCard("/assets/img/cisco.png", null, null, "")}
-                    {renderCard("/assets/img/sonic.png", null, null, "rounded-r-lg")}
+                    {renderCard("/assets/img/palo-alto.png", "PaloAlto", "Palo Alto", "rounded-l-lg")}
+                    {renderCard("/assets/img/cisco.png", "Cisco", "Cisco", "")}
+                    {renderCard("/assets/img/sonic.png", "SonicWall", "SonicWall", "rounded-r-lg")}
                 </div>
             </div>
 
@@ -583,24 +651,23 @@ function EndpointsContent() {
     const { tenantAtivo } = useTenant();
     const isAdmin = user?.user_role?.slug === "admin";
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalProduct, setModalProduct] = useState({ product: "", vendor: "" });
+    const [modalProduct, setModalProduct] = useState<{ product: string; vendor: string; fetchTypes: FetchType[] }>({ product: "", vendor: "", fetchTypes: ["Pull", "Push"] });
     const [activeCountMap, setActiveCountMap] = useState<Record<string, number>>({});
     const { setScreenData } = useScreenContext();
 
-    useEffect(() => {
-        async function loadCounts() {
+    const loadCounts = useCallback(async () => {
+        const products = ["Trend Micro", "CrowdStrike", "Microsoft Sentinel", "Microsoft Defender"];
+        for (const p of products) {
             try {
-                const trendInstances = await getSourceInstances("Trend Micro");
-                setActiveCountMap((prev) => ({
-                    ...prev,
-                    "Trend Micro": trendInstances.filter((i) => i.active).length,
-                }));
-            } catch {
-                // silent
-            }
+                const instances = await getSourceInstances(p);
+                const count = instances.filter((i) => i.active).length;
+                setActiveCountMap((prev) => ({ ...prev, [p]: count }));
+            } catch { /* silent */ }
+            await new Promise(r => setTimeout(r, 50));
         }
-        loadCounts();
-    }, [tenantAtivo?.id]);
+    }, []);
+
+    useEffect(() => { loadCounts(); }, [tenantAtivo?.id]);
 
     useEffect(() => {
         const totalAtivos = Object.values(activeCountMap).reduce((acc, n) => acc + n, 0);
@@ -613,44 +680,63 @@ function EndpointsContent() {
         });
     }, [activeCountMap]);
 
-    function openModal(product: string, vendor: string) {
+    function openModal(product: string, vendor: string, fetchTypes: FetchType[] = ["Pull", "Push"]) {
         if (!isAdmin) return;
-        setModalProduct({ product, vendor });
+        setModalProduct({ product, vendor, fetchTypes });
         setModalOpen(true);
     }
 
     async function handleModalClose() {
         setModalOpen(false);
-        try {
-            const trendInstances = await getSourceInstances("Trend Micro");
-            setActiveCountMap((prev) => ({
-                ...prev,
-                "Trend Micro": trendInstances.filter((i) => i.active).length,
-            }));
-        } catch {
-            // silent
-        }
+        await loadCounts();
     }
 
     return (
         <section className="flex flex-col gap-5">
 
             <div>
-                <h2 className="text-white text-2xl mb-5">MONITORIA</h2>
+                <h2 className="text-white text-2xl mb-5">DEFESA DE ENDPOINTS (EDR/XDR)</h2>
                 <div className="grid grid-cols-2 md:grid-cols-2">
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("CrowdStrike", "CrowdStrike") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/crowd-strike.png" />
+                        {(activeCountMap["CrowdStrike"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["CrowdStrike"]} ativa{activeCountMap["CrowdStrike"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("Microsoft Sentinel", "Microsoft") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/sentinel.png" />
+                        {(activeCountMap["Microsoft Sentinel"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["Microsoft Sentinel"]} ativa{activeCountMap["Microsoft Sentinel"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-2 mt-3">
-                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
+                    <div
+                        onClick={isAdmin ? () => openModal("Microsoft Defender", "Microsoft") : undefined}
+                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
+                    >
                         <img src="/assets/img/defender.png" />
+                        {(activeCountMap["Microsoft Defender"] ?? 0) > 0 && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-400">{activeCountMap["Microsoft Defender"]} ativa{activeCountMap["Microsoft Defender"] !== 1 ? "s" : ""}</span>
+                            </div>
+                        )}
                     </div>
                     <div
-                        onClick={isAdmin ? () => openModal("Trend Micro", "Trend Micro") : undefined}
+                        onClick={isAdmin ? () => openModal("Trend Micro", "Trend Micro", ["Push"]) : undefined}
                         className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
                     >
                         <img src="/assets/img/trend.png" />
@@ -669,7 +755,7 @@ function EndpointsContent() {
                 onClose={handleModalClose}
                 product={modalProduct.product}
                 vendor={modalProduct.vendor}
-                allowedFetchTypes={["Push"]}
+                allowedFetchTypes={modalProduct.fetchTypes}
             />
 
         </section>

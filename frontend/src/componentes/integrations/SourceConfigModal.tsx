@@ -111,7 +111,12 @@ export default function SourceConfigModal({
   }, [product]);
 
   useEffect(() => {
-    if (open) loadInstances();
+    if (open) {
+      loadInstances();
+    } else {
+      setConfirmDeleteId(null);
+      cancelForm();
+    }
   }, [open, loadInstances]);
 
   // ---- Form handlers ----
