@@ -37,7 +37,7 @@ export async function buscarCasos(tenant, user) {
         case_open_date: formatIrisDate(c.open_date ?? c.case_open_date),
         case_close_date: formatIrisDate(c.close_date ?? c.case_close_date),
         case_soc_id: c.soc_id ?? c.case_soc_id,
-        case_state_id: c.state_id ?? c.case_state_id ?? null,
+        case_state_id: c.state?.state_id ?? c.state_id ?? c.case_state_id ?? null,
         state_id: c.state_id ?? null,
         state_name: stateName,
         case_status: stateName ? String(stateName).toLowerCase() : "",
@@ -124,7 +124,7 @@ export async function buscarIncidentesIris(
     const ownersValidos = [ownerUser, "Inteligencia_Artificial"];
 
     const recentes = casos.filter((caso) => {
-      if (caso.case_state_id === 9) return false; // ignora casos fechados
+      if (caso.case_state_id === 9 || String(caso.case_status ?? "").includes("clos")) return false; // ignora casos fechados
 
       if (!caso.case_open_date) return false;
 
