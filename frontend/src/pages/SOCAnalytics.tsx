@@ -604,7 +604,7 @@ export default function SOCAnalytics() {
                                     />
                                 </div>
 
-                                <button className="flex items-center mt-2 gap-2 px-3 py-2 bg-purple-700 hover:bg-purple-800 border border-purple-700 text-white rounded-md text-sm shadow-sm w-[150px]">
+                                <button disabled className="flex items-center mt-2 gap-2 px-3 py-2 bg-purple-700/40 border border-purple-700/40 text-white/40 rounded-md text-sm shadow-sm w-[150px] cursor-not-allowed" title="Em breve">
                                     <span>Ver AI Analytics →</span>
                                 </button>
                             </div>

@@ -364,6 +364,27 @@ export async function calcularRiskOperacionalTenant(
           `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline remoto, aplicando WARMUP`
         );
       }
+    } else if (periodo) {
+      const windowHours = parseInt(janelaBaseline) * 24;
+      const remoto      = await getBaselineFromAlerts(tenantKey, windowHours, periodo);
+
+      if (remoto) {
+        slotAnterior = {
+          top_hosts:   remoto.topHosts,
+          cis:         remoto.cis,
+          firewall:    remoto.firewall,
+          incidents:   remoto.incidents,
+          initialized: true,
+        };
+        strapi.log.info(
+          `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — baseline histórico ` +
+          `(data=${periodo.from}, janela=${remoto.windowHours}h, calculado em ${remoto.calculatedAt})`
+        );
+      } else {
+        strapi.log.info(
+          `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline histórico para ${periodo.from}, aplicando WARMUP`
+        );
+      }
     }
 
     const novoTopHosts = atualizarBaseline(

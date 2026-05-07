@@ -50,7 +50,8 @@ export interface RemoteBaseline {
  */
 export async function getBaselineFromAlerts(
   tenantId: string | number,
-  windowHours = 24
+  windowHours = 24,
+  periodo?: { from: string; to: string }
 ): Promise<RemoteBaseline | null> {
   const url = process.env.ALERTS_API_URL;
   const key = process.env.ALERTS_JWT_KEY;
@@ -62,8 +63,13 @@ export async function getBaselineFromAlerts(
 
   try {
     const token = getToken(key);
+    const params: Record<string, string | number> = { tenantId: String(tenantId), windowHours };
+    if (periodo) {
+      params.from = periodo.from;
+      params.to   = periodo.to;
+    }
     const response = await axios.get(`${url}/api/risk-level-baselines`, {
-      params:  { tenantId: String(tenantId), windowHours },
+      params,
       headers: { Authorization: `Bearer ${token}` },
       timeout: 3000,
       validateStatus: (s) => s === 200 || s === 204,
