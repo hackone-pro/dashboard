@@ -518,7 +518,7 @@ export default function SOCAnalytics() {
                                     })()}
                                 </div>
 
-                                <button className="flex items-center mt-2 gap-2 px-3 py-2 bg-purple-700 hover:bg-purple-800 border border-purple-700 text-white rounded-md text-sm shadow-sm w-[150px]">
+                                <button onClick={() => navigate("/risk-level")} className="flex items-center mt-2 gap-2 px-3 py-2 bg-purple-700 hover:bg-purple-800 border border-purple-700 text-white rounded-md text-sm shadow-sm w-[150px]">
                                     <span>Ver Risk Level →</span>
                                 </button>
                             </div>
