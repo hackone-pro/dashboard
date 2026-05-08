@@ -453,10 +453,6 @@ export default factories.createCoreService(
       const inicio = startOfDay(subDays(new Date(), diasNum));
       const fim = endOfDay(new Date());
 
-      const ownerUser = user?.owner_name_iris || "";
-      const clienteName = tenant?.cliente_name || "";
-      const ownersValidos = [ownerUser, "Inteligencia_Artificial"];
-
       const filtrados = casos.filter((caso) => {
         if (!caso.case_open_date) return false;
 
@@ -470,26 +466,17 @@ export default factories.createCoreService(
         }
         if (isNaN(data.getTime())) return false;
 
-        const dentroDoPeriodo =
-          diasNum === 0 ? true : isAfter(data, inicio) && isBefore(data, fim);
-
-        const ownerCaso = caso.owner || caso.owner_name || "";
-        const matchOwner =
-          ownersValidos.includes(ownerCaso) ||
-          (ownerCaso === "Inteligencia_Artificial" &&
-            caso.case_name?.includes(clienteName));
-
-        return dentroDoPeriodo && matchOwner;
+        return diasNum === 0 ? true : isAfter(data, inicio) && isBefore(data, fim);
       });
 
       const total = filtrados.length;
 
       const abertos = filtrados.filter(
-        i => (i.case_status || "").toLowerCase() === "open"
+        i => (i.state_name || i.case_status || "").toLowerCase() === "open"
       ).length;
 
       const fechados = filtrados.filter(
-        i => (i.case_status || "").toLowerCase() === "closed"
+        i => (i.state_name || i.case_status || "").toLowerCase() === "closed"
       ).length;
 
       const atribuidos = filtrados.filter(

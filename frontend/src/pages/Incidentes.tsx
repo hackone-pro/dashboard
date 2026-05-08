@@ -11,6 +11,7 @@ import { useIncidentes, nivelDoIncidente } from "../hooks/useIncidentes";
 import { statusPT, formatCaseName } from "../utils/incidentes/helpers";
 import { useEffect } from "react";
 import { useScreenContext } from "../context/ScreenContext";
+import type { DateRangePayload } from "../componentes/DataRangePicker";
 
 export default function Incidentes() {
   const {
@@ -32,6 +33,20 @@ export default function Incidentes() {
   } = useIncidentes();
 
   const { setScreenData } = useScreenContext();
+
+  function handleFiltro(payload: DateRangePayload) {
+    if (payload.dias) {
+      const dias = Number(payload.dias);
+      const from = new Date();
+      from.setDate(from.getDate() - (dias - 1));
+      from.setHours(0, 0, 0, 0);
+      const to = new Date();
+      to.setHours(23, 59, 59, 999);
+      setPeriodo({ from: from.toISOString(), to: to.toISOString() });
+    } else {
+      setPeriodo({ from: payload.from!, to: payload.to! });
+    }
+  }
 
   useEffect(() => {
     setScreenData("incidentes", {
@@ -62,7 +77,7 @@ export default function Incidentes() {
       <div>
         {/* Barra de período e reset */}
         <div className="flex justify-end mt-5 mb-3 px-6">
-          <DateRangePicker onApply={setPeriodo} />
+          <DateRangePicker onApply={handleFiltro} />
           <button
             onClick={limparFiltros}
             className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"

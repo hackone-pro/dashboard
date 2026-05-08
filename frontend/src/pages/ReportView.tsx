@@ -26,6 +26,9 @@ import {
     formatCaseName,
     agruparPorSeveridade,
     detectarNivelPorNome,
+    extrairSeveridadeDoTexto,
+    extractOwner,
+    isIAOwner,
 } from "../utils/incidentes/helpers";
 
 export default function ReportView() {
@@ -108,6 +111,11 @@ export default function ReportView() {
     }
 
     function nivelDoIncidente(i: any): "Crítico" | "Alto" | "Médio" | "Baixo" {
+        // Prioridade 1: metadados embutidos na descrição (mesma lógica da tela Incidentes)
+        const severidadeTexto = extrairSeveridadeDoTexto(i.case_description);
+        if (severidadeTexto) return severidadeTexto as any;
+
+        // Prioridade 2: campo severity do IRIS (severity_name)
         if (i.severity) {
             const s = i.severity.toLowerCase();
             if (s.includes("crit")) return "Crítico";
@@ -115,13 +123,12 @@ export default function ReportView() {
             if (s.includes("med")) return "Médio";
             if (s.includes("low") || s.includes("baix")) return "Baixo";
         }
+
+        // Prioridade 3: nome do caso
         const manual = detectarNivelPorNome(i.case_name || i.name || "");
         if (manual) return manual as any;
-        const nomeCaso = (i.case_name || "").toLowerCase();
-        if (nomeCaso.includes("crít")) return "Crítico";
-        if (nomeCaso.includes("alto") || nomeCaso.includes("alta")) return "Alto";
-        if (nomeCaso.includes("méd") || nomeCaso.includes("media")) return "Médio";
-        if (nomeCaso.includes("baix")) return "Baixo";
+
+        // Prioridade 4: classification_id
         if (!i.classification_id) return "Médio";
         return mapNivelPorClassificationId(i.classification_id);
     }
@@ -232,10 +239,10 @@ export default function ReportView() {
         (i: any) => (i.state_name || i.status || "").toLowerCase() === "closed"
     );
     const atribuidos = listaIncidentes.filter(
-        (i: any) => i.owner || i.assigned_to
+        (i: any) => !isIAOwner(extractOwner(i))
     );
     const naoAtribuidos = listaIncidentes.filter(
-        (i: any) => !i.owner && !i.assigned_to
+        (i: any) => isIAOwner(extractOwner(i))
     );
 
     // ─── RENDER ───
