@@ -152,6 +152,31 @@ export default function RiskLevel() {
 
         const dados: RiskLevelResposta = await res.json();
 
+        const filtroLabel = periodo
+          ? periodo.from === periodo.to
+            ? `filtrando só ${periodo.from}`
+            : `filtrando de ${periodo.from} a ${periodo.to}`
+          : dias === "1" ? "filtrando 24h"
+          : `filtrando ${dias} dias`;
+
+        const dbg = (dados as any)._debug;
+        const av  = (dados as any).dataAvailability;
+
+        console.group(`[RiskLevel] ${filtroLabel}  →  RiskTotal = ${dados.indiceRisco}`);
+        console.log("Filtros usados :", (dados as any).filtrosUsados);
+        console.log("Severidades    :", dados.severidades);
+        console.log(`Janela baseline: ${dbg?.janela ?? "—"}  |  Warmup: ${dbg?.warmup}`);
+        console.log("Data avail.    :", av);
+        if (dbg?.cards) {
+          console.table({
+            TopHosts:   { raw: dbg.cards.topHosts?.raw,   baseline: dbg.cards.topHosts?.baseline?.toFixed(2),   risco: dbg.cards.topHosts?.risco?.toFixed(4),   status: av?.topHosts },
+            CIS:        { raw: dbg.cards.cis?.raw?.toFixed(2),       baseline: dbg.cards.cis?.baseline?.toFixed(2),       risco: dbg.cards.cis?.risco?.toFixed(4),       status: av?.cis },
+            Firewall:   { raw: dbg.cards.firewall?.raw,   baseline: dbg.cards.firewall?.baseline?.toFixed(2),   risco: dbg.cards.firewall?.risco?.toFixed(4),   status: av?.firewall },
+            Incidentes: { raw: dbg.cards.incidents?.raw,  baseline: dbg.cards.incidents?.baseline?.toFixed(2),  risco: dbg.cards.incidents?.risco?.toFixed(4),  status: av?.iris },
+          });
+        }
+        console.groupEnd();
+
         setSeveridades(dados.severidades);
         setIndiceRisco(dados.indiceRisco);
       } catch (err) {
