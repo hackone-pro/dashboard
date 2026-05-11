@@ -32,12 +32,6 @@ export default {
         fullUser.tenant.owner_name = user.owner_name_iris;
       }
 
-      // 🔹 período vindo do frontend
-      const { from, to } = ctx.query;
-
-      const inicio = from ? startOfDay(new Date(from)) : null;
-      const fim = to ? endOfDay(new Date(to)) : null;
-
       // 🔹 busca casos no IRIS
       const dataResponse = await buscarCasos(fullUser.tenant, fullUser);
 
@@ -48,25 +42,7 @@ export default {
           ? dataResponse.data
           : [];
 
-      // 🔥 filtro real por data (IRIS usa MM/DD/YYYY)
-      const filtrados = casos.filter((caso) => {
-        if (!caso.case_open_date) return false;
-
-        const dataCaso = parse(
-          caso.case_open_date,
-          "MM/dd/yyyy",
-          new Date()
-        );
-
-        if (isNaN(dataCaso.getTime())) return false;
-
-        if (inicio && isBefore(dataCaso, inicio)) return false;
-        if (fim && isAfter(dataCaso, fim)) return false;
-
-        return true;
-      });
-
-      return filtrados;
+      return casos;
     } catch (err) {
       strapi.log.error(
         "❌ Erro ao buscar casos no Iris:",

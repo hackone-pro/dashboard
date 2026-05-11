@@ -193,7 +193,11 @@ export function useIncidentes(): UseIncidentesReturn {
   const [busca, setBusca] = useState("");
   const [filtroSeveridade, setFiltroSeveridade] = useState<string | null>(null);
   const [filtroOrigem, setFiltroOrigem] = useState<FiltroOrigem>(null);
-  const [periodo, setPeriodo] = useState<{ from: string; to: string } | null>(null);
+  const [periodo, setPeriodo] = useState<{ from: string; to: string } | null>(() => {
+    const to   = new Date();
+    const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
+    return { from: from.toISOString(), to: to.toISOString() };
+  });
 
   // --- Paginação ---
   const [page, setPage] = useState(1);
@@ -243,12 +247,37 @@ export function useIncidentes(): UseIncidentesReturn {
           return;
         }
 
-        const lista: PageIncidente[] = await getTodosCasos(
-          token || "",
-          periodo || undefined
-        );
+        const _h = periodo
+          ? Math.round((new Date(periodo.to).getTime() - new Date(periodo.from).getTime()) / 3600000)
+          : null;
+        const _label = !periodo ? "sem filtro"
+          : _h! <= 25  ? "24h"
+          : _h! <= 50  ? "48h"
+          : _h! <= 170 ? "7d"
+          : _h! <= 362 ? "15d"
+          : _h! <= 722 ? "30d"
+          : "custom";
 
-        const filtradoCliente = lista.filter(
+        console.group(`[useIncidentes] fetch  [${_label}]`);
+        console.log("from :", periodo?.from ?? "—");
+        console.log("to   :", periodo?.to   ?? "—");
+        console.groupEnd();
+
+        const lista: PageIncidente[] = await getTodosCasos(token || "");
+
+        console.log(`[useIncidentes] retorno IRIS: ${lista.length} casos brutos`);
+
+        // filtro de data client-side (IRIS usa MM/dd/yyyy)
+        const filtradoData = periodo
+          ? lista.filter((i) => {
+              if (!i.case_open_date) return false;
+              const [mes, dia, ano] = i.case_open_date.split("/");
+              const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
+              return d >= new Date(periodo.from) && d <= new Date(periodo.to);
+            })
+          : lista;
+
+        const filtradoCliente = filtradoData.filter(
           (i) =>
             normaliza(extractIncidentClient(i)) ===
             normaliza(tenant.cliente_name)
@@ -259,6 +288,8 @@ export function useIncidentes(): UseIncidentesReturn {
             nivelDoIncidente(i) !== "Baixo" ||
             i.severity?.toLowerCase() === "low"
         );
+
+        console.log(`[useIncidentes] após filtro data: ${filtradoData.length} | cliente: ${filtradoCliente.length} | severidade: ${baseLimpa.length}`);
 
         baseLimpa.sort((a, b) => Number(b.case_id) - Number(a.case_id));
 
@@ -491,7 +522,9 @@ export function useIncidentes(): UseIncidentesReturn {
   };
 
   const limparFiltros = () => {
-    setPeriodo(null);
+    const to   = new Date();
+    const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
+    setPeriodo({ from: from.toISOString(), to: to.toISOString() });
     setFiltroSeveridade(null);
     setFiltroOrigem(null);
     setBusca("");

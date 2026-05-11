@@ -91,6 +91,17 @@ export default function DateRangePicker({
       return;
     }
 
+    // ─── Dia único → startDate selecionado, endDate ainda null
+    if (startDate && !endDate) {
+      const from = new Date(startDate);
+      from.setHours(0, 0, 0, 0);
+      const to = new Date(startDate);
+      to.setHours(23, 59, 59, 999);
+      onApply({ from: from.toISOString(), to: to.toISOString() });
+      setOpen(false);
+      return;
+    }
+
     // ─── Range customizado do calendário → passa from/to
     if (startDate && endDate) {
       const from = new Date(startDate);

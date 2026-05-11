@@ -34,16 +34,17 @@ export default function Incidentes() {
 
   const { setScreenData } = useScreenContext();
 
+  const LABEL_DIAS: Record<string, string> = { "1": "24h", "2": "48h", "7": "7d", "15": "15d", "30": "30d" };
+
   function handleFiltro(payload: DateRangePayload) {
     if (payload.dias) {
-      const dias = Number(payload.dias);
-      const from = new Date();
-      from.setDate(from.getDate() - (dias - 1));
-      from.setHours(0, 0, 0, 0);
-      const to = new Date();
-      to.setHours(23, 59, 59, 999);
+      const to   = new Date();
+      const from = new Date(to.getTime() - Number(payload.dias) * 24 * 60 * 60 * 1000);
+      const label = LABEL_DIAS[payload.dias] ?? `${payload.dias}d`;
+      console.log(`[Incidentes] filtro: ${label} | from=${from.toISOString()} to=${to.toISOString()}`);
       setPeriodo({ from: from.toISOString(), to: to.toISOString() });
     } else {
+      console.log(`[Incidentes] filtro: custom | from=${payload.from} to=${payload.to}`);
       setPeriodo({ from: payload.from!, to: payload.to! });
     }
   }
@@ -77,7 +78,7 @@ export default function Incidentes() {
       <div>
         {/* Barra de período e reset */}
         <div className="flex justify-end mt-5 mb-3 px-6">
-          <DateRangePicker onApply={handleFiltro} />
+          <DateRangePicker onApply={handleFiltro} resetKey={chartResetKey} />
           <button
             onClick={limparFiltros}
             className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"

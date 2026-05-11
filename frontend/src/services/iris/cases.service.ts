@@ -33,13 +33,8 @@ function normalizarResposta(res: any): Incidente[] {
 }
 
 export async function getTodosCasos(
-  token: string,
-  payload?: { from?: string; to?: string }
+  token: string
 ): Promise<Incidente[]> {
-
-  const params: any = {};
-  if (payload?.from) params.from = payload.from;
-  if (payload?.to) params.to = payload.to;
 
   const response = await axios.get<any>(
     `${API_URL}/api/acesso/iris/manage/cases/list`,
@@ -47,7 +42,6 @@ export async function getTodosCasos(
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      params,
     }
   );
 

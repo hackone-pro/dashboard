@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    FiCalendar,
-    FiChevronDown,
+    FiRotateCcw,
     FiAlertTriangle,
     FiArrowUpRight,
     FiArrowDownRight,
     FiLoader,
     FiAlertCircle,
 } from "react-icons/fi";
+import DateRangePicker, { type DateRangePayload } from "../componentes/DataRangePicker";
 import { LuWorkflow, LuClock } from "react-icons/lu";
 import { FaArrowUpLong } from "react-icons/fa6";
 
@@ -29,8 +29,6 @@ import {
 import { getRiskLevel, type RiskLevelResposta } from "../services/wazuh/risklevel.service";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-
-const PERIODO_OPTIONS: PeriodoOption[] = ["Dia", "Semana", "Mês", "Trimestre", "Ano", "Customizado"];
 
 const SEVERITY_COLOR_MAP: Record<string, string> = {
     Crítico: "#EC4899",
@@ -192,11 +190,22 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 
 export default function SOCAnalytics() {
     const navigate = useNavigate();
-    const [periodo, setPeriodo] = useState<PeriodoOption>("Dia");
-    const [periodoOpen, setPeriodoOpen] = useState(false);
-    const [customFrom, setCustomFrom] = useState("");
-    const [customTo, setCustomTo] = useState("");
+    const [dias, setDias] = useState<string>("1");
+    const [periodoFiltro, setPeriodoFiltro] = useState<{ from: string; to: string } | null>(null);
+    const [resetFiltroKey, setResetFiltroKey] = useState(0);
     const [severidadeIdx, setSeveridadeIdx] = useState<number | null>(null);
+
+    const DIAS_TO_PERIODO: Record<string, PeriodoOption> = { "1": "Dia", "7": "Semana", "30": "Mês" };
+
+    function handleFiltro(payload: DateRangePayload) {
+        if (payload.dias) {
+            setDias(payload.dias);
+            setPeriodoFiltro(null);
+        } else {
+            setPeriodoFiltro({ from: payload.from!, to: payload.to! });
+            setDias("1");
+        }
+    }
 
     const token = getToken();
     const { tenantAtivo } = useTenant();
@@ -210,12 +219,29 @@ export default function SOCAnalytics() {
     const [loadingWazuh, setLoadingWazuh] = useState(true);
 
     const fetchData = async () => {
-        if (periodo === "Customizado" && (!customFrom || !customTo)) return;
         setLoading(true);
         setError(null);
         try {
+            let socPeriodo: PeriodoOption;
+            let startDate: string | undefined;
+            let endDate: string | undefined;
+
+            if (periodoFiltro) {
+                socPeriodo = "Customizado";
+                startDate  = periodoFiltro.from;
+                endDate    = periodoFiltro.to;
+            } else if (DIAS_TO_PERIODO[dias]) {
+                socPeriodo = DIAS_TO_PERIODO[dias];
+            } else {
+                const to   = new Date();
+                const from = new Date(to.getTime() - Number(dias) * 24 * 60 * 60 * 1000);
+                socPeriodo = "Customizado";
+                startDate  = from.toISOString();
+                endDate    = to.toISOString();
+            }
+
             const result = await socAnalyticsService.getSocAnalytics(
-                periodo, token ?? "", customFrom || undefined, customTo || undefined
+                socPeriodo, token ?? "", startDate, endDate
             );
             setData(result);
         } catch (err: any) {
@@ -229,41 +255,16 @@ export default function SOCAnalytics() {
         if (!tenantAtivo) return;
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [periodo, tenantAtivo, customFrom, customTo]);
+    }, [dias, periodoFiltro, tenantAtivo]);
 
     useEffect(() => {
         if (!tenantAtivo) return;
-        if (periodo === "Customizado" && (!customFrom || !customTo)) return;
-
         setLoadingWazuh(true);
-
-        let diasParam: string | undefined;
-        let periodoParam: { from: string; to: string } | undefined;
-
-        if (periodo === "Dia") {
-            diasParam = "1";
-        } else if (periodo === "Semana") {
-            diasParam = "7";
-        } else if (periodo === "Mês") {
-            diasParam = "30";
-        } else if (periodo === "Customizado") {
-            periodoParam = { from: customFrom, to: customTo };
-        } else {
-            const today = new Date();
-            const days = periodo === "Trimestre" ? 90 : 365;
-            const from = new Date(today);
-            from.setDate(from.getDate() - days);
-            periodoParam = {
-                from: from.toISOString().split("T")[0],
-                to: today.toISOString().split("T")[0],
-            };
-        }
-
-        getRiskLevel(diasParam, periodoParam)
+        getRiskLevel(periodoFiltro ? undefined : dias, periodoFiltro ?? undefined)
             .then(setWazuhRisk)
             .catch((err) => console.error("Erro ao carregar Wazuh RiskLevel:", err))
             .finally(() => setLoadingWazuh(false));
-    }, [tenantAtivo, periodo, customFrom, customTo]);
+    }, [tenantAtivo, dias, periodoFiltro]);
 
     // ─── Screen context para o chat ──────────────────────────────────────────
     useEffect(() => {
@@ -271,7 +272,9 @@ export default function SOCAnalytics() {
         const totalSev = data.severityDistribution?.total ?? 0;
         setScreenData("soc-analytics", {
             nomePagina: "SOC Analytics",
-            periodo,
+            periodo: periodoFiltro
+                ? `${periodoFiltro.from.split("T")[0]} → ${periodoFiltro.to.split("T")[0]}`
+                : ({ "1": "Dia", "7": "Semana", "15": "15 dias", "30": "Mês" } as Record<string, string>)[dias] ?? `${dias} dias`,
             mttd: data.mttd?.value != null ? `${data.mttd.value} ${data.mttd.unit ?? ""}`.trim() : null,
             mtta: data.mtta?.value != null ? `${data.mtta.value} ${data.mtta.unit ?? ""}`.trim() : null,
             mttr: data.mttr?.value != null ? `${data.mttr.value} ${data.mttr.unit ?? ""}`.trim() : null,
@@ -298,7 +301,7 @@ export default function SOCAnalytics() {
                 taxaEscalacao: data.iaPerformance.escalationRate != null ? `${data.iaPerformance.escalationRate}%` : null,
             } : null,
         });
-    }, [data, periodo]);
+    }, [data, dias, periodoFiltro]);
 
     // ── Derived data ──────────────────────────────────────────────────────────
     const LABEL_PT: Record<string, string> = {
@@ -371,53 +374,23 @@ export default function SOCAnalytics() {
             <section className="flex flex-col gap-6">
 
                 {/* ── Filtro ────────────────────────────────────────────── */}
-                <div className="flex flex-wrap items-center gap-3 no-print">
-                    <span className="text-gray-400 text-sm flex items-center gap-2">
+                <div className="flex justify-end mt-5 mb-3 px-6 no-print">
+                    <DateRangePicker
+                        resetKey={resetFiltroKey}
+                        onApply={handleFiltro}
+                    />
+                    <button
+                        onClick={() => {
+                            setDias("1");
+                            setPeriodoFiltro(null);
+                            setResetFiltroKey((v) => v + 1);
+                        }}
+                        className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors ml-3"
+                    >
                         {/* @ts-ignore */}
-                        <FiCalendar size={14} />
-                        Filtrar por:
-                    </span>
-                    <div className="relative">
-                        <button
-                            onClick={() => setPeriodoOpen(!periodoOpen)}
-                            className="flex items-center gap-2 text-gray-300 text-sm border border-[#2a2040] bg-[#160f2a] px-4 py-1.5 rounded-lg hover:border-[#4B06DD]/50 transition"
-                        >
-                            {periodo}
-                            {/* @ts-ignore */}
-                            <FiChevronDown size={14} />
-                        </button>
-                        {periodoOpen && (
-                            <div className="absolute top-full mt-1 left-0 bg-[#1e1735] border border-[#4B06DD]/30 rounded-lg z-10 overflow-hidden shadow-xl">
-                                {PERIODO_OPTIONS.map((op) => (
-                                    <button
-                                        key={op}
-                                        onClick={() => { setPeriodo(op); setPeriodoOpen(false); }}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-[#4B06DD]/20 hover:text-purple-300 transition"
-                                    >
-                                        {op}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {periodo === "Customizado" && (
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="date"
-                                value={customFrom}
-                                onChange={(e) => setCustomFrom(e.target.value)}
-                                className="text-gray-300 text-sm border border-[#2a2040] bg-[#160f2a] px-3 py-1.5 rounded-lg focus:border-[#4B06DD]/70 focus:outline-none transition [color-scheme:dark]"
-                            />
-                            <span className="text-gray-500 text-sm">até</span>
-                            <input
-                                type="date"
-                                value={customTo}
-                                min={customFrom || undefined}
-                                onChange={(e) => setCustomTo(e.target.value)}
-                                className="text-gray-300 text-sm border border-[#2a2040] bg-[#160f2a] px-3 py-1.5 rounded-lg focus:border-[#4B06DD]/70 focus:outline-none transition [color-scheme:dark]"
-                            />
-                        </div>
-                    )}
+                        <FiRotateCcw className="w-4 h-4" />
+                        Limpar filtros
+                    </button>
                 </div>
 
                 {error && <ErrorBanner message={error} onRetry={fetchData} />}

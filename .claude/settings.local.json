@@ -22,7 +22,8 @@
       "mcp__plugin_playwright_playwright__browser_fill_form",
       "mcp__plugin_playwright_playwright__browser_type",
       "mcp__plugin_playwright_playwright__browser_take_screenshot",
-      "mcp__plugin_playwright_playwright__browser_press_key"
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "WebFetch(domain:docs.dfir-iris.org)"
     ]
   }
 }

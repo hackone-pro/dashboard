@@ -120,7 +120,7 @@ export const socAnalyticsService = {
         const params = new URLSearchParams({ period: periodType });
         if (periodType === "Custom" && startDate && endDate) {
             params.set("startDate", new Date(startDate).toISOString());
-            params.set("endDate", new Date(endDate + "T23:59:59").toISOString());
+            params.set("endDate", new Date(endDate).toISOString());
         }
         const url = `${API_URL}/api/analytics/soc?${params.toString()}`;
 

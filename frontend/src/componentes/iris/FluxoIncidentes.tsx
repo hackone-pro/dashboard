@@ -56,10 +56,7 @@ export default function FluxoIncidentesIris({
         setCarregando(true);
         setErro(null);
 
-        const response = await getTodosCasos(
-          token,
-          periodo ? { from: periodo.from, to: periodo.to } : undefined
-        );
+        const response = await getTodosCasos(token);
         // @ts-ignore
         const data: Incidente[] = Array.isArray(response)
           ? response
@@ -84,7 +81,10 @@ export default function FluxoIncidentesIris({
           // @ts-ignore
           if (c.client_name !== tenantAtivo.cliente_name) return false;
 
-          if (periodo) return true;
+          if (periodo) {
+            const d = parseUSDate(c.case_open_date);
+            return d >= new Date(periodo.from) && d <= new Date(periodo.to);
+          }
 
           if (nDias === 0) return true;
 
