@@ -35,6 +35,7 @@ export async function buscarCasos(tenant, user) {
         case_name: c.name ?? c.case_name,
         case_description: c.description ?? c.case_description,
         case_open_date: formatIrisDate(c.open_date ?? c.case_open_date),
+        case_initial_date: c.initial_date ?? null,
         case_close_date: formatIrisDate(c.close_date ?? c.case_close_date),
         case_soc_id: c.soc_id ?? c.case_soc_id,
         case_state_id: c.state?.state_id ?? c.state_id ?? c.case_state_id ?? null,

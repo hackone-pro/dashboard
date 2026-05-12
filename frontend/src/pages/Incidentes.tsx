@@ -44,10 +44,10 @@ export default function Incidentes() {
       const from = new Date(to.getTime() - Number(payload.dias) * 24 * 60 * 60 * 1000);
       const label = LABEL_DIAS[payload.dias] ?? `${payload.dias}d`;
       console.log(`[Incidentes] filtro: ${label} | from=${from.toISOString()} to=${to.toISOString()}`);
-      setPeriodo({ from: from.toISOString(), to: to.toISOString() });
+      setPeriodo({ from: from.toISOString(), to: to.toISOString(), label });
     } else {
       console.log(`[Incidentes] filtro: custom | from=${payload.from} to=${payload.to}`);
-      setPeriodo({ from: payload.from!, to: payload.to! });
+      setPeriodo({ from: payload.from!, to: payload.to!, label: "custom" });
     }
   }
 

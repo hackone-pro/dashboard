@@ -6,6 +6,7 @@ export type Incidente = {
   case_name: string;
   case_description: string;
   case_open_date: string;
+  case_initial_date?: string | null;
   classification_id: number | null;
   classification: string | null;
   opened_by: string;

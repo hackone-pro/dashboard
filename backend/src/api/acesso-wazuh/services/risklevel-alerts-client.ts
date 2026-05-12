@@ -78,8 +78,13 @@ export async function getBaselineFromAlerts(
 
     return response.status === 204 ? null : (response.data as RemoteBaseline);
   } catch (err: any) {
+    const status = err?.response?.status;
+    const code   = err?.code; // ECONNREFUSED, ETIMEDOUT, etc.
     strapi.log.warn(
-      `[RiskLevel] Baseline remoto indisponível para tenant ${tenantId}: ${err?.message}`
+      `[RiskLevel] Baseline remoto indisponível para tenant ${tenantId}: ` +
+      `${err?.message}` +
+      (status ? ` | HTTP ${status}` : "") +
+      (code   ? ` | code=${code}`   : "")
     );
     return null;
   }

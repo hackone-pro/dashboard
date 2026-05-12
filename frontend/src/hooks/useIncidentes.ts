@@ -161,8 +161,8 @@ export interface UseIncidentesReturn {
   setFiltroSeveridade: (v: string | null) => void;
   filtroOrigem: FiltroOrigem;
   setFiltroOrigem: (v: FiltroOrigem) => void;
-  periodo: { from: string; to: string } | null;
-  setPeriodo: (v: { from: string; to: string } | null) => void;
+  periodo: { from: string; to: string; label?: string } | null;
+  setPeriodo: (v: { from: string; to: string; label?: string } | null) => void;
   limparFiltros: () => void;
 
   // Ações
@@ -211,7 +211,7 @@ export function useIncidentes(): UseIncidentesReturn {
   const [busca, setBusca] = useState("");
   const [filtroSeveridade, setFiltroSeveridade] = useState<string | null>(null);
   const [filtroOrigem, setFiltroOrigem] = useState<FiltroOrigem>(null);
-  const [periodo, setPeriodo] = useState<{ from: string; to: string } | null>(() => {
+  const [periodo, setPeriodo] = useState<{ from: string; to: string; label?: string } | null>(() => {
     const to   = new Date();
     const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
     return { from: from.toISOString(), to: to.toISOString() };
@@ -265,16 +265,7 @@ export function useIncidentes(): UseIncidentesReturn {
           return;
         }
 
-        const _h = periodo
-          ? Math.round((new Date(periodo.to).getTime() - new Date(periodo.from).getTime()) / 3600000)
-          : null;
-        const _label = !periodo ? "sem filtro"
-          : _h! <= 25  ? "24h"
-          : _h! <= 50  ? "48h"
-          : _h! <= 170 ? "7d"
-          : _h! <= 362 ? "15d"
-          : _h! <= 722 ? "30d"
-          : "custom";
+        const _label = !periodo ? "sem filtro" : (periodo.label ?? "custom");
 
         console.group(`[useIncidentes] fetch  [${_label}]`);
         console.log("from :", periodo?.from ?? "—");
@@ -285,13 +276,20 @@ export function useIncidentes(): UseIncidentesReturn {
 
         console.log(`[useIncidentes] retorno IRIS: ${lista.length} casos brutos`);
 
-        // filtro de data client-side (IRIS usa MM/dd/yyyy)
+        // filtro de data client-side
+        // Prefere case_initial_date (datetime exato do IRIS) para precisão de hora.
+        // Fallback: case_open_date (MM/dd/yyyy), expandindo from para 00:00 do dia.
         const filtradoData = periodo
           ? lista.filter((i) => {
+              if (i.case_initial_date) {
+                const ts = new Date(i.case_initial_date + "Z"); // initial_date é UTC sem sufixo
+                return ts >= new Date(periodo.from) && ts <= new Date(periodo.to);
+              }
               if (!i.case_open_date) return false;
               const [mes, dia, ano] = i.case_open_date.split("/");
-              const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
-              return d >= new Date(periodo.from) && d <= new Date(periodo.to);
+              const d       = new Date(Number(ano), Number(mes) - 1, Number(dia));
+              const fromDay = new Date(periodo.from); fromDay.setHours(0, 0, 0, 0);
+              return d >= fromDay && d <= new Date(periodo.to);
             })
           : lista;
 

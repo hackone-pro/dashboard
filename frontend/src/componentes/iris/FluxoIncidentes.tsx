@@ -9,6 +9,7 @@ interface Incidente {
   case_name: string;
   case_description: string;
   case_open_date: string;
+  case_initial_date?: string | null;
   state_name: string;
   owner: string;
   client_name: string;
@@ -63,14 +64,21 @@ export default function FluxoIncidentesIris({
           : ((response as { data?: Incidente[] }).data || []);
 
         const hoje = new Date();
-        const limite = new Date();
 
         const nDias =
           periodo || diasEfetivo === "todos"
             ? 0
             : Number(diasEfetivo);
 
-        if (nDias > 0) limite.setDate(hoje.getDate() - nDias);
+        // Limite exato para casos com initial_date (timestamp preciso)
+        const limiteExato = nDias > 0
+          ? new Date(hoje.getTime() - nDias * 24 * 60 * 60 * 1000)
+          : new Date(0);
+
+        // Limite dia-início para fallback sem hora (case_open_date)
+        const limiteDia = new Date(hoje);
+        if (nDias > 0) limiteDia.setDate(hoje.getDate() - nDias);
+        limiteDia.setHours(0, 0, 0, 0);
 
         const parseUSDate = (mdy: string) => {
           const [mes, dia, ano] = mdy.split("/");
@@ -82,14 +90,23 @@ export default function FluxoIncidentesIris({
           if (c.client_name !== tenantAtivo.cliente_name) return false;
 
           if (periodo) {
-            const d = parseUSDate(c.case_open_date);
-            return d >= new Date(periodo.from) && d <= new Date(periodo.to);
+            if (c.case_initial_date) {
+              const ts = new Date(c.case_initial_date + "Z"); // initial_date é UTC sem sufixo
+              return ts >= new Date(periodo.from) && ts <= new Date(periodo.to);
+            }
+            const d       = parseUSDate(c.case_open_date);
+            const fromDay = new Date(periodo.from); fromDay.setHours(0, 0, 0, 0);
+            return d >= fromDay && d <= new Date(periodo.to);
           }
 
           if (nDias === 0) return true;
 
+          if (c.case_initial_date) {
+            const ts = new Date(c.case_initial_date + "Z");
+            return ts >= limiteExato && ts <= hoje;
+          }
           const d = parseUSDate(c.case_open_date);
-          return d >= limite && d <= hoje;
+          return d >= limiteDia && d <= hoje;
         });
 
         const abertos = dataFiltrada.filter(
@@ -113,7 +130,7 @@ export default function FluxoIncidentesIris({
           dataFiltrada,
           // @ts-ignore
           tenantAtivo.owner_name,
-          nDias
+          nDias === 0 ? 0 : nDias + 1  // +1 para cobrir meia-noite do dia inicial
         );
 
         setSeries(agrupado.series);

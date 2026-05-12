@@ -243,15 +243,11 @@ export async function calcularRiskOperacionalTenant(
           )
         : Promise.resolve([]);
 
+    // Incidentes = snapshot atual de abertos (independente da janela selecionada)
+    // Ref: concepção Risk Level — "count deve refletir incidentes abertos no momento"
     const irisPromise =
       tenant?.iris_url
-        ? buscarIncidentesIris(
-            tenant,
-            periodo
-              ? { from: periodo.from, to: periodo.to }
-              : { dias: diasIris },
-            user
-          )
+        ? buscarIncidentesIris(tenant, { dias: "todos" }, user)
         : Promise.resolve(null);
 
     // =====================================================
