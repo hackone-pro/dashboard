@@ -154,10 +154,11 @@ export default function RiskLevel() {
 
         const dados: RiskLevelResposta = await res.json();
 
+        const fmtData = (iso: string) =>
+          new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+
         const filtroLabel = periodo
-          ? periodo.from === periodo.to
-            ? `filtrando só ${periodo.from}`
-            : `filtrando de ${periodo.from} a ${periodo.to}`
+          ? `${fmtData(periodo.from)} a ${fmtData(periodo.to)}`
           : dias === "1" ? "filtrando 24h"
           : `filtrando ${dias} dias`;
 

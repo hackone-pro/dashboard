@@ -355,6 +355,28 @@ export async function calcularRiskOperacionalTenant(
           `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — baseline remoto ` +
           `(janela=${remoto.windowHours}h, calculado em ${remoto.calculatedAt})`
         );
+      } else if (janelaCanonica !== "1") {
+        // Bug 1 fix: sem baseline para janela Nd → escala o baseline 1d proporcionalmente
+        // (assume volume diário constante como bootstrap até o cron acumular histórico)
+        const remoto1d = await getBaselineFromAlerts(tenantKey, 24);
+        if (remoto1d) {
+          const n = parseInt(janelaCanonica);
+          slotAnterior = {
+            top_hosts:   remoto1d.topHosts * n,
+            cis:         remoto1d.cis      * n,
+            firewall:    remoto1d.firewall  * n,
+            incidents:   remoto1d.incidents, // snapshot, sem escala
+            initialized: true,
+          };
+          strapi.log.info(
+            `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline ${janelaCanonica}d, ` +
+            `escalando baseline 1d ×${n} como bootstrap`
+          );
+        } else {
+          strapi.log.info(
+            `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline remoto (nem 1d), aplicando WARMUP`
+          );
+        }
       } else {
         strapi.log.info(
           `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline remoto, aplicando WARMUP`
@@ -377,8 +399,47 @@ export async function calcularRiskOperacionalTenant(
           `(data=${periodo.from}, janela=${remoto.windowHours}h, calculado em ${remoto.calculatedAt})`
         );
       } else {
+        // Bug B fix: sem baseline histórico para o range → escala o baseline 1d pelo janelaFallback
+        const remoto1d = await getBaselineFromAlerts(tenantKey, 24);
+        if (remoto1d) {
+          const n = parseInt(janelaFallback);
+          slotAnterior = {
+            top_hosts:   remoto1d.topHosts * n,
+            cis:         remoto1d.cis      * n,
+            firewall:    remoto1d.firewall  * n,
+            incidents:   remoto1d.incidents, // snapshot, sem escala
+            initialized: true,
+          };
+          strapi.log.info(
+            `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline histórico para ${periodo.from}, ` +
+            `escalando baseline 1d ×${n} (fallback: ${janelaFallback}d) como bootstrap`
+          );
+        } else {
+          strapi.log.info(
+            `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline histórico para ${periodo.from}, aplicando WARMUP`
+          );
+        }
+      }
+    } else {
+      // Bug A fix: janela não-canônica sem periodo (ex: dias=2 = 48h)
+      // Escala o baseline 1d pelo número de dias para evitar Warmup permanente
+      const diasNum = parseInt(diasAgentes) || 1;
+      const remoto1d = await getBaselineFromAlerts(tenantKey, 24);
+      if (remoto1d) {
+        slotAnterior = {
+          top_hosts:   remoto1d.topHosts * diasNum,
+          cis:         remoto1d.cis      * diasNum,
+          firewall:    remoto1d.firewall  * diasNum,
+          incidents:   remoto1d.incidents, // snapshot, sem escala
+          initialized: true,
+        };
         strapi.log.info(
-          `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline histórico para ${periodo.from}, aplicando WARMUP`
+          `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — janela não-canônica (${diasAgentes}d), ` +
+          `escalando baseline 1d ×${diasNum} como bootstrap`
+        );
+      } else {
+        strapi.log.info(
+          `[RiskLevel] tenant=${tenantKey} (${tenant.organizacao}) — sem baseline 1d para escalar (${diasAgentes}d), aplicando WARMUP`
         );
       }
     }
@@ -410,10 +471,25 @@ export async function calcularRiskOperacionalTenant(
       "Firewall"
     );
 
+    // Bug 2: rawIncidents é sempre snapshot atual (dias="todos"), não depende da janela.
+    // Para comparação consistente, o card Incidentes sempre usa baseline da janela 1d,
+    // independente da janela global selecionada (7d, 15d, 30d, custom).
+    let slotParaIncidents = slotAnterior;
+    if (janelaCanonica !== "1") {
+      const remoto1d = await getBaselineFromAlerts(tenantKey, 24);
+      slotParaIncidents = remoto1d
+        ? { ...BASELINE_VAZIO, incidents: remoto1d.incidents, initialized: true }
+        : { ...BASELINE_VAZIO };
+      strapi.log.debug(
+        `[RiskLevel] tenant=${tenantKey} — Incidentes: usando baseline 1d ` +
+        `(initialized=${slotParaIncidents.initialized}, incidents=${slotParaIncidents.incidents.toFixed(0)})`
+      );
+    }
+
     const novoIncidents = atualizarBaseline(
       rawIncidents,
-      slotAnterior.incidents,
-      slotAnterior.initialized,
+      slotParaIncidents.incidents,
+      slotParaIncidents.initialized,
       PARAMS.decayIncidentes,
       PARAMS.minFloorIncidentes,
       "Incidentes"

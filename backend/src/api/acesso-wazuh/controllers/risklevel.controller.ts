@@ -68,9 +68,9 @@ export default {
         filtrosUsados: {
           diasGlobal,
           periodo,
-          diasFirewall,
-          diasAgentes,
-          diasIris,
+          diasFirewall: periodo ? "customizado" : diasFirewall,
+          diasAgentes:  periodo ? "customizado" : diasAgentes,
+          diasIris:     periodo ? "customizado" : diasIris,
         },
         _debug: (resultado as any)._debug,
       });
