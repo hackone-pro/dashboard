@@ -8,6 +8,7 @@ import IncidenteTabela from "../componentes/iris/incidentes/IncidenteTabela";
 import { FiRotateCcw } from "react-icons/fi";
 
 import { useIncidentes, nivelDoIncidente } from "../hooks/useIncidentes";
+import IncidentesDebugPanel from "../componentes/iris/IncidentesDebugPanel";
 import { statusPT, formatCaseName } from "../utils/incidentes/helpers";
 import { useEffect } from "react";
 import { useScreenContext } from "../context/ScreenContext";
@@ -30,6 +31,7 @@ export default function Incidentes() {
     expandido, setExpandido,
     atualizarIncidente,
     chartResetKey,
+    fetchDebug,
   } = useIncidentes();
 
   const { setScreenData } = useScreenContext();
@@ -127,6 +129,24 @@ export default function Incidentes() {
           onAtualizar={atualizarIncidente}
         />
       </div>
+      <IncidentesDebugPanel
+        fetchDebug={fetchDebug}
+        filtroSeveridade={filtroSeveridade}
+        filtroOrigem={filtroOrigem}
+        busca={busca}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        total={total}
+        totalPages={totalPages}
+        page={page}
+        start={start}
+        end={end}
+        abertos={abertos.length}
+        fechados={fechados.length}
+        atribuidos={atribuidos.length}
+        naoAtribuidos={naoAtribuidos.length}
+        periodo={periodo}
+      />
     </LayoutModel>
   );
 }

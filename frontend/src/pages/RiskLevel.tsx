@@ -7,6 +7,7 @@ import TopAgentsCisCard from "../componentes/wazuh/RiskLevel/TopAgentsCisCard";
 import FirewallDonutCard from "../componentes/wazuh/RiskLevel/FirewallDonutCard";
 import FluxoIncidentes from "../componentes/iris/FluxoIncidentes";
 import DateRangePicker, { DateRangePayload } from "../componentes/DataRangePicker";
+import DebugPanel, { type RLDebugData } from "../componentes/wazuh/RiskLevel/DebugPanel";
 
 import { getToken } from "../utils/auth";
 import {
@@ -61,6 +62,7 @@ export default function RiskLevel() {
 
   const [indiceRisco, setIndiceRisco] = useState<number>(0);
   const [totalIncidentes, setTotalIncidentes] = useState<number>(0);
+  const [debugData, setDebugData] = useState<RLDebugData | null>(null);
   const [firewallDados, setFirewallDados] = useState<FirewallDonutSummary | null>(null);
   const [topAgentes, setTopAgentes] = useState<TopAgentSummary[]>([]);
   const [topAgentesCis, setTopAgentesCis] = useState<TopAgentCisSummary[]>([]);
@@ -177,6 +179,33 @@ export default function RiskLevel() {
         }
         console.groupEnd();
 
+        // Alimenta o painel visual de debug
+        setDebugData({
+          timestamp: new Date().toLocaleTimeString("pt-BR"),
+          filtro: {
+            label:       filtroLabel,
+            dias,
+            periodo,
+            queryParams,
+          },
+          resposta: {
+            filtrosUsados:    (dados as any).filtrosUsados ?? null,
+            dataAvailability: av ?? {},
+            janela:           dbg?.janela ?? null,
+            warmup:           dbg?.warmup ?? null,
+          },
+          cards: {
+            topHosts:  dbg?.cards?.topHosts  ?? null,
+            cis:       dbg?.cards?.cis       ?? null,
+            firewall:  dbg?.cards?.firewall  ?? null,
+            incidents: dbg?.cards?.incidents ?? null,
+          },
+          resultado: {
+            indiceRisco: dados.indiceRisco,
+            severidades: dados.severidades,
+          },
+        });
+
         setSeveridades(dados.severidades);
         setIndiceRisco(dados.indiceRisco);
       } catch (err) {
@@ -282,6 +311,7 @@ export default function RiskLevel() {
           </div>
         </div>
       </section>
+      <DebugPanel data={debugData} />
     </LayoutModel>
   );
 }

@@ -103,6 +103,20 @@ export function matchSeveridade(nivelItem: string, filtro: string): boolean {
 /* =========================================
  * HOOK PRINCIPAL
  * ======================================= */
+export interface IncidentesFetchDebug {
+  timestamp:        string;
+  label:            string;
+  from:             string | null;
+  to:               string | null;
+  brutos:           number;
+  aposData:         number;
+  aposCliente:      number;
+  aposSeveridade:   number;
+  tenantCliente:    string;
+  irisUrl:          string;
+  elapsedMs:        number;
+}
+
 export interface UseIncidentesReturn {
   // Dados
   dados: PageIncidente[];
@@ -158,6 +172,9 @@ export interface UseIncidentesReturn {
 
   // Chave de reset dos gráficos
   chartResetKey: number;
+
+  // Debug
+  fetchDebug: IncidentesFetchDebug | null;
 }
 
 export function useIncidentes(): UseIncidentesReturn {
@@ -184,6 +201,7 @@ export function useIncidentes(): UseIncidentesReturn {
   // --- UI ---
   const [expandido, setExpandido] = useState<number | string | null>(null);
   const [chartResetKey, setChartResetKey] = useState(0);
+  const [fetchDebug, setFetchDebug] = useState<IncidentesFetchDebug | null>(null);
 
   // --- Ordenação ---
   const [sortBy, setSortByState] = useState<SortKey>("id");
@@ -294,6 +312,20 @@ export function useIncidentes(): UseIncidentesReturn {
         baseLimpa.sort((a, b) => Number(b.case_id) - Number(a.case_id));
 
         const elapsed = Date.now() - inicioFetch;
+
+        setFetchDebug({
+          timestamp:      new Date().toLocaleTimeString("pt-BR"),
+          label:          _label,
+          from:           periodo?.from ?? null,
+          to:             periodo?.to   ?? null,
+          brutos:         lista.length,
+          aposData:       filtradoData.length,
+          aposCliente:    filtradoCliente.length,
+          aposSeveridade: baseLimpa.length,
+          tenantCliente:  tenant.cliente_name,
+          irisUrl:        tenant?.iris_url || "",
+          elapsedMs:      elapsed,
+        });
         const delay = Math.max(500 - elapsed, 0);
 
         setTimeout(() => {
@@ -593,5 +625,8 @@ export function useIncidentes(): UseIncidentesReturn {
     setExpandido,
     atualizarIncidente,
     chartResetKey,
+
+    // Debug
+    fetchDebug,
   };
 }

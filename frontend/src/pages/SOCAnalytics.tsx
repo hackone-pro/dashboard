@@ -27,6 +27,7 @@ import {
     type PeriodoOption,
 } from "../services/azure-api/soc-analytics.service";
 import { getRiskLevel, type RiskLevelResposta } from "../services/wazuh/risklevel.service";
+import SOCDebugPanel, { type SOCDebugData } from "../componentes/SOCAnalytics/DebugPanel";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -217,6 +218,7 @@ export default function SOCAnalytics() {
 
     const [wazuhRisk, setWazuhRisk] = useState<RiskLevelResposta | null>(null);
     const [loadingWazuh, setLoadingWazuh] = useState(true);
+    const [debugData, setDebugData] = useState<SOCDebugData | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -244,6 +246,35 @@ export default function SOCAnalytics() {
                 socPeriodo, token ?? "", startDate, endDate
             );
             setData(result);
+
+            // Alimenta o painel visual de debug
+            const filtroLabel = periodoFiltro
+                ? `custom: ${periodoFiltro.from.split("T")[0]} → ${periodoFiltro.to.split("T")[0]}`
+                : ({ "1": "24h", "7": "7d", "15": "15d", "30": "30d" } as Record<string,string>)[dias] ?? `${dias}d`;
+
+            setDebugData((prev) => ({
+                ...(prev ?? {} as any),
+                timestamp:  new Date().toLocaleTimeString("pt-BR"),
+                filtro: {
+                    label:      filtroLabel,
+                    dias,
+                    periodo:    periodoFiltro,
+                    socPeriodo,
+                    startDate,
+                    endDate,
+                },
+                period:     result.period ?? null,
+                kpis: {
+                    mttd: result.mttd,
+                    mtta: result.mtta,
+                    mttr: result.mttr,
+                },
+                openIncidents:        result.openIncidents ?? null,
+                severityDistribution: result.severityDistribution ?? null,
+                riskLevelIris:        result.riskLevel ?? null,
+                wazuhRisk:            prev?.wazuhRisk ?? null,
+                iaPerformance:        result.iaPerformance ?? null,
+            }));
         } catch (err: any) {
             setError(err?.message ?? "Erro desconhecido ao buscar dados da API.");
         } finally {
@@ -261,7 +292,10 @@ export default function SOCAnalytics() {
         if (!tenantAtivo) return;
         setLoadingWazuh(true);
         getRiskLevel(periodoFiltro ? undefined : dias, periodoFiltro ?? undefined)
-            .then(setWazuhRisk)
+            .then((r) => {
+                setWazuhRisk(r);
+                setDebugData((prev) => prev ? { ...prev, wazuhRisk: r } : prev);
+            })
             .catch((err) => console.error("Erro ao carregar Wazuh RiskLevel:", err))
             .finally(() => setLoadingWazuh(false));
     }, [tenantAtivo, dias, periodoFiltro]);
@@ -627,6 +661,7 @@ export default function SOCAnalytics() {
                     </>
                 )}
             </section>
+            <SOCDebugPanel data={debugData} />
         </LayoutModel>
     );
 }
