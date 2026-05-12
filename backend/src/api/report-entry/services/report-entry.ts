@@ -8,6 +8,7 @@ import { factories } from "@strapi/strapi";
 import { buscarVulnSeveridades, buscarTopOSVulnerabilidades } from "../../acesso-wazuh/services/vulnerabilidades.service";
 import { buscarTopGeradoresFirewall } from "../../acesso-wazuh/services/firewalls.service";
 import { buscarTopAgentes, buscarTopAgentesCis, buscarTopAlteracoesArquivo, buscarTopAgentesSyscheck } from "../../acesso-wazuh/services/agentes.service";
+import { calcularRiskOperacionalTenant } from "../../acesso-wazuh/services/risklevel.service";
 import { buscarIncidentesIris, buscarCasos } from "../../acesso-iris/services/acesso-iris";
 import { buscarTopUsers } from "../../acesso-wazuh/services/usuarios.service";
 import { buscarDadosReport } from "../../n-eight-n/services/n-eight-n";
@@ -53,73 +54,6 @@ export default factories.createCoreService(
       return "1";
     },
 
-    /**
-     * ====================================================
-     * FUNÇÃO: CALCULA O RISKLEVEL COMPLETO (FIRE, AGENTS, IRIS)
-     * ====================================================
-     */
-     async calcularRiskLevelCompleto(tenant, dias, user) {
-      const diasFirewall = dias;
-      const diasAgentes = dias;
-      const diasIris = dias;
-    
-      let baixo = 0;
-      let medio = 0;
-      let alto = 0;
-      let critico = 0;
-    
-      // =============================
-      // 1. FIREWALL
-      // =============================
-      const firewall = await buscarTopGeradoresFirewall(tenant, diasFirewall);
-      firewall?.forEach((fw: any) => {
-        baixo += fw?.severidade?.baixo || 0;
-        medio += fw?.severidade?.medio || 0;
-        alto += fw?.severidade?.alto || 0;
-        critico += fw?.severidade?.critico || 0;
-      });
-    
-      // =============================
-      // 2. AGENTES
-      // =============================
-      const agentes = await buscarTopAgentes(tenant, { dias: diasAgentes });
-      agentes?.forEach((agente: any) => {
-        agente?.severidades?.forEach((s: any) => {
-          if (s.key <= 6) baixo += s.doc_count || 0;
-          else if (s.key <= 11) medio += s.doc_count || 0;
-          else if (s.key <= 14) alto += s.doc_count || 0;
-          else critico += s.doc_count || 0;
-        });
-      });
-    
-      // =============================
-      // 3. IRIS
-      // =============================
-      const iris = await buscarIncidentesIris(tenant, { dias: diasIris }, user);
-      if (iris && typeof iris === "object") {
-        baixo += iris.baixo || 0;
-        medio += iris.medio || 0;
-        alto += iris.alto || 0;
-        critico += iris.critico || 0;
-      }
-    
-      // =============================
-      // 4. CÁLCULO — mesma fórmula do risklevel.service
-      // =============================
-      function calcularRiskLevel({ critico, alto, medio, baixo }) {
-        if (critico > 0) return Math.min(100, 75 + Math.log10(1 + critico) * 10);
-        if (alto > 0) return Math.min(75, 50 + Math.log10(1 + alto) * 8);
-        if (medio > 0) return Math.min(50, 25 + Math.log10(1 + medio) * 6);
-        if (baixo > 0) return Math.min(25, Math.log10(1 + baixo) * 5);
-        return 0;
-      }
-    
-      const indiceRisco = calcularRiskLevel({ critico, alto, medio, baixo });
-    
-      return {
-        gauge: parseFloat(indiceRisco.toFixed(0)),
-      };
-    },
 
 
     /**
@@ -454,8 +388,18 @@ export default factories.createCoreService(
       const fim = endOfDay(new Date());
 
       const filtrados = casos.filter((caso) => {
-        if (!caso.case_open_date) return false;
+        if (diasNum === 0) return true;
 
+        // Prioridade 1: case_initial_date (UTC datetime — mesma lógica do frontend)
+        if (caso.case_initial_date) {
+          const ts = new Date(caso.case_initial_date + "Z");
+          if (!isNaN(ts.getTime())) {
+            return isAfter(ts, inicio) && isBefore(ts, fim);
+          }
+        }
+
+        // Fallback: case_open_date
+        if (!caso.case_open_date) return false;
         let data = new Date(caso.case_open_date);
         if (isNaN(data.getTime())) {
           const partes = caso.case_open_date.split(/[\/\-]/);
@@ -465,8 +409,7 @@ export default factories.createCoreService(
           }
         }
         if (isNaN(data.getTime())) return false;
-
-        return diasNum === 0 ? true : isAfter(data, inicio) && isBefore(data, fim);
+        return isAfter(data, inicio) && isBefore(data, fim);
       });
 
       const total = filtrados.length;
@@ -574,11 +517,13 @@ export default factories.createCoreService(
         // 2. NÍVEL DE RISCO COMPLETO (FIRE + AGENTES + IRIS)
         // ==================================================
         if (sections.includes("Nível de Risco")) {
-          snapshot.riskLevel = await this.calcularRiskLevelCompleto(
-            tenant,
-            diasNormalizados,
-            user
-          );
+          const resultado = await calcularRiskOperacionalTenant(tenant, {
+            diasFirewall: diasNormalizados,
+            diasAgentes:  diasNormalizados,
+            diasIris:     diasNormalizados,
+            user,
+          });
+          snapshot.riskLevel = { gauge: resultado.indiceRisco ?? 0 };
         }
 
         // ==================================================

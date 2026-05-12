@@ -69,6 +69,17 @@ export function formatDateBR(d: string) {
   return `${dia.padStart(2, "0")}/${mes.padStart(2, "0")}/${ano}`;
 }
 
+// Converte case_initial_date (UTC ISO sem Z) para DD/MM/YYYY no horário local.
+// Evita que o dia UTC+1 apareça como "dia seguinte" para usuários em UTC-3 (BRT).
+export function formatInitialDateBR(d?: string | null): string {
+  if (!d) return "";
+  const ts = new Date(d + "Z");
+  if (isNaN(ts.getTime())) return "";
+  const dia = String(ts.getDate()).padStart(2, "0");
+  const mes = String(ts.getMonth() + 1).padStart(2, "0");
+  return `${dia}/${mes}/${ts.getFullYear()}`;
+}
+
 // Filtra lista pelos últimos X dias (inclui hoje). 1 = hoje. 0 = todos.
 export function filtrarPorDias(lista: PageIncidente[], dias: number) {
   if (dias === 0) return lista; // todos

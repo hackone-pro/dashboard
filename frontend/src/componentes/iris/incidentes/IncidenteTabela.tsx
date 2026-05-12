@@ -10,6 +10,7 @@ import {
   extractOwner,
   extractIncidentClient,
   formatDateBR,
+  formatInitialDateBR,
   getCorBadge,
   statusPT,
   formatCaseName,
@@ -173,7 +174,7 @@ export default function IncidenteTabela({
                         ? <a href={`${irisUrl}/case?cid=${id}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">#{id}</a>
                         : <>#{id}</>}
                     </div>
-                    <div className="col-span-2 text-center text-xs text-gray-400">{formatDateBR(inc.case_open_date)}</div>
+                    <div className="col-span-2 text-center text-xs text-gray-400">{formatInitialDateBR(inc.case_initial_date) || formatDateBR(inc.case_open_date)}</div>
                     <div className="col-span-4 text-center text-xs text-gray-400 truncate">#{id} - {formatCaseName(inc.case_name || "") || "—"}</div>
                     <div className="col-span-2 text-center">
                       <span className={`text-[11px] px-2 py-0.5 rounded-md badge ${badge}`}>{sentenceCase(nivel)}</span>
@@ -216,7 +217,7 @@ export default function IncidenteTabela({
                           <Linha label="Aberto por:" valor={inc.opened_by || "—"} />
                         </Secao>
                         <Secao titulo="Datas">
-                          <Linha label="Abertura:" valor={inc.case_open_date || "—"} />
+                          <Linha label="Abertura:" valor={formatInitialDateBR(inc.case_initial_date) || formatDateBR(inc.case_open_date)} />
                           <Linha label="Fechamento:" valor={inc.case_close_date || "—"} />
                         </Secao>
                         <Secao titulo="Classificação">

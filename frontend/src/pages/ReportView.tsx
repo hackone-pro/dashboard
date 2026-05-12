@@ -25,7 +25,6 @@ import {
     statusPT,
     formatCaseName,
     agruparPorSeveridade,
-    detectarNivelPorNome,
     extrairSeveridadeDoTexto,
     extractOwner,
     isIAOwner,
@@ -99,38 +98,19 @@ export default function ReportView() {
         );
     }
 
-    function mapNivelPorClassificationId(
-        id?: number | null
-    ): "Crítico" | "Alto" | "Médio" | "Baixo" {
-        if (id == null) return "Baixo";
-        if ([1, 2, 11, 12, 13, 25, 32, 33, 34, 35, 36].includes(id)) return "Baixo";
-        if ([3, 4, 5, 14, 15, 22, 30, 31].includes(id)) return "Médio";
-        if ([6, 7, 8, 9, 10, 16, 23, 26, 27, 28, 29].includes(id)) return "Alto";
-        if ([17, 18, 19, 20, 21, 24].includes(id)) return "Crítico";
-        return "Baixo";
-    }
-
     function nivelDoIncidente(i: any): "Crítico" | "Alto" | "Médio" | "Baixo" {
-        // Prioridade 1: metadados embutidos na descrição (mesma lógica da tela Incidentes)
-        const severidadeTexto = extrairSeveridadeDoTexto(i.case_description);
-        if (severidadeTexto) return severidadeTexto as any;
-
-        // Prioridade 2: campo severity do IRIS (severity_name)
-        if (i.severity) {
-            const s = i.severity.toLowerCase();
-            if (s.includes("crit")) return "Crítico";
-            if (s.includes("high") || s.includes("alto")) return "Alto";
-            if (s.includes("med")) return "Médio";
-            if (s.includes("low") || s.includes("baix")) return "Baixo";
+        // Espelha exatamente useIncidentes.ts para garantir contagens idênticas
+        const override = i.severidade_override;
+        if (override) {
+            const o = override.toLowerCase();
+            if (o.startsWith("crít") || o.startsWith("crit")) return "Crítico";
+            if (o.startsWith("alt")) return "Alto";
+            if (o.startsWith("méd") || o.startsWith("med")) return "Médio";
+            if (o.startsWith("baix")) return "Baixo";
         }
-
-        // Prioridade 3: nome do caso
-        const manual = detectarNivelPorNome(i.case_name || i.name || "");
-        if (manual) return manual as any;
-
-        // Prioridade 4: classification_id
-        if (!i.classification_id) return "Médio";
-        return mapNivelPorClassificationId(i.classification_id);
+        const severidadeTexto = extrairSeveridadeDoTexto(i.case_description);
+        if (severidadeTexto) return severidadeTexto as "Crítico" | "Alto" | "Médio" | "Baixo";
+        return "Médio";
     }
 
     const cores = [
@@ -230,18 +210,24 @@ export default function ReportView() {
     const incidentes = report?.snapshot?.incidentes ?? null;
     const listaIncidentes = incidentes?.lista ?? [];
 
-    const resumoPorSeveridade = agruparPorSeveridade(listaIncidentes, nivelDoIncidente);
+    // Mesmo filtro de severidade do useIncidentes (baseLimpa): exclui "Baixo" a menos
+    // que o campo severity do IRIS seja "low" (incidente de baixo risco real).
+    const listaFiltrada = listaIncidentes.filter(
+        (i: any) => nivelDoIncidente(i) !== "Baixo" || (i.severity || "").toLowerCase() === "low"
+    );
 
-    const abertos = listaIncidentes.filter(
+    const resumoPorSeveridade = agruparPorSeveridade(listaFiltrada, nivelDoIncidente);
+
+    const abertos = listaFiltrada.filter(
         (i: any) => (i.state_name || i.status || "").toLowerCase() === "open"
     );
-    const fechados = listaIncidentes.filter(
+    const fechados = listaFiltrada.filter(
         (i: any) => (i.state_name || i.status || "").toLowerCase() === "closed"
     );
-    const atribuidos = listaIncidentes.filter(
+    const atribuidos = listaFiltrada.filter(
         (i: any) => !isIAOwner(extractOwner(i))
     );
-    const naoAtribuidos = listaIncidentes.filter(
+    const naoAtribuidos = listaFiltrada.filter(
         (i: any) => isIAOwner(extractOwner(i))
     );
 
@@ -552,7 +538,7 @@ export default function ReportView() {
                     <p className="text-gray-400 text-sm mb-6">Visão geral do nível de risco do ambiente.</p>
                     <div className="h-[260px] bg-[#0F091F] rounded-xl border border-white/10 flex flex-col items-center justify-center gap-3">
                         <div className="flex justify-center items-center">
-                            <GraficoGauge valor={riskLevel?.gauge ?? 0} />
+                            <GraficoGauge valor={Math.round(riskLevel?.gauge ?? 0)} />
                         </div>
                         <div className="flex justify-center text-[10px] text-gray-400 w-full">
                             <div className="flex gap-4 flex-wrap justify-center">

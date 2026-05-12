@@ -26,11 +26,16 @@ export interface RiscoTotalResult {
 
 // ── Parâmetros do algoritmo ───────────────────────────────────────────────────
 
+// Decay DIÁRIO conforme concepção (0.98/dia alertas, 0.99/dia incidentes).
+// O cron roda a cada 5 min (288 ticks/dia), então convertemos para por-tick:
+//   per_tick = daily^(1/288)
+const CRON_TICKS_POR_DIA = 288; // 5 min × 288 = 24h
+
 export const PARAMS = {
   base:                3,
   gamma:               1.5,
-  decayAlertas:        0.98,
-  decayIncidentes:     0.99,
+  decayAlertas:        Math.pow(0.98, 1 / CRON_TICKS_POR_DIA), // ≈ 0.99993 /tick → 0.98 /dia
+  decayIncidentes:     Math.pow(0.99, 1 / CRON_TICKS_POR_DIA), // ≈ 0.999965/tick → 0.99 /dia
   minFloorAlertas:     50,
   minFloorIncidentes:  10,
   warmupFactor:        2,
