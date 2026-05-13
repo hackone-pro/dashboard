@@ -213,8 +213,8 @@ export function useIncidentes(): UseIncidentesReturn {
   const [filtroOrigem, setFiltroOrigem] = useState<FiltroOrigem>(null);
   const [periodo, setPeriodo] = useState<{ from: string; to: string; label?: string } | null>(() => {
     const to   = new Date();
-    const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-    return { from: from.toISOString(), to: to.toISOString() };
+    const from = new Date(to.getFullYear(), 0, 1); // 1º de janeiro do ano corrente
+    return { from: from.toISOString(), to: to.toISOString(), label: "ano" };
   });
 
   // --- Paginação ---
@@ -553,8 +553,8 @@ export function useIncidentes(): UseIncidentesReturn {
 
   const limparFiltros = () => {
     const to   = new Date();
-    const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-    setPeriodo({ from: from.toISOString(), to: to.toISOString() });
+    const from = new Date(to.getFullYear(), 0, 1);
+    setPeriodo({ from: from.toISOString(), to: to.toISOString(), label: "ano" });
     setFiltroSeveridade(null);
     setFiltroOrigem(null);
     setBusca("");
