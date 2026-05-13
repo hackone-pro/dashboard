@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTodosCasos } from "../../services/iris/cases.service";
+import { getTenant } from "../../services/wazuh/tenant.service";
 import GraficoAreaSpline from "../graficos/GraficoAreaSpline";
 import { useTenant } from "../../context/TenantContext";
 import { GripVertical } from "lucide-react";
@@ -57,11 +58,16 @@ export default function FluxoIncidentesIris({
         setCarregando(true);
         setErro(null);
 
-        const response = await getTodosCasos(token);
+        const [response, tenantData] = await Promise.all([
+          getTodosCasos(token),
+          getTenant().catch(() => null),
+        ]);
         // @ts-ignore
         const data: Incidente[] = Array.isArray(response)
           ? response
           : ((response as { data?: Incidente[] }).data || []);
+
+        const ownerName: string = tenantData?.owner_name || "";
 
         const hoje = new Date();
 
@@ -114,8 +120,7 @@ export default function FluxoIncidentesIris({
         ).length;
 
         const atribuidos = dataFiltrada.filter(
-          // @ts-ignore
-          (c) => c.owner === tenantAtivo.owner_name
+          (c) => ownerName && c.owner === ownerName
         ).length;
 
         const totalCliente = dataFiltrada.length;
@@ -128,8 +133,7 @@ export default function FluxoIncidentesIris({
 
         const agrupado = agruparPorDia(
           dataFiltrada,
-          // @ts-ignore
-          tenantAtivo.owner_name,
+          ownerName,
           nDias === 0 ? 0 : nDias + 1  // +1 para cobrir meia-noite do dia inicial
         );
 
