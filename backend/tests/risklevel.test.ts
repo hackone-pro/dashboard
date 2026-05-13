@@ -281,6 +281,65 @@ describe('calcularRiscoTotal', () => {
     expect(result.dataAvailability.iris).toBe('missing');
   });
 
+  // ── decay para janelas longas (1 tick/dia) ───────────────────────────────
+  //
+  // PARAMS.decayAlertas foi calibrado para o cron de 5 min (288 ticks/dia).
+  // Para janelas longas (7d/15d/30d) que rodam 1x/dia usa-se
+  // PARAMS.decayAlertasLongo — half-life ≈ 14 dias por execução.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const BASELINE_BOOTSTRAP = 112_000_000; // bootstrap típico 30d (baseline_1d × 30)
+  const RAW_REAL_30D       =  25_000_000; // volume real observado nos últimos 30d
+
+  it('PARAMS.decayAlertasLongo existe, é < 1 e < decayAlertas por tick', () => {
+    expect(PARAMS.decayAlertasLongo).toBeDefined();
+    expect(PARAMS.decayAlertasLongo).toBeGreaterThan(0.9);
+    expect(PARAMS.decayAlertasLongo).toBeLessThan(1);
+    expect(PARAMS.decayAlertasLongo).toBeLessThan(PARAMS.decayAlertas);
+  });
+
+  it('decayAlertas (5min) em 90 dias de 1 tick/dia quase não converge', () => {
+    let baseline = BASELINE_BOOTSTRAP;
+    for (let dia = 0; dia < 90; dia++) {
+      baseline = atualizarBaseline(RAW_REAL_30D, baseline, true, PARAMS.decayAlertas, 50);
+    }
+    // 0.9999298^90 ≈ 0.9937 → baseline ≈ 111.3M, longe dos 25M reais
+    expect(baseline).toBeGreaterThan(110_000_000);
+  });
+
+  it('decayAlertasLongo: 1 tick reduz mais que decayAlertas × 288 ticks', () => {
+    const apos1TickLongo = atualizarBaseline(
+      RAW_REAL_30D, BASELINE_BOOTSTRAP, true, PARAMS.decayAlertasLongo, 50,
+    );
+    let apos288TicksCurto = BASELINE_BOOTSTRAP;
+    for (let i = 0; i < 288; i++) {
+      apos288TicksCurto = atualizarBaseline(
+        RAW_REAL_30D, apos288TicksCurto, true, PARAMS.decayAlertas, 50,
+      );
+    }
+    // 1 execução/dia com decayLongo reduz mais que 288 execuções/dia com decayCurto
+    expect(apos1TickLongo).toBeLessThan(apos288TicksCurto);
+  });
+
+  it('decayAlertasLongo converge abaixo de 50M em 20 dias de 1 tick/dia', () => {
+    let baseline = BASELINE_BOOTSTRAP;
+    for (let dia = 0; dia < 20; dia++) {
+      baseline = atualizarBaseline(RAW_REAL_30D, baseline, true, PARAMS.decayAlertasLongo, 50);
+    }
+    // half-life ≈ 14d → após 20d: < 50M e ainda > raw
+    expect(baseline).toBeLessThan(50_000_000);
+    expect(baseline).toBeGreaterThan(RAW_REAL_30D);
+  });
+
+  it('decayAlertasLongo converge próximo do raw após 60 dias de 1 tick/dia', () => {
+    let baseline = BASELINE_BOOTSTRAP;
+    for (let dia = 0; dia < 60; dia++) {
+      baseline = atualizarBaseline(RAW_REAL_30D, baseline, true, PARAMS.decayAlertasLongo, 50);
+    }
+    // Após ~4 half-lives (60d / 14d): baseline ≈ RAW_REAL
+    expect(baseline).toBeLessThan(30_000_000);
+  });
+
   // ── Consistência com a spec (seção 8) ───────────────────────────────────
 
   it('spec seção 8: RiskTotal = 100 × Σ(peso_k × r_k) com pesos 0.25 fixos', () => {

@@ -89,7 +89,8 @@ function mapearSeveridadeIris(incidente) {
 export async function buscarIncidentesIris(
   tenant,
   time: { dias: string } | { from: string; to: string },
-  user = null
+  user = null,
+  opcoes: { filtrarPorOwner?: boolean } = {}
 ) {
   try {
     const casosResponse = await buscarCasos(tenant, user);
@@ -120,6 +121,7 @@ export async function buscarIncidentesIris(
       fim = new Date();
     }
 
+    const usarFiltroOwner = opcoes.filtrarPorOwner !== false;
     const ownerUser = user?.owner_name_iris || "";
     const clienteName = tenant?.cliente_name || "";
     const ownersValidos = [ownerUser, "Inteligencia_Artificial"];
@@ -148,14 +150,14 @@ export async function buscarIncidentesIris(
       const dentroDoPeriodo =
         isAfter(data, inicio) && isBefore(data, fim);
 
-      // 🔹 Filtro de owner
+      // 🔹 Filtro de owner (desativado quando filtrarPorOwner: false)
       const ownerCaso = caso.owner || caso.owner_name || "";
       const matchOwner =
         ownersValidos.includes(ownerCaso) ||
         (ownerCaso === "Inteligencia_Artificial" &&
           caso.case_name?.includes(clienteName));
 
-      return dentroDoPeriodo && matchOwner;
+      return dentroDoPeriodo && (!usarFiltroOwner || matchOwner);
     });
 
     // 🔹 Contagem por severidade (inalterada)

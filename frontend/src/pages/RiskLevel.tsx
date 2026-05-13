@@ -226,6 +226,15 @@ export default function RiskLevel() {
         <DateRangePicker
           resetKey={resetFiltroKey}
           onApply={handleFiltro}
+          activeLabel={
+            periodo
+              ? `${new Date(periodo.from).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} – ${new Date(periodo.to).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+              : dias === "1"  ? "24h"
+              : dias === "7"  ? "7d"
+              : dias === "15" ? "15d"
+              : dias === "30" ? "30d"
+              : `${dias}d`
+          }
         />
 
         <button

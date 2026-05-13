@@ -240,52 +240,62 @@ export default {
   // Mantém baseline independente por janela conforme concepção seções 9 e 10.
   snapshotRiskWindowsLongas: {
     task: async ({ strapi }) => {
-      strapi.log.info("🕑 SNAPSHOT RISK WINDOWS LONGAS INICIADO (7d/15d/30d)");
-
-      const tenants = await strapi.db
-        .query("api::tenant.tenant")
-        .findMany({
-          where: {
-            ativa: true,
-            publishedAt: { $notNull: true },
-          },
-        });
-
-      if (!tenants.length) {
-        strapi.log.warn("⚠️ Nenhum tenant ativo para windows longas.");
+      if ((globalThis as any).__windowsLongasRunning) {
+        strapi.log.warn("⚠️ snapshotRiskWindowsLongas já em execução. Pulando.");
         return;
       }
+      (globalThis as any).__windowsLongasRunning = true;
 
-      let success = 0;
-      let fail = 0;
+      strapi.log.info("🕑 SNAPSHOT RISK WINDOWS LONGAS INICIADO (7d/15d/30d)");
 
-      for (const tenant of tenants) {
-        for (const dias of ["7", "15", "30"] as const) {
-          try {
-            await calcularRiskOperacionalTenant(tenant, {
-              diasFirewall:        dias,
-              diasAgentes:         dias,
-              diasIris:            dias,
-              salvarBaselineRemoto: true,
-            });
-            strapi.log.info(`✅ baseline ${dias}d → ${tenant.organizacao}`);
-            success++;
-          } catch (err: any) {
-            strapi.log.error(
-              `❌ baseline ${dias}d → ${tenant.organizacao}: ${err?.message}`
-            );
-            fail++;
+      try {
+        const tenants = await strapi.db
+          .query("api::tenant.tenant")
+          .findMany({
+            where: {
+              ativa: true,
+              publishedAt: { $notNull: true },
+            },
+          });
+
+        if (!tenants.length) {
+          strapi.log.warn("⚠️ Nenhum tenant ativo para windows longas.");
+          return;
+        }
+
+        let success = 0;
+        let fail = 0;
+
+        for (const tenant of tenants) {
+          for (const dias of ["7", "15", "30"] as const) {
+            try {
+              await calcularRiskOperacionalTenant(tenant, {
+                diasFirewall:        dias,
+                diasAgentes:         dias,
+                diasIris:            dias,
+                salvarBaselineRemoto: true,
+              });
+              strapi.log.info(`✅ baseline ${dias}d → ${tenant.organizacao}`);
+              success++;
+            } catch (err: any) {
+              strapi.log.error(
+                `❌ baseline ${dias}d → ${tenant.organizacao}: ${err?.message}`
+              );
+              fail++;
+            }
           }
         }
-      }
 
-      strapi.log.info(
-        `🎯 WINDOWS LONGAS FINALIZADO | Sucesso: ${success} | Falhas: ${fail}`
-      );
+        strapi.log.info(
+          `🎯 WINDOWS LONGAS FINALIZADO | Sucesso: ${success} | Falhas: ${fail}`
+        );
+      } finally {
+        (globalThis as any).__windowsLongasRunning = false;
+      }
     },
 
     options: {
-      rule: "0 0 2 * * *", // 02:00 todo dia
+      rule: "0 0 2 * * *",
     },
   },
 };
