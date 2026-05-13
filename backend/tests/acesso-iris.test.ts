@@ -35,16 +35,17 @@ function casoIris(overrides: {
   state_id?:    number;
   owner?:       string;
   severity?:    string;
+  description?: string;
 } = {}) {
   const hoje = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   return {
-    case_id:           overrides.case_id  ?? 1,
-    open_date:         overrides.open_date ?? hoje,
+    case_id:           overrides.case_id     ?? 1,
+    open_date:         overrides.open_date   ?? hoje,
     state:             { state_id: overrides.state_id ?? 3, state_name: 'Open' },
     owner:             { user_name: overrides.owner ?? 'analista_x' },
     severity:          { severity_name: overrides.severity ?? 'low' },
     name:              `Case ${overrides.case_id ?? 1}`,
-    description:       '',
+    description:       overrides.description ?? '',
     client:            { customer_name: 'Acme' },
     classification_id: 1,
     initial_date:      null,
@@ -200,5 +201,86 @@ describe('buscarIncidentesIris — filtrarPorOwner: false', () => {
     );
     expect(result.total).toBe(0);
     expect(result.critico + result.alto + result.medio + result.baixo).toBe(0);
+  });
+});
+
+// ─── Severidade via descrição (prioridade sobre severity_name) ───────────────
+
+describe('buscarIncidentesIris — severidade via descrição', () => {
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('"Severidade: Crítica" na descrição → critico (ignora severity_name=Low)', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'Low', description: 'Severidade: Crítica\nHost: db-primary' }),
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.critico).toBe(1);
+    expect(result.baixo).toBe(0);
+  });
+
+  it('"Severidade: Alta" na descrição → alto', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'Low', description: 'Severidade: Alta\nHost: srv-01' }),
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.alto).toBe(1);
+    expect(result.baixo).toBe(0);
+  });
+
+  it('"Severidade: Media" na descrição (sem acento) → medio', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'Low', description: 'Severidade: Media' }),
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.medio).toBe(1);
+  });
+
+  it('"Severidade: Baixa" na descrição → baixo (ignora severity_name=Critical)', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'Critical', description: 'Severidade: Baixa' }),
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.baixo).toBe(1);
+    expect(result.critico).toBe(0);
+  });
+
+  it('descrição com markdown (**Severidade**: **Crítica**) → critico', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'Low', description: '**Severidade**: **Crítica**' }),
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.critico).toBe(1);
+  });
+
+  it('sem "Severidade:" na descrição → fallback para severity_name do IRIS', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'Critical', description: 'Caso sem padrão de severidade' }),
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.critico).toBe(1);
+  });
+
+  it('descrição vazia → fallback para severity_name do IRIS', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'High', description: '' }),
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.alto).toBe(1);
+  });
+
+  it('mix: 4 casos com fontes diferentes → contagens corretas', async () => {
+    mockIris([
+      casoIris({ case_id: 1, severity: 'Low',    description: 'Severidade: Crítica' }), // desc → critico
+      casoIris({ case_id: 2, severity: 'Low',    description: 'Severidade: Alta'    }), // desc → alto
+      casoIris({ case_id: 3, severity: 'Low',    description: ''                    }), // fallback → Low → baixo
+      casoIris({ case_id: 4, severity: 'Medium', description: ''                    }), // fallback → Medium → medio
+    ]);
+    const result = await buscarIncidentesIris(tenant, { dias: '7' }, null, { filtrarPorOwner: false });
+    expect(result.total).toBe(4);
+    expect(result.critico).toBe(1);
+    expect(result.alto).toBe(1);
+    expect(result.medio).toBe(1);
+    expect(result.baixo).toBe(1);
   });
 });

@@ -86,6 +86,44 @@ function mapearSeveridadeIris(incidente) {
   return "medio";
 }
 
+/**
+ * Determina o nível de severidade de um caso IRIS.
+ * Prioridade:
+ *  1. Regex "Severidade: <nível>" na descrição (igual ao frontend)
+ *  2. severity_name do campo IRIS (Low/Medium/High/Critical)
+ *  3. Nome do caso (fallback)
+ */
+function mapearNivelCaso(caso: any): "critico" | "alto" | "medio" | "baixo" {
+  // Prioridade 1: extrai da descrição (espelha extrairSeveridadeDoTexto do frontend)
+  const desc = (caso.case_description || "")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "")
+    .replace(/^\s*-\s*/gm, "")
+    .replace(/\u00A0/g, " ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const match = desc.match(
+    /Severidade\s*:\s*(Baixo|Baixa|Medio|Media|Alto|Alta|Critico|Critica)/i
+  );
+  if (match) {
+    const v = match[1].toLowerCase();
+    if (v.startsWith("crit")) return "critico";
+    if (v.startsWith("alt"))  return "alto";
+    if (v.startsWith("med"))  return "medio";
+    if (v.startsWith("baix")) return "baixo";
+  }
+
+  // Prioridade 2: severity_name do IRIS → nome do caso
+  const sev  = (caso.severity || "").toLowerCase();
+  const nome = (caso.case_name || "").toLowerCase();
+  if (sev.includes("crit") || nome.includes("crit"))                         return "critico";
+  if (sev.includes("high") || sev.includes("alto") || nome.includes("alt")) return "alto";
+  if (sev.includes("med")  || nome.includes("med"))                          return "medio";
+  if (sev.includes("low")  || sev.includes("baix") || nome.includes("baix")) return "baixo";
+  return "medio";
+}
+
 export async function buscarIncidentesIris(
   tenant,
   time: { dias: string } | { from: string; to: string },
@@ -160,23 +198,11 @@ export async function buscarIncidentesIris(
       return dentroDoPeriodo && (!usarFiltroOwner || matchOwner);
     });
 
-    // 🔹 Contagem por severidade (inalterada)
+    // 🔹 Contagem por severidade
     const severidades = { baixo: 0, medio: 0, alto: 0, critico: 0, total: 0 };
 
     recentes.forEach((c) => {
-      const nome = c.case_name?.toLowerCase() || "";
-      const sev = c.severity?.toLowerCase() || "";
-
-      let nivel = "medio";
-      if (sev.includes("crit")) nivel = "critico";
-      else if (sev.includes("high") || sev.includes("alto")) nivel = "alto";
-      else if (sev.includes("med")) nivel = "medio";
-      else if (sev.includes("low") || sev.includes("baix")) nivel = "baixo";
-      else if (nome.includes("crit")) nivel = "critico";
-      else if (nome.includes("alto") || nome.includes("alta")) nivel = "alto";
-      else if (nome.includes("med")) nivel = "medio";
-      else if (nome.includes("baix")) nivel = "baixo";
-
+      const nivel = mapearNivelCaso(c);
       severidades[nivel]++;
       severidades.total++;
     });
