@@ -37,6 +37,8 @@ interface RiskFilters {
   periodo?: Periodo | null;
   user?: any;
   salvarBaselineRemoto?: boolean;
+  // Quando true: calcula raw em tempo real mas não persiste baseline (modo visualização).
+  modoVisualizacao?: boolean;
 }
 
 // Baseline de uma janela específica (ex: "1", "7", "15", "30")
@@ -186,6 +188,7 @@ export async function calcularRiskOperacionalTenant(
     const periodo               = filtros?.periodo               || null;
     const user                  = filtros?.user                  || null;
     const salvarBaselineRemoto  = filtros?.salvarBaselineRemoto  ?? false;
+    const modoVisualizacao      = filtros?.modoVisualizacao      ?? false;
 
     // =====================================================
     // 🔹 DETERMINAR JANELA ATIVA
@@ -498,10 +501,10 @@ export async function calcularRiskOperacionalTenant(
     // =====================================================
     // 🔹 PERSISTIR BASELINE
     //    Só persiste em janelas canônicas (1, 7, 15, 30d).
-    //    Ranges customizados (periodo) nunca persistem.
+    //    Ranges customizados (periodo) e modoVisualizacao nunca persistem.
     // =====================================================
 
-    if (janelaCanonica) {
+    if (janelaCanonica && !modoVisualizacao) {
       await salvarBaselineJanela(
         tenantKey,
         janelaCanonica,
@@ -533,7 +536,7 @@ export async function calcularRiskOperacionalTenant(
           `firewall=${novoFirewall.toFixed(0)}, incidents=${novoIncidents.toFixed(0)})`
         );
       }
-    } else {
+    } else if (!modoVisualizacao) {
       strapi.log.debug(
         `[RiskLevel] tenant=${tenantKey} — baseline NÃO persistido ` +
         `(range customizado — usando fallback "${janelaFallback}")`
@@ -593,6 +596,7 @@ export async function calcularRiskOperacionalTenant(
 
       _debug: {
         janela: janelaCanonica ?? `customizado (fallback: ${janelaFallback})`,
+        modoVisualizacao,
         cards: {
           topHosts:  { raw: rawTopHosts,  baseline: novoTopHosts,  risco: r1 },
           cis:       { raw: rawCIS,        baseline: novoCIS,        risco: r2 },

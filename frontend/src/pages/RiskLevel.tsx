@@ -137,8 +137,8 @@ export default function RiskLevel() {
         // - Range customizado → from/to (riskLevel usa fallback "1" internamente)
         const queryParams = new URLSearchParams(
           periodo
-            ? { from: periodo.from, to: periodo.to }
-            : { dias }
+            ? { from: periodo.from, to: periodo.to, preview: "true" }
+            : { dias, preview: "true" }
         ).toString();
 
         const res = await fetch(
