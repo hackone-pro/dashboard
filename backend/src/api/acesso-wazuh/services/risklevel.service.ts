@@ -249,13 +249,14 @@ export async function calcularRiskOperacionalTenant(
     // Incidentes: filtra pelo mesmo período dos outros cards (janela selecionada).
     // filtrarPorOwner: false — conta todos os incidentes abertos, independente de owner
     // (owner filter é adequado para o dashboard do analista, não para cálculo de risco do tenant)
+    // IRIS = snapshot de todos os incidentes ABERTOS no momento (spec seção 4).
+    // O filtro de período não se aplica: o risco sobe/cai conforme incidentes são
+    // abertos/fechados, independentemente da janela de tempo selecionada.
     const irisPromise =
       tenant?.iris_url
         ? buscarIncidentesIris(
             tenant,
-            periodo
-              ? { from: periodo.from, to: periodo.to }
-              : { dias: diasIris },
+            { dias: "todos" },
             user,
             { filtrarPorOwner: false }
           )

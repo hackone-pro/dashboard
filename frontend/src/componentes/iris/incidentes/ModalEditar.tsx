@@ -15,7 +15,6 @@ import { toastSuccess, toastError } from "../../../utils/toast";
 import {
   normaliza,
   isIAOwner,
-  extractOwner,
   lerMetadataDoCaso,
   escreverMetadataNoCaso,
   atualizarSeveridadeNoTexto,
@@ -73,7 +72,7 @@ export default function ModalEditarIncidente({
     if (!inc) return;
 
     const meta = lerMetadataDoCaso(inc.case_description);
-    const ownerAtual = normaliza(extractOwner(inc) || "");
+    const openedBy = normaliza(inc.opened_by || "");
     const ownerIdAtual = (inc as any).owner_id ?? null;
     const estadoAtual = (inc.state_name || "open").toLowerCase().trim();
     // status
@@ -97,23 +96,26 @@ export default function ModalEditarIncidente({
       if (isIAOwner(analistaMeta)) {
         setVerdict("inteligencia_artificial");
       } else {
-        const idx = usuariosTenant.findIndex(
-          (u) => normaliza(u.owner_name_iris) === analistaMeta
-        );
+        // Prioriza lookup por ID (inequívoco) se disponível; cai em nome como fallback.
+        const idxById = meta?.analistaId != null
+          ? usuariosTenant.findIndex((u) => u.id === meta.analistaId)
+          : -1;
+        const idx = idxById >= 0
+          ? idxById
+          : usuariosTenant.findIndex((u) => normaliza(u.owner_name_iris) === analistaMeta);
         setVerdict(idx >= 0 ? `idx_${idx}` : "inteligencia_artificial");
       }
-    } else if (isIAOwner(ownerAtual)) {
-      setVerdict("inteligencia_artificial");
     } else if (
       ownerIdAtual &&
       (ownerIdAtual === "inteligencia_artificial" || String(ownerIdAtual).startsWith("idx_"))
     ) {
+      // atualização em memória após salvar sem reload
       setVerdict(ownerIdAtual);
     } else {
-      const idx = usuariosTenant.findIndex(
-        (u) => normaliza(u.owner_name_iris) === ownerAtual
-      );
-      setVerdict(idx >= 0 ? `idx_${idx}` : "inteligencia_artificial");
+      // sem metadata: padrão é Inteligência Artificial.
+      // Casos com analista humano salvo pelo modal sempre terão METADATA_ANALISE;
+      // casos sem metadata são recém-criados por automação (N8N/Lab).
+      setVerdict("inteligencia_artificial");
     }
 
     // notas — extrai só o texto da mensagem
@@ -177,6 +179,7 @@ export default function ModalEditarIncidente({
       // 2) grava bloco oculto com analista/classificacao/severidade para releitura confiável
       const descricaoComMeta = escreverMetadataNoCaso(descricaoComSev, {
         analista: usuario?.owner_name_iris,
+        analistaId: isIA ? undefined : usuario?.id,
         classificacao: classificacao || undefined,
         severidade: MAP_SEVERIDADE_PT[severidade] ?? severidade,
       });

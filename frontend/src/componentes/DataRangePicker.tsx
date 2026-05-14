@@ -37,8 +37,12 @@ export default function DateRangePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d;
+  });
+  const [endDate, setEndDate] = useState<Date | null>(() => {
+    const d = new Date(); d.setHours(23, 59, 59, 999); return d;
+  });
   // incrementado ao trocar atalho rápido para forçar o react-datepicker
   // a remontar o range — sem isso ele mantém startDate antigo no DOM.
   const [datePickerNonce, setDatePickerNonce] = useState(0);
@@ -67,20 +71,40 @@ export default function DateRangePicker({
   useEffect(() => {
     if (resetKey === undefined) return;
     setPeriodoRapido("24h");
-    setStartDate(null);
-    setEndDate(null);
+    const from = new Date(); from.setHours(0, 0, 0, 0);
+    const to   = new Date(); to.setHours(23, 59, 59, 999);
+    setStartDate(from);
+    setEndDate(to);
   }, [resetKey]);
 
   function calcularDatas(periodo: PeriodoRapido) {
-    // Trabalha em dias-calendário (inclusive hoje) para que o highlight do
-    // react-datepicker bata com o número exibido (ex.: 7d = 7 dias destacados).
-    const dias = Number(MAPA_DIAS[periodo]);
-    const from = new Date();
-    from.setDate(from.getDate() - (dias - 1));
-    from.setHours(0, 0, 0, 0);
     const to = new Date();
-    to.setHours(23, 59, 59, 999);
+    // 24h: só hoje (dia calendário)
+    if (periodo === "24h") {
+      const from = new Date(); from.setHours(0, 0, 0, 0);
+      to.setHours(23, 59, 59, 999);
+      return { from, to };
+    }
+    // 48h: ontem + hoje (2 dias calendário exatos)
+    if (periodo === "48h") {
+      const from = new Date(); from.setDate(from.getDate() - 1); from.setHours(0, 0, 0, 0);
+      to.setHours(23, 59, 59, 999);
+      return { from, to };
+    }
+    // 7d, 15d, 30d: janela rolante real — inclui parte do dia de início
+    const dias = Number(MAPA_DIAS[periodo]);
+    const from = new Date(to.getTime() - dias * 24 * 60 * 60 * 1000);
     return { from, to };
+  }
+
+  function formatarInformativo(): string | null {
+    if (periodoRapido || !startDate) return null;
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    if (!endDate || startDate.toDateString() === endDate.toDateString()) {
+      return `Filtrando das 00:00 às 23:59 de ${fmt(startDate)}`;
+    }
+    return `Filtrando de ${fmt(startDate)} às 00:00 até ${fmt(endDate)} às 23:59`;
   }
 
   function aplicar() {
@@ -192,6 +216,7 @@ export default function DateRangePicker({
               setStartDate(start);
               setEndDate(end);
             }}
+            disabledKeyboardNavigation
             minDate={limiteInicio}
             maxDate={
               startDate
@@ -202,6 +227,12 @@ export default function DateRangePicker({
             }
             dateFormat="dd/MM/yyyy"
           />
+
+          {formatarInformativo() && (
+            <p className="text-xs text-purple-300 mt-3 px-1">
+              📅 {formatarInformativo()}
+            </p>
+          )}
 
           <div className="flex justify-end mt-4">
             <button

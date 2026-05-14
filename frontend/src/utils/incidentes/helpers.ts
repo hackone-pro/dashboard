@@ -305,6 +305,7 @@ export const METADATA_MARKER_FIM = "-->";
 
 export type MetadataCaso = {
   analista?: string;
+  analistaId?: number;
   classificacao?: string;
   severidade?: string;
 };
@@ -320,11 +321,13 @@ export function lerMetadataDoCaso(descricao?: string | null): MetadataCaso | nul
   const meta: MetadataCaso = {};
 
   for (const linha of corpo.split(/\r?\n/)) {
+    const mId = linha.match(/^\s*analistaId\s*:\s*(\d+)\s*$/i);
+    if (mId) { meta.analistaId = Number(mId[1]); continue; }
     const m = linha.match(/^\s*(analista|classificacao|severidade)\s*:\s*(.+?)\s*$/i);
     if (!m) continue;
     const chave = m[1].toLowerCase() as keyof MetadataCaso;
     const valor = m[2].trim();
-    if (valor) meta[chave] = valor;
+    if (valor) (meta as any)[chave] = valor;
   }
 
   return Object.keys(meta).length ? meta : null;
@@ -338,6 +341,7 @@ export function escreverMetadataNoCaso(
 
   const linhas: string[] = [];
   if (meta.analista) linhas.push(`analista: ${meta.analista}`);
+  if (meta.analistaId != null) linhas.push(`analistaId: ${meta.analistaId}`);
   if (meta.classificacao) linhas.push(`classificacao: ${meta.classificacao}`);
   if (meta.severidade) linhas.push(`severidade: ${meta.severidade}`);
 

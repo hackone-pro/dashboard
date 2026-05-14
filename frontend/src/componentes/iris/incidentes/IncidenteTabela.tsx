@@ -218,7 +218,7 @@ export default function IncidenteTabela({
                         </Secao>
                         <Secao titulo="Datas">
                           <Linha label="Abertura:" valor={formatInitialDateBR(inc.case_initial_date) || formatDateBR(inc.case_open_date)} />
-                          <Linha label="Fechamento:" valor={inc.case_close_date || "—"} />
+                          <Linha label="Fechamento:" valor={formatDateBR(inc.case_close_date || "")} />
                         </Secao>
                         <Secao titulo="Classificação">
                           <Linha label="Classification ID:" valor={(inc as any).classification_id != null ? String((inc as any).classification_id) : "—"} />
