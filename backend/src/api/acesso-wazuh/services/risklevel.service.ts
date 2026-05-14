@@ -37,6 +37,8 @@ interface RiskFilters {
   periodo?: Periodo | null;
   user?: any;
   salvarBaselineRemoto?: boolean;
+  // Quando true: calcula raw em tempo real mas não persiste baseline (modo visualização).
+  modoVisualizacao?: boolean;
 }
 
 // Baseline de uma janela específica (ex: "1", "7", "15", "30")
@@ -186,6 +188,7 @@ export async function calcularRiskOperacionalTenant(
     const periodo               = filtros?.periodo               || null;
     const user                  = filtros?.user                  || null;
     const salvarBaselineRemoto  = filtros?.salvarBaselineRemoto  ?? false;
+    const modoVisualizacao      = filtros?.modoVisualizacao      ?? false;
 
     // =====================================================
     // 🔹 DETERMINAR JANELA ATIVA
@@ -243,11 +246,19 @@ export async function calcularRiskOperacionalTenant(
           )
         : Promise.resolve([]);
 
-    // Incidentes = snapshot atual de abertos (independente da janela selecionada)
-    // Ref: concepção Risk Level — "count deve refletir incidentes abertos no momento"
+    // Incidentes: filtra pelo mesmo período dos outros cards (janela selecionada).
+    // filtrarPorOwner: false — conta todos os incidentes abertos, independente de owner
+    // (owner filter é adequado para o dashboard do analista, não para cálculo de risco do tenant)
     const irisPromise =
       tenant?.iris_url
-        ? buscarIncidentesIris(tenant, { dias: "todos" }, user)
+        ? buscarIncidentesIris(
+            tenant,
+            periodo
+              ? { from: periodo.from, to: periodo.to }
+              : { dias: diasIris },
+            user,
+            { filtrarPorOwner: false }
+          )
         : Promise.resolve(null);
 
     // =====================================================
@@ -444,11 +455,19 @@ export async function calcularRiskOperacionalTenant(
       }
     }
 
+    // Janelas longas (7d/15d/30d) rodam 1x/dia → decay calibrado por tick diário
+    const decayAtual = (janelaCanonica && janelaCanonica !== "1")
+      ? PARAMS.decayAlertasLongo
+      : PARAMS.decayAlertas;
+    const decayIncAtual = (janelaCanonica && janelaCanonica !== "1")
+      ? PARAMS.decayIncidentesLongo
+      : PARAMS.decayIncidentes;
+
     const novoTopHosts = atualizarBaseline(
       rawTopHosts,
       slotAnterior.top_hosts,
       slotAnterior.initialized,
-      PARAMS.decayAlertas,
+      decayAtual,
       PARAMS.minFloorAlertas,
       "TopHosts"
     );
@@ -457,7 +476,7 @@ export async function calcularRiskOperacionalTenant(
       rawCIS,
       slotAnterior.cis,
       slotAnterior.initialized,
-      PARAMS.decayAlertas,
+      decayAtual,
       PARAMS.minFloorAlertas,
       "CIS"
     );
@@ -466,31 +485,16 @@ export async function calcularRiskOperacionalTenant(
       rawFirewall,
       slotAnterior.firewall,
       slotAnterior.initialized,
-      PARAMS.decayAlertas,
+      decayAtual,
       PARAMS.minFloorAlertas,
       "Firewall"
     );
 
-    // Bug 2: rawIncidents é sempre snapshot atual (dias="todos"), não depende da janela.
-    // Para comparação consistente, o card Incidentes sempre usa baseline da janela 1d,
-    // independente da janela global selecionada (7d, 15d, 30d, custom).
-    let slotParaIncidents = slotAnterior;
-    if (janelaCanonica !== "1") {
-      const remoto1d = await getBaselineFromAlerts(tenantKey, 24);
-      slotParaIncidents = remoto1d
-        ? { ...BASELINE_VAZIO, incidents: remoto1d.incidents, initialized: true }
-        : { ...BASELINE_VAZIO };
-      strapi.log.debug(
-        `[RiskLevel] tenant=${tenantKey} — Incidentes: usando baseline 1d ` +
-        `(initialized=${slotParaIncidents.initialized}, incidents=${slotParaIncidents.incidents.toFixed(0)})`
-      );
-    }
-
     const novoIncidents = atualizarBaseline(
       rawIncidents,
-      slotParaIncidents.incidents,
-      slotParaIncidents.initialized,
-      PARAMS.decayIncidentes,
+      slotAnterior.incidents,
+      slotAnterior.initialized,
+      decayIncAtual,
       PARAMS.minFloorIncidentes,
       "Incidentes"
     );
@@ -498,10 +502,10 @@ export async function calcularRiskOperacionalTenant(
     // =====================================================
     // 🔹 PERSISTIR BASELINE
     //    Só persiste em janelas canônicas (1, 7, 15, 30d).
-    //    Ranges customizados (periodo) nunca persistem.
+    //    Ranges customizados (periodo) e modoVisualizacao nunca persistem.
     // =====================================================
 
-    if (janelaCanonica) {
+    if (janelaCanonica && !modoVisualizacao) {
       await salvarBaselineJanela(
         tenantKey,
         janelaCanonica,
@@ -533,7 +537,7 @@ export async function calcularRiskOperacionalTenant(
           `firewall=${novoFirewall.toFixed(0)}, incidents=${novoIncidents.toFixed(0)})`
         );
       }
-    } else {
+    } else if (!modoVisualizacao) {
       strapi.log.debug(
         `[RiskLevel] tenant=${tenantKey} — baseline NÃO persistido ` +
         `(range customizado — usando fallback "${janelaFallback}")`
@@ -593,6 +597,7 @@ export async function calcularRiskOperacionalTenant(
 
       _debug: {
         janela: janelaCanonica ?? `customizado (fallback: ${janelaFallback})`,
+        modoVisualizacao,
         cards: {
           topHosts:  { raw: rawTopHosts,  baseline: novoTopHosts,  risco: r1 },
           cis:       { raw: rawCIS,        baseline: novoCIS,        risco: r2 },

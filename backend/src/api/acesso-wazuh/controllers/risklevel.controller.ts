@@ -46,6 +46,7 @@ export default {
           diasIris,
           periodo,
           user: ctx.state.user,
+          modoVisualizacao: ctx.query.preview === "true",
         }
       );
 

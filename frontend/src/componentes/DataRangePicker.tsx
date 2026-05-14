@@ -29,9 +29,11 @@ export type DateRangePayload =
 export default function DateRangePicker({
   onApply,
   resetKey,
+  activeLabel,
 }: {
   onApply: (payload: DateRangePayload) => void;
   resetKey?: number;
+  activeLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
@@ -129,6 +131,11 @@ export default function DateRangePicker({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"
       >
+        {activeLabel && (
+          <span className="px-2 py-0.5 rounded-md bg-purple-600/20 text-purple-300 border border-purple-600/40 text-xs font-medium">
+            {activeLabel}
+          </span>
+        )}
         {/* @ts-ignore */}
         <FaCalendarAlt className="w-4 h-4" />
         Filtros

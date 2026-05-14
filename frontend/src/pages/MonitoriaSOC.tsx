@@ -88,12 +88,18 @@ export default function MonitoriaSOC() {
   }, [loadingStorage, loadingInternal, loadingTimeline, tenantAtivo, storage, internal, timeline]);
 
   useEffect(() => {
-    carregarStorage();
-    carregarInternal();
-    carregarTimeline();
-    firewallRef.current?.carregar();
-    servidoresRef.current?.carregar();
-    edrRef.current?.carregar();
+    const carregar = () => {
+      carregarStorage();
+      carregarInternal();
+      carregarTimeline();
+      firewallRef.current?.carregar();
+      servidoresRef.current?.carregar();
+      edrRef.current?.carregar();
+    };
+
+    carregar();
+    const intervalo = setInterval(carregar, 60_000);
+    return () => clearInterval(intervalo);
   }, [tenantAtivo]);
 
   /* ============================

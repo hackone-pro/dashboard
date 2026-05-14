@@ -80,7 +80,7 @@ export default function Incidentes() {
       <div>
         {/* Barra de período e reset */}
         <div className="flex justify-end mt-5 mb-3 px-6">
-          <DateRangePicker onApply={handleFiltro} resetKey={chartResetKey} />
+          <DateRangePicker onApply={handleFiltro} resetKey={chartResetKey} activeLabel={periodo?.label ?? "ano"} />
           <button
             onClick={limparFiltros}
             className="flex items-center gap-1 text-[14px] text-purple-400 hover:text-purple-200 transition-colors"

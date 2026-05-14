@@ -36,6 +36,8 @@ export const PARAMS = {
   gamma:               1.5,
   decayAlertas:        Math.pow(0.98, 1 / CRON_TICKS_POR_DIA), // ≈ 0.99993 /tick → 0.98 /dia
   decayIncidentes:     Math.pow(0.99, 1 / CRON_TICKS_POR_DIA), // ≈ 0.999965/tick → 0.99 /dia
+  decayAlertasLongo:    0.9516, // half-life ≈ 14 dias a 1 tick/dia (cron diário 7d/15d/30d)
+  decayIncidentesLongo: 0.9659, // half-life ≈ 20 dias a 1 tick/dia
   minFloorAlertas:     50,
   minFloorIncidentes:  10,
   warmupFactor:        2,

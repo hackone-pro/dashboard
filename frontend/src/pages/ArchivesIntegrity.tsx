@@ -35,6 +35,7 @@ export default function ArchivesIntegrity() {
     type PeriodoRapido = "24h" | "48h" | "7d" | "15d" | "30d" | null;
 
     const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
+    const [activeFiltroLabel, setActiveFiltroLabel] = useState("24h");
     const [totalEventos, setTotalEventos] = useState<number | null>(null);
     const [topAgentes, setTopAgentes] = useState<TopAgentSyscheckItem[]>([]);
     const [topRegras, setTopRegras] = useState<{ label: string; value: number }[]>([]);
@@ -96,6 +97,7 @@ export default function ArchivesIntegrity() {
         const { from, to } = calcularPeriodo("24h");
 
         setPeriodoRapido("24h");
+        setActiveFiltroLabel("24h");
         setStartDate(null);
         setEndDate(null);
         setTotalEventos(null);
@@ -136,7 +138,15 @@ export default function ArchivesIntegrity() {
             <div className="flex justify-end mt-5 mb-3 px-6">
                 
                 <DateRangePicker
+                    activeLabel={activeFiltroLabel}
                     onApply={(payload) => {
+                        const DIAS_LABEL: Record<string, string> = { "1": "24h", "2": "48h", "7": "7d", "15": "15d", "30": "30d" };
+                        if (payload.dias) {
+                            setActiveFiltroLabel(DIAS_LABEL[payload.dias] ?? `${payload.dias}d`);
+                        } else {
+                            const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+                            setActiveFiltroLabel(`${fmt(payload.from!)} – ${fmt(payload.to!)}`);
+                        }
                         overtimeRef.current?.carregar(payload);
                         topAgentsRef.current?.carregar(payload);
                         eventosSummaryRef.current?.carregar(payload);
