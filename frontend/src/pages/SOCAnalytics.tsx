@@ -129,6 +129,8 @@ function MetricCard({ label, sublabel, value, unit, trend, trendValue, trendLabe
                 {previousPeriodHref && (
                     <Link
                         to={previousPeriodHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         title="Ver período anterior"
                         className="ml-1 text-gray-500 hover:text-gray-300 transition-colors inline-flex items-center"
                         onClick={(e) => e.stopPropagation()}
