@@ -599,11 +599,18 @@ export async function calcularRiskOperacionalTenant(
       _debug: {
         janela: janelaCanonica ?? `customizado (fallback: ${janelaFallback})`,
         modoVisualizacao,
+        tipoBaseline: modoVisualizacao
+          ? "visualização"
+          : janelaCanonica
+            ? "canônico"
+            : "fallback",
+        janelaBaselineUsada: janelaBaseline,
+        persistido: Boolean(janelaCanonica && !modoVisualizacao),
         cards: {
-          topHosts:  { raw: rawTopHosts,  baseline: novoTopHosts,  risco: r1 },
-          cis:       { raw: rawCIS,        baseline: novoCIS,        risco: r2 },
-          firewall:  { raw: rawFirewall,   baseline: novoFirewall,   risco: r3 },
-          incidents: { raw: rawIncidents,  baseline: novoIncidents,  risco: r4 },
+          topHosts:  { raw: rawTopHosts,  baselineCron: slotAnterior.top_hosts,  baseline: novoTopHosts,  risco: r1 },
+          cis:       { raw: rawCIS,        baselineCron: slotAnterior.cis,        baseline: novoCIS,        risco: r2 },
+          firewall:  { raw: rawFirewall,   baselineCron: slotAnterior.firewall,   baseline: novoFirewall,   risco: r3 },
+          incidents: { raw: rawIncidents,  baselineCron: slotAnterior.incidents,  baseline: novoIncidents,  risco: r4 },
         },
         warmup: !slotAnterior.initialized,
       },

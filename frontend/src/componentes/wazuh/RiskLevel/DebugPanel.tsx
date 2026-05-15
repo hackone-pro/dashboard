@@ -26,6 +26,9 @@ export interface RLDebugData {
     dataAvailability: any;
     janela: string | null;
     warmup: boolean | null;
+    tipoBaseline: "canônico" | "fallback" | "visualização" | null;
+    janelaBaselineUsada: string | null;
+    persistido: boolean | null;
   };
   cards: {
     topHosts:   CardDebug | null;
@@ -46,9 +49,10 @@ export interface RLDebugData {
 }
 
 interface CardDebug {
-  raw:      number | null;
-  baseline: number | null;
-  risco:    number | null;
+  raw:          number | null;
+  baselineCron: number | null;
+  baseline:     number | null;
+  risco:        number | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -174,7 +178,7 @@ export default function DebugPanel({ data }: { data: RLDebugData | null }) {
     <div
       className="
         fixed bottom-4 right-4 z-[9999]
-        w-[400px] max-h-[80vh]
+        w-[480px] max-h-[80vh]
         bg-[#0A0617] border border-[#2D1F4E]
         rounded-xl shadow-2xl shadow-black/60
         flex flex-col overflow-hidden
@@ -254,6 +258,22 @@ export default function DebugPanel({ data }: { data: RLDebugData | null }) {
             ))
           }
           <Row label="Janela baseline" value={data?.resposta.janela ?? "—"} valueClass="text-yellow-300" />
+          <Row
+            label="Tipo baseline"
+            value={data?.resposta.tipoBaseline ?? "—"}
+            valueClass={
+              data?.resposta.tipoBaseline === "canônico"    ? "text-emerald-400" :
+              data?.resposta.tipoBaseline === "fallback"    ? "text-yellow-400"  :
+              data?.resposta.tipoBaseline === "visualização"? "text-blue-400"    :
+              "text-gray-500"
+            }
+          />
+          <Row label="Slot usado"     value={data?.resposta.janelaBaselineUsada ? `${data.resposta.janelaBaselineUsada}d` : "—"} valueClass="text-purple-300" />
+          <Row
+            label="Persistido"
+            value={data?.resposta.persistido === null ? "—" : data?.resposta.persistido ? "sim" : "não"}
+            valueClass={data?.resposta.persistido ? "text-emerald-400" : "text-red-400"}
+          />
           <Row label="Warmup"         value={data?.resposta.warmup === null ? "—" : String(data?.resposta.warmup)} />
         </Section>
 
@@ -267,34 +287,68 @@ export default function DebugPanel({ data }: { data: RLDebugData | null }) {
         )}
 
         {/* CÁLCULO POR CARD */}
-        <Section title="Cálculo por Card" accent="#34D399">
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-gray-500 border-b border-white/5">
-                <th className="text-left pb-1">Card</th>
-                <th className="text-right pb-1">Raw</th>
-                <th className="text-right pb-1">Baseline</th>
-                <th className="text-right pb-1">Risco</th>
-                <th className="text-right pb-1">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cards.map(({ nome, d, status }) => (
-                <tr key={nome} className="border-b border-white/[0.03]">
-                  <td className="py-0.5 text-gray-400">{nome}</td>
-                  <td className="py-0.5 text-right text-gray-200">{fmt(d?.raw ?? null, 0)}</td>
-                  <td className="py-0.5 text-right text-gray-200">{fmt(d?.baseline ?? null)}</td>
-                  <td className={`py-0.5 text-right font-bold ${riscoColor(d?.risco ?? null)}`}>
-                    {fmt(d?.risco ?? null, 4)}
-                  </td>
-                  <td className={`py-0.5 text-right ${statusColor(status)}`}>
-                    {status ?? "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Section>
+        {(() => {
+          const janelaUsada = data?.resposta.janelaBaselineUsada;
+          const janelaLabel =
+            janelaUsada === "1"  ? "24h" :
+            janelaUsada === "7"  ? "7d"  :
+            janelaUsada === "15" ? "15d" :
+            janelaUsada === "30" ? "30d" :
+            janelaUsada ? `${janelaUsada}d` : "—";
+
+          const tipoLabel = data?.resposta.tipoBaseline ?? "—";
+          const tipoColor =
+            tipoLabel === "canônico"     ? "text-emerald-400" :
+            tipoLabel === "fallback"     ? "text-yellow-400"  :
+            tipoLabel === "visualização" ? "text-blue-400"    :
+            "text-gray-500";
+
+          return (
+            <Section title="Cálculo por Card" accent="#34D399">
+              {/* Subtítulo: origem do baseline */}
+              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-white/5">
+                <span className="text-gray-500 text-[10px]">Baseline da API:</span>
+                <span className="text-yellow-300 font-bold text-[11px]">{janelaLabel}</span>
+                <span className="text-gray-600 text-[10px]">·</span>
+                <span className={`text-[10px] font-semibold ${tipoColor}`}>{tipoLabel}</span>
+                {data?.resposta.warmup && (
+                  <span className="ml-auto text-[10px] text-yellow-500 font-bold animate-pulse">WARMUP</span>
+                )}
+              </div>
+
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-gray-500 border-b border-white/5">
+                    <th className="text-left pb-1 pr-2">Card</th>
+                    <th className="text-right pb-1 px-1">Raw</th>
+                    <th className="text-right pb-1 px-1 text-yellow-400">
+                      API·{janelaLabel}
+                    </th>
+                    <th className="text-right pb-1 px-1">EWMA</th>
+                    <th className="text-right pb-1 px-1">Risco</th>
+                    <th className="text-right pb-1">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cards.map(({ nome, d, status }) => (
+                    <tr key={nome} className="border-b border-white/[0.03]">
+                      <td className="py-1 text-gray-400 pr-2">{nome}</td>
+                      <td className="py-1 text-right text-gray-200 px-1 tabular-nums">{fmt(d?.raw ?? null, 0)}</td>
+                      <td className="py-1 text-right text-yellow-400 px-1 tabular-nums">{fmt(d?.baselineCron ?? null)}</td>
+                      <td className="py-1 text-right text-gray-200 px-1 tabular-nums">{fmt(d?.baseline ?? null)}</td>
+                      <td className={`py-1 text-right font-bold px-1 tabular-nums ${riscoColor(d?.risco ?? null)}`}>
+                        {fmt(d?.risco ?? null, 4)}
+                      </td>
+                      <td className={`py-1 text-right ${statusColor(status)}`}>
+                        {status ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Section>
+          );
+        })()}
 
         {/* RESULTADO */}
         <Section title="Resultado" accent="#F472B6">

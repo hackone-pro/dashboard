@@ -181,9 +181,12 @@ export function useIncidentes(): UseIncidentesReturn {
   const { tenantAtivo } = useTenant();
   const token = getToken();
   const [searchParams] = useSearchParams();
-  const openFromQS = searchParams.get("open");
+  const openFromQS    = searchParams.get("open");
   const severityFromQS = searchParams.get("severity");
-  const origemFromQS = searchParams.get("origem");
+  const origemFromQS  = searchParams.get("origem");
+  const fromQS        = searchParams.get("from");
+  const toQS          = searchParams.get("to");
+  const labelQS       = searchParams.get("label");
 
   // --- Dados ---
   const [dados, setDados] = useState<PageIncidente[]>([]);
@@ -370,6 +373,12 @@ export function useIncidentes(): UseIncidentesReturn {
   useEffect(() => {
     if (origemFromQS === "abertos") setFiltroOrigem("abertos");
   }, [origemFromQS]);
+
+  useEffect(() => {
+    if (fromQS && toQS) {
+      setPeriodo({ from: fromQS, to: toQS, label: labelQS ?? "custom" });
+    }
+  }, [fromQS, toQS, labelQS]);
 
   /* -----------------------------------------
    * DERIVADOS: Subconjuntos para gráficos
