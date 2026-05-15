@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import LayoutModel from "../componentes/LayoutModel";
 import GraficoGauge from "../componentes/graficos/GraficoGauge";
 import SeveridadeCard from "../componentes/wazuh/RiskLevel/SeveridadeCard";
@@ -41,6 +42,21 @@ export default function RiskLevel() {
   ============================ */
   const [dias, setDias] = useState<string>("1");
   const [periodo, setPeriodo] = useState<{ from: string; to: string } | null>(null);
+
+  const [searchParams] = useSearchParams();
+  const fromQS = searchParams.get("from");
+  const toQS   = searchParams.get("to");
+  const diasQS = searchParams.get("dias");
+
+  useEffect(() => {
+    if (diasQS) {
+      setDias(diasQS);
+      setPeriodo(null);
+    } else if (fromQS && toQS) {
+      setPeriodo({ from: fromQS, to: toQS });
+      setDias("1");
+    }
+  }, [fromQS, toQS, diasQS]);
 
   /* ============================
      RESET CALENDÁRIO
@@ -223,6 +239,16 @@ export default function RiskLevel() {
               : dias === "15" ? "15d"
               : dias === "30" ? "30d"
               : `${dias}d`
+          }
+          periodoAtivo={
+            periodo
+              ? { from: periodo.from, to: periodo.to }
+              : dias === "1"  ? "24h"
+              : dias === "2"  ? "48h"
+              : dias === "7"  ? "7d"
+              : dias === "15" ? "15d"
+              : dias === "30" ? "30d"
+              : undefined
           }
         />
 

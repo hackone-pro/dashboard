@@ -535,7 +535,15 @@ export default function SOCAnalytics() {
                                     })()}
                                 </div>
 
-                                <button onClick={() => navigate("/risk-level")} className="flex items-center mt-2 gap-2 px-3 py-2 bg-purple-700 hover:bg-purple-800 border border-purple-700 text-white rounded-md text-sm shadow-sm w-[150px]">
+                                <button onClick={() => {
+                                    if (periodoFiltro) {
+                                        const fmtDia = (iso: string) => { const [,m,d] = iso.split("T")[0].split("-"); return `${d}/${m}`; };
+                                        const periodLabel = `${fmtDia(periodoFiltro.from)} – ${fmtDia(periodoFiltro.to)}`;
+                                        navigate(`/risk-level?from=${encodeURIComponent(periodoFiltro.from)}&to=${encodeURIComponent(periodoFiltro.to)}&label=${encodeURIComponent(periodLabel)}`);
+                                    } else {
+                                        navigate(`/risk-level?dias=${dias}`);
+                                    }
+                                }} className="flex items-center mt-2 gap-2 px-3 py-2 bg-purple-700 hover:bg-purple-800 border border-purple-700 text-white rounded-md text-sm shadow-sm w-[150px]">
                                     <span>Ver Risk Level →</span>
                                 </button>
                             </div>
