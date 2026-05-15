@@ -315,10 +315,10 @@ export async function calcularRiskOperacionalTenant(
     // 🔹 TOTAIS AGREGADOS (retrocompatibilidade)
     // =====================================================
 
-    const baixo   = countsTopHosts.baixo   + countsFirewall.baixo   + countsIncidents.baixo;
-    const medio   = countsTopHosts.medio   + countsFirewall.medio   + countsIncidents.medio;
-    const alto    = countsTopHosts.alto    + countsFirewall.alto    + countsIncidents.alto;
-    const critico = countsTopHosts.critico + countsFirewall.critico + countsIncidents.critico;
+    const baixo   = countsTopHosts.baixo   + countsFirewall.baixo;
+    const medio   = countsTopHosts.medio   + countsFirewall.medio;
+    const alto    = countsTopHosts.alto    + countsFirewall.alto;
+    const critico = countsTopHosts.critico + countsFirewall.critico;
     const total   = baixo + medio + alto + critico;
 
     // =====================================================
