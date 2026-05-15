@@ -204,8 +204,13 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 
 export default function SOCAnalytics() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [dias, setDias] = useState<string>("1");
-    const [periodoFiltro, setPeriodoFiltro] = useState<{ from: string; to: string } | null>(null);
+    const [periodoFiltro, setPeriodoFiltro] = useState<{ from: string; to: string } | null>(() => {
+        const start = searchParams.get("start");
+        const end   = searchParams.get("end");
+        return start && end ? { from: start, to: end } : null;
+    });
     const [resetFiltroKey, setResetFiltroKey] = useState(0);
     const [severidadeIdx, setSeveridadeIdx] = useState<number | null>(null);
 
