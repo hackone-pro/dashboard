@@ -6,7 +6,7 @@ import { addDays } from "date-fns";
 import { FaCalendarAlt } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
 
-type PeriodoRapido = "24h" | "48h" | "7d" | "15d" | "30d";
+export type PeriodoRapido = "24h" | "48h" | "7d" | "15d" | "30d";
 
 // Períodos rápidos mapeados para dias (janelas canônicas do backend)
 const MAPA_DIAS: Record<PeriodoRapido, string> = {
@@ -30,10 +30,12 @@ export default function DateRangePicker({
   onApply,
   resetKey,
   activeLabel,
+  periodoAtivo,
 }: {
   onApply: (payload: DateRangePayload) => void;
   resetKey?: number;
   activeLabel?: string;
+  periodoAtivo?: PeriodoRapido | { from: string; to: string };
 }) {
   const [open, setOpen] = useState(false);
   const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapido>("24h");
@@ -76,6 +78,25 @@ export default function DateRangePicker({
     setStartDate(from);
     setEndDate(to);
   }, [resetKey]);
+
+  /* ================= PERÍODO ATIVO EXTERNO ================= */
+  useEffect(() => {
+    if (!periodoAtivo) return;
+    if (typeof periodoAtivo === "string") {
+      // Período rápido: sincroniza botão + calendário
+      const { from, to } = calcularDatas(periodoAtivo);
+      setPeriodoRapido(periodoAtivo);
+      setStartDate(from);
+      setEndDate(to);
+    } else {
+      // Range customizado: limpa seleção rápida, posiciona calendário
+      setPeriodoRapido(null as any);
+      setStartDate(new Date(periodoAtivo.from));
+      setEndDate(new Date(periodoAtivo.to));
+    }
+    setDatePickerNonce((n) => n + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodoAtivo]);
 
   function calcularDatas(periodo: PeriodoRapido) {
     const to = new Date();

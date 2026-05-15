@@ -556,7 +556,16 @@ export default function SOCAnalytics() {
                                                 cores={donutColors}
                                                 height={220}
                                                 tooltipSoc={donutTooltipSoc}
-                                                onSliceClick={(label) => navigate(`/incidentes?severity=${label}`)}
+                                                onSliceClick={(label) => {
+                                                    const to     = periodoFiltro?.to   ?? new Date().toISOString();
+                                                    const from   = periodoFiltro?.from ?? new Date(Date.now() - Number(dias) * 24 * 60 * 60 * 1000).toISOString();
+                                                    const LABELS: Record<string, string> = { "1": "24h", "2": "48h", "7": "7d", "15": "15d", "30": "30d" };
+                                                    const fmtDia = (iso: string) => { const [,m,d] = iso.split("T")[0].split("-"); return `${d}/${m}`; };
+                                                    const periodLabel = periodoFiltro
+                                                        ? `${fmtDia(periodoFiltro.from)} – ${fmtDia(periodoFiltro.to)}`
+                                                        : LABELS[dias] ?? `${dias}d`;
+                                                    navigate(`/incidentes?severity=${encodeURIComponent(label)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&label=${encodeURIComponent(periodLabel)}`);
+                                                }}
                                             />
                                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                                 <span className="text-white text-4xl font-medium">{donutTotal.toLocaleString("pt-BR")}</span>
