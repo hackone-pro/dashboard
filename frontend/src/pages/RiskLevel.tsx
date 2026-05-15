@@ -165,21 +165,6 @@ export default function RiskLevel() {
         const dbg = (dados as any)._debug;
         const av  = (dados as any).dataAvailability;
 
-        console.group(`[RiskLevel] ${filtroLabel}  →  RiskTotal = ${dados.indiceRisco}`);
-        console.log("Filtros usados :", (dados as any).filtrosUsados);
-        console.log("Severidades    :", dados.severidades);
-        console.log(`Janela baseline: ${dbg?.janela ?? "—"}  |  Warmup: ${dbg?.warmup}`);
-        console.log("Data avail.    :", av);
-        if (dbg?.cards) {
-          console.table({
-            TopHosts:   { raw: dbg.cards.topHosts?.raw,   baseline: dbg.cards.topHosts?.baseline?.toFixed(2),   risco: dbg.cards.topHosts?.risco?.toFixed(4),   status: av?.topHosts },
-            CIS:        { raw: dbg.cards.cis?.raw?.toFixed(2),       baseline: dbg.cards.cis?.baseline?.toFixed(2),       risco: dbg.cards.cis?.risco?.toFixed(4),       status: av?.cis },
-            Firewall:   { raw: dbg.cards.firewall?.raw,   baseline: dbg.cards.firewall?.baseline?.toFixed(2),   risco: dbg.cards.firewall?.risco?.toFixed(4),   status: av?.firewall },
-            Incidentes: { raw: dbg.cards.incidents?.raw,  baseline: dbg.cards.incidents?.baseline?.toFixed(2),  risco: dbg.cards.incidents?.risco?.toFixed(4),  status: av?.iris },
-          });
-        }
-        console.groupEnd();
-
         // Alimenta o painel visual de debug
         setDebugData({
           timestamp: new Date().toLocaleTimeString("pt-BR"),
@@ -190,10 +175,13 @@ export default function RiskLevel() {
             queryParams,
           },
           resposta: {
-            filtrosUsados:    (dados as any).filtrosUsados ?? null,
-            dataAvailability: av ?? {},
-            janela:           dbg?.janela ?? null,
-            warmup:           dbg?.warmup ?? null,
+            filtrosUsados:      (dados as any).filtrosUsados ?? null,
+            dataAvailability:   av ?? {},
+            janela:             dbg?.janela            ?? null,
+            warmup:             dbg?.warmup             ?? null,
+            tipoBaseline:       dbg?.tipoBaseline       ?? null,
+            janelaBaselineUsada:dbg?.janelaBaselineUsada ?? null,
+            persistido:         dbg?.persistido          ?? null,
           },
           cards: {
             topHosts:  dbg?.cards?.topHosts  ?? null,
