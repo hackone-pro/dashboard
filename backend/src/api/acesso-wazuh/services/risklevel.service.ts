@@ -312,7 +312,8 @@ export async function calcularRiskOperacionalTenant(
     }
 
     // =====================================================
-    // 🔹 TOTAIS AGREGADOS (retrocompatibilidade)
+    // 🔹 TOTAIS DE EXIBIÇÃO — Wazuh apenas (IRIS excluído intencionalmente)
+    //    countsIncidents ainda alimenta calcularRawPoints → gauge de risco
     // =====================================================
 
     const baixo   = countsTopHosts.baixo   + countsFirewall.baixo;
