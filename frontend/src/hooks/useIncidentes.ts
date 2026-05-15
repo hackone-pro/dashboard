@@ -228,7 +228,7 @@ export function useIncidentes(): UseIncidentesReturn {
       try {
         const lista = await getUsuariosTenant(token || "");
         const filtrados = lista.filter(
-          (u: any) => u.owner_name_iris && u.confirmed && !u.blocked
+          (u: any) => u.owner_name_iris && !isIAOwner(u.owner_name_iris) && u.confirmed && !u.blocked
         );
         setUsuariosTenant(filtrados);
       } catch (err) {

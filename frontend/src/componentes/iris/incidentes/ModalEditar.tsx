@@ -72,7 +72,6 @@ export default function ModalEditarIncidente({
     if (!inc) return;
 
     const meta = lerMetadataDoCaso(inc.case_description);
-    const openedBy = normaliza(inc.opened_by || "");
     const ownerIdAtual = (inc as any).owner_id ?? null;
     const estadoAtual = (inc.state_name || "open").toLowerCase().trim();
     // status
@@ -112,10 +111,14 @@ export default function ModalEditarIncidente({
       // atualização em memória após salvar sem reload
       setVerdict(ownerIdAtual);
     } else {
-      // sem metadata: padrão é Inteligência Artificial.
-      // Casos com analista humano salvo pelo modal sempre terão METADATA_ANALISE;
-      // casos sem metadata são recém-criados por automação (N8N/Lab).
-      setVerdict("inteligencia_artificial");
+      // sem metadata: tenta recuperar pelo owner_name vindo do IRIS
+      const ownerNome = normaliza((inc as any).owner || (inc as any).owner_name || "");
+      if (ownerNome && !isIAOwner(ownerNome)) {
+        const idx = usuariosTenant.findIndex((u) => normaliza(u.owner_name_iris) === ownerNome);
+        setVerdict(idx >= 0 ? `idx_${idx}` : "inteligencia_artificial");
+      } else {
+        setVerdict("inteligencia_artificial");
+      }
     }
 
     // notas — extrai só o texto da mensagem
@@ -160,6 +163,7 @@ export default function ModalEditarIncidente({
         : isIdx
           ? usuariosTenant[Number(verdict.replace("idx_", ""))]
           : usuariosTenant.find((u) => normaliza(u.owner_name_iris) === normaliza(verdict));
+
 
       const agora = new Date().toLocaleString("pt-BR", {
         day: "2-digit", month: "2-digit", year: "numeric",

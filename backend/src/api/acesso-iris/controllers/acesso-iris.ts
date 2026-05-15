@@ -170,7 +170,7 @@ export default {
       if (owner) {
         const usuariosIris = await buscarUsuariosIris(fullUser.tenant);
         const usuarioIris = usuariosIris.find(
-          (u) => u.user_name === owner
+          (u) => u.user_name?.toLowerCase() === owner?.toLowerCase()
         );
 
         if (usuarioIris) {
