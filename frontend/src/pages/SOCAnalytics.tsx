@@ -356,6 +356,10 @@ export default function SOCAnalytics() {
     }, [data, dias, periodoFiltro]);
 
     // ── Derived data ──────────────────────────────────────────────────────────
+    const previousPeriodHref = data?.period?.previousStart && data?.period?.previousEnd
+        ? `/soc-analytics?start=${encodeURIComponent(data.period.previousStart)}&end=${encodeURIComponent(data.period.previousEnd)}`
+        : undefined;
+
     const LABEL_PT: Record<string, string> = {
         Critical: "Crítico",
         CRITICAL: "Crítico",
@@ -471,6 +475,7 @@ export default function SOCAnalytics() {
                                 trendValue={formatDelta(data.mttd?.deltaPercent)}
                                 trendLabel="vs período anterior"
                                 onClick={() => navigate("/incidentes")}
+                                previousPeriodHref={previousPeriodHref}
                             />
                             <MetricCard
                                 label="MTTA"
@@ -481,6 +486,7 @@ export default function SOCAnalytics() {
                                 trendValue={formatDelta(data.mtta?.deltaPercent)}
                                 trendLabel="vs período anterior"
                                 onClick={() => navigate("/incidentes")}
+                                previousPeriodHref={previousPeriodHref}
                             />
                             <MetricCard
                                 label="MTTR"
@@ -491,6 +497,7 @@ export default function SOCAnalytics() {
                                 trendValue={formatDelta(data.mttr?.deltaPercent)}
                                 trendLabel="vs período anterior"
                                 onClick={() => navigate("/incidentes")}
+                                previousPeriodHref={previousPeriodHref}
                             />
                             <MetricCard
                                 label="Incidentes Abertos"
@@ -505,6 +512,7 @@ export default function SOCAnalytics() {
                                 trendLabel="vs período anterior"
                                 alert={openIncidents?.badge && openIncidents.badge !== "Normal" ? openIncidents.badge.replace("HighAlert", "High Alert") : undefined}
                                 onClick={() => navigate("/incidentes?origem=abertos")}
+                                previousPeriodHref={previousPeriodHref}
                             />
                         </div>
 
