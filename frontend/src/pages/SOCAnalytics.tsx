@@ -436,6 +436,7 @@ export default function SOCAnalytics() {
                     <DateRangePicker
                         resetKey={resetFiltroKey}
                         onApply={handleFiltro}
+                        periodoAtivo={periodoFiltro ?? undefined}
                         activeLabel={
                             periodoFiltro
                                 ? `${new Date(periodoFiltro.from).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} – ${new Date(periodoFiltro.to).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
