@@ -416,6 +416,7 @@ export default function SOCAnalytics() {
                             periodoFiltro
                                 ? `${new Date(periodoFiltro.from).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} – ${new Date(periodoFiltro.to).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
                                 : dias === "1"  ? "24h"
+                                : dias === "2"  ? "48h"
                                 : dias === "7"  ? "7d"
                                 : dias === "15" ? "15d"
                                 : dias === "30" ? "30d"
