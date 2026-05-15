@@ -1,7 +1,7 @@
 // src/pages/SOCAnalytics.tsx
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
     FiRotateCcw,
     FiAlertTriangle,
@@ -9,6 +9,7 @@ import {
     FiArrowDownRight,
     FiLoader,
     FiAlertCircle,
+    FiExternalLink,
 } from "react-icons/fi";
 import DateRangePicker, { type DateRangePayload } from "../componentes/DataRangePicker";
 import { LuWorkflow, LuClock } from "react-icons/lu";
@@ -89,9 +90,10 @@ interface MetricCardProps {
     trendLabel: string;
     alert?: string;
     onClick?: () => void;
+    previousPeriodHref?: string;
 }
 
-function MetricCard({ label, sublabel, value, unit, trend, trendValue, trendLabel, alert, onClick }: MetricCardProps) {
+function MetricCard({ label, sublabel, value, unit, trend, trendValue, trendLabel, alert, onClick, previousPeriodHref }: MetricCardProps) {
     const isUp = trend === "up";
     const TrendIcon = isUp ? FiArrowUpRight : FiArrowDownRight;
     const trendColor = trend === null ? "#6b7280" : isUp ? "#EC4899" : "#1DD69A";
@@ -124,6 +126,17 @@ function MetricCard({ label, sublabel, value, unit, trend, trendValue, trendLabe
                 <span className="text-xs font-light" style={{ color: trendColor }}>
                     {trendValue} {trendLabel}
                 </span>
+                {previousPeriodHref && (
+                    <Link
+                        to={previousPeriodHref}
+                        title="Ver período anterior"
+                        className="ml-1 text-gray-500 hover:text-gray-300 transition-colors inline-flex items-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* @ts-ignore */}
+                        <FiExternalLink size={11} />
+                    </Link>
+                )}
             </div>
         </div>
     );
