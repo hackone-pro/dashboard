@@ -11,17 +11,19 @@ function formatIrisDate(value?: string | null): string {
 
 export async function buscarCasos(tenant, user) {
   try {
-    const irisUrl = `${tenant.iris_url}/manage/cases/filter?case_customer_id=${tenant.iris_customer_id}&per_page=1000`;
+    const irisUrl = `${tenant.iris_url}/manage/cases/filter?case_customer_id=${tenant.iris_customer_id}&per_page=1000&order_by=case_id&sort_dir=desc`;
 
     const response = await axios.get(irisUrl, {
       headers: {
         Authorization: `Bearer ${tenant.iris_apikey}`,
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      timeout: 60000,
     });
 
     const payload = response.data?.data;
-    const lista = Array.isArray(payload) ? payload : payload?.cases || [];
+    const lista = (Array.isArray(payload) ? payload : payload?.cases || [])
+      .filter((c: any) => (c.case_id ?? 0) > 22999);
 
     // Normaliza o novo retorno do IRIS para o formato antigo,
     // mantendo compatibilidade com os consumidores existentes.

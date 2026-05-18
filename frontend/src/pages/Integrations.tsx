@@ -265,15 +265,10 @@ function NgSocContent({
     const { setScreenData } = useScreenContext();
 
     const loadCounts = useCallback(async () => {
-        const products = ["Wazuh", "FortiSIEM", "Splunk", "FortiSOAR", "n8n", "Shuffle", "IRIS", "ServiceNow", "FreshDesk"];
-        for (const p of products) {
-            try {
-                const instances = await getSourceInstances(p);
-                const count = instances.filter((i) => i.active).length;
-                setActiveCountMap((prev) => ({ ...prev, [p]: count }));
-            } catch { /* silent */ }
-            await new Promise(r => setTimeout(r, 50));
-        }
+        try {
+            const instances = await getSourceInstances("Wazuh");
+            setActiveCountMap((prev) => ({ ...prev, Wazuh: instances.filter((i) => i.active).length }));
+        } catch { /* silent */ }
     }, []);
 
     useEffect(() => { loadCounts(); }, [tenantAtivo?.id]);
@@ -326,29 +321,11 @@ function NgSocContent({
                             </div>
                         )}
                     </div>
-                    <div
-                        onClick={isAdmin ? () => openModal("FortiSIEM", "Fortinet") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
                         <img src="/assets/img/fortsiem.png" />
-                        {(activeCountMap["FortiSIEM"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["FortiSIEM"]} ativa{activeCountMap["FortiSIEM"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
-                    <div
-                        onClick={isAdmin ? () => openModal("Splunk", "Splunk") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/splunk.png" />
-                        {(activeCountMap["Splunk"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["Splunk"]} ativa{activeCountMap["Splunk"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
@@ -357,41 +334,14 @@ function NgSocContent({
             <div>
                 <h3 className="text-white text-xl mb-3">SOAR</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div
-                        onClick={isAdmin ? () => openModal("FortiSOAR", "Fortinet") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/fortsoar.png" />
-                        {(activeCountMap["FortiSOAR"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["FortiSOAR"]} ativa{activeCountMap["FortiSOAR"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
-                    <div
-                        onClick={isAdmin ? () => openModal("n8n", "n8n") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
                         <img src="/assets/img/n8n.png" />
-                        {(activeCountMap["n8n"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["n8n"]} ativa{activeCountMap["n8n"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
-                    <div
-                        onClick={isAdmin ? () => openModal("Shuffle", "Shuffle") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/shuffle.png" />
-                        {(activeCountMap["Shuffle"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["Shuffle"]} ativa{activeCountMap["Shuffle"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
@@ -400,41 +350,14 @@ function NgSocContent({
             <div>
                 <h3 className="text-white text-xl mb-3">DFIR</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div
-                        onClick={isAdmin ? () => openModal("IRIS", "DFIR-IRIS") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/iris.png" />
-                        {(activeCountMap["IRIS"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["IRIS"]} ativa{activeCountMap["IRIS"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
-                    <div
-                        onClick={isAdmin ? () => openModal("ServiceNow", "ServiceNow") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] flex items-center justify-center border-y border-[#2B2736]">
                         <img src="/assets/img/service_now.png" />
-                        {(activeCountMap["ServiceNow"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["ServiceNow"]} ativa{activeCountMap["ServiceNow"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
-                    <div
-                        onClick={isAdmin ? () => openModal("FreshDesk", "FreshDesk") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/fresh-desk.png" />
-                        {(activeCountMap["FreshDesk"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["FreshDesk"]} ativa{activeCountMap["FreshDesk"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
@@ -526,15 +449,10 @@ function FirewallContent() {
     const { setScreenData } = useScreenContext();
 
     const loadCounts = useCallback(async () => {
-        const products = ["FortiGATE", "Azure Firewall", "CheckPoint", "Sophos", "PaloAlto", "Cisco", "SonicWall"];
-        for (const p of products) {
-            try {
-                const instances = await getSourceInstances(p);
-                const count = instances.filter((i) => i.active).length;
-                setActiveCountMap((prev) => ({ ...prev, [p]: count }));
-            } catch { /* silent */ }
-            await new Promise(r => setTimeout(r, 50));
-        }
+        try {
+            const instances = await getSourceInstances("FortiGATE");
+            setActiveCountMap((prev) => ({ ...prev, FortiGATE: instances.filter((i) => i.active).length }));
+        } catch { /* silent */ }
     }, []);
 
     useEffect(() => { loadCounts(); }, [tenantAtivo?.id]);
@@ -590,15 +508,15 @@ function FirewallContent() {
             <div>
                 <h2 className="text-white text-2xl mb-5">FIREWALL</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4">
-                    {renderCard("/assets/img/azure.jpg", "Azure Firewall", "Microsoft", "rounded-l-lg")}
+                    {renderCard("/assets/img/azure.jpg", null, null, "rounded-l-lg")}
                     {renderCard("/assets/img/fortgate.png", "FortiGATE", "Fortinet", "")}
-                    {renderCard("/assets/img/checkpoint.png", "CheckPoint", "CheckPoint", "")}
-                    {renderCard("/assets/img/sophos.png", "Sophos", "Sophos", "rounded-r-lg")}
+                    {renderCard("/assets/img/checkpoint.png", null, null, "")}
+                    {renderCard("/assets/img/sophos.png", null, null, "rounded-r-lg")}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 mt-3">
-                    {renderCard("/assets/img/palo-alto.png", "PaloAlto", "Palo Alto", "rounded-l-lg")}
-                    {renderCard("/assets/img/cisco.png", "Cisco", "Cisco", "")}
-                    {renderCard("/assets/img/sonic.png", "SonicWall", "SonicWall", "rounded-r-lg")}
+                    {renderCard("/assets/img/palo-alto.png", null, null, "rounded-l-lg")}
+                    {renderCard("/assets/img/cisco.png", null, null, "")}
+                    {renderCard("/assets/img/sonic.png", null, null, "rounded-r-lg")}
                 </div>
             </div>
 
@@ -656,15 +574,10 @@ function EndpointsContent() {
     const { setScreenData } = useScreenContext();
 
     const loadCounts = useCallback(async () => {
-        const products = ["Trend Micro", "CrowdStrike", "Microsoft Sentinel", "Microsoft Defender"];
-        for (const p of products) {
-            try {
-                const instances = await getSourceInstances(p);
-                const count = instances.filter((i) => i.active).length;
-                setActiveCountMap((prev) => ({ ...prev, [p]: count }));
-            } catch { /* silent */ }
-            await new Promise(r => setTimeout(r, 50));
-        }
+        try {
+            const instances = await getSourceInstances("Trend Micro");
+            setActiveCountMap((prev) => ({ ...prev, "Trend Micro": instances.filter((i) => i.active).length }));
+        } catch { /* silent */ }
     }, []);
 
     useEffect(() => { loadCounts(); }, [tenantAtivo?.id]);
@@ -697,43 +610,16 @@ function EndpointsContent() {
             <div>
                 <h2 className="text-white text-2xl mb-5">DEFESA DE ENDPOINTS (EDR/XDR)</h2>
                 <div className="grid grid-cols-2 md:grid-cols-2">
-                    <div
-                        onClick={isAdmin ? () => openModal("CrowdStrike", "CrowdStrike") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/crowd-strike.png" />
-                        {(activeCountMap["CrowdStrike"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["CrowdStrike"]} ativa{activeCountMap["CrowdStrike"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
-                    <div
-                        onClick={isAdmin ? () => openModal("Microsoft Sentinel", "Microsoft") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-r-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/sentinel.png" />
-                        {(activeCountMap["Microsoft Sentinel"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["Microsoft Sentinel"]} ativa{activeCountMap["Microsoft Sentinel"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-2 mt-3">
-                    <div
-                        onClick={isAdmin ? () => openModal("Microsoft Defender", "Microsoft") : undefined}
-                        className={`bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736] relative ${isAdmin ? "cursor-pointer hover:border-purple-600/50 transition-colors" : ""}`}
-                    >
+                    <div className="bg-[#0F0B1C] h-[140px] rounded-l-lg flex items-center justify-center border border-[#2B2736]">
                         <img src="/assets/img/defender.png" />
-                        {(activeCountMap["Microsoft Defender"] ?? 0) > 0 && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                                <span className="text-[10px] text-gray-400">{activeCountMap["Microsoft Defender"]} ativa{activeCountMap["Microsoft Defender"] !== 1 ? "s" : ""}</span>
-                            </div>
-                        )}
                     </div>
                     <div
                         onClick={isAdmin ? () => openModal("Trend Micro", "Trend Micro", ["Push"]) : undefined}
