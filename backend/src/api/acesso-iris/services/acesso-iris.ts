@@ -11,7 +11,7 @@ function formatIrisDate(value?: string | null): string {
 
 export async function buscarCasos(tenant, user) {
   try {
-    const irisUrl = `${tenant.iris_url}/manage/cases/filter?case_customer_id=${tenant.iris_customer_id}&per_page=999999`;
+    const irisUrl = `${tenant.iris_url}/manage/cases/filter?case_customer_id=${tenant.iris_customer_id}&per_page=1000`;
 
     const response = await axios.get(irisUrl, {
       headers: {
