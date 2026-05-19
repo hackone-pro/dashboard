@@ -14,7 +14,6 @@ import { getToken } from "../../../utils/auth";
 import { toastSuccess, toastError } from "../../../utils/toast";
 import {
   normaliza,
-  isIAOwner,
   lerMetadataDoCaso,
   escreverMetadataNoCaso,
   atualizarSeveridadeNoTexto,
@@ -72,7 +71,6 @@ export default function ModalEditarIncidente({
     if (!inc) return;
 
     const meta = lerMetadataDoCaso(inc.case_description);
-    const ownerIdAtual = (inc as any).owner_id ?? null;
     const estadoAtual = (inc.state_name || "open").toLowerCase().trim();
     // status
     setStatus(estadoAtual === "closed" ? "closed" : "open");
@@ -89,36 +87,17 @@ export default function ModalEditarIncidente({
     // classificação — prioriza metadata
     setClassificacao(meta?.classificacao ?? (inc as any).classification ?? "");
 
-    // analista — prioriza metadata
-    const analistaMeta = meta?.analista ? normaliza(meta.analista) : null;
-    if (analistaMeta) {
-      if (isIAOwner(analistaMeta)) {
-        setVerdict("inteligencia_artificial");
-      } else {
-        // Prioriza lookup por ID (inequívoco) se disponível; cai em nome como fallback.
-        const idxById = meta?.analistaId != null
-          ? usuariosTenant.findIndex((u) => u.id === meta.analistaId)
-          : -1;
-        const idx = idxById >= 0
-          ? idxById
-          : usuariosTenant.findIndex((u) => normaliza(u.owner_name_iris) === analistaMeta);
-        setVerdict(idx >= 0 ? `idx_${idx}` : "inteligencia_artificial");
-      }
-    } else if (
-      ownerIdAtual &&
-      (ownerIdAtual === "inteligencia_artificial" || String(ownerIdAtual).startsWith("idx_"))
-    ) {
-      // atualização em memória após salvar sem reload
-      setVerdict(ownerIdAtual);
+    // analista — prioriza id (inequívoco), fallback no nome; sem metadata → IA
+    if (meta?.analista) {
+      const porId = meta.analistaId != null
+        ? usuariosTenant.find((u) => u.id === meta.analistaId)
+        : undefined;
+      const u = porId ?? usuariosTenant.find(
+        (u) => normaliza(u.owner_name_iris) === normaliza(meta.analista)
+      );
+      setVerdict(u ? String(u.id) : "inteligencia_artificial");
     } else {
-      // sem metadata: tenta recuperar pelo owner_name vindo do IRIS
-      const ownerNome = normaliza((inc as any).owner || (inc as any).owner_name || "");
-      if (ownerNome && !isIAOwner(ownerNome)) {
-        const idx = usuariosTenant.findIndex((u) => normaliza(u.owner_name_iris) === ownerNome);
-        setVerdict(idx >= 0 ? `idx_${idx}` : "inteligencia_artificial");
-      } else {
-        setVerdict("inteligencia_artificial");
-      }
+      setVerdict("inteligencia_artificial");
     }
 
     // notas — extrai só o texto da mensagem
@@ -135,8 +114,8 @@ export default function ModalEditarIncidente({
 
   const opcoesAnalista = [
     { value: "inteligencia_artificial", label: "Inteligência Artificial" },
-    ...usuariosTenant.map((u: any, idx: number) => ({
-      value: `idx_${idx}`,
+    ...usuariosTenant.map((u: any) => ({
+      value: String(u.id),
       label: u.nome,
     })),
   ];
@@ -156,13 +135,10 @@ export default function ModalEditarIncidente({
     setSalvando(true);
     try {
       const isIA = verdict === "inteligencia_artificial";
-      const isIdx = verdict.startsWith("idx_");
 
       const usuario = isIA
         ? { owner_name_iris: "Inteligencia_Artificial" }
-        : isIdx
-          ? usuariosTenant[Number(verdict.replace("idx_", ""))]
-          : usuariosTenant.find((u) => normaliza(u.owner_name_iris) === normaliza(verdict));
+        : usuariosTenant.find((u) => String(u.id) === verdict);
 
 
       const agora = new Date().toLocaleString("pt-BR", {
