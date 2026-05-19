@@ -22,8 +22,7 @@ export async function buscarCasos(tenant, user) {
     });
 
     const payload = response.data?.data;
-    const lista = (Array.isArray(payload) ? payload : payload?.cases || [])
-      .filter((c: any) => (c.case_id ?? 0) > 22999);
+    const lista = Array.isArray(payload) ? payload : payload?.cases || [];
 
     // Normaliza o novo retorno do IRIS para o formato antigo,
     // mantendo compatibilidade com os consumidores existentes.
